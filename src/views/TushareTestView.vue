@@ -1,27 +1,27 @@
 <template>
   <div class="tushare-test">
     <h1>Tushare API 测试</h1>
-    
+
     <div class="test-controls">
       <button @click="testConnection" :disabled="isLoading">测试 API 连接</button>
       <button @click="getStockList" :disabled="isLoading">获取股票列表</button>
       <button @click="getStockData" :disabled="isLoading || !selectedStock">获取股票数据</button>
     </div>
-    
+
     <div v-if="isLoading" class="loading">
       <p>正在加载数据，请稍候...</p>
     </div>
-    
+
     <div v-if="error" class="error">
       <h3>错误信息</h3>
       <pre>{{ error }}</pre>
     </div>
-    
+
     <div v-if="connectionStatus" class="status">
       <h3>连接状态</h3>
       <p>{{ connectionStatus }}</p>
     </div>
-    
+
     <div v-if="stocks.length > 0" class="stock-list">
       <h3>股票列表 (显示前20条)</h3>
       <table>
@@ -47,12 +47,12 @@
         </tbody>
       </table>
     </div>
-    
+
     <div v-if="selectedStock" class="selected-stock">
       <h3>已选择股票</h3>
       <p>{{ selectedStock.name }} ({{ selectedStock.symbol }})</p>
     </div>
-    
+
     <div v-if="stockData" class="stock-data">
       <h3>股票数据</h3>
       <p>股票: {{ stockData.symbol }}</p>
@@ -60,7 +60,7 @@
       <p>最新收盘价: {{ stockData.close }}</p>
       <p>最高价: {{ stockData.high }}</p>
       <p>最低价: {{ stockData.low }}</p>
-      
+
       <h4>最近5天数据</h4>
       <table>
         <thead>
@@ -81,7 +81,7 @@
         </tbody>
       </table>
     </div>
-    
+
     <div class="raw-response" v-if="rawResponse">
       <h3>原始响应数据</h3>
       <pre>{{ rawResponse }}</pre>
@@ -105,7 +105,8 @@ const stockData = ref<StockData | null>(null)
 const rawResponse = ref('')
 
 // Tushare API 配置
-const TUSHARE_API_URL = 'https://api.tushare.pro'
+// 使用本地代理服务器避免 CORS 问题
+const TUSHARE_API_URL = 'http://localhost:3000/api/tushare'
 const TOKEN = '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61'
 
 // 测试 API 连接
@@ -114,7 +115,7 @@ const testConnection = async () => {
   error.value = ''
   connectionStatus.value = '正在测试连接...'
   rawResponse.value = ''
-  
+
   try {
     const response = await axios.post(TUSHARE_API_URL, {
       api_name: 'stock_basic',
@@ -127,11 +128,10 @@ const testConnection = async () => {
     }, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json, text/plain, */*',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'Accept': 'application/json, text/plain, */*'
       }
     })
-    
+
     if (response.data && response.data.code === 0) {
       connectionStatus.value = `连接成功! 获取到 ${response.data.data.items.length} 条数据`
       rawResponse.value = JSON.stringify(response.data, null, 2)
@@ -154,7 +154,7 @@ const getStockList = async () => {
   error.value = ''
   stocks.value = []
   rawResponse.value = ''
-  
+
   try {
     stocks.value = await tushareService.getStocks()
     if (stocks.value.length > 0) {
@@ -179,12 +179,12 @@ const selectStock = (stock: Stock) => {
 // 获取股票数据
 const getStockData = async () => {
   if (!selectedStock.value) return
-  
+
   isLoading.value = true
   error.value = ''
   stockData.value = null
   rawResponse.value = ''
-  
+
   try {
     stockData.value = await tushareService.getStockData(selectedStock.value.symbol)
     connectionStatus.value = `成功获取 ${selectedStock.value.name} 的股票数据`

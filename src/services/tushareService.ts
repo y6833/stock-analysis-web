@@ -2,7 +2,8 @@ import axios from 'axios'
 import type { Stock, StockData } from '@/types/stock'
 
 // Tushare API 配置
-const TUSHARE_API_URL = 'https://api.tushare.pro'
+// 使用本地代理服务器避免 CORS 问题
+const TUSHARE_API_URL = 'http://localhost:3000/api/tushare'
 const TOKEN = '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61'
 
 // 调试模式 - 开启可以看到更多日志
@@ -71,13 +72,7 @@ async function tushareRequest(api_name: string, params: any = {}, retryCount = 0
     const response = await axios.post(TUSHARE_API_URL, requestData, {
       headers: {
         'Content-Type': 'application/json',
-        Accept: 'application/json, text/plain, */*',
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
-        Referer: 'http://localhost:5173/',
-        'sec-ch-ua': '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
+        'Accept': 'application/json, text/plain, */*'
       },
       timeout: 15000, // 15秒超时
     })
