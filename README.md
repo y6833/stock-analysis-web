@@ -24,6 +24,7 @@ npm install
 
 ```sh
 npm run dev
+node proxy-server.cjs
 ```
 
 ### Type-Check, Compile and Minify for Production

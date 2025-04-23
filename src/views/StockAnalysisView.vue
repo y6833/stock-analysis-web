@@ -515,36 +515,55 @@ onMounted(() => {
 
 <template>
   <div class="stock-analysis">
-    <h1>股票分析系统</h1>
+    <div class="page-header">
+      <h1>专业股票分析工具</h1>
+      <p class="subtitle">基于技术指标的智能分析系统，帮助您做出更明智的投资决策</p>
+    </div>
 
-    <div class="search-box">
-      <div class="search-input-container">
-        <input
-          v-model="searchQuery"
-          @input="searchStocks"
-          @focus="showSearchResults = !!searchQuery"
-          placeholder="搜索股票代码或名称"
-          class="search-input"
-        />
-        <div v-if="showSearchResults" class="search-results">
-          <div v-if="isSearching" class="searching">搜索中...</div>
-          <div v-else-if="searchResults.length === 0" class="no-results">未找到相关股票</div>
-          <div
-            v-else
-            v-for="stock in searchResults"
-            :key="stock.symbol"
-            class="search-result-item"
-            @click="selectStock(stock)"
-          >
-            <span class="stock-symbol">{{ stock.symbol }}</span>
-            <span class="stock-name">{{ stock.name }}</span>
-            <span class="stock-market">{{ stock.market }}</span>
+    <div class="control-panel">
+      <div class="search-box">
+        <div class="search-input-container">
+          <span class="search-icon">🔍</span>
+          <input
+            v-model="searchQuery"
+            @input="searchStocks"
+            @focus="showSearchResults = !!searchQuery"
+            placeholder="输入股票代码或名称进行搜索"
+            class="search-input"
+          />
+          <div v-if="showSearchResults" class="search-results">
+            <div v-if="isSearching" class="searching">
+              <div class="mini-spinner"></div>
+              <span>搜索中...</span>
+            </div>
+            <div v-else-if="searchResults.length === 0" class="no-results">未找到相关股票</div>
+            <div
+              v-else
+              v-for="stock in searchResults"
+              :key="stock.symbol"
+              class="search-result-item"
+              @click="selectStock(stock)"
+            >
+              <span class="stock-symbol">{{ stock.symbol }}</span>
+              <span class="stock-name">{{ stock.name }}</span>
+              <span class="stock-market">{{ stock.market }}</span>
+            </div>
           </div>
         </div>
+        <button class="btn btn-accent search-btn" @click="fetchStockData" :disabled="isLoading">
+          <span class="btn-icon" v-if="!isLoading">📈</span>
+          <span class="btn-spinner" v-if="isLoading"></span>
+          {{ isLoading ? '加载中...' : '分析股票' }}
+        </button>
       </div>
-      <button class="search-btn" @click="fetchStockData" :disabled="isLoading">
-        {{ isLoading ? '加载中...' : '查询' }}
-      </button>
+
+      <div class="quick-filters">
+        <span class="filter-label">快速筛选：</span>
+        <button class="filter-btn" @click="searchQuery = '600519'">$贵州茅台</button>
+        <button class="filter-btn" @click="searchQuery = '000001'">$平安银行</button>
+        <button class="filter-btn" @click="searchQuery = '601318'">$中国平安</button>
+        <button class="filter-btn" @click="searchQuery = '600036'">$招商银行</button>
+      </div>
     </div>
 
     <div v-if="error" class="error-message">
@@ -686,29 +705,81 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 页面布局 */
 .stock-analysis {
-  max-width: 1200px;
+  max-width: 1440px;
+  width: 100%;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0 var(--spacing-lg);
 }
 
+/* 页面标题 */
+.page-header {
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+}
+
+.page-header h1 {
+  font-size: var(--font-size-xl);
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-xs);
+  font-weight: 700;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* 控制面板 */
+.control-panel {
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+}
+
+/* 搜索框 */
 .search-box {
-  margin: 20px 0;
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
 }
 
 .search-input-container {
   position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: var(--spacing-md);
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  z-index: 1;
 }
 
 .search-input {
-  padding: 12px 16px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) calc(var(--spacing-md) * 2 + 1em);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
   width: 100%;
-  font-size: 16px;
+  font-size: var(--font-size-md);
+  transition: all var(--transition-fast);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.2);
 }
 
 .search-results {
@@ -716,26 +787,27 @@ onMounted(() => {
   top: 100%;
   left: 0;
   right: 0;
-  background-color: white;
-  border: 1px solid #ddd;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-top: none;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
   max-height: 300px;
   overflow-y: auto;
   z-index: 10;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .search-result-item {
-  padding: 10px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color var(--transition-fast);
 }
 
 .search-result-item:hover {
-  background-color: #f5f5f5;
+  background-color: var(--bg-secondary);
 }
 
 .search-result-item:last-child {
@@ -743,180 +815,279 @@ onMounted(() => {
 }
 
 .stock-symbol {
-  font-weight: bold;
-  color: #333;
-  margin-right: 10px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-right: var(--spacing-md);
 }
 
 .stock-name {
   flex: 1;
-  color: #666;
+  color: var(--text-primary);
 }
 
 .stock-market {
-  color: #999;
-  font-size: 0.9em;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .searching,
 .no-results {
-  padding: 12px 16px;
-  color: #666;
+  padding: var(--spacing-md);
+  color: var(--text-secondary);
   text-align: center;
 }
 
-.search-btn {
-  padding: 12px 24px;
-  background-color: #42b983;
-  color: white;
-  border: none;
-  border-radius: 4px;
+.searching {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.mini-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(66, 185, 131, 0.2);
+  border-top: 2px solid var(--accent-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* 快速筛选 */
+.quick-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.filter-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-right: var(--spacing-xs);
+}
+
+.filter-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  transition: all var(--transition-fast);
 }
 
-.search-btn:hover {
-  background-color: #3aa876;
+.filter-btn:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-light);
+  color: var(--accent-color);
 }
 
-.search-btn:disabled {
-  background-color: #a8d5c3;
-  cursor: not-allowed;
+/* 按钮样式 */
+.search-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-width: 140px;
 }
 
+.btn-icon {
+  font-size: 1.2em;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: var(--spacing-xs);
+}
+
+/* 图表容器 */
 .chart-container {
   width: 100%;
-  height: 500px;
-  margin: 20px 0;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  padding: 20px;
+  height: 550px;
+  margin: var(--spacing-lg) 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  background-color: var(--bg-primary);
+  transition: all var(--transition-normal);
 }
 
+/* 股票信息区 */
 .stock-info {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 20px;
-  margin-top: 20px;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
 }
 
 .info-card {
-  padding: 20px;
-  background-color: #f8f8f8;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: var(--spacing-lg);
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-normal);
+}
+
+.info-card h3 {
+  margin-top: 0;
+  color: var(--primary-color);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--accent-light);
 }
 
 .info-item {
-  margin: 10px 0;
+  margin: var(--spacing-sm) 0;
   display: flex;
   justify-content: space-between;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.info-item:last-child {
+  border-bottom: none;
 }
 
 .label {
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .value {
-  font-weight: bold;
-  color: #333;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
+.profit {
+  color: var(--stock-up);
+}
+
+.loss {
+  color: var(--stock-down);
+}
+
+/* 分析结果区 */
 .analysis-result {
-  padding: 20px;
-  background-color: #f8f8f8;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: var(--spacing-lg);
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
 }
 
 .analysis-result h3,
 .analysis-result h4 {
   margin-top: 0;
-  color: #42b983;
-  border-bottom: 2px solid #42b983;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--accent-light);
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  font-weight: 600;
 }
 
 .analysis-result h4 {
-  margin-top: 25px;
-  font-size: 1.1rem;
+  margin-top: var(--spacing-lg);
+  font-size: var(--font-size-md);
+  color: var(--primary-color);
 }
 
+.analysis-result p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* 技术指标区 */
 .technical-indicators {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
 }
 
 .indicator-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 15px;
-  margin-top: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
 .indicator {
-  background-color: #f0f0f0;
-  padding: 10px;
-  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
   display: flex;
   flex-direction: column;
   align-items: center;
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-fast);
+}
+
+.indicator:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--accent-light);
 }
 
 .indicator-name {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 5px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
 }
 
 .indicator-value {
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: #333;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .overbought {
-  color: #f44336;
+  color: var(--stock-up);
 }
 
 .oversold {
-  color: #4caf50;
+  color: var(--stock-down);
 }
 
+/* 交易信号区 */
 .trading-signals {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
 }
 
 .signal-box {
   display: flex;
   align-items: center;
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 15px;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-top: var(--spacing-md);
+  transition: all var(--transition-normal);
 }
 
 .buy-signal {
-  background-color: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.3);
+  background-color: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
 .sell-signal {
-  background-color: rgba(244, 67, 54, 0.1);
-  border: 1px solid rgba(244, 67, 54, 0.3);
+  background-color: rgba(46, 204, 113, 0.1);
+  border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
 .neutral-signal {
-  background-color: rgba(158, 158, 158, 0.1);
-  border: 1px solid rgba(158, 158, 158, 0.3);
+  background-color: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.3);
 }
 
 .signal-icon {
   font-size: 2rem;
-  margin-right: 15px;
+  margin-right: var(--spacing-md);
 }
 
 .signal-text {
@@ -925,40 +1096,53 @@ onMounted(() => {
 
 .signal-text strong {
   display: block;
-  margin-bottom: 5px;
-  font-size: 1.1rem;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-md);
+  color: var(--primary-color);
 }
 
 .signal-text p {
   margin: 0;
-  color: #666;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
 
+/* 错误信息 */
 .error-message {
-  padding: 15px;
-  background-color: #ffebee;
+  padding: var(--spacing-md);
+  background-color: rgba(231, 76, 60, 0.1);
   color: #c62828;
-  border-radius: 4px;
-  margin: 20px 0;
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-md) 0;
   text-align: center;
+  border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
+/* 加载状态 */
 .loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 300px;
+  height: 400px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-lg) 0;
 }
 
 .loading-spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
+  border: 4px solid rgba(66, 185, 131, 0.1);
   border-radius: 50%;
-  border-top: 4px solid #42b983;
-  width: 40px;
-  height: 40px;
+  border-top: 4px solid var(--accent-color);
+  width: 50px;
+  height: 50px;
   animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-md);
+}
+
+.loading p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
 }
 
 @keyframes spin {
@@ -970,6 +1154,7 @@ onMounted(() => {
   }
 }
 
+/* 响应式设计 */
 @media (max-width: 768px) {
   .stock-info {
     grid-template-columns: 1fr;
@@ -981,6 +1166,14 @@ onMounted(() => {
 
   .search-btn {
     width: 100%;
+  }
+
+  .chart-container {
+    height: 400px;
+  }
+
+  .indicator-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

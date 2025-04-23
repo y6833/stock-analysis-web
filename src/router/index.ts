@@ -25,6 +25,11 @@ const router = createRouter({
       component: () => import('../views/PortfolioView.vue'),
     },
     {
+      path: '/market-heatmap',
+      name: 'market-heatmap',
+      component: () => import('../views/MarketHeatmapView.vue'),
+    },
+    {
       path: '/tushare-test',
       name: 'tushare-test',
       component: () => import('../views/TushareTestView.vue'),

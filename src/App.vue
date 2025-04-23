@@ -3,112 +3,213 @@
 </script>
 
 <template>
-  <header>
-    <div class="logo-container">
-      <img alt="Stock Analysis logo" class="logo" src="@/image/logo/logo.png" />
-    </div>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo-section">
+          <img alt="Stock Analysis logo" class="logo" src="@/image/logo/logo.png" />
+          <h1 class="app-title">快乐股市</h1>
+        </div>
 
-    <div class="wrapper">
-      <h1 class="app-title">股票分析系统</h1>
+        <nav class="main-nav">
+          <RouterLink to="/" class="nav-link">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">首页</span>
+          </RouterLink>
+          <RouterLink to="/stock" class="nav-link">
+            <span class="nav-icon">📈</span>
+            <span class="nav-text">股票分析</span>
+          </RouterLink>
+          <RouterLink to="/portfolio" class="nav-link">
+            <span class="nav-icon">💼</span>
+            <span class="nav-text">仓位管理</span>
+          </RouterLink>
+          <RouterLink to="/market-heatmap" class="nav-link">
+            <span class="nav-icon">🌎</span>
+            <span class="nav-text">大盘云图</span>
+          </RouterLink>
+          <RouterLink to="/tushare-test" class="nav-link">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">API测试</span>
+          </RouterLink>
+          <RouterLink to="/about" class="nav-link">
+            <span class="nav-icon">ℹ️</span>
+            <span class="nav-text">关于</span>
+          </RouterLink>
+        </nav>
 
-      <nav>
-        <RouterLink to="/">首页</RouterLink>
-        <RouterLink to="/stock">股票分析</RouterLink>
-        <RouterLink to="/portfolio">仓位管理</RouterLink>
-        <RouterLink to="/tushare-test">API测试</RouterLink>
-        <RouterLink to="/about">关于</RouterLink>
-      </nav>
-    </div>
-  </header>
+        <div class="user-section">
+          <button class="btn btn-outline">
+            <span class="icon">🔍</span>
+          </button>
+          <button class="btn btn-outline">
+            <span class="icon">🔔</span>
+          </button>
+        </div>
+      </div>
+    </header>
 
-  <RouterView />
+    <main class="app-main">
+      <RouterView />
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>&copy; 2025 快乐股市 | 专业股票分析工具</p>
+      </div>
+    </footer>
+  </div>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.app-title {
-  font-size: 1.8rem;
-  color: #42b983;
-  margin: 0;
-  font-weight: 600;
-}
-
-.logo-container {
+/* 应用容器 */
+.app-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* 头部样式 */
+.app-header {
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.header-content {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin: 0 auto 2rem;
-  background: transparent;
-  padding: 10px;
-  border-radius: 50%;
+}
+
+/* Logo 部分 */
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 .logo {
-  display: block;
-  width: 180px; /* 放大logo */
-  height: auto;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
-  background: transparent; /* 确保背景透明 */
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.1)); /* 添加轻微阴影增强显示效果 */
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.1));
 }
 
-nav {
+.app-title {
+  font-size: var(--font-size-lg);
+  color: var(--primary-color);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* 导航菜单 */
+.main-nav {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.nav-link:hover {
+  background-color: var(--bg-secondary);
+  color: var(--accent-color);
+}
+
+.nav-link.router-link-active {
+  background-color: var(--bg-secondary);
+  color: var(--accent-color);
+  font-weight: 500;
+}
+
+.nav-icon {
+  font-size: var(--font-size-md);
+}
+
+/* 用户部分 */
+.user-section {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.user-section .btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.user-section .icon {
+  font-size: var(--font-size-md);
+}
+
+/* 主内容区 */
+.app-main {
+  flex: 1;
+  padding: var(--spacing-md) 0;
+  background-color: var(--bg-secondary);
   width: 100%;
-  font-size: 12px;
+}
+
+/* 页脚 */
+.app-footer {
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-light);
+  padding: var(--spacing-md) 0;
+}
+
+.footer-content {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
   text-align: center;
-  margin-top: 2rem;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
   }
 
-  .logo-container {
-    margin: 0 2rem 0 0;
-  }
-
-  .logo {
-    width: 200px; /* 在大屏幕上设置更大的尺寸 */
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
+  .main-nav {
     flex-wrap: wrap;
+    justify-content: center;
   }
 
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
+  .nav-text {
+    display: none;
+  }
 
-    padding: 1rem 0;
-    margin-top: 1rem;
+  .nav-link {
+    padding: var(--spacing-sm);
+  }
+
+  .nav-icon {
+    font-size: var(--font-size-lg);
   }
 }
 </style>
