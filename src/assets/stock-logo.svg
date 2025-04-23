@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="260" height="260" viewBox="0 0 260 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="130" cy="130" r="130" fill="#42B983" opacity="0.1"/>
+  <circle cx="130" cy="130" r="110" fill="#42B983" opacity="0.2"/>
+  
+  <!-- 股票图表 -->
+  <path d="M50,180 L90,140 L130,160 L170,120 L210,90" stroke="#42B983" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- 上升趋势箭头 -->
+  <path d="M190,100 L210,90 L200,110" fill="none" stroke="#42B983" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- 蜡烛图元素 -->
+  <rect x="70" y="130" width="10" height="30" fill="#42B983" opacity="0.8"/>
+  <line x1="75" y1="125" x2="75" y2="135" stroke="#42B983" stroke-width="2"/>
+  <line x1="75" y1="160" x2="75" y2="170" stroke="#42B983" stroke-width="2"/>
+  
+  <rect x="110" y="150" width="10" height="20" fill="#42B983" opacity="0.8"/>
+  <line x1="115" y1="145" x2="115" y2="150" stroke="#42B983" stroke-width="2"/>
+  <line x1="115" y1="170" x2="115" y2="180" stroke="#42B983" stroke-width="2"/>
+  
+  <rect x="150" y="110" width="10" height="25" fill="#42B983" opacity="0.8"/>
+  <line x1="155" y1="105" x2="155" y2="110" stroke="#42B983" stroke-width="2"/>
+  <line x1="155" y1="135" x2="155" y2="145" stroke="#42B983" stroke-width="2"/>
+  
+  <rect x="190" y="80" width="10" height="20" fill="#42B983" opacity="0.8"/>
+  <line x1="195" y1="75" x2="195" y2="80" stroke="#42B983" stroke-width="2"/>
+  <line x1="195" y1="100" x2="195" y2="110" stroke="#42B983" stroke-width="2"/>
+  
+  <!-- 圆形边框 -->
+  <circle cx="130" cy="130" r="110" stroke="#42B983" stroke-width="4" fill="none"/>
+  
+  <!-- 数据点 -->
+  <circle cx="90" cy="140" r="4" fill="#42B983"/>
+  <circle cx="130" cy="160" r="4" fill="#42B983"/>
+  <circle cx="170" cy="120" r="4" fill="#42B983"/>
+  <circle cx="210" cy="90" r="4" fill="#42B983"/>
+</svg>

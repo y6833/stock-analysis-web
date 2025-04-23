@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tushare API 测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+        }
+        .loading {
+            margin-top: 20px;
+            color: #666;
+        }
+        .error {
+            margin-top: 20px;
+            color: #f44336;
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .result {
+            margin-top: 20px;
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tushare API 测试</h1>
+    
+    <div>
+        <button id="testBtn" onclick="testAPI()">测试 API 连接</button>
+        <button id="getStocksBtn" onclick="getStocks()">获取股票列表</button>
+    </div>
+    
+    <div id="loading" class="loading" style="display: none;">
+        <p>正在加载数据，请稍候...</p>
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="result" class="result" style="display: none;">
+        <h3>API 响应</h3>
+        <pre id="responseJson"></pre>
+    </div>
+    
+    <div id="stockList" style="display: none;">
+        <h3>股票列表 (显示前20条)</h3>
+        <table id="stockTable">
+            <thead>
+                <tr>
+                    <th>代码</th>
+                    <th>名称</th>
+                    <th>市场</th>
+                    <th>行业</th>
+                </tr>
+            </thead>
+            <tbody id="stockTableBody"></tbody>
+        </table>
+    </div>
+    
+    <script>
+        // Tushare API 配置
+        const TUSHARE_API_URL = 'https://api.tushare.pro';
+        const TOKEN = '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61';
+        
+        // 显示加载状态
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('stockList').style.display = 'none';
+            document.getElementById('testBtn').disabled = true;
+            document.getElementById('getStocksBtn').disabled = true;
+        }
+        
+        // 隐藏加载状态
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('testBtn').disabled = false;
+            document.getElementById('getStocksBtn').disabled = false;
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        // 显示API响应
+        function showResponse(response) {
+            const resultDiv = document.getElementById('result');
+            document.getElementById('responseJson').textContent = JSON.stringify(response, null, 2);
+            resultDiv.style.display = 'block';
+        }
+        
+        // 显示股票列表
+        function showStockList(stocks) {
+            const stockListDiv = document.getElementById('stockList');
+            const tableBody = document.getElementById('stockTableBody');
+            tableBody.innerHTML = '';
+            
+            // 只显示前20条数据
+            const displayStocks = stocks.slice(0, 20);
+            
+            displayStocks.forEach(stock => {
+                const row = document.createElement('tr');
+                
+                const symbolCell = document.createElement('td');
+                symbolCell.textContent = stock.ts_code;
+                row.appendChild(symbolCell);
+                
+                const nameCell = document.createElement('td');
+                nameCell.textContent = stock.name;
+                row.appendChild(nameCell);
+                
+                const marketCell = document.createElement('td');
+                marketCell.textContent = stock.market || '未知';
+                row.appendChild(marketCell);
+                
+                const industryCell = document.createElement('td');
+                industryCell.textContent = stock.industry || '未知';
+                row.appendChild(industryCell);
+                
+                tableBody.appendChild(row);
+            });
+            
+            stockListDiv.style.display = 'block';
+        }
+        
+        // 测试 API 连接
+        async function testAPI() {
+            showLoading();
+            
+            try {
+                const response = await fetch(TUSHARE_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_name: 'stock_basic',
+                        token: TOKEN,
+                        params: {
+                            exchange: '',
+                            list_status: 'L',
+                            fields: 'ts_code,name,industry,market,list_date'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                showResponse(data);
+                
+                if (data.code === 0) {
+                    alert(`API连接成功! 获取到 ${data.data.items.length} 条数据`);
+                } else {
+                    showError(`API调用失败: ${data.msg}`);
+                }
+            } catch (error) {
+                showError(`请求失败: ${error.message}`);
+                console.error('API测试错误:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 获取股票列表
+        async function getStocks() {
+            showLoading();
+            
+            try {
+                const response = await fetch(TUSHARE_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_name: 'stock_basic',
+                        token: TOKEN,
+                        params: {
+                            exchange: '',
+                            list_status: 'L',
+                            fields: 'ts_code,name,industry,market,list_date'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.code === 0) {
+                    // 处理数据
+                    const fields = data.data.fields;
+                    const items = data.data.items;
+                    
+                    const stocks = items.map(item => {
+                        const stock = {};
+                        fields.forEach((field, index) => {
+                            stock[field] = item[index];
+                        });
+                        return stock;
+                    });
+                    
+                    showStockList(stocks);
+                } else {
+                    showError(`获取股票列表失败: ${data.msg}`);
+                }
+            } catch (error) {
+                showError(`请求失败: ${error.message}`);
+                console.error('获取股票列表错误:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+    </script>
+</body>
+</html>

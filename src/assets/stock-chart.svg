@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="600" height="400" rx="10" fill="#F8F8F8"/>
+  
+  <!-- 网格线 -->
+  <line x1="50" y1="50" x2="50" y2="350" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="150" y1="50" x2="150" y2="350" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="250" y1="50" x2="250" y2="350" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="350" y1="50" x2="350" y2="350" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="450" y1="50" x2="450" y2="350" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="550" y1="50" x2="550" y2="350" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <line x1="50" y1="50" x2="550" y2="50" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="50" y1="100" x2="550" y2="100" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="50" y1="150" x2="550" y2="150" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="50" y1="200" x2="550" y2="200" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="50" y1="250" x2="550" y2="250" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="50" y1="300" x2="550" y2="300" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="50" y1="350" x2="550" y2="350" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- 坐标轴 -->
+  <line x1="50" y1="350" x2="550" y2="350" stroke="#333" stroke-width="2"/>
+  <line x1="50" y1="50" x2="50" y2="350" stroke="#333" stroke-width="2"/>
+  
+  <!-- 主要股票线 -->
+  <path d="M50,250 L100,230 L150,260 L200,240 L250,200 L300,180 L350,150 L400,120 L450,140 L500,100 L550,80" 
+        stroke="#42B983" stroke-width="3" fill="none"/>
+  
+  <!-- 移动平均线 -->
+  <path d="M50,260 L100,250 L150,240 L200,230 L250,210 L300,190 L350,170 L400,160 L450,150 L500,130 L550,120" 
+        stroke="#5470C6" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
+  
+  <!-- 成交量柱状图 -->
+  <rect x="60" y="330" width="30" height="20" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="110" y="335" width="30" height="15" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="160" y="325" width="30" height="25" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="210" y="330" width="30" height="20" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="260" y="320" width="30" height="30" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="310" y="315" width="30" height="35" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="360" y="310" width="30" height="40" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="410" y="320" width="30" height="30" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="460" y="325" width="30" height="25" fill="#E6F7FF" opacity="0.7"/>
+  <rect x="510" y="315" width="30" height="35" fill="#E6F7FF" opacity="0.7"/>
+  
+  <!-- 标记点 -->
+  <circle cx="250" cy="200" r="5" fill="#42B983"/>
+  <circle cx="400" cy="120" r="5" fill="#42B983"/>
+  <circle cx="500" cy="100" r="5" fill="#42B983"/>
+  
+  <!-- 买入/卖出信号 -->
+  <path d="M250,180 L250,160 L240,170 L250,160 L260,170 Z" fill="#42B983"/>
+  <path d="M400,100 L400,80 L390,90 L400,80 L410,90 Z" fill="#42B983"/>
+  
+  <!-- 标签 -->
+  <text x="300" y="30" font-family="Arial" font-size="16" fill="#333" text-anchor="middle">股票价格走势图</text>
+  <text x="300" y="380" font-family="Arial" font-size="12" fill="#666" text-anchor="middle">时间</text>
+  <text x="30" y="200" font-family="Arial" font-size="12" fill="#666" text-anchor="middle" transform="rotate(-90, 30, 200)">价格</text>
+</svg>
