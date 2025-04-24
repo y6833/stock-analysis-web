@@ -16,6 +16,10 @@
             <span class="nav-icon">🏠</span>
             <span class="nav-text">首页</span>
           </RouterLink>
+          <RouterLink to="/dashboard" class="nav-link">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">仪表盘</span>
+          </RouterLink>
           <RouterLink to="/stock" class="nav-link">
             <span class="nav-icon">📈</span>
             <span class="nav-text">股票分析</span>

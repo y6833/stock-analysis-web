@@ -16,6 +16,11 @@ export interface StockData {
   low: number
   open: number
   close: number
+  // 可选的高低开收价数组
+  highs?: number[]
+  lows?: number[]
+  opens?: number[]
+  closes?: number[]
 }
 
 // 技术指标
@@ -24,6 +29,66 @@ export interface TechnicalIndicator {
   value: number
   description: string
 }
+
+// 移动平均线指标
+export interface MAIndicator {
+  sma5: number[]
+  sma10: number[]
+  sma20: number[]
+  sma60: number[]
+  ema12: number[]
+  ema26: number[]
+}
+
+// MACD指标
+export interface MACDIndicator {
+  macdLine: number[]
+  signalLine: number[]
+  histogram: number[]
+}
+
+// KDJ指标
+export interface KDJIndicator {
+  k: number[]
+  d: number[]
+  j: number[]
+}
+
+// 布林带指标
+export interface BollingerBandsIndicator {
+  upper: number[]
+  middle: number[]
+  lower: number[]
+}
+
+// 成交量指标
+export interface VolumeIndicator {
+  volume: number[]
+  ma5: number[]
+  ma10: number[]
+}
+
+// 形态识别结果
+export interface PatternRecognitionResult {
+  pattern: string
+  positions: number[] | null
+  confidence: number
+  description: string
+}
+
+// 趋势线
+export interface TrendLine {
+  id: string
+  startIndex: number
+  endIndex: number
+  startValue: number
+  endValue: number
+  type: 'support' | 'resistance' | 'trend'
+  color: string
+}
+
+// 时间周期
+export type TimeFrame = 'day' | 'week' | 'month' | 'year'
 
 // 股票分析结果
 export interface StockAnalysis {
@@ -34,7 +99,23 @@ export interface StockAnalysis {
     sma5: number
     sma20: number
     rsi: number
+    macd?: {
+      macd: number
+      signal: number
+      histogram: number
+    }
+    kdj?: {
+      k: number
+      d: number
+      j: number
+    }
+    bollingerBands?: {
+      upper: number
+      middle: number
+      lower: number
+    }
   }
+  patternRecognition?: PatternRecognitionResult[]
   signals: {
     buy: boolean
     sell: boolean

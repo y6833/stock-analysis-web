@@ -54,13 +54,17 @@ const goToStockAnalysis = (symbol: string) => {
         </div>
 
         <div class="hero-buttons">
-          <button class="btn btn-accent" @click="router.push('/stock')">
+          <button class="btn btn-accent" @click="router.push('/dashboard')">
+            <span class="btn-icon">📊</span>
+            <span>进入仪表盘</span>
+          </button>
+          <button class="btn btn-outline" @click="router.push('/stock')">
             <span class="btn-icon">📈</span>
-            <span>开始分析</span>
+            <span>股票分析</span>
           </button>
           <button class="btn btn-outline" @click="router.push('/market-heatmap')">
             <span class="btn-icon">🌎</span>
-            <span>查看大盘云图</span>
+            <span>大盘云图</span>
           </button>
         </div>
       </div>

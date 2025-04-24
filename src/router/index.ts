@@ -10,6 +10,11 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: () => import('../views/DashboardView.vue'),
+    },
+    {
       path: '/about',
       name: 'about',
       component: () => import('../views/AboutView.vue'),
@@ -28,6 +33,11 @@ const router = createRouter({
       path: '/market-heatmap',
       name: 'market-heatmap',
       component: () => import('../views/MarketHeatmapView.vue'),
+    },
+    {
+      path: '/industry-analysis',
+      name: 'industry-analysis',
+      component: () => import('../views/IndustryAnalysisView.vue'),
     },
     {
       path: '/tushare-test',

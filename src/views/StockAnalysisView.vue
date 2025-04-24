@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import * as echarts from 'echarts'
 import { stockService } from '@/services/stockService'
-import type { Stock, StockData } from '@/types/stock'
+import { technicalIndicatorService } from '@/services/technicalIndicatorService'
+import type { Stock, StockData, TrendLine } from '@/types/stock'
+import TechnicalIndicatorPanel from '@/components/analysis/TechnicalIndicatorPanel.vue'
+import TrendLineTools from '@/components/analysis/TrendLineTools.vue'
+import MultiTimeframeAnalysis from '@/components/analysis/MultiTimeframeAnalysis.vue'
+import SignalSystem from '@/components/analysis/SignalSystem.vue'
+import FundamentalAnalysis from '@/components/fundamental/FundamentalAnalysis.vue'
+import NewsAggregation from '@/components/news/NewsAggregation.vue'
 
 const route = useRoute()
 
@@ -15,6 +22,13 @@ const analysisResult = ref('')
 const isLoading = ref(false)
 const error = ref('')
 const chart = ref<echarts.ECharts | null>(null)
+
+// 高级技术分析相关
+const activeTab = ref('basic') // 'basic', 'advanced', 'multiframe'
+const activeIndicators = ref<string[]>(['sma', 'rsi'])
+const indicatorData = ref<any>(null)
+const showTrendLineTools = ref(false)
+const trendLines = ref<TrendLine[]>([])
 
 // 交易信号相关
 const isBuySignal = () => {
@@ -429,72 +443,79 @@ const analyzeStock = () => {
   }
 }
 
+// 使用技术指标服务
+
 // 计算简单移动平均线
 function calculateSMA(prices: number[], period: number): number[] {
-  const result: number[] = []
-
-  for (let i = 0; i < prices.length; i++) {
-    if (i < period - 1) {
-      result.push(NaN)
-      continue
-    }
-
-    let sum = 0
-    for (let j = 0; j < period; j++) {
-      sum += prices[i - j]
-    }
-
-    result.push(sum / period)
-  }
-
-  return result
+  return technicalIndicatorService.calculateSMA(prices, period)
 }
 
 // 计算相对强弱指标 (RSI)
 function calculateRSI(prices: number[], period: number = 14): number[] {
-  const result: number[] = []
-  const gains: number[] = []
-  const losses: number[] = []
+  return technicalIndicatorService.calculateRSI(prices, period)
+}
 
-  // 计算价格变化
-  for (let i = 1; i < prices.length; i++) {
-    const change = prices[i] - prices[i - 1]
-    gains.push(change > 0 ? change : 0)
-    losses.push(change < 0 ? Math.abs(change) : 0)
-  }
+// 处理技术指标数据更新
+const handleIndicatorDataUpdated = (data: any) => {
+  indicatorData.value = data
+}
 
-  // 填充前面的空值
-  for (let i = 0; i < period; i++) {
-    result.push(NaN)
-  }
+// 处理趋势线添加
+const handleTrendLineAdded = (trendLine: TrendLine) => {
+  trendLines.value.push(trendLine)
+  updateChartTrendLines()
+}
 
-  // 计算第一个 RSI 值
-  let avgGain = gains.slice(0, period).reduce((sum, val) => sum + val, 0) / period
-  let avgLoss = losses.slice(0, period).reduce((sum, val) => sum + val, 0) / period
-
-  // 计算第一个 RSI
-  if (avgLoss === 0) {
-    result.push(100)
+// 处理趋势线移除
+const handleTrendLineRemoved = (trendLineId: string) => {
+  if (trendLineId === 'all') {
+    trendLines.value = []
   } else {
-    const rs = avgGain / avgLoss
-    result.push(100 - 100 / (1 + rs))
+    trendLines.value = trendLines.value.filter(line => line.id !== trendLineId)
   }
+  updateChartTrendLines()
+}
 
-  // 计算剩余的 RSI 值
-  for (let i = period; i < gains.length; i++) {
-    // 使用平滑 RSI 公式
-    avgGain = (avgGain * (period - 1) + gains[i]) / period
-    avgLoss = (avgLoss * (period - 1) + losses[i]) / period
+// 更新图表中的趋势线
+const updateChartTrendLines = () => {
+  if (!chart.value) return
 
-    if (avgLoss === 0) {
-      result.push(100)
-    } else {
-      const rs = avgGain / avgLoss
-      result.push(100 - 100 / (1 + rs))
-    }
-  }
+  // 获取当前图表配置
+  const option = chart.value.getOption() as any
 
-  return result
+  // 移除所有趋势线系列
+  option.series = option.series.filter((series: any) =>
+    !series.id || !series.id.startsWith('trendline-')
+  )
+
+  // 添加新的趋势线
+  trendLines.value.forEach(trendLine => {
+    option.series.push({
+      id: `trendline-${trendLine.id}`,
+      type: 'line',
+      showSymbol: false,
+      data: [],
+      markLine: {
+        silent: true,
+        symbol: ['none', 'none'],
+        data: [{
+          name: trendLine.type,
+          coords: [
+            [trendLine.startIndex, trendLine.startValue],
+            [trendLine.endIndex, trendLine.endValue]
+          ],
+          lineStyle: {
+            color: trendLine.color,
+            width: 2,
+            type: trendLine.type === 'trend' ? 'solid' : 'dashed'
+          }
+        }]
+      }
+    })
+  })
+
+  // 更新图表
+  chart.value.setOption(option)
 }
 
 // 监听股票代码变化
@@ -576,9 +597,96 @@ onMounted(() => {
     </div>
 
     <div v-else>
-      <div ref="chartRef" class="chart-container"></div>
+      <div class="analysis-tabs" v-if="stockData">
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'basic' }"
+          @click="activeTab = 'basic'"
+        >
+          基础分析
+        </button>
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'advanced' }"
+          @click="activeTab = 'advanced'"
+        >
+          高级技术指标
+        </button>
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'fundamental' }"
+          @click="activeTab = 'fundamental'"
+        >
+          基本面分析
+        </button>
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'news' }"
+          @click="activeTab = 'news'"
+        >
+          新闻与公告
+        </button>
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'multiframe' }"
+          @click="activeTab = 'multiframe'"
+        >
+          多时间周期分析
+        </button>
+        <button
+          class="tool-btn"
+          :class="{ active: showTrendLineTools }"
+          @click="showTrendLineTools = !showTrendLineTools"
+          title="趋势线工具"
+        >
+          趋势线工具
+        </button>
+      </div>
 
-      <div class="stock-info" v-if="stockData">
+      <div class="chart-container-wrapper">
+        <div ref="chartRef" class="chart-container"></div>
+        <TrendLineTools
+          v-if="showTrendLineTools && chart"
+          :chartInstance="chart"
+          :isActive="showTrendLineTools"
+          @update:isActive="showTrendLineTools = $event"
+          @trendLineAdded="handleTrendLineAdded"
+          @trendLineRemoved="handleTrendLineRemoved"
+        />
+      </div>
+
+      <div v-if="activeTab === 'advanced' && stockData" class="advanced-analysis-container">
+        <div class="advanced-analysis-grid">
+          <div class="technical-indicators-panel">
+            <TechnicalIndicatorPanel
+              :stockData="stockData"
+              v-model:activeIndicators="activeIndicators"
+              @indicatorDataUpdated="handleIndicatorDataUpdated"
+            />
+          </div>
+
+          <div class="signal-system-panel">
+            <SignalSystem
+              :stockData="stockData"
+              :indicatorData="indicatorData"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div v-if="activeTab === 'multiframe' && stockData" class="multiframe-analysis-container">
+        <MultiTimeframeAnalysis :symbol="stockSymbol" />
+      </div>
+
+      <div v-if="activeTab === 'fundamental' && stockData" class="fundamental-analysis-container">
+        <FundamentalAnalysis :symbol="stockSymbol" />
+      </div>
+
+      <div v-if="activeTab === 'news' && stockData" class="news-aggregation-container">
+        <NewsAggregation :symbol="stockSymbol" />
+      </div>
+
+      <div class="stock-info" v-if="stockData && activeTab === 'basic'">
         <div class="info-card">
           <h3>股票信息</h3>
           <div class="info-item">
@@ -908,17 +1016,90 @@ onMounted(() => {
   margin-right: var(--spacing-xs);
 }
 
+/* 分析选项卡 */
+.analysis-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.tab-btn, .tool-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-sm);
+}
+
+.tab-btn:hover, .tool-btn:hover {
+  background-color: var(--bg-tertiary);
+  transform: translateY(-2px);
+}
+
+.tab-btn.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.tool-btn.active {
+  background-color: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
 /* 图表容器 */
+.chart-container-wrapper {
+  position: relative;
+  margin: var(--spacing-lg) 0;
+}
+
 .chart-container {
   width: 100%;
   height: 550px;
-  margin: var(--spacing-lg) 0;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
   padding: var(--spacing-md);
   background-color: var(--bg-primary);
   transition: all var(--transition-normal);
+}
+
+/* 高级分析容器 */
+.advanced-analysis-container,
+.multiframe-analysis-container,
+.fundamental-analysis-container,
+.news-aggregation-container {
+  margin: var(--spacing-lg) 0;
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  padding: var(--spacing-lg);
+}
+
+/* 高级分析网格 */
+.advanced-analysis-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+.technical-indicators-panel,
+.signal-system-panel {
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .advanced-analysis-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 股票信息区 */
@@ -1174,6 +1355,23 @@ onMounted(() => {
 
   .indicator-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .analysis-tabs {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .tab-btn, .tool-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .advanced-analysis-container,
+  .multiframe-analysis-container,
+  .fundamental-analysis-container,
+  .news-aggregation-container {
+    padding: var(--spacing-md);
   }
 }
 </style>
