@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import type { StockData, TimeFrame } from '@/types/stock'
 import { stockService } from '@/services/stockService'
@@ -17,19 +17,19 @@ const stockData = ref<Record<TimeFrame, StockData | null>>({
   day: null,
   week: null,
   month: null,
-  year: null
+  year: null,
 })
 const chartInstances = ref<Record<TimeFrame, echarts.ECharts | null>>({
   day: null,
   week: null,
   month: null,
-  year: null
+  year: null,
 })
 const chartRefs = ref<Record<TimeFrame, HTMLElement | null>>({
   day: null,
   week: null,
   month: null,
-  year: null
+  year: null,
 })
 
 // 时间周期名称映射
@@ -37,14 +37,14 @@ const timeframeNames = {
   day: '日线',
   week: '周线',
   month: '月线',
-  year: '年线'
+  year: '年线',
 }
 
 // 加载股票数据
 const loadStockData = async () => {
   isLoading.value = true
   error.value = null
-  
+
   try {
     // 加载各个时间周期的数据
     const promises = timeframes.value.map(async (timeframe) => {
@@ -52,11 +52,11 @@ const loadStockData = async () => {
         // 这里应该调用后端API获取不同时间周期的数据
         // 由于目前没有实现这个API，我们使用模拟数据
         const data = await stockService.getStockData(props.symbol)
-        
+
         if (!data) {
           throw new Error(`无法获取${props.symbol}的${timeframeNames[timeframe]}数据`)
         }
-        
+
         // 根据时间周期处理数据
         const processedData = processDataByTimeframe(data, timeframe)
         stockData.value[timeframe] = processedData
@@ -65,7 +65,7 @@ const loadStockData = async () => {
         stockData.value[timeframe] = null
       }
     })
-    
+
     await Promise.all(promises)
   } catch (err) {
     console.error('加载多时间周期数据失败:', err)
@@ -79,10 +79,10 @@ const loadStockData = async () => {
 const processDataByTimeframe = (data: StockData, timeframe: TimeFrame): StockData => {
   // 这里应该根据时间周期处理数据
   // 由于目前没有实际的不同时间周期数据，我们使用模拟数据
-  
+
   // 复制原始数据
   const result: StockData = { ...data }
-  
+
   // 根据时间周期调整数据点数量
   let interval = 1
   switch (timeframe) {
@@ -96,19 +96,19 @@ const processDataByTimeframe = (data: StockData, timeframe: TimeFrame): StockDat
       interval = 240
       break
   }
-  
+
   // 简化处理：每隔interval个点取一个点
   result.dates = data.dates.filter((_, i) => i % interval === 0)
   result.prices = data.prices.filter((_, i) => i % interval === 0)
   result.volumes = data.volumes.filter((_, i) => i % interval === 0)
-  
+
   // 计算OHLC数据
   if (timeframe !== 'day') {
     result.highs = []
     result.lows = []
     result.opens = []
     result.closes = []
-    
+
     for (let i = 0; i < data.prices.length; i += interval) {
       const chunk = data.prices.slice(i, i + interval)
       if (chunk.length > 0) {
@@ -119,7 +119,7 @@ const processDataByTimeframe = (data: StockData, timeframe: TimeFrame): StockDat
       }
     }
   }
-  
+
   return result
 }
 
@@ -131,10 +131,10 @@ const initCharts = () => {
       if (chartInstances.value[timeframe]) {
         chartInstances.value[timeframe]!.dispose()
       }
-      
+
       // 创建新图表
       chartInstances.value[timeframe] = echarts.init(chartRefs.value[timeframe]!)
-      
+
       // 设置图表选项
       updateChart(timeframe)
     }
@@ -144,25 +144,20 @@ const initCharts = () => {
 // 更新图表
 const updateChart = (timeframe: TimeFrame) => {
   if (!chartInstances.value[timeframe] || !stockData.value[timeframe]) return
-  
+
   const data = stockData.value[timeframe]!
-  
+
   // 计算技术指标
   const sma5 = technicalIndicatorService.calculateSMA(data.prices, 5)
   const sma20 = technicalIndicatorService.calculateSMA(data.prices, 20)
-  
+
   // 准备K线图数据
   const candlestickData = []
-  
+
   if (timeframe !== 'day' && data.opens && data.closes && data.highs && data.lows) {
     // 使用OHLC数据
     for (let i = 0; i < data.dates.length; i++) {
-      candlestickData.push([
-        data.opens[i],
-        data.closes[i],
-        data.lows[i],
-        data.highs[i]
-      ])
+      candlestickData.push([data.opens[i], data.closes[i], data.lows[i], data.highs[i]])
     }
   } else {
     // 使用收盘价模拟
@@ -170,38 +165,38 @@ const updateChart = (timeframe: TimeFrame) => {
       const price = data.prices[i]
       candlestickData.push([
         price * 0.99, // 模拟开盘价
-        price,        // 收盘价
+        price, // 收盘价
         price * 0.98, // 最低价
-        price * 1.01  // 最高价
+        price * 1.01, // 最高价
       ])
     }
   }
-  
+
   // 设置图表选项
   const option = {
     title: {
       text: `${props.symbol} ${timeframeNames[timeframe]}`,
       left: 'center',
       textStyle: {
-        color: '#333'
-      }
+        color: '#333',
+      },
     },
     tooltip: {
       trigger: 'axis',
       axisPointer: {
-        type: 'cross'
-      }
+        type: 'cross',
+      },
     },
     legend: {
       data: ['K线', 'MA5', 'MA20'],
-      bottom: 10
+      bottom: 10,
     },
     grid: {
       left: '3%',
       right: '3%',
       bottom: 60,
       top: 60,
-      containLabel: true
+      containLabel: true,
     },
     xAxis: {
       type: 'category',
@@ -214,33 +209,33 @@ const updateChart = (timeframe: TimeFrame) => {
         formatter: (value: string) => {
           // 简化日期显示
           return value.substring(5) // 只显示月-日
-        }
+        },
       },
       min: 'dataMin',
-      max: 'dataMax'
+      max: 'dataMax',
     },
     yAxis: {
       scale: true,
       splitLine: {
         show: true,
         lineStyle: {
-          type: 'dashed'
-        }
-      }
+          type: 'dashed',
+        },
+      },
     },
     dataZoom: [
       {
         type: 'inside',
         start: 50,
-        end: 100
+        end: 100,
       },
       {
         show: true,
         type: 'slider',
         bottom: 30,
         start: 50,
-        end: 100
-      }
+        end: 100,
+      },
     ],
     series: [
       {
@@ -251,8 +246,8 @@ const updateChart = (timeframe: TimeFrame) => {
           color: '#e74c3c', // 阳线颜色
           color0: '#2ecc71', // 阴线颜色
           borderColor: '#e74c3c',
-          borderColor0: '#2ecc71'
-        }
+          borderColor0: '#2ecc71',
+        },
       },
       {
         name: 'MA5',
@@ -261,8 +256,8 @@ const updateChart = (timeframe: TimeFrame) => {
         smooth: true,
         lineStyle: {
           width: 2,
-          color: '#3498db'
-        }
+          color: '#3498db',
+        },
       },
       {
         name: 'MA20',
@@ -271,12 +266,12 @@ const updateChart = (timeframe: TimeFrame) => {
         smooth: true,
         lineStyle: {
           width: 2,
-          color: '#9b59b6'
-        }
-      }
-    ]
+          color: '#9b59b6',
+        },
+      },
+    ],
   }
-  
+
   // 设置图表选项
   chartInstances.value[timeframe]!.setOption(option)
 }
@@ -289,16 +284,19 @@ const handleResize = () => {
 }
 
 // 监听股票代码变化
-watch(() => props.symbol, async () => {
-  await loadStockData()
-  initCharts()
-})
+watch(
+  () => props.symbol,
+  async () => {
+    await loadStockData()
+    initCharts()
+  }
+)
 
 // 组件挂载时加载数据
 onMounted(async () => {
   await loadStockData()
   initCharts()
-  
+
   // 添加窗口大小变化监听
   window.addEventListener('resize', handleResize)
 })
@@ -307,7 +305,7 @@ onMounted(async () => {
 onUnmounted(() => {
   // 移除窗口大小变化监听
   window.removeEventListener('resize', handleResize)
-  
+
   // 销毁所有图表实例
   timeframes.value.forEach((timeframe) => {
     if (chartInstances.value[timeframe]) {
@@ -323,22 +321,15 @@ onUnmounted(() => {
       <div class="loading-spinner"></div>
       <p>加载多时间周期数据...</p>
     </div>
-    
+
     <div v-else-if="error" class="error-container">
       <p>{{ error }}</p>
       <button class="btn btn-primary" @click="loadStockData">重试</button>
     </div>
-    
+
     <div v-else class="charts-container">
-      <div 
-        v-for="timeframe in timeframes" 
-        :key="timeframe"
-        class="chart-wrapper"
-      >
-        <div 
-          :ref="el => chartRefs[timeframe] = el"
-          class="chart"
-        ></div>
+      <div v-for="timeframe in timeframes" :key="timeframe" class="chart-wrapper">
+        <div :ref="(el) => (chartRefs[timeframe] = el)" class="chart"></div>
       </div>
     </div>
   </div>
@@ -372,8 +363,12 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .charts-container {

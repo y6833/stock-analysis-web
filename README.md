@@ -22,7 +22,7 @@ npm install
 
 ### Compile and Hot-Reload for Development
 
-```sh
+```sh 启动后端服务
 npm run dev
 node proxy-server.cjs
 ```

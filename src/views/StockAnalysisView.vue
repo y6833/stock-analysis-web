@@ -111,12 +111,29 @@ const showSearchResults = ref(false)
 
 // 获取股票数据
 const fetchStockData = async () => {
+  console.log('获取股票数据')
+
   if (!stockSymbol.value) return
 
   isLoading.value = true
   error.value = ''
 
   try {
+    // 确保股票代码包含市场后缀
+    let symbol = stockSymbol.value
+    if (!symbol.includes('.')) {
+      // 根据股票代码规则添加市场后缀
+      if (symbol.startsWith('6')) {
+        symbol = `${symbol}.SH` // 上海证券交易所
+      } else if (symbol.startsWith('0') || symbol.startsWith('3')) {
+        symbol = `${symbol}.SZ` // 深圳证券交易所
+      } else if (symbol.startsWith('4') || symbol.startsWith('8')) {
+        symbol = `${symbol}.BJ` // 北京证券交易所
+      }
+      console.log(`添加市场后缀，原始代码: ${stockSymbol.value}, 修正后: ${symbol}`)
+      stockSymbol.value = symbol
+    }
+
     stockData.value = await stockService.getStockData(stockSymbol.value)
     initChart()
     analyzeStock()
@@ -214,7 +231,9 @@ const initChart = () => {
                 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${color};margin-right:5px"></span>
                 ${seriesName}:
               </span>
-              <span style="font-weight:bold">${typeof value === 'object' ? value.value : value}</span>
+              <span style="font-weight:bold">${
+                typeof value === 'object' ? value.value : value
+              }</span>
             </div>`
           }
         })
@@ -439,7 +458,9 @@ const analyzeStock = () => {
   if (parseFloat(changePercent) > 0) {
     analysisResult.value = `过去${stockData.value.dates.length}天上涨${changePercent}%。${signal}`
   } else {
-    analysisResult.value = `过去${stockData.value.dates.length}天下跌${Math.abs(parseFloat(changePercent))}%。${signal}`
+    analysisResult.value = `过去${stockData.value.dates.length}天下跌${Math.abs(
+      parseFloat(changePercent)
+    )}%。${signal}`
   }
 }
 
@@ -471,7 +492,7 @@ const handleTrendLineRemoved = (trendLineId: string) => {
   if (trendLineId === 'all') {
     trendLines.value = []
   } else {
-    trendLines.value = trendLines.value.filter(line => line.id !== trendLineId)
+    trendLines.value = trendLines.value.filter((line) => line.id !== trendLineId)
   }
   updateChartTrendLines()
 }
@@ -484,12 +505,12 @@ const updateChartTrendLines = () => {
   const option = chart.value.getOption() as any
 
   // 移除所有趋势线系列
-  option.series = option.series.filter((series: any) =>
-    !series.id || !series.id.startsWith('trendline-')
+  option.series = option.series.filter(
+    (series: any) => !series.id || !series.id.startsWith('trendline-')
   )
 
   // 添加新的趋势线
-  trendLines.value.forEach(trendLine => {
+  trendLines.value.forEach((trendLine) => {
     option.series.push({
       id: `trendline-${trendLine.id}`,
       type: 'line',
@@ -498,19 +519,21 @@ const updateChartTrendLines = () => {
       markLine: {
         silent: true,
         symbol: ['none', 'none'],
-        data: [{
-          name: trendLine.type,
-          coords: [
-            [trendLine.startIndex, trendLine.startValue],
-            [trendLine.endIndex, trendLine.endValue]
-          ],
-          lineStyle: {
-            color: trendLine.color,
-            width: 2,
-            type: trendLine.type === 'trend' ? 'solid' : 'dashed'
-          }
-        }]
-      }
+        data: [
+          {
+            name: trendLine.type,
+            coords: [
+              [trendLine.startIndex, trendLine.startValue],
+              [trendLine.endIndex, trendLine.endValue],
+            ],
+            lineStyle: {
+              color: trendLine.color,
+              width: 2,
+              type: trendLine.type === 'trend' ? 'solid' : 'dashed',
+            },
+          },
+        ],
+      },
     })
   })
 
@@ -666,10 +689,7 @@ onMounted(() => {
           </div>
 
           <div class="signal-system-panel">
-            <SignalSystem
-              :stockData="stockData"
-              :indicatorData="indicatorData"
-            />
+            <SignalSystem :stockData="stockData" :indicatorData="indicatorData" />
           </div>
         </div>
       </div>
@@ -1026,7 +1046,8 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.tab-btn, .tool-btn {
+.tab-btn,
+.tool-btn {
   padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -1037,7 +1058,8 @@ onMounted(() => {
   font-size: var(--font-size-sm);
 }
 
-.tab-btn:hover, .tool-btn:hover {
+.tab-btn:hover,
+.tool-btn:hover {
   background-color: var(--bg-tertiary);
   transform: translateY(-2px);
 }
@@ -1362,7 +1384,8 @@ onMounted(() => {
     gap: var(--spacing-xs);
   }
 
-  .tab-btn, .tool-btn {
+  .tab-btn,
+  .tool-btn {
     width: 100%;
     text-align: center;
   }
