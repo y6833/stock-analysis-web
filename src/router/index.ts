@@ -44,6 +44,11 @@ const router = createRouter({
       name: 'tushare-test',
       component: () => import('../views/TushareTestView.vue'),
     },
+    {
+      path: '/export',
+      name: 'export',
+      component: () => import('../views/ExportView.vue'),
+    },
   ],
 })
 
