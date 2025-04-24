@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { stockService } from '@/services/stockService'
+import { dashboardService } from '@/services/dashboardService'
 import type { Stock } from '@/types/stock'
+import type { DashboardSettings, Watchlist, WatchlistItem, MarketOverview } from '@/types/dashboard'
 import * as echarts from 'echarts'
+import WatchlistManager from '@/components/dashboard/WatchlistManager.vue'
 
 const router = useRouter()
 const popularStocks = ref<Stock[]>([])
-const watchlistStocks = ref<Stock[]>([])
+const watchlistStocks = ref<WatchlistItem[]>([])
 const marketIndices = ref<any[]>([])
 const newsItems = ref<any[]>([])
 const isLoading = ref(true)
@@ -16,29 +19,126 @@ const marketSentiment = ref<string>('bullish') // 'bullish', 'bearish', 'neutral
 const marketOverviewChart = ref<HTMLElement | null>(null)
 const chart = ref<echarts.ECharts | null>(null)
 
+// 仪表盘设置
+const dashboardSettings = ref<DashboardSettings | null>(null)
+// 当前活动的关注列表
+const activeWatchlist = ref<Watchlist | null>(null)
+// 是否显示关注列表管理器
+const showWatchlistManager = ref(false)
+// 数据刷新定时器
+let refreshTimer: number | null = null
+
 // 获取市场数据
 onMounted(async () => {
   try {
+    // 加载仪表盘设置
+    loadDashboardSettings()
+
     // 获取所有股票并取前10个作为热门股票
     const stocks = await stockService.getStocks()
     popularStocks.value = stocks.slice(0, 10)
-    
-    // 模拟关注列表数据
-    watchlistStocks.value = stocks.slice(10, 15).map(stock => ({
-      ...stock,
-      price: Math.random() * 100 + 10,
-      change: (Math.random() * 10 - 5).toFixed(2),
-      volume: Math.floor(Math.random() * 10000000)
-    }))
-    
-    // 模拟市场指数数据
-    marketIndices.value = [
-      { name: '上证指数', code: '000001.SH', value: 3250.78, change: '+0.85%', status: 'up' },
-      { name: '深证成指', code: '399001.SZ', value: 10876.54, change: '+1.12%', status: 'up' },
-      { name: '创业板指', code: '399006.SZ', value: 2145.32, change: '-0.32%', status: 'down' },
-      { name: '沪深300', code: '000300.SH', value: 4021.45, change: '+0.67%', status: 'up' },
-    ]
-    
+
+    // 获取市场概览数据
+    await refreshMarketData()
+
+    // 初始化市场概览图表
+    initMarketOverviewChart()
+
+    // 设置定时刷新
+    setupRefreshTimer()
+  } catch (error) {
+    console.error('获取数据失败:', error)
+  } finally {
+    isLoading.value = false
+  }
+})
+
+// 加载仪表盘设置
+const loadDashboardSettings = () => {
+  try {
+    const settings = dashboardService.getDashboardSettings()
+    dashboardSettings.value = settings
+
+    // 获取活动的关注列表
+    const watchlist = settings.watchlists.find(w => w.id === settings.activeWatchlistId)
+    if (watchlist) {
+      activeWatchlist.value = watchlist
+      watchlistStocks.value = watchlist.items
+    }
+  } catch (error) {
+    console.error('加载仪表盘设置失败:', error)
+    // 使用默认设置
+    dashboardSettings.value = dashboardService.createDefaultDashboardSettings()
+    activeWatchlist.value = dashboardSettings.value.watchlists[0]
+    watchlistStocks.value = activeWatchlist.value.items
+  }
+}
+
+// 刷新市场数据
+const refreshMarketData = async () => {
+  try {
+    // 获取市场概览数据
+    const marketOverview = await dashboardService.getMarketOverview()
+
+    // 更新市场指数数据
+    marketIndices.value = marketOverview.indices.map(index => ({
+      name: index.name,
+      code: index.symbol,
+      value: index.price.toFixed(2),
+      change: (index.change > 0 ? '+' : '') + index.change.toFixed(2),
+      changePercent: (index.changePercent > 0 ? '+' : '') + index.changePercent.toFixed(2) + '%',
+      status: index.changePercent > 0 ? 'up' : index.changePercent < 0 ? 'down' : 'neutral'
+    })).slice(0, 4)
+
+    // 更新市场趋势和情绪
+    const advancingRatio = marketOverview.breadth.advancing / (marketOverview.breadth.advancing + marketOverview.breadth.declining)
+    if (advancingRatio > 0.6) {
+      marketTrend.value = 'up'
+      marketSentiment.value = 'bullish'
+    } else if (advancingRatio < 0.4) {
+      marketTrend.value = 'down'
+      marketSentiment.value = 'bearish'
+    } else {
+      marketTrend.value = 'neutral'
+      marketSentiment.value = 'neutral'
+    }
+
+    // 更新关注列表价格
+    if (activeWatchlist.value) {
+      // 模拟更新关注列表价格
+      const updatedItems = activeWatchlist.value.items.map((item: WatchlistItem) => {
+        const previousPrice = item.price || 10 + Math.random() * 90
+        const newPrice = previousPrice * (1 + (Math.random() * 0.06 - 0.03))
+        const change = newPrice - previousPrice
+        const changePercent = (change / previousPrice) * 100
+
+        return {
+          ...item,
+          price: newPrice,
+          change,
+          changePercent,
+          volume: Math.round(Math.random() * 10000000),
+          turnover: Math.round(newPrice * Math.random() * 10000000)
+        }
+      })
+
+      const updatedWatchlist = {
+        ...activeWatchlist.value,
+        items: updatedItems
+      }
+
+      activeWatchlist.value = updatedWatchlist
+      watchlistStocks.value = updatedWatchlist.items
+
+      // 更新仪表盘设置中的关注列表
+      if (dashboardSettings.value) {
+        const index = dashboardSettings.value.watchlists.findIndex((w: Watchlist) => w.id === updatedWatchlist.id)
+        if (index !== -1) {
+          dashboardSettings.value.watchlists[index] = updatedWatchlist
+        }
+      }
+    }
+
     // 模拟新闻数据
     newsItems.value = [
       { title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元', time: '10分钟前', source: '财经日报', url: '#', important: true },
@@ -47,50 +147,69 @@ onMounted(async () => {
       { title: '外资连续三日净流入，北向资金今日净买入超50亿', time: '2小时前', source: '中国证券报', url: '#' },
       { title: '新能源汽车销量创新高，相关概念股受关注', time: '3小时前', source: '第一财经', url: '#' },
     ]
-    
-    // 随机设置市场趋势和情绪
-    marketTrend.value = ['up', 'down', 'neutral'][Math.floor(Math.random() * 3)]
-    marketSentiment.value = ['bullish', 'bearish', 'neutral'][Math.floor(Math.random() * 3)]
-    
-    // 初始化市场概览图表
-    initMarketOverviewChart()
   } catch (error) {
-    console.error('获取数据失败:', error)
-  } finally {
-    isLoading.value = false
+    console.error('刷新市场数据失败:', error)
   }
-})
+}
+
+// 设置定时刷新
+const setupRefreshTimer = () => {
+  // 清除现有定时器
+  if (refreshTimer !== null) {
+    clearInterval(refreshTimer)
+  }
+
+  // 设置新定时器
+  const interval = dashboardSettings.value?.refreshInterval || 60
+  refreshTimer = setInterval(async () => {
+    await refreshMarketData()
+    if (chart.value) {
+      updateMarketOverviewChart()
+    }
+  }, interval * 1000) as unknown as number
+}
 
 // 初始化市场概览图表
 const initMarketOverviewChart = () => {
   if (!marketOverviewChart.value) return
-  
+
   if (chart.value) {
     chart.value.dispose()
   }
-  
+
   chart.value = echarts.init(marketOverviewChart.value)
-  
+  updateMarketOverviewChart()
+
+  // 响应窗口大小变化
+  window.addEventListener('resize', () => {
+    chart.value?.resize()
+  })
+}
+
+// 更新市场概览图表
+const updateMarketOverviewChart = () => {
+  if (!chart.value) return
+
   // 模拟上证指数数据
   const dates = []
   const data = []
   const volumes = []
-  
+
   // 生成30天的模拟数据
   const baseValue = 3200
   let value = baseValue
-  
+
   for (let i = 0; i < 30; i++) {
     const date = new Date()
     date.setDate(date.getDate() - (30 - i))
     dates.push([date.getMonth() + 1, date.getDate()].join('/'))
-    
+
     value = value + Math.random() * 50 - 25
     data.push(value.toFixed(2))
-    
+
     volumes.push(Math.floor(Math.random() * 500000000 + 100000000))
   }
-  
+
   const option = {
     tooltip: {
       trigger: 'axis',
@@ -113,7 +232,7 @@ const initMarketOverviewChart = () => {
       axisLine: { onZero: false },
       splitLine: { show: false },
       axisLabel: {
-        formatter: function (value) {
+        formatter: function (value: string) {
           return value
         }
       }
@@ -163,13 +282,8 @@ const initMarketOverviewChart = () => {
       }
     ]
   }
-  
+
   chart.value.setOption(option)
-  
-  // 响应窗口大小变化
-  window.addEventListener('resize', () => {
-    chart.value?.resize()
-  })
 }
 
 // 跳转到股票分析页面
@@ -225,9 +339,84 @@ const formatNumber = (num: number) => {
 
 // 添加到关注列表
 const addToWatchlist = (stock: Stock) => {
-  // 实际应用中，这里应该调用API将股票添加到用户的关注列表
-  console.log('添加到关注列表:', stock)
+  if (!activeWatchlist.value) return
+
+  // 检查是否已存在
+  const exists = activeWatchlist.value.items.some((item: WatchlistItem) => item.symbol === stock.symbol)
+
+  if (!exists) {
+    const newItem: WatchlistItem = {
+      symbol: stock.symbol,
+      name: stock.name,
+      price: 0,
+      change: 0,
+      changePercent: 0,
+      volume: 0,
+      turnover: 0,
+      addedAt: new Date().toISOString()
+    }
+
+    activeWatchlist.value.items.push(newItem)
+    watchlistStocks.value = activeWatchlist.value.items
+
+    // 保存设置
+    if (dashboardSettings.value) {
+      dashboardService.saveDashboardSettings(dashboardSettings.value)
+    }
+  }
 }
+
+// 打开关注列表管理器
+const openWatchlistManager = () => {
+  showWatchlistManager.value = true
+}
+
+// 保存关注列表
+const saveWatchlists = (watchlists: Watchlist[], activeWatchlistId: string) => {
+  if (!dashboardSettings.value) return
+
+  // 更新设置
+  dashboardSettings.value.watchlists = watchlists
+  dashboardSettings.value.activeWatchlistId = activeWatchlistId
+
+  // 保存设置
+  dashboardService.saveDashboardSettings(dashboardSettings.value)
+
+  // 更新活动的关注列表
+  const watchlist = watchlists.find(w => w.id === activeWatchlistId)
+  if (watchlist) {
+    activeWatchlist.value = watchlist
+    watchlistStocks.value = watchlist.items
+  }
+}
+
+// 刷新数据
+const refreshData = async () => {
+  isLoading.value = true
+  try {
+    await refreshMarketData()
+    if (chart.value) {
+      updateMarketOverviewChart()
+    }
+  } catch (error) {
+    console.error('刷新数据失败:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 组件卸载时清理
+onUnmounted(() => {
+  // 清除定时器
+  if (refreshTimer !== null) {
+    clearInterval(refreshTimer)
+  }
+
+  // 清除图表实例
+  if (chart.value) {
+    chart.value.dispose()
+  }
+})
 </script>
 
 <template>
@@ -235,22 +424,23 @@ const addToWatchlist = (stock: Stock) => {
     <div class="dashboard-header">
       <h1>市场仪表盘</h1>
       <div class="dashboard-actions">
-        <button class="btn btn-outline">
-          <span class="btn-icon">🔄</span>
+        <button class="btn btn-outline" @click="refreshData" :disabled="isLoading">
+          <span class="btn-icon" v-if="!isLoading">🔄</span>
+          <span class="loading-spinner-small" v-else></span>
           <span>刷新数据</span>
         </button>
-        <button class="btn btn-outline">
-          <span class="btn-icon">⚙️</span>
-          <span>设置</span>
+        <button class="btn btn-outline" @click="openWatchlistManager">
+          <span class="btn-icon">⭐</span>
+          <span>管理关注列表</span>
         </button>
       </div>
     </div>
-    
+
     <div v-if="isLoading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>正在加载市场数据...</p>
     </div>
-    
+
     <div v-else class="dashboard-grid">
       <!-- 市场概览 -->
       <div class="dashboard-card market-overview">
@@ -265,7 +455,7 @@ const addToWatchlist = (stock: Stock) => {
             </button>
           </div>
         </div>
-        
+
         <div class="market-indices">
           <div v-for="index in marketIndices" :key="index.code" class="market-index">
             <div class="index-name">{{ index.name }}</div>
@@ -273,11 +463,11 @@ const addToWatchlist = (stock: Stock) => {
             <div class="index-change" :class="index.status">{{ index.change }}</div>
           </div>
         </div>
-        
+
         <div class="market-chart-container">
           <div ref="marketOverviewChart" class="market-chart"></div>
         </div>
-        
+
         <div class="market-indicators">
           <div class="market-indicator">
             <div class="indicator-label">市场趋势</div>
@@ -286,7 +476,7 @@ const addToWatchlist = (stock: Stock) => {
               <span>{{ marketTrend === 'up' ? '上涨' : marketTrend === 'down' ? '下跌' : '震荡' }}</span>
             </div>
           </div>
-          
+
           <div class="market-indicator">
             <div class="indicator-label">市场情绪</div>
             <div class="indicator-value" :style="{ color: marketSentimentColor }">
@@ -296,7 +486,7 @@ const addToWatchlist = (stock: Stock) => {
           </div>
         </div>
       </div>
-      
+
       <!-- 我的关注 -->
       <div class="dashboard-card watchlist">
         <div class="card-header">
@@ -310,7 +500,7 @@ const addToWatchlist = (stock: Stock) => {
             </button>
           </div>
         </div>
-        
+
         <div class="watchlist-table">
           <table>
             <thead>
@@ -339,12 +529,12 @@ const addToWatchlist = (stock: Stock) => {
             </tbody>
           </table>
         </div>
-        
+
         <div class="card-footer">
           <button class="btn btn-outline btn-sm">管理关注列表</button>
         </div>
       </div>
-      
+
       <!-- 热门股票 -->
       <div class="dashboard-card popular-stocks">
         <div class="card-header">
@@ -355,11 +545,11 @@ const addToWatchlist = (stock: Stock) => {
             </button>
           </div>
         </div>
-        
+
         <div class="stock-grid">
-          <div 
-            v-for="stock in popularStocks" 
-            :key="stock.symbol" 
+          <div
+            v-for="stock in popularStocks"
+            :key="stock.symbol"
             class="stock-card"
             @click="goToStockAnalysis(stock.symbol)"
           >
@@ -379,7 +569,7 @@ const addToWatchlist = (stock: Stock) => {
           </div>
         </div>
       </div>
-      
+
       <!-- 市场资讯 -->
       <div class="dashboard-card market-news">
         <div class="card-header">
@@ -390,11 +580,11 @@ const addToWatchlist = (stock: Stock) => {
             </button>
           </div>
         </div>
-        
+
         <div class="news-list">
-          <div 
-            v-for="(news, index) in newsItems" 
-            :key="index" 
+          <div
+            v-for="(news, index) in newsItems"
+            :key="index"
             class="news-item"
             :class="{ 'important': news.important }"
           >
@@ -412,18 +602,18 @@ const addToWatchlist = (stock: Stock) => {
             </div>
           </div>
         </div>
-        
+
         <div class="card-footer">
           <button class="btn btn-outline btn-sm">查看更多</button>
         </div>
       </div>
-      
+
       <!-- 功能快捷入口 -->
       <div class="dashboard-card quick-actions">
         <div class="card-header">
           <h2>功能入口</h2>
         </div>
-        
+
         <div class="action-grid">
           <div class="action-card" @click="router.push('/stock')">
             <div class="action-icon">📈</div>
@@ -453,7 +643,16 @@ const addToWatchlist = (stock: Stock) => {
       </div>
     </div>
   </div>
-</template>
+    <!-- 关注列表管理器 -->
+    <WatchlistManager
+      v-if="dashboardSettings"
+      :show="showWatchlistManager"
+      :watchlists="dashboardSettings.watchlists"
+      :activeWatchlistId="dashboardSettings.activeWatchlistId"
+      @close="showWatchlistManager = false"
+      @save="saveWatchlists"
+    />
+  </template>
 
 <style scoped>
 .dashboard-view {
@@ -498,6 +697,16 @@ const addToWatchlist = (stock: Stock) => {
   border-top: 4px solid var(--accent-color);
   animation: spin 1s linear infinite;
   margin-bottom: var(--spacing-md);
+}
+
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(66, 185, 131, 0.1);
+  border-radius: 50%;
+  border-top: 2px solid var(--accent-color);
+  animation: spin 1s linear infinite;
+  display: inline-block;
 }
 
 @keyframes spin {
@@ -890,17 +1099,17 @@ const addToWatchlist = (stock: Stock) => {
       "market-news"
       "quick-actions";
   }
-  
+
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-md);
   }
-  
+
   .dashboard-actions {
     width: 100%;
   }
-  
+
   .market-indices {
     justify-content: center;
   }
