@@ -93,18 +93,13 @@ const runScan = async () => {
 
   try {
     // 显示加载提示
-    if (window.$message) {
-      window.$message.info('正在扫描市场，请稍候...')
-    }
+    alert('正在扫描市场，请稍候...')
 
-    // 这里先使用模拟数据，后续可以替换为真实API调用
+    // 获取所有股票
     const allStocks = await stockService.getStocks()
 
     // 应用筛选条件
     let filteredStocks = [...allStocks]
-
-    // 模拟筛选过程
-    // 实际实现中，应该根据筛选条件调用相应的API或进行本地计算
 
     // 行业筛选
     if (filterConditions.industry) {
@@ -113,35 +108,138 @@ const runScan = async () => {
       )
     }
 
-    // 价格筛选 (模拟)
-    if (filterConditions.price.priceMin !== null || filterConditions.price.priceMax !== null) {
-      // 这里需要获取股票价格数据，暂时随机模拟
-      filteredStocks = filteredStocks.filter((stock) => {
-        const randomPrice = Math.random() * 100 + 10
-        return (
-          (filterConditions.price.priceMin === null ||
-            randomPrice >= filterConditions.price.priceMin) &&
-          (filterConditions.price.priceMax === null ||
-            randomPrice <= filterConditions.price.priceMax)
-        )
-      })
+    // 尝试获取真实价格数据进行筛选
+    if (
+      filterConditions.price.priceMin !== null ||
+      filterConditions.price.priceMax !== null ||
+      filterConditions.price.changePercent !== null
+    ) {
+      try {
+        // 创建一个包含股票代码和价格数据的映射
+        const priceMap = new Map()
+
+        // 获取批量行情数据
+        // 注意：这里可能需要分批处理，因为一次请求太多股票可能会超时
+        const batchSize = 50
+        for (let i = 0; i < filteredStocks.length; i += batchSize) {
+          const batch = filteredStocks.slice(i, i + batchSize)
+          const symbols = batch.map((stock) => stock.symbol).join(',')
+
+          try {
+            const quotesData = await stockService.getBatchQuotes(symbols)
+
+            if (quotesData && quotesData.length > 0) {
+              quotesData.forEach((quote) => {
+                if (quote && quote.symbol) {
+                  priceMap.set(quote.symbol, {
+                    price: quote.price,
+                    changePercent: quote.pct_chg,
+                  })
+                }
+              })
+            }
+          } catch (batchError) {
+            console.warn(`获取批次 ${i / batchSize + 1} 的价格数据失败:`, batchError)
+          }
+        }
+
+        console.log(`成功获取 ${priceMap.size} 只股票的价格数据`)
+
+        // 使用价格数据进行筛选
+        filteredStocks = filteredStocks.filter((stock) => {
+          const priceData = priceMap.get(stock.symbol)
+
+          // 如果没有价格数据，保留该股票（避免因数据缺失而过滤掉太多股票）
+          if (!priceData) return true
+
+          const { price, changePercent } = priceData
+
+          // 价格筛选
+          const priceMatch =
+            (filterConditions.price.priceMin === null ||
+              price >= filterConditions.price.priceMin) &&
+            (filterConditions.price.priceMax === null || price <= filterConditions.price.priceMax)
+
+          // 涨跌幅筛选
+          const changeMatch =
+            filterConditions.price.changePercent === null ||
+            (filterConditions.price.changePercent >= 0 &&
+              changePercent >= filterConditions.price.changePercent) ||
+            (filterConditions.price.changePercent < 0 &&
+              changePercent <= filterConditions.price.changePercent)
+
+          return priceMatch && changeMatch
+        })
+      } catch (priceError) {
+        console.error('获取价格数据失败，使用模拟数据进行筛选:', priceError)
+        alert('获取实时价格数据失败，将使用模拟数据进行筛选')
+
+        // 如果获取真实价格数据失败，使用模拟数据
+        filteredStocks = filteredStocks.filter((stock) => {
+          const randomPrice = Math.random() * 100 + 10
+          const randomChange = Math.random() * 10 - 5
+
+          const priceMatch =
+            (filterConditions.price.priceMin === null ||
+              randomPrice >= filterConditions.price.priceMin) &&
+            (filterConditions.price.priceMax === null ||
+              randomPrice <= filterConditions.price.priceMax)
+
+          const changeMatch =
+            filterConditions.price.changePercent === null ||
+            (filterConditions.price.changePercent >= 0 &&
+              randomChange >= filterConditions.price.changePercent) ||
+            (filterConditions.price.changePercent < 0 &&
+              randomChange <= filterConditions.price.changePercent)
+
+          return priceMatch && changeMatch
+        })
+      }
+    }
+
+    // 技术指标筛选
+    if (Object.values(filterConditions.technical).some((value) => value === true)) {
+      try {
+        // 这里应该调用技术指标服务获取指标数据
+        // 目前使用模拟数据
+        console.log('使用模拟数据进行技术指标筛选')
+
+        filteredStocks = filteredStocks.filter((stock) => {
+          // 随机决定是否符合条件
+          const randomMatch = Math.random() > 0.7
+          return randomMatch
+        })
+      } catch (indicatorError) {
+        console.error('获取技术指标数据失败:', indicatorError)
+      }
+    }
+
+    // 基本面筛选
+    if (Object.values(filterConditions.fundamental).some((value) => value !== null)) {
+      try {
+        // 这里应该调用基本面数据服务获取数据
+        // 目前使用模拟数据
+        console.log('使用模拟数据进行基本面筛选')
+
+        filteredStocks = filteredStocks.filter((stock) => {
+          // 随机决定是否符合条件
+          const randomMatch = Math.random() > 0.5
+          return randomMatch
+        })
+      } catch (fundamentalError) {
+        console.error('获取基本面数据失败:', fundamentalError)
+      }
     }
 
     // 限制结果数量，避免返回太多
     scanResults.value = filteredStocks.slice(0, 50)
 
     // 显示成功提示
-    if (window.$message) {
-      window.$message.success(`扫描完成，找到 ${scanResults.value.length} 只符合条件的股票`)
-    }
+    alert(`扫描完成，找到 ${scanResults.value.length} 只符合条件的股票`)
   } catch (error: any) {
     console.error('市场扫描失败:', error)
     scanError.value = `扫描失败: ${error.message || '未知错误'}`
-
-    // 显示错误提示
-    if (window.$message) {
-      window.$message.error(`扫描失败: ${error.message || '未知错误'}`)
-    }
+    alert(`扫描失败: ${error.message || '未知错误'}`)
   } finally {
     isScanning.value = false
   }

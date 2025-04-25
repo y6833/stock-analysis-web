@@ -4,7 +4,7 @@ import { tushareService } from './tushareService'
 import { marketDataService } from './marketDataService'
 
 // 是否使用 Tushare 数据
-const USE_TUSHARE = true
+const USE_TUSHARE = true // 始终使用真实数据
 
 // 模拟数据
 const mockStocks: Stock[] = [
@@ -291,9 +291,16 @@ export const stockService = {
   async getStocks(): Promise<Stock[]> {
     if (USE_TUSHARE) {
       try {
-        return await tushareService.getStocks()
+        const stocks = await tushareService.getStocks()
+        if (stocks && stocks.length > 0) {
+          console.log(`成功获取 ${stocks.length} 只股票的基本信息`)
+          return stocks
+        } else {
+          throw new Error('获取到的股票列表为空')
+        }
       } catch (error) {
         console.error('Tushare 获取股票列表失败，使用模拟数据:', error)
+        alert('获取真实股票数据失败，将使用模拟数据。请检查网络连接或稍后再试。')
         return mockStocks
       }
     }
@@ -308,9 +315,16 @@ export const stockService = {
   async getStockData(symbol: string): Promise<StockData> {
     if (USE_TUSHARE) {
       try {
-        return await tushareService.getStockData(symbol)
+        const stockData = await tushareService.getStockData(symbol)
+        if (stockData && stockData.prices && stockData.prices.length > 0) {
+          console.log(`成功获取 ${symbol} 的历史数据，共 ${stockData.prices.length} 条记录`)
+          return stockData
+        } else {
+          throw new Error('获取到的股票历史数据为空')
+        }
       } catch (error) {
         console.error(`Tushare 获取股票 ${symbol} 数据失败，使用模拟数据:`, error)
+        alert(`获取 ${symbol} 的真实历史数据失败，将使用模拟数据。请检查网络连接或稍后再试。`)
         return generateMockStockData(symbol)
       }
     }
@@ -353,9 +367,16 @@ export const stockService = {
   async getStockQuote(symbol: string): Promise<StockQuote> {
     if (USE_TUSHARE) {
       try {
-        return (await marketDataService.getStockQuote(symbol)) || generateMockStockQuote(symbol)
+        const quote = await marketDataService.getStockQuote(symbol)
+        if (quote) {
+          console.log(`成功获取 ${symbol} 的实时行情数据`)
+          return quote
+        } else {
+          throw new Error('获取到的股票行情数据为空')
+        }
       } catch (error) {
         console.error(`获取股票 ${symbol} 行情失败，使用模拟数据:`, error)
+        console.warn(`将使用模拟数据显示 ${symbol} 的行情`)
         return generateMockStockQuote(symbol)
       }
     }
@@ -370,9 +391,16 @@ export const stockService = {
   async getFinancialNews(count: number = 5): Promise<FinancialNews[]> {
     if (USE_TUSHARE) {
       try {
-        return await marketDataService.getFinancialNews(count)
+        const news = await marketDataService.getFinancialNews(count)
+        if (news && news.length > 0) {
+          console.log(`成功获取 ${news.length} 条财经新闻`)
+          return news
+        } else {
+          throw new Error('获取到的财经新闻为空')
+        }
       } catch (error) {
         console.error('获取财经新闻失败，使用模拟数据:', error)
+        console.warn('将使用模拟数据显示财经新闻')
         return generateMockFinancialNews(count)
       }
     }

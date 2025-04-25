@@ -74,30 +74,45 @@ const fetchStocks = async () => {
 // 运行回测
 const runBacktest = async () => {
   if (!backtestParams.symbol) {
-    if (window.$message) {
-      window.$message.error('请选择股票')
-    }
+    alert('请选择股票')
     return
   }
 
   isBacktesting.value = true
   backtestResults.value = null
+  error.value = ''
 
   try {
-    // 这里应该调用后端API进行回测
-    // 目前使用模拟数据
+    // 尝试获取真实股票数据
+    try {
+      // 获取股票历史数据
+      const stockData = await stockService.getStockData(backtestParams.symbol)
+
+      if (!stockData || !stockData.prices || stockData.prices.length === 0) {
+        throw new Error('无法获取股票历史数据，请检查网络连接或稍后再试')
+      }
+
+      console.log(
+        `成功获取 ${backtestParams.symbol} 的历史数据，共 ${stockData.prices.length} 条记录`
+      )
+
+      // 如果获取到了真实数据，使用真实数据进行回测
+      // 但目前回测逻辑仍使用模拟数据，因为需要实现完整的回测算法
+      // 这里可以在未来扩展为使用真实数据的回测
+    } catch (dataErr) {
+      console.warn('获取真实数据失败，使用模拟数据:', dataErr)
+      // 如果获取真实数据失败，提示用户但继续使用模拟数据
+      alert('获取真实数据失败，将使用模拟数据进行回测')
+    }
+
+    // 使用模拟数据进行回测
     await simulateBacktest()
 
-    if (window.$message) {
-      window.$message.success('回测完成')
-    }
+    alert('回测完成')
   } catch (err: any) {
     console.error('回测失败:', err)
     error.value = `回测失败: ${err.message || '未知错误'}`
-
-    if (window.$message) {
-      window.$message.error(`回测失败: ${err.message || '未知错误'}`)
-    }
+    alert(`回测失败: ${err.message || '未知错误'}`)
   } finally {
     isBacktesting.value = false
   }

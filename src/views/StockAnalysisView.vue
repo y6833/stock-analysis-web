@@ -710,8 +710,23 @@ onMounted(() => {
   const symbolParam = route.query.symbol
   if (symbolParam && typeof symbolParam === 'string') {
     stockSymbol.value = symbolParam
+
+    // 添加一个小延迟，确保DOM已经渲染完成
+    setTimeout(() => {
+      fetchStockData()
+    }, 300)
   }
-  // 不再自动加载数据，等待用户手动查询
+
+  // 确保chartRef能够正确获取到DOM元素
+  console.log('组件挂载完成，chartRef:', chartRef.value)
+
+  // 如果已经有数据但图表未初始化，尝试初始化图表
+  if (stockData.value && !chart.value) {
+    console.log('尝试重新初始化图表')
+    setTimeout(() => {
+      initChart()
+    }, 500)
+  }
 })
 </script>
 
