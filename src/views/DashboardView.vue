@@ -374,6 +374,20 @@ const goToStockAnalysis = (symbol: string) => {
   })
 }
 
+// 跳转到指数分析页面
+const goToIndexAnalysis = (symbol: string) => {
+  // 目前指向相同的分析页面，后续可以开发专门的指数分析页面
+  router.push({
+    path: '/stock',
+    query: { symbol },
+  })
+
+  // 显示提示
+  if (window.$message) {
+    window.$message.info(`正在查看指数: ${symbol}`)
+  }
+}
+
 // 计算市场趋势图标和颜色
 const marketTrendIcon = computed(() => {
   switch (marketTrend.value) {
@@ -433,6 +447,20 @@ function formatNumber(num: number): string {
   return new Intl.NumberFormat('zh-CN').format(num)
 }
 
+// 打开新闻详情
+const openNewsDetail = (news: any) => {
+  // 如果有URL，则打开链接
+  if (news.url && news.url !== '#') {
+    window.open(news.url, '_blank')
+    return
+  }
+
+  // 否则显示提示
+  if (window.$message) {
+    window.$message.info(`查看新闻: ${news.title}`)
+  }
+}
+
 // 添加到关注列表
 const addToWatchlist = (stock: Stock) => {
   if (!activeWatchlist.value) {
@@ -484,6 +512,67 @@ const addToWatchlist = (stock: Stock) => {
 // 打开关注列表管理器
 const openWatchlistManager = () => {
   showWatchlistManager.value = true
+}
+
+// 显示添加股票对话框
+const showAddStockDialog = () => {
+  // 目前简单实现，使用提示消息
+  if (window.$message) {
+    window.$message.info('添加股票功能即将上线')
+  }
+
+  // 后续可以实现一个弹窗，让用户搜索并添加股票
+}
+
+// 显示新闻页面
+const showNewsPage = () => {
+  // 目前简单实现，使用提示消息
+  if (window.$message) {
+    window.$message.info('新闻资讯功能即将上线')
+  }
+
+  // 后续可以实现专门的新闻页面
+}
+
+// 显示日期范围选择器
+const showDateRangePicker = () => {
+  // 目前简单实现，使用提示消息
+  if (window.$message) {
+    window.$message.info('日期范围选择功能即将上线')
+  }
+
+  // 后续可以实现日期范围选择器
+}
+
+// 显示市场设置
+const showMarketSettings = () => {
+  // 目前简单实现，使用提示消息
+  if (window.$message) {
+    window.$message.info('市场设置功能即将上线')
+  }
+
+  // 后续可以实现市场设置对话框
+}
+
+// 显示更多新闻
+const showMoreNews = () => {
+  // 目前简单实现，使用提示消息
+  if (window.$message) {
+    window.$message.info('更多新闻功能即将上线')
+  }
+
+  // 后续可以实现新闻列表页面
+  showNewsPage()
+}
+
+// 显示移动端应用
+const showMobileApp = () => {
+  // 目前简单实现，使用提示消息
+  if (window.$message) {
+    window.$message.info('移动端应用即将上线，敬请期待')
+  }
+
+  // 后续可以实现二维码扫描下载移动端应用
 }
 
 // 保存关注列表
@@ -572,17 +661,23 @@ onUnmounted(() => {
         <div class="card-header">
           <h2>市场概览</h2>
           <div class="card-actions">
-            <button class="btn-icon-only">
+            <button class="btn-icon-only" @click="showDateRangePicker" title="选择日期范围">
               <span>📅</span>
             </button>
-            <button class="btn-icon-only">
+            <button class="btn-icon-only" @click="showMarketSettings" title="市场设置">
               <span>⚙️</span>
             </button>
           </div>
         </div>
 
         <div class="market-indices">
-          <div v-for="index in marketIndices" :key="index.code" class="market-index">
+          <div
+            v-for="index in marketIndices"
+            :key="index.code"
+            class="market-index"
+            @click="goToIndexAnalysis(index.code)"
+            title="点击查看详情"
+          >
             <div class="index-name">{{ index.name }}</div>
             <div class="index-value">{{ index.value }}</div>
             <div class="index-change" :class="index.status">{{ index.change }}</div>
@@ -625,10 +720,10 @@ onUnmounted(() => {
         <div class="card-header">
           <h2>我的关注</h2>
           <div class="card-actions">
-            <button class="btn-icon-only">
+            <button class="btn-icon-only" @click="showAddStockDialog" title="添加股票">
               <span>➕</span>
             </button>
-            <button class="btn-icon-only">
+            <button class="btn-icon-only" @click="openWatchlistManager" title="管理关注列表">
               <span>⚙️</span>
             </button>
           </div>
@@ -670,7 +765,7 @@ onUnmounted(() => {
         </div>
 
         <div class="card-footer">
-          <button class="btn btn-outline btn-sm">管理关注列表</button>
+          <button class="btn btn-outline btn-sm" @click="openWatchlistManager">管理关注列表</button>
         </div>
       </div>
 
@@ -679,7 +774,7 @@ onUnmounted(() => {
         <div class="card-header">
           <h2>热门股票</h2>
           <div class="card-actions">
-            <button class="btn-icon-only">
+            <button class="btn-icon-only" @click="refreshData" title="刷新数据">
               <span>🔄</span>
             </button>
           </div>
@@ -714,7 +809,7 @@ onUnmounted(() => {
         <div class="card-header">
           <h2>市场资讯</h2>
           <div class="card-actions">
-            <button class="btn-icon-only">
+            <button class="btn-icon-only" @click="refreshData" title="刷新数据">
               <span>🔄</span>
             </button>
           </div>
@@ -726,6 +821,8 @@ onUnmounted(() => {
             :key="index"
             class="news-item"
             :class="{ important: news.important }"
+            @click="openNewsDetail(news)"
+            title="点击查看详情"
           >
             <div class="news-content">
               <h3 class="news-title">{{ news.title }}</h3>
@@ -735,7 +832,7 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="news-actions">
-              <button class="btn-icon-only">
+              <button class="btn-icon-only" @click.stop="openNewsDetail(news)">
                 <span>📰</span>
               </button>
             </div>
@@ -743,7 +840,7 @@ onUnmounted(() => {
         </div>
 
         <div class="card-footer">
-          <button class="btn btn-outline btn-sm">查看更多</button>
+          <button class="btn btn-outline btn-sm" @click="showMoreNews">查看更多</button>
         </div>
       </div>
 
@@ -766,15 +863,15 @@ onUnmounted(() => {
             <div class="action-icon">🌎</div>
             <div class="action-name">大盘云图</div>
           </div>
-          <div class="action-card">
+          <div class="action-card" @click="router.push('/industry-analysis')">
             <div class="action-icon">📊</div>
             <div class="action-name">行业分析</div>
           </div>
-          <div class="action-card">
+          <div class="action-card" @click="showNewsPage">
             <div class="action-icon">📰</div>
             <div class="action-name">新闻资讯</div>
           </div>
-          <div class="action-card">
+          <div class="action-card" @click="showMobileApp">
             <div class="action-icon">📱</div>
             <div class="action-name">移动端</div>
           </div>

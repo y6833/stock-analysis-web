@@ -40,6 +40,11 @@ const router = createRouter({
       component: () => import('../views/IndustryAnalysisView.vue'),
     },
     {
+      path: '/market-scanner',
+      name: 'market-scanner',
+      component: () => import('../views/MarketScannerView.vue'),
+    },
+    {
       path: '/tushare-test',
       name: 'tushare-test',
       component: () => import('../views/TushareTestView.vue'),

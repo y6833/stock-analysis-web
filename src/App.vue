@@ -36,6 +36,10 @@ import MessageToast from '@/components/common/MessageToast.vue'
             <span class="nav-icon">🌎</span>
             <span class="nav-text">大盘云图</span>
           </RouterLink>
+          <RouterLink to="/market-scanner" class="nav-link">
+            <span class="nav-icon">🔍</span>
+            <span class="nav-text">市场扫描器</span>
+          </RouterLink>
           <RouterLink to="/export" class="nav-link">
             <span class="nav-icon">📋</span>
             <span class="nav-text">导出报告</span>
