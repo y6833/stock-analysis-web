@@ -137,8 +137,13 @@ const fetchStockData = async () => {
     }
 
     stockData.value = await stockService.getStockData(stockSymbol.value)
-    initChart()
-    analyzeStock()
+
+    // 添加延迟，确保DOM已经完全渲染
+    console.log('数据加载完成，延迟300ms初始化图表')
+    setTimeout(() => {
+      initChart()
+      analyzeStock()
+    }, 300)
   } catch (err) {
     console.error('获取股票数据失败:', err)
     error.value = '获取股票数据失败，请稍后再试'
@@ -286,10 +291,17 @@ const initChart = () => {
 
   if (!chartRef.value) {
     console.warn('图表引用为空，无法初始化图表')
-    // 添加消息提示
-    if (window.$message) {
-      window.$message.error('图表容器未准备好，请刷新页面重试')
-    }
+    // 添加延迟重试逻辑
+    console.log('将在500ms后重试初始化图表')
+    setTimeout(() => {
+      if (chartRef.value) {
+        console.log('重试初始化图表成功')
+        initChart()
+      } else {
+        console.error('重试初始化图表失败，图表引用仍为空')
+        alert('图表容器未准备好，请刷新页面重试')
+      }
+    }, 500)
     return
   }
 
@@ -321,8 +333,28 @@ const initChart = () => {
       chart.value.dispose()
     }
 
-    console.log('创建新图表实例')
-    chart.value = echarts.init(chartRef.value)
+    console.log(
+      '创建新图表实例，容器尺寸:',
+      chartRef.value.offsetWidth,
+      'x',
+      chartRef.value.offsetHeight
+    )
+
+    try {
+      // 确保容器有足够的尺寸
+      if (chartRef.value.offsetWidth < 100 || chartRef.value.offsetHeight < 100) {
+        console.warn('图表容器尺寸过小，强制设置最小尺寸')
+        chartRef.value.style.width = '800px'
+        chartRef.value.style.height = '500px'
+      }
+
+      // 初始化图表
+      chart.value = echarts.init(chartRef.value)
+      console.log('图表实例创建成功')
+    } catch (err) {
+      console.error('创建图表实例失败:', err)
+      alert('创建图表失败: ' + (err.message || '未知错误'))
+    }
 
     // 计算技术指标
     const prices = stockData.value.prices
@@ -706,27 +738,33 @@ watch(stockSymbol, () => {
 
 // 初始化
 onMounted(() => {
-  // 检查URL参数中是否有股票代码
-  const symbolParam = route.query.symbol
-  if (symbolParam && typeof symbolParam === 'string') {
-    stockSymbol.value = symbolParam
+  console.log('组件挂载完成')
 
-    // 添加一个小延迟，确保DOM已经渲染完成
-    setTimeout(() => {
+  // 添加一个小延迟，确保DOM已经完全渲染
+  setTimeout(() => {
+    console.log('延迟检查 chartRef:', chartRef.value)
+
+    // 检查URL参数中是否有股票代码
+    const symbolParam = route.query.symbol
+    if (symbolParam && typeof symbolParam === 'string') {
+      stockSymbol.value = symbolParam
+      console.log('从URL获取股票代码:', stockSymbol.value)
       fetchStockData()
-    }, 300)
-  }
+    }
 
-  // 确保chartRef能够正确获取到DOM元素
-  console.log('组件挂载完成，chartRef:', chartRef.value)
-
-  // 如果已经有数据但图表未初始化，尝试初始化图表
-  if (stockData.value && !chart.value) {
-    console.log('尝试重新初始化图表')
-    setTimeout(() => {
+    // 如果已经有数据但图表未初始化，尝试初始化图表
+    if (stockData.value && !chart.value) {
+      console.log('已有数据但图表未初始化，尝试重新初始化图表')
       initChart()
-    }, 500)
-  }
+    }
+
+    // 如果没有股票代码，默认加载一个示例股票
+    if (!stockSymbol.value) {
+      console.log('没有指定股票代码，加载默认股票')
+      stockSymbol.value = '000001.SZ' // 平安银行
+      fetchStockData()
+    }
+  }, 500)
 })
 </script>
 
@@ -1276,7 +1314,9 @@ onMounted(() => {
 
 .chart-container {
   width: 100%;
+  min-width: 600px; /* 确保最小宽度 */
   height: 550px;
+  min-height: 400px; /* 确保最小高度 */
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
@@ -1284,6 +1324,7 @@ onMounted(() => {
   background-color: var(--bg-primary);
   transition: all var(--transition-normal);
   position: relative;
+  display: block; /* 确保显示为块级元素 */
 }
 
 .loading-overlay {
