@@ -1,12 +1,63 @@
 <script setup lang="ts">
 // RouterLink 和 RouterView 组件在模板中自动导入
-import MessageToast from '@/components/common/MessageToast.vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+
+// 下拉菜单状态
+const dropdownOpen = ref({
+  analysis: false,
+  strategy: false,
+})
+
+// 切换下拉菜单
+const toggleDropdown = (menu: string) => {
+  dropdownOpen.value[menu] = !dropdownOpen.value[menu]
+
+  // 关闭其他下拉菜单
+  Object.keys(dropdownOpen.value).forEach((key) => {
+    if (key !== menu) {
+      dropdownOpen.value[key] = false
+    }
+  })
+}
+
+// 关闭所有下拉菜单
+const closeAllDropdowns = () => {
+  Object.keys(dropdownOpen.value).forEach((key) => {
+    dropdownOpen.value[key] = false
+  })
+}
+
+// 点击外部关闭下拉菜单
+const handleClickOutside = (event: MouseEvent) => {
+  const dropdowns = document.querySelectorAll('.dropdown-container')
+  let clickedOutside = true
+
+  dropdowns.forEach((dropdown) => {
+    if (dropdown.contains(event.target as Node)) {
+      clickedOutside = false
+    }
+  })
+
+  if (clickedOutside) {
+    closeAllDropdowns()
+  }
+}
+
+// 组件挂载时添加点击事件监听
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+// 组件卸载时移除点击事件监听
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
   <div class="app-container">
     <!-- 消息提示组件 -->
-    <MessageToast />
+    <!-- <MessageToast /> -->
 
     <header class="app-header">
       <div class="header-content">
@@ -16,6 +67,7 @@ import MessageToast from '@/components/common/MessageToast.vue'
         </div>
 
         <nav class="main-nav">
+          <!-- 基础导航 -->
           <RouterLink to="/" class="nav-link">
             <span class="nav-icon">🏠</span>
             <span class="nav-text">首页</span>
@@ -24,38 +76,70 @@ import MessageToast from '@/components/common/MessageToast.vue'
             <span class="nav-icon">📊</span>
             <span class="nav-text">仪表盘</span>
           </RouterLink>
-          <RouterLink to="/stock" class="nav-link">
-            <span class="nav-icon">📈</span>
-            <span class="nav-text">股票分析</span>
-          </RouterLink>
-          <RouterLink to="/portfolio" class="nav-link">
-            <span class="nav-icon">💼</span>
-            <span class="nav-text">仓位管理</span>
-          </RouterLink>
-          <RouterLink to="/market-heatmap" class="nav-link">
-            <span class="nav-icon">🌎</span>
-            <span class="nav-text">大盘云图</span>
-          </RouterLink>
-          <RouterLink to="/market-scanner" class="nav-link">
-            <span class="nav-icon">🔍</span>
-            <span class="nav-text">市场扫描器</span>
-          </RouterLink>
-          <RouterLink to="/backtest" class="nav-link">
-            <span class="nav-icon">🔄</span>
-            <span class="nav-text">策略回测</span>
-          </RouterLink>
-          <RouterLink to="/alerts" class="nav-link">
-            <span class="nav-icon">🔔</span>
-            <span class="nav-text">条件提醒</span>
-          </RouterLink>
-          <RouterLink to="/simulation" class="nav-link">
-            <span class="nav-icon">🎮</span>
-            <span class="nav-text">模拟交易</span>
-          </RouterLink>
-          <RouterLink to="/export" class="nav-link">
-            <span class="nav-icon">📋</span>
-            <span class="nav-text">导出报告</span>
-          </RouterLink>
+
+          <!-- 分析工具下拉菜单 -->
+          <div class="dropdown-container">
+            <button
+              class="nav-link dropdown-toggle"
+              :class="{ active: dropdownOpen.analysis }"
+              @click="toggleDropdown('analysis')"
+            >
+              <span class="nav-icon">📈</span>
+              <span class="nav-text">分析工具</span>
+              <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="dropdown-menu" v-show="dropdownOpen.analysis">
+              <RouterLink to="/stock" class="dropdown-item">
+                <span class="nav-icon">📈</span>
+                <span class="nav-text">股票分析</span>
+              </RouterLink>
+              <RouterLink to="/portfolio" class="dropdown-item">
+                <span class="nav-icon">💼</span>
+                <span class="nav-text">仓位管理</span>
+              </RouterLink>
+              <RouterLink to="/market-heatmap" class="dropdown-item">
+                <span class="nav-icon">🌎</span>
+                <span class="nav-text">大盘云图</span>
+              </RouterLink>
+              <RouterLink to="/market-scanner" class="dropdown-item">
+                <span class="nav-icon">🔍</span>
+                <span class="nav-text">市场扫描器</span>
+              </RouterLink>
+              <RouterLink to="/export" class="dropdown-item">
+                <span class="nav-icon">📋</span>
+                <span class="nav-text">导出报告</span>
+              </RouterLink>
+            </div>
+          </div>
+
+          <!-- 策略工具下拉菜单 -->
+          <div class="dropdown-container">
+            <button
+              class="nav-link dropdown-toggle"
+              :class="{ active: dropdownOpen.strategy }"
+              @click="toggleDropdown('strategy')"
+            >
+              <span class="nav-icon">🔄</span>
+              <span class="nav-text">策略工具</span>
+              <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="dropdown-menu" v-show="dropdownOpen.strategy">
+              <RouterLink to="/backtest" class="dropdown-item">
+                <span class="nav-icon">🔄</span>
+                <span class="nav-text">策略回测</span>
+              </RouterLink>
+              <RouterLink to="/alerts" class="dropdown-item">
+                <span class="nav-icon">🔔</span>
+                <span class="nav-text">条件提醒</span>
+              </RouterLink>
+              <RouterLink to="/simulation" class="dropdown-item">
+                <span class="nav-icon">🎮</span>
+                <span class="nav-text">模拟交易</span>
+              </RouterLink>
+            </div>
+          </div>
+
+          <!-- 其他链接 -->
           <RouterLink to="/tushare-test" class="nav-link">
             <span class="nav-icon">📊</span>
             <span class="nav-text">API测试</span>
@@ -168,6 +252,66 @@ import MessageToast from '@/components/common/MessageToast.vue'
 
 .nav-icon {
   font-size: var(--font-size-md);
+}
+
+/* 下拉菜单 */
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.dropdown-toggle.active {
+  background-color: var(--bg-secondary);
+  color: var(--accent-color);
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-xs);
+  z-index: 200;
+  margin-top: var(--spacing-xs);
+  border: 1px solid var(--border-light);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  width: 100%;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bg-secondary);
+  color: var(--accent-color);
+}
+
+.dropdown-item.router-link-active {
+  background-color: var(--bg-secondary);
+  color: var(--accent-color);
+  font-weight: 500;
 }
 
 /* 用户部分 */
