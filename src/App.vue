@@ -62,7 +62,7 @@ onUnmounted(() => {
     <header class="app-header">
       <div class="header-content">
         <div class="logo-section">
-          <img alt="Stock Analysis logo" class="logo" src="@/image/logo/logo.png" />
+          <img alt="Stock Analysis logo" class="logo" src="@/image/logo/logo1.png" />
           <h1 class="app-title">快乐股市</h1>
         </div>
 
@@ -361,6 +361,9 @@ onUnmounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .dropdown-menu {
+    min-width: auto;
+  }
   .header-content {
     flex-direction: column;
     gap: var(--spacing-md);
