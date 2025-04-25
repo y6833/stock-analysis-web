@@ -40,6 +40,18 @@ import MessageToast from '@/components/common/MessageToast.vue'
             <span class="nav-icon">🔍</span>
             <span class="nav-text">市场扫描器</span>
           </RouterLink>
+          <RouterLink to="/backtest" class="nav-link">
+            <span class="nav-icon">🔄</span>
+            <span class="nav-text">策略回测</span>
+          </RouterLink>
+          <RouterLink to="/alerts" class="nav-link">
+            <span class="nav-icon">🔔</span>
+            <span class="nav-text">条件提醒</span>
+          </RouterLink>
+          <RouterLink to="/simulation" class="nav-link">
+            <span class="nav-icon">🎮</span>
+            <span class="nav-text">模拟交易</span>
+          </RouterLink>
           <RouterLink to="/export" class="nav-link">
             <span class="nav-icon">📋</span>
             <span class="nav-text">导出报告</span>

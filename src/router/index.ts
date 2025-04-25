@@ -54,6 +54,21 @@ const router = createRouter({
       name: 'export',
       component: () => import('../views/ExportView.vue'),
     },
+    {
+      path: '/backtest',
+      name: 'backtest',
+      component: () => import('../views/BacktestView.vue'),
+    },
+    {
+      path: '/alerts',
+      name: 'alerts',
+      component: () => import('../views/AlertsView.vue'),
+    },
+    {
+      path: '/simulation',
+      name: 'simulation',
+      component: () => import('../views/SimulationView.vue'),
+    },
   ],
 })
 
