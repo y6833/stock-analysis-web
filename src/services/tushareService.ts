@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Stock, StockData } from '@/types/stock'
+import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 
 // Tushare API 配置
 // 使用本地代理服务器避免 CORS 问题
@@ -11,7 +11,15 @@ const DEBUG_MODE = true
 
 // 缓存配置
 const STOCK_BASIC_CACHE_KEY = 'tushare_stock_basic_cache'
+const STOCK_DAILY_CACHE_PREFIX = 'tushare_stock_daily_'
+const STOCK_QUOTE_CACHE_PREFIX = 'tushare_stock_quote_'
+const INDEX_CACHE_PREFIX = 'tushare_index_'
+const SECTOR_LIST_CACHE_KEY = 'tushare_sector_list_cache'
+const NEWS_CACHE_KEY = 'tushare_news_cache'
+
 const CACHE_EXPIRE_MS = 24 * 60 * 60 * 1000 // 24小时
+const QUOTE_CACHE_EXPIRE_MS = 5 * 60 * 1000 // 5分钟
+const NEWS_CACHE_EXPIRE_MS = 30 * 60 * 1000 // 30分钟
 
 // API请求限制相关参数
 const API_RATE_LIMIT = 60 * 1000 // 每分钟只能请求一次
@@ -72,7 +80,7 @@ async function tushareRequest(api_name: string, params: any = {}, retryCount = 0
     const response = await axios.post(TUSHARE_API_URL, requestData, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json, text/plain, */*'
+        Accept: 'application/json, text/plain, */*',
       },
       timeout: 15000, // 15秒超时
     })
@@ -127,7 +135,7 @@ async function tushareRequest(api_name: string, params: any = {}, retryCount = 0
       // 服务器返回了错误状态码
       logError(
         `Tushare API ${api_name} 请求错误 - 状态码: ${error.response.status}`,
-        error.response.data,
+        error.response.data
       )
     } else if (error.request) {
       // 请求已发送但没有收到响应
@@ -197,31 +205,77 @@ function convertStockData(symbol: string, data: any): StockData {
 }
 
 // 缓存相关函数
-function getCachedStockBasic(): Stock[] | null {
-  const cached = localStorage.getItem(STOCK_BASIC_CACHE_KEY)
+function getCachedData(key: string, expireMs: number = CACHE_EXPIRE_MS): any | null {
+  const cached = localStorage.getItem(key)
   if (!cached) return null
 
   try {
     const { data, timestamp } = JSON.parse(cached)
-    const isExpired = Date.now() - timestamp > CACHE_EXPIRE_MS
-    return isExpired ? null : data
+    const isExpired = Date.now() - timestamp > expireMs
+    if (isExpired) {
+      log(`缓存数据已过期: ${key}`)
+      return null
+    }
+    log(`从缓存获取数据: ${key}`)
+    return data
   } catch (e) {
-    logError('解析缓存数据失败:', e)
+    logError(`解析缓存数据失败 (${key}):`, e)
     return null
   }
 }
 
-function cacheStockBasic(data: Stock[]): void {
+function cacheData(key: string, data: any, expireMs: number = CACHE_EXPIRE_MS): void {
   try {
     const cacheData = {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
-    localStorage.setItem(STOCK_BASIC_CACHE_KEY, JSON.stringify(cacheData))
-    log('股票基础数据已缓存')
+    localStorage.setItem(key, JSON.stringify(cacheData))
+    log(`数据已缓存: ${key}`)
   } catch (e) {
-    logError('缓存股票基础数据失败:', e)
+    logError(`缓存数据失败 (${key}):`, e)
   }
+}
+
+// 特定缓存函数
+function getCachedStockBasic(): Stock[] | null {
+  return getCachedData(STOCK_BASIC_CACHE_KEY, CACHE_EXPIRE_MS)
+}
+
+function cacheStockBasic(data: Stock[]): void {
+  cacheData(STOCK_BASIC_CACHE_KEY, data, CACHE_EXPIRE_MS)
+}
+
+function getCachedStockDaily(symbol: string): StockData | null {
+  return getCachedData(`${STOCK_DAILY_CACHE_PREFIX}${symbol}`, CACHE_EXPIRE_MS)
+}
+
+function cacheStockDaily(symbol: string, data: StockData): void {
+  cacheData(`${STOCK_DAILY_CACHE_PREFIX}${symbol}`, data, CACHE_EXPIRE_MS)
+}
+
+function getCachedStockQuote(symbol: string): StockQuote | null {
+  return getCachedData(`${STOCK_QUOTE_CACHE_PREFIX}${symbol}`, QUOTE_CACHE_EXPIRE_MS)
+}
+
+function cacheStockQuote(symbol: string, data: StockQuote): void {
+  cacheData(`${STOCK_QUOTE_CACHE_PREFIX}${symbol}`, data, QUOTE_CACHE_EXPIRE_MS)
+}
+
+function getCachedNews(): FinancialNews[] | null {
+  return getCachedData(NEWS_CACHE_KEY, NEWS_CACHE_EXPIRE_MS)
+}
+
+function cacheNews(data: FinancialNews[]): void {
+  cacheData(NEWS_CACHE_KEY, data, NEWS_CACHE_EXPIRE_MS)
+}
+
+function getCachedSectorList(): any[] | null {
+  return getCachedData(SECTOR_LIST_CACHE_KEY, CACHE_EXPIRE_MS)
+}
+
+function cacheSectorList(data: any[]): void {
+  cacheData(SECTOR_LIST_CACHE_KEY, data, CACHE_EXPIRE_MS)
 }
 
 // Tushare 服务
@@ -251,11 +305,20 @@ export const tushareService = {
   },
 
   // 获取单个股票数据
-  async getStockData(symbol: string, days = 90): Promise<StockData> {
+  async getStockData(symbol: string, days = 90, forceRefresh = false): Promise<StockData> {
     try {
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedData = getCachedStockDaily(symbol)
+        if (cachedData) {
+          log(`使用缓存的股票数据: ${symbol}`)
+          return cachedData
+        }
+      }
+
       // 限制最大查询范围为90天
       if (days > 90) {
-        console.warn('请求时间范围超过90天，已自动调整为90天')
+        log('请求时间范围超过90天，已自动调整为90天')
         days = 90
       }
 
@@ -272,7 +335,7 @@ export const tushareService = {
         return date.toISOString().split('T')[0].replace(/-/g, '')
       }
 
-      console.log(`请求股票数据: ${symbol}, 时间范围: ${formatDate(startDate)} 至 ${formatDate(endDate)}`)
+      log(`请求股票数据: ${symbol}, 时间范围: ${formatDate(startDate)} 至 ${formatDate(endDate)}`)
 
       const data = await tushareRequest('daily', {
         ts_code: symbol,
@@ -284,9 +347,14 @@ export const tushareService = {
         throw new Error('未获取到有效数据，请检查时间范围或股票代码')
       }
 
-      return convertStockData(symbol, data)
+      const stockData = convertStockData(symbol, data)
+
+      // 缓存数据
+      cacheStockDaily(symbol, stockData)
+
+      return stockData
     } catch (error) {
-      console.error(`获取股票 ${symbol} 数据失败:`, error)
+      logError(`获取股票 ${symbol} 数据失败:`, error)
       throw error
     }
   },
@@ -301,10 +369,376 @@ export const tushareService = {
       return allStocks.filter(
         (stock) =>
           stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
-          stock.name.toLowerCase().includes(query.toLowerCase()),
+          stock.name.toLowerCase().includes(query.toLowerCase())
       )
     } catch (error) {
       console.error('搜索股票失败:', error)
+      return []
+    }
+  },
+
+  // 获取股票实时行情
+  async getStockQuote(symbol: string, forceRefresh = false): Promise<StockQuote> {
+    try {
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedQuote = getCachedStockQuote(symbol)
+        if (cachedQuote) {
+          log(`使用缓存的股票行情: ${symbol}`)
+          return cachedQuote
+        }
+      }
+
+      // 获取当前日期
+      const today = new Date()
+      const formatDate = (date: Date) => {
+        return date.toISOString().split('T')[0].replace(/-/g, '')
+      }
+
+      // 获取最近交易日数据
+      const data = await tushareRequest('daily', {
+        ts_code: symbol,
+        start_date: formatDate(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)), // 7天前
+        end_date: formatDate(today),
+      })
+
+      if (!data || !data.items || data.items.length === 0) {
+        throw new Error('未获取到有效行情数据')
+      }
+
+      // 获取最新一天的数据
+      const { fields, items } = data
+      const latestData = items[0] // 假设数据是按日期降序排列的
+
+      const dateIndex = fields.indexOf('trade_date')
+      const openIndex = fields.indexOf('open')
+      const closeIndex = fields.indexOf('close')
+      const highIndex = fields.indexOf('high')
+      const lowIndex = fields.indexOf('low')
+      const preCloseIndex = fields.indexOf('pre_close')
+      const changeIndex = fields.indexOf('change')
+      const pctChgIndex = fields.indexOf('pct_chg')
+      const volIndex = fields.indexOf('vol')
+      const amountIndex = fields.indexOf('amount')
+
+      // 获取股票基本信息
+      const stockInfo = await this.getStockBySymbol(symbol)
+
+      const stockQuote: StockQuote = {
+        symbol,
+        name: stockInfo?.name || '未知',
+        price: parseFloat(latestData[closeIndex]),
+        open: parseFloat(latestData[openIndex]),
+        high: parseFloat(latestData[highIndex]),
+        low: parseFloat(latestData[lowIndex]),
+        close: parseFloat(latestData[closeIndex]),
+        pre_close: parseFloat(latestData[preCloseIndex] || latestData[closeIndex]),
+        change: changeIndex !== -1 ? parseFloat(latestData[changeIndex]) : 0,
+        pct_chg: pctChgIndex !== -1 ? parseFloat(latestData[pctChgIndex]) : 0,
+        vol: parseFloat(latestData[volIndex]),
+        amount: parseFloat(latestData[amountIndex]),
+        update_time: new Date().toISOString(),
+      }
+
+      // 缓存数据
+      cacheStockQuote(symbol, stockQuote)
+
+      return stockQuote
+    } catch (error) {
+      logError(`获取股票 ${symbol} 行情失败:`, error)
+      throw error
+    }
+  },
+
+  // 获取单个股票信息
+  async getStockBySymbol(symbol: string): Promise<Stock | null> {
+    try {
+      // 先获取所有股票
+      const allStocks = await this.getStocks()
+
+      // 查找匹配的股票
+      const stock = allStocks.find((s) => s.symbol === symbol)
+      return stock || null
+    } catch (error) {
+      console.error(`获取股票 ${symbol} 信息失败:`, error)
+      return null
+    }
+  },
+
+  // 获取指数信息
+  async getIndexInfo(indexCode: string): Promise<any> {
+    try {
+      // 获取指数基本信息
+      const data = await tushareRequest('index_basic', {
+        ts_code: indexCode,
+        fields:
+          'ts_code,name,market,publisher,category,base_date,base_point,list_date,weight_rule,desc,exp_date',
+      })
+
+      if (!data || !data.items || data.items.length === 0) {
+        throw new Error(`未获取到指数 ${indexCode} 的基本信息`)
+      }
+
+      const { fields, items } = data
+      const indexData = items[0]
+
+      const nameIndex = fields.indexOf('name')
+      const marketIndex = fields.indexOf('market')
+      const publisherIndex = fields.indexOf('publisher')
+      const categoryIndex = fields.indexOf('category')
+
+      return {
+        code: indexCode,
+        name: indexData[nameIndex],
+        market: indexData[marketIndex],
+        publisher: indexData[publisherIndex],
+        category: indexData[categoryIndex],
+        components: 0, // 暂时无法获取成分股数量
+      }
+    } catch (error) {
+      console.error(`获取指数 ${indexCode} 信息失败:`, error)
+      return null
+    }
+  },
+
+  // 获取指数行情
+  async getIndexQuote(indexCode: string): Promise<any> {
+    try {
+      // 获取当前日期
+      const today = new Date()
+      const formatDate = (date: Date) => {
+        return date.toISOString().split('T')[0].replace(/-/g, '')
+      }
+
+      // 获取最近交易日数据
+      const data = await tushareRequest('index_daily', {
+        ts_code: indexCode,
+        start_date: formatDate(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)), // 7天前
+        end_date: formatDate(today),
+      })
+
+      if (!data || !data.items || data.items.length === 0) {
+        throw new Error(`未获取到指数 ${indexCode} 的行情数据`)
+      }
+
+      // 获取最新一天的数据
+      const { fields, items } = data
+      const latestData = items[0] // 假设数据是按日期降序排列的
+
+      const closeIndex = fields.indexOf('close')
+      const openIndex = fields.indexOf('open')
+      const highIndex = fields.indexOf('high')
+      const lowIndex = fields.indexOf('low')
+      const preCloseIndex = fields.indexOf('pre_close')
+      const changeIndex = fields.indexOf('change')
+      const pctChgIndex = fields.indexOf('pct_chg')
+      const volIndex = fields.indexOf('vol')
+      const amountIndex = fields.indexOf('amount')
+
+      return {
+        close: parseFloat(latestData[closeIndex]),
+        open: parseFloat(latestData[openIndex]),
+        high: parseFloat(latestData[highIndex]),
+        low: parseFloat(latestData[lowIndex]),
+        pre_close: parseFloat(latestData[preCloseIndex] || latestData[closeIndex]),
+        change: changeIndex !== -1 ? parseFloat(latestData[changeIndex]) : 0,
+        pct_chg: pctChgIndex !== -1 ? parseFloat(latestData[pctChgIndex]) : 0,
+        vol: parseFloat(latestData[volIndex]),
+        amount: parseFloat(latestData[amountIndex]),
+      }
+    } catch (error) {
+      console.error(`获取指数 ${indexCode} 行情失败:`, error)
+      return null
+    }
+  },
+
+  // 获取行业板块列表
+  async getSectorList(): Promise<any[]> {
+    try {
+      // 获取行业板块列表
+      const data = await tushareRequest('index_classify', {
+        level: 'L1',
+        src: 'SW', // 申万行业分类
+      })
+
+      if (!data || !data.items || data.items.length === 0) {
+        throw new Error('未获取到行业板块列表')
+      }
+
+      const { fields, items } = data
+      const indexCodeIndex = fields.indexOf('index_code')
+      const indexNameIndex = fields.indexOf('industry_name')
+
+      return items.map((item: any) => ({
+        code: item[indexCodeIndex],
+        name: item[indexNameIndex],
+      }))
+    } catch (error) {
+      console.error('获取行业板块列表失败:', error)
+      return []
+    }
+  },
+
+  // 获取行业板块行情
+  async getSectorQuote(sectorCode: string): Promise<any> {
+    try {
+      // 由于Tushare没有直接提供行业板块行情，这里模拟一个
+      return {
+        change: Math.random() * 2 - 1,
+        pct_chg: Math.random() * 3 - 1.5,
+        vol: Math.round(Math.random() * 20000000000),
+        amount: Math.round(Math.random() * 100000000000),
+      }
+    } catch (error) {
+      console.error(`获取行业板块 ${sectorCode} 行情失败:`, error)
+      return null
+    }
+  },
+
+  // 获取行业内领涨/领跌股票
+  async getSectorLeadingStocks(
+    sectorCode: string,
+    type: 'up' | 'down',
+    count: number = 5
+  ): Promise<any[]> {
+    try {
+      // 由于Tushare没有直接提供行业内领涨/领跌股票，这里模拟一些
+      const upStocks = [
+        { symbol: '600519.SH', name: '贵州茅台', changePercent: Math.random() * 5 },
+        { symbol: '000858.SZ', name: '五粮液', changePercent: Math.random() * 4.5 },
+        { symbol: '601318.SH', name: '中国平安', changePercent: Math.random() * 4 },
+        { symbol: '600036.SH', name: '招商银行', changePercent: Math.random() * 3.5 },
+        { symbol: '000333.SZ', name: '美的集团', changePercent: Math.random() * 3 },
+      ]
+
+      const downStocks = [
+        { symbol: '601398.SH', name: '工商银行', changePercent: Math.random() * -3 },
+        { symbol: '601288.SH', name: '农业银行', changePercent: Math.random() * -2.5 },
+        { symbol: '600887.SH', name: '伊利股份', changePercent: Math.random() * -2 },
+        { symbol: '000568.SZ', name: '泸州老窖', changePercent: Math.random() * -1.5 },
+        { symbol: '600276.SH', name: '恒瑞医药', changePercent: Math.random() * -1 },
+      ]
+
+      return type === 'up' ? upStocks.slice(0, count) : downStocks.slice(0, count)
+    } catch (error) {
+      console.error(`获取行业 ${sectorCode} ${type === 'up' ? '领涨' : '领跌'}股票失败:`, error)
+      return []
+    }
+  },
+
+  // 获取市场宽度数据
+  async getMarketBreadth(): Promise<any> {
+    try {
+      // 由于Tushare没有直接提供市场宽度数据，这里模拟一个
+      const totalStocks = 4000
+      const upCount = Math.round(Math.random() * totalStocks * 0.6)
+      const downCount = Math.round(Math.random() * totalStocks * 0.4)
+      const unchangedCount = totalStocks - upCount - downCount
+
+      const totalVolume = Math.round(Math.random() * 500000000000)
+      const upVolume = Math.round(totalVolume * (upCount / totalStocks) * (1 + Math.random() * 0.3))
+      const downVolume = totalVolume - upVolume
+
+      return {
+        up_count: upCount,
+        down_count: downCount,
+        unchanged_count: unchangedCount,
+        new_high: Math.round(Math.random() * 100),
+        new_low: Math.round(Math.random() * 50),
+        up_vol: upVolume,
+        down_vol: downVolume,
+      }
+    } catch (error) {
+      console.error('获取市场宽度数据失败:', error)
+      return null
+    }
+  },
+
+  // 获取财经新闻
+  async getFinancialNews(count: number = 5, forceRefresh = false): Promise<FinancialNews[]> {
+    try {
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedNews = getCachedNews()
+        if (cachedNews) {
+          log(`使用缓存的财经新闻`)
+          return cachedNews.slice(0, count)
+        }
+      }
+
+      // 由于Tushare没有直接提供财经新闻，这里模拟一些
+      const mockNews: FinancialNews[] = [
+        {
+          title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
+          time: '10分钟前',
+          source: '财经日报',
+          url: '#',
+          important: true,
+          content:
+            '中国人民银行今日宣布，决定于下周一起下调金融机构存款准备金率0.5个百分点，预计将释放长期资金约1万亿元。',
+        },
+        {
+          title: '科技板块全线上涨，半导体行业领涨',
+          time: '30分钟前',
+          source: '证券时报',
+          url: '#',
+          important: false,
+          content: '今日A股市场，科技板块表现强势，全线上涨。其中，半导体行业领涨，多只个股涨停。',
+        },
+        {
+          title: '多家券商上调A股目标位，看好下半年行情',
+          time: '1小时前',
+          source: '上海证券报',
+          url: '#',
+          important: false,
+          content: '近日，多家券商发布研报，上调A股目标位，普遍看好下半年市场行情。',
+        },
+        {
+          title: '外资连续三日净流入，北向资金今日净买入超50亿',
+          time: '2小时前',
+          source: '中国证券报',
+          url: '#',
+          important: false,
+          content:
+            '据统计数据显示，外资已连续三个交易日净流入A股市场，今日北向资金净买入超过50亿元。',
+        },
+        {
+          title: '新能源汽车销量创新高，相关概念股受关注',
+          time: '3小时前',
+          source: '第一财经',
+          url: '#',
+          important: false,
+          content:
+            '据中国汽车工业协会最新数据，上月我国新能源汽车销量再创历史新高，同比增长超过50%。',
+        },
+        {
+          title: '国常会：进一步扩大内需，促进消费持续恢复',
+          time: '4小时前',
+          source: '新华社',
+          url: '#',
+          important: true,
+          content: '国务院常务会议今日召开，会议强调要进一步扩大内需，促进消费持续恢复和升级。',
+        },
+        {
+          title: '两部门：加大对先进制造业支持力度，优化融资环境',
+          time: '5小时前',
+          source: '经济参考报',
+          url: '#',
+          important: false,
+          content: '财政部、工信部联合发文，要求加大对先进制造业的支持力度，优化融资环境。',
+        },
+      ]
+
+      // 随机打乱新闻顺序
+      const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
+
+      // 缓存新闻数据
+      cacheNews(shuffledNews)
+
+      // 返回指定数量的新闻
+      return shuffledNews.slice(0, count)
+    } catch (error) {
+      logError('获取财经新闻失败:', error)
       return []
     }
   },

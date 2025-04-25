@@ -4,6 +4,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid'
+import { marketDataService } from '@/services/marketDataService'
 import type {
   DashboardSettings,
   DashboardLayout,
@@ -13,7 +14,7 @@ import type {
   WatchlistAlert,
   MarketOverview,
   MarketIndex,
-  IndustrySector
+  IndustrySector,
 } from '@/types/dashboard'
 
 // 本地存储键
@@ -55,14 +56,14 @@ export function saveDashboardSettings(settings: DashboardSettings): void {
 export function createDefaultDashboardSettings(): DashboardSettings {
   const defaultLayoutId = uuidv4()
   const defaultWatchlistId = uuidv4()
-  
+
   return {
     layouts: [createDefaultLayout(defaultLayoutId)],
     activeLayoutId: defaultLayoutId,
     watchlists: [createDefaultWatchlist(defaultWatchlistId)],
     activeWatchlistId: defaultWatchlistId,
     theme: 'light',
-    refreshInterval: 60
+    refreshInterval: 60,
   }
 }
 
@@ -83,7 +84,7 @@ export function createDefaultLayout(id: string): DashboardLayout {
         title: '关注列表',
         size: { w: 6, h: 4, minW: 3, minH: 2 },
         position: { x: 0, y: 0 },
-        settings: {}
+        settings: {},
       },
       {
         id: uuidv4(),
@@ -91,7 +92,7 @@ export function createDefaultLayout(id: string): DashboardLayout {
         title: '市场概览',
         size: { w: 6, h: 4, minW: 3, minH: 2 },
         position: { x: 6, y: 0 },
-        settings: {}
+        settings: {},
       },
       {
         id: uuidv4(),
@@ -100,8 +101,8 @@ export function createDefaultLayout(id: string): DashboardLayout {
         size: { w: 6, h: 4, minW: 3, minH: 2 },
         position: { x: 0, y: 4 },
         settings: {
-          symbol: '000001.SH'
-        }
+          symbol: '000001.SH',
+        },
       },
       {
         id: uuidv4(),
@@ -109,14 +110,14 @@ export function createDefaultLayout(id: string): DashboardLayout {
         title: '最新资讯',
         size: { w: 6, h: 4, minW: 3, minH: 2 },
         position: { x: 6, y: 4 },
-        settings: {}
-      }
+        settings: {},
+      },
     ],
     gridSettings: {
       cols: 12,
       rowHeight: 60,
-      gap: 10
-    }
+      gap: 10,
+    },
   }
 }
 
@@ -138,7 +139,7 @@ export function createDefaultWatchlist(id: string): Watchlist {
         changePercent: 1.48,
         volume: 12345678,
         turnover: 126547890,
-        addedAt: new Date().toISOString()
+        addedAt: new Date().toISOString(),
       },
       {
         symbol: '000001.SZ',
@@ -148,7 +149,7 @@ export function createDefaultWatchlist(id: string): Watchlist {
         changePercent: -1.5,
         volume: 23456789,
         turnover: 369854712,
-        addedAt: new Date().toISOString()
+        addedAt: new Date().toISOString(),
       },
       {
         symbol: '601318.SH',
@@ -158,12 +159,12 @@ export function createDefaultWatchlist(id: string): Watchlist {
         changePercent: 1.83,
         volume: 34567890,
         turnover: 1669854123,
-        addedAt: new Date().toISOString()
-      }
+        addedAt: new Date().toISOString(),
+      },
     ],
     sortBy: 'changePercent',
     sortDirection: 'desc',
-    columns: ['symbol', 'name', 'price', 'change', 'changePercent']
+    columns: ['symbol', 'name', 'price', 'change', 'changePercent'],
   }
 }
 
@@ -181,8 +182,8 @@ export function createNewLayout(name: string): DashboardLayout {
     gridSettings: {
       cols: 12,
       rowHeight: 60,
-      gap: 10
-    }
+      gap: 10,
+    },
   }
 }
 
@@ -198,7 +199,7 @@ export function createNewWatchlist(name: string): Watchlist {
     items: [],
     sortBy: 'addedAt',
     sortDirection: 'desc',
-    columns: ['symbol', 'name', 'price', 'change', 'changePercent']
+    columns: ['symbol', 'name', 'price', 'change', 'changePercent'],
   }
 }
 
@@ -218,7 +219,7 @@ export function createNewWidget(
 ): WidgetConfig {
   // 根据类型设置默认尺寸
   let size: WidgetSize
-  
+
   switch (type) {
     case 'watchlist':
     case 'market_overview':
@@ -247,14 +248,14 @@ export function createNewWidget(
     default:
       size = { w: 4, h: 3, minW: 2, minH: 2 }
   }
-  
+
   return {
     id: uuidv4(),
     type,
     title,
     size,
     position,
-    settings
+    settings,
   }
 }
 
@@ -263,14 +264,17 @@ export function createNewWidget(
  * @param watchlistId 关注列表ID
  * @param stock 股票信息
  */
-export function addStockToWatchlist(watchlistId: string, stock: { symbol: string, name: string }): void {
+export function addStockToWatchlist(
+  watchlistId: string,
+  stock: { symbol: string; name: string }
+): void {
   const settings = getDashboardSettings()
-  const watchlist = settings.watchlists.find(w => w.id === watchlistId)
-  
+  const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+
   if (watchlist) {
     // 检查是否已存在
-    const exists = watchlist.items.some(item => item.symbol === stock.symbol)
-    
+    const exists = watchlist.items.some((item) => item.symbol === stock.symbol)
+
     if (!exists) {
       // 创建新的关注项
       const newItem: WatchlistItem = {
@@ -281,9 +285,9 @@ export function addStockToWatchlist(watchlistId: string, stock: { symbol: string
         changePercent: 0,
         volume: 0,
         turnover: 0,
-        addedAt: new Date().toISOString()
+        addedAt: new Date().toISOString(),
       }
-      
+
       watchlist.items.push(newItem)
       saveDashboardSettings(settings)
     }
@@ -297,10 +301,10 @@ export function addStockToWatchlist(watchlistId: string, stock: { symbol: string
  */
 export function removeStockFromWatchlist(watchlistId: string, symbol: string): void {
   const settings = getDashboardSettings()
-  const watchlist = settings.watchlists.find(w => w.id === watchlistId)
-  
+  const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+
   if (watchlist) {
-    watchlist.items = watchlist.items.filter(item => item.symbol !== symbol)
+    watchlist.items = watchlist.items.filter((item) => item.symbol !== symbol)
     saveDashboardSettings(settings)
   }
 }
@@ -317,23 +321,23 @@ export function addAlertToWatchlistItem(
   alert: Omit<WatchlistAlert, 'id' | 'createdAt' | 'triggered'>
 ): void {
   const settings = getDashboardSettings()
-  const watchlist = settings.watchlists.find(w => w.id === watchlistId)
-  
+  const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+
   if (watchlist) {
-    const item = watchlist.items.find(item => item.symbol === symbol)
-    
+    const item = watchlist.items.find((item) => item.symbol === symbol)
+
     if (item) {
       if (!item.alerts) {
         item.alerts = []
       }
-      
+
       const newAlert: WatchlistAlert = {
         ...alert,
         id: uuidv4(),
         triggered: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       }
-      
+
       item.alerts.push(newAlert)
       saveDashboardSettings(settings)
     }
@@ -352,13 +356,13 @@ export function removeAlertFromWatchlistItem(
   alertId: string
 ): void {
   const settings = getDashboardSettings()
-  const watchlist = settings.watchlists.find(w => w.id === watchlistId)
-  
+  const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+
   if (watchlist) {
-    const item = watchlist.items.find(item => item.symbol === symbol)
-    
+    const item = watchlist.items.find((item) => item.symbol === symbol)
+
     if (item && item.alerts) {
-      item.alerts = item.alerts.filter(alert => alert.id !== alertId)
+      item.alerts = item.alerts.filter((alert) => alert.id !== alertId)
       saveDashboardSettings(settings)
     }
   }
@@ -370,12 +374,359 @@ export function removeAlertFromWatchlistItem(
  */
 export async function getMarketOverview(): Promise<MarketOverview> {
   try {
-    // 这里应该调用后端API获取数据
-    // 由于目前没有实际的API，我们使用模拟数据
-    return generateMockMarketOverview()
+    // 使用Tushare API获取真实市场数据
+    const indices = await fetchMarketIndices()
+    const sectors = await fetchIndustrySectors()
+    const breadth = await fetchMarketBreadth()
+
+    return {
+      indices,
+      sectors,
+      breadth,
+      timestamp: new Date().toISOString(),
+    }
   } catch (error) {
     console.error('获取市场概览数据失败:', error)
-    throw error
+    // 如果API调用失败，回退到模拟数据
+    console.warn('API调用失败，使用模拟数据作为回退方案')
+    return generateMockMarketOverview()
+  }
+}
+
+/**
+ * 从API获取市场指数数据
+ * @returns 市场指数数据
+ */
+async function fetchMarketIndices(): Promise<MarketIndex[]> {
+  try {
+    // 获取主要指数列表
+    const indexCodes = [
+      '000001.SH',
+      '399001.SZ',
+      '399006.SZ',
+      '000016.SH',
+      '000300.SH',
+      '000905.SH',
+    ]
+    const indices: MarketIndex[] = []
+
+    // 获取每个指数的数据
+    for (const code of indexCodes) {
+      try {
+        // 获取指数基本信息
+        const indexInfo = await marketDataService.getIndexInfo(code)
+
+        // 获取指数最新行情
+        const indexQuote = await marketDataService.getIndexQuote(code)
+
+        if (indexInfo && indexQuote) {
+          indices.push({
+            symbol: code,
+            name: indexInfo.name,
+            price: indexQuote.close,
+            change: indexQuote.change,
+            changePercent: indexQuote.pct_chg,
+            volume: indexQuote.vol,
+            turnover: indexQuote.amount,
+            components: indexInfo.components || 0,
+          })
+        }
+      } catch (error) {
+        console.error(`获取指数 ${code} 数据失败:`, error)
+      }
+    }
+
+    // 如果没有获取到任何指数数据，使用模拟数据
+    if (indices.length === 0) {
+      return generateMockIndices()
+    }
+
+    return indices
+  } catch (error) {
+    console.error('获取市场指数数据失败:', error)
+    return generateMockIndices()
+  }
+}
+
+/**
+ * 从API获取行业板块数据
+ * @returns 行业板块数据
+ */
+async function fetchIndustrySectors(): Promise<IndustrySector[]> {
+  try {
+    // 获取行业板块列表
+    const sectorList = await marketDataService.getSectorList()
+    const sectors: IndustrySector[] = []
+
+    // 获取每个行业板块的数据
+    for (const sector of sectorList.slice(0, 5)) {
+      // 只获取前5个行业
+      try {
+        // 获取行业板块行情
+        const sectorQuote = await marketDataService.getSectorQuote(sector.code)
+
+        // 获取行业内领涨股票
+        const leadingStocks = await marketDataService.getSectorLeadingStocks(sector.code, 'up', 2)
+
+        // 获取行业内领跌股票
+        const laggingStocks = await marketDataService.getSectorLeadingStocks(sector.code, 'down', 2)
+
+        if (sectorQuote) {
+          sectors.push({
+            id: sector.code,
+            name: sector.name,
+            change: sectorQuote.change,
+            changePercent: sectorQuote.pct_chg,
+            volume: sectorQuote.vol,
+            turnover: sectorQuote.amount,
+            leadingStocks,
+            laggingStocks,
+          })
+        }
+      } catch (error) {
+        console.error(`获取行业板块 ${sector.name} 数据失败:`, error)
+      }
+    }
+
+    // 如果没有获取到任何行业板块数据，使用模拟数据
+    if (sectors.length === 0) {
+      return generateMockSectors()
+    }
+
+    return sectors
+  } catch (error) {
+    console.error('获取行业板块数据失败:', error)
+    return generateMockSectors()
+  }
+}
+
+/**
+ * 从API获取市场宽度数据
+ * @returns 市场宽度数据
+ */
+async function fetchMarketBreadth(): Promise<MarketOverview['breadth']> {
+  try {
+    // 获取市场宽度数据
+    const breadthData = await marketDataService.getMarketBreadth()
+
+    if (breadthData) {
+      return {
+        advancing: breadthData.up_count,
+        declining: breadthData.down_count,
+        unchanged: breadthData.unchanged_count,
+        newHighs: breadthData.new_high,
+        newLows: breadthData.new_low,
+        advancingVolume: breadthData.up_vol,
+        decliningVolume: breadthData.down_vol,
+      }
+    }
+
+    // 如果没有获取到市场宽度数据，使用模拟数据
+    return generateMockBreadth()
+  } catch (error) {
+    console.error('获取市场宽度数据失败:', error)
+    return generateMockBreadth()
+  }
+}
+
+/**
+ * 生成模拟的市场指数数据
+ * @returns 模拟的市场指数数据
+ */
+function generateMockIndices(): MarketIndex[] {
+  return [
+    {
+      symbol: '000001.SH',
+      name: '上证指数',
+      price: 3000 + Math.random() * 200,
+      change: Math.random() * 40 - 20,
+      changePercent: Math.random() * 2 - 1,
+      volume: Math.round(Math.random() * 100000000000),
+      turnover: Math.round(Math.random() * 500000000000),
+      components: 1800,
+    },
+    {
+      symbol: '399001.SZ',
+      name: '深证成指',
+      price: 10000 + Math.random() * 1000,
+      change: Math.random() * 100 - 50,
+      changePercent: Math.random() * 2 - 1,
+      volume: Math.round(Math.random() * 80000000000),
+      turnover: Math.round(Math.random() * 400000000000),
+      components: 500,
+    },
+    {
+      symbol: '399006.SZ',
+      name: '创业板指',
+      price: 2000 + Math.random() * 200,
+      change: Math.random() * 40 - 20,
+      changePercent: Math.random() * 3 - 1.5,
+      volume: Math.round(Math.random() * 50000000000),
+      turnover: Math.round(Math.random() * 300000000000),
+      components: 100,
+    },
+    {
+      symbol: '000016.SH',
+      name: '上证50',
+      price: 3000 + Math.random() * 200,
+      change: Math.random() * 40 - 20,
+      changePercent: Math.random() * 2 - 1,
+      volume: Math.round(Math.random() * 30000000000),
+      turnover: Math.round(Math.random() * 200000000000),
+      components: 50,
+    },
+    {
+      symbol: '000300.SH',
+      name: '沪深300',
+      price: 4000 + Math.random() * 300,
+      change: Math.random() * 60 - 30,
+      changePercent: Math.random() * 2 - 1,
+      volume: Math.round(Math.random() * 60000000000),
+      turnover: Math.round(Math.random() * 350000000000),
+      components: 300,
+    },
+    {
+      symbol: '000905.SH',
+      name: '中证500',
+      price: 6000 + Math.random() * 400,
+      change: Math.random() * 80 - 40,
+      changePercent: Math.random() * 2 - 1,
+      volume: Math.round(Math.random() * 40000000000),
+      turnover: Math.round(Math.random() * 250000000000),
+      components: 500,
+    },
+  ]
+}
+
+/**
+ * 生成模拟的行业板块数据
+ * @returns 模拟的行业板块数据
+ */
+function generateMockSectors(): IndustrySector[] {
+  return [
+    {
+      id: 'finance',
+      name: '金融',
+      change: Math.random() * 2 - 1,
+      changePercent: Math.random() * 3 - 1.5,
+      volume: Math.round(Math.random() * 20000000000),
+      turnover: Math.round(Math.random() * 100000000000),
+      leadingStocks: [
+        {
+          symbol: '601318.SH',
+          name: '中国平安',
+          changePercent: Math.random() * 5,
+        },
+        {
+          symbol: '600036.SH',
+          name: '招商银行',
+          changePercent: Math.random() * 4,
+        },
+      ],
+      laggingStocks: [
+        {
+          symbol: '601398.SH',
+          name: '工商银行',
+          changePercent: Math.random() * -3,
+        },
+        {
+          symbol: '601288.SH',
+          name: '农业银行',
+          changePercent: Math.random() * -2,
+        },
+      ],
+    },
+    {
+      id: 'technology',
+      name: '科技',
+      change: Math.random() * 3 - 1,
+      changePercent: Math.random() * 4 - 1,
+      volume: Math.round(Math.random() * 15000000000),
+      turnover: Math.round(Math.random() * 80000000000),
+      leadingStocks: [
+        {
+          symbol: '000725.SZ',
+          name: '京东方A',
+          changePercent: Math.random() * 6,
+        },
+        {
+          symbol: '002415.SZ',
+          name: '海康威视',
+          changePercent: Math.random() * 5,
+        },
+      ],
+      laggingStocks: [
+        {
+          symbol: '600100.SH',
+          name: '同方股份',
+          changePercent: Math.random() * -4,
+        },
+        {
+          symbol: '000066.SZ',
+          name: '中国长城',
+          changePercent: Math.random() * -3,
+        },
+      ],
+    },
+    {
+      id: 'consumer',
+      name: '消费',
+      change: Math.random() * 2.5 - 1,
+      changePercent: Math.random() * 3.5 - 1.5,
+      volume: Math.round(Math.random() * 12000000000),
+      turnover: Math.round(Math.random() * 70000000000),
+      leadingStocks: [
+        {
+          symbol: '600519.SH',
+          name: '贵州茅台',
+          changePercent: Math.random() * 4,
+        },
+        {
+          symbol: '000858.SZ',
+          name: '五粮液',
+          changePercent: Math.random() * 3.5,
+        },
+      ],
+      laggingStocks: [
+        {
+          symbol: '600887.SH',
+          name: '伊利股份',
+          changePercent: Math.random() * -2.5,
+        },
+        {
+          symbol: '000568.SZ',
+          name: '泸州老窖',
+          changePercent: Math.random() * -2,
+        },
+      ],
+    },
+  ]
+}
+
+/**
+ * 生成模拟的市场宽度数据
+ * @returns 模拟的市场宽度数据
+ */
+function generateMockBreadth(): MarketOverview['breadth'] {
+  const totalStocks = 4000
+  const advancing = Math.round(Math.random() * totalStocks * 0.6)
+  const declining = Math.round(Math.random() * totalStocks * 0.4)
+  const unchanged = totalStocks - advancing - declining
+
+  const totalVolume = Math.round(Math.random() * 500000000000)
+  const advancingVolume = Math.round(
+    totalVolume * (advancing / totalStocks) * (1 + Math.random() * 0.3)
+  )
+  const decliningVolume = totalVolume - advancingVolume
+
+  return {
+    advancing,
+    declining,
+    unchanged,
+    newHighs: Math.round(Math.random() * 100),
+    newLows: Math.round(Math.random() * 50),
+    advancingVolume,
+    decliningVolume,
   }
 }
 
@@ -394,7 +745,7 @@ function generateMockMarketOverview(): MarketOverview {
       changePercent: Math.random() * 2 - 1,
       volume: Math.round(Math.random() * 100000000000),
       turnover: Math.round(Math.random() * 500000000000),
-      components: 1800
+      components: 1800,
     },
     {
       symbol: '399001.SZ',
@@ -404,7 +755,7 @@ function generateMockMarketOverview(): MarketOverview {
       changePercent: Math.random() * 2 - 1,
       volume: Math.round(Math.random() * 80000000000),
       turnover: Math.round(Math.random() * 400000000000),
-      components: 500
+      components: 500,
     },
     {
       symbol: '399006.SZ',
@@ -414,7 +765,7 @@ function generateMockMarketOverview(): MarketOverview {
       changePercent: Math.random() * 3 - 1.5,
       volume: Math.round(Math.random() * 50000000000),
       turnover: Math.round(Math.random() * 300000000000),
-      components: 100
+      components: 100,
     },
     {
       symbol: '000016.SH',
@@ -424,7 +775,7 @@ function generateMockMarketOverview(): MarketOverview {
       changePercent: Math.random() * 2 - 1,
       volume: Math.round(Math.random() * 30000000000),
       turnover: Math.round(Math.random() * 200000000000),
-      components: 50
+      components: 50,
     },
     {
       symbol: '000300.SH',
@@ -434,7 +785,7 @@ function generateMockMarketOverview(): MarketOverview {
       changePercent: Math.random() * 2 - 1,
       volume: Math.round(Math.random() * 60000000000),
       turnover: Math.round(Math.random() * 350000000000),
-      components: 300
+      components: 300,
     },
     {
       symbol: '000905.SH',
@@ -444,10 +795,10 @@ function generateMockMarketOverview(): MarketOverview {
       changePercent: Math.random() * 2 - 1,
       volume: Math.round(Math.random() * 40000000000),
       turnover: Math.round(Math.random() * 250000000000),
-      components: 500
-    }
+      components: 500,
+    },
   ]
-  
+
   // 生成模拟的行业板块数据
   const sectors: IndustrySector[] = [
     {
@@ -461,26 +812,26 @@ function generateMockMarketOverview(): MarketOverview {
         {
           symbol: '601318.SH',
           name: '中国平安',
-          changePercent: Math.random() * 5
+          changePercent: Math.random() * 5,
         },
         {
           symbol: '600036.SH',
           name: '招商银行',
-          changePercent: Math.random() * 4
-        }
+          changePercent: Math.random() * 4,
+        },
       ],
       laggingStocks: [
         {
           symbol: '601398.SH',
           name: '工商银行',
-          changePercent: Math.random() * -3
+          changePercent: Math.random() * -3,
         },
         {
           symbol: '601288.SH',
           name: '农业银行',
-          changePercent: Math.random() * -2
-        }
-      ]
+          changePercent: Math.random() * -2,
+        },
+      ],
     },
     {
       id: 'technology',
@@ -493,26 +844,26 @@ function generateMockMarketOverview(): MarketOverview {
         {
           symbol: '000725.SZ',
           name: '京东方A',
-          changePercent: Math.random() * 6
+          changePercent: Math.random() * 6,
         },
         {
           symbol: '002415.SZ',
           name: '海康威视',
-          changePercent: Math.random() * 5
-        }
+          changePercent: Math.random() * 5,
+        },
       ],
       laggingStocks: [
         {
           symbol: '600100.SH',
           name: '同方股份',
-          changePercent: Math.random() * -4
+          changePercent: Math.random() * -4,
         },
         {
           symbol: '000066.SZ',
           name: '中国长城',
-          changePercent: Math.random() * -3
-        }
-      ]
+          changePercent: Math.random() * -3,
+        },
+      ],
     },
     {
       id: 'consumer',
@@ -525,26 +876,26 @@ function generateMockMarketOverview(): MarketOverview {
         {
           symbol: '600519.SH',
           name: '贵州茅台',
-          changePercent: Math.random() * 4
+          changePercent: Math.random() * 4,
         },
         {
           symbol: '000858.SZ',
           name: '五粮液',
-          changePercent: Math.random() * 3.5
-        }
+          changePercent: Math.random() * 3.5,
+        },
       ],
       laggingStocks: [
         {
           symbol: '600887.SH',
           name: '伊利股份',
-          changePercent: Math.random() * -2.5
+          changePercent: Math.random() * -2.5,
         },
         {
           symbol: '000568.SZ',
           name: '泸州老窖',
-          changePercent: Math.random() * -2
-        }
-      ]
+          changePercent: Math.random() * -2,
+        },
+      ],
     },
     {
       id: 'healthcare',
@@ -557,26 +908,26 @@ function generateMockMarketOverview(): MarketOverview {
         {
           symbol: '600276.SH',
           name: '恒瑞医药',
-          changePercent: Math.random() * 4.5
+          changePercent: Math.random() * 4.5,
         },
         {
           symbol: '300015.SZ',
           name: '爱尔眼科',
-          changePercent: Math.random() * 4
-        }
+          changePercent: Math.random() * 4,
+        },
       ],
       laggingStocks: [
         {
           symbol: '600196.SH',
           name: '复星医药',
-          changePercent: Math.random() * -3
+          changePercent: Math.random() * -3,
         },
         {
           symbol: '000538.SZ',
           name: '云南白药',
-          changePercent: Math.random() * -2.5
-        }
-      ]
+          changePercent: Math.random() * -2.5,
+        },
+      ],
     },
     {
       id: 'realestate',
@@ -589,39 +940,41 @@ function generateMockMarketOverview(): MarketOverview {
         {
           symbol: '600048.SH',
           name: '保利发展',
-          changePercent: Math.random() * 3
+          changePercent: Math.random() * 3,
         },
         {
           symbol: '001979.SZ',
           name: '招商蛇口',
-          changePercent: Math.random() * 2.5
-        }
+          changePercent: Math.random() * 2.5,
+        },
       ],
       laggingStocks: [
         {
           symbol: '600606.SH',
           name: '绿地控股',
-          changePercent: Math.random() * -4
+          changePercent: Math.random() * -4,
         },
         {
           symbol: '000002.SZ',
           name: '万科A',
-          changePercent: Math.random() * -3.5
-        }
-      ]
-    }
+          changePercent: Math.random() * -3.5,
+        },
+      ],
+    },
   ]
-  
+
   // 生成模拟的市场宽度数据
   const totalStocks = 4000
   const advancing = Math.round(Math.random() * totalStocks * 0.6)
   const declining = Math.round(Math.random() * totalStocks * 0.4)
   const unchanged = totalStocks - advancing - declining
-  
+
   const totalVolume = Math.round(Math.random() * 500000000000)
-  const advancingVolume = Math.round(totalVolume * (advancing / totalStocks) * (1 + Math.random() * 0.3))
+  const advancingVolume = Math.round(
+    totalVolume * (advancing / totalStocks) * (1 + Math.random() * 0.3)
+  )
   const decliningVolume = totalVolume - advancingVolume
-  
+
   return {
     indices,
     sectors,
@@ -632,9 +985,9 @@ function generateMockMarketOverview(): MarketOverview {
       newHighs: Math.round(Math.random() * 100),
       newLows: Math.round(Math.random() * 50),
       advancingVolume,
-      decliningVolume
+      decliningVolume,
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   }
 }
 
@@ -652,7 +1005,7 @@ export const dashboardService = {
   removeStockFromWatchlist,
   addAlertToWatchlistItem,
   removeAlertFromWatchlistItem,
-  getMarketOverview
+  getMarketOverview,
 }
 
 export default dashboardService

@@ -8,6 +8,18 @@ import type { DashboardSettings, Watchlist, WatchlistItem, MarketOverview } from
 import * as echarts from 'echarts'
 import WatchlistManager from '@/components/dashboard/WatchlistManager.vue'
 
+// 导入消息服务类型
+declare global {
+  interface Window {
+    $message?: {
+      info(text: string, timeout?: number): void
+      success(text: string, timeout?: number): void
+      warning(text: string, timeout?: number): void
+      error(text: string, timeout?: number): void
+    }
+  }
+}
+
 const router = useRouter()
 const popularStocks = ref<Stock[]>([])
 const watchlistStocks = ref<WatchlistItem[]>([])
@@ -60,7 +72,9 @@ const loadDashboardSettings = () => {
     dashboardSettings.value = settings
 
     // 获取活动的关注列表
-    const watchlist = settings.watchlists.find(w => w.id === settings.activeWatchlistId)
+    const watchlist = settings.watchlists.find(
+      (w: Watchlist) => w.id === settings.activeWatchlistId
+    )
     if (watchlist) {
       activeWatchlist.value = watchlist
       watchlistStocks.value = watchlist.items
@@ -81,17 +95,21 @@ const refreshMarketData = async () => {
     const marketOverview = await dashboardService.getMarketOverview()
 
     // 更新市场指数数据
-    marketIndices.value = marketOverview.indices.map(index => ({
-      name: index.name,
-      code: index.symbol,
-      value: index.price.toFixed(2),
-      change: (index.change > 0 ? '+' : '') + index.change.toFixed(2),
-      changePercent: (index.changePercent > 0 ? '+' : '') + index.changePercent.toFixed(2) + '%',
-      status: index.changePercent > 0 ? 'up' : index.changePercent < 0 ? 'down' : 'neutral'
-    })).slice(0, 4)
+    marketIndices.value = marketOverview.indices
+      .map((index: any) => ({
+        name: index.name,
+        code: index.symbol,
+        value: index.price.toFixed(2),
+        change: (index.change > 0 ? '+' : '') + index.change.toFixed(2),
+        changePercent: (index.changePercent > 0 ? '+' : '') + index.changePercent.toFixed(2) + '%',
+        status: index.changePercent > 0 ? 'up' : index.changePercent < 0 ? 'down' : 'neutral',
+      }))
+      .slice(0, 4)
 
     // 更新市场趋势和情绪
-    const advancingRatio = marketOverview.breadth.advancing / (marketOverview.breadth.advancing + marketOverview.breadth.declining)
+    const advancingRatio =
+      marketOverview.breadth.advancing /
+      (marketOverview.breadth.advancing + marketOverview.breadth.declining)
     if (advancingRatio > 0.6) {
       marketTrend.value = 'up'
       marketSentiment.value = 'bullish'
@@ -105,48 +123,110 @@ const refreshMarketData = async () => {
 
     // 更新关注列表价格
     if (activeWatchlist.value) {
-      // 模拟更新关注列表价格
-      const updatedItems = activeWatchlist.value.items.map((item: WatchlistItem) => {
-        const previousPrice = item.price || 10 + Math.random() * 90
-        const newPrice = previousPrice * (1 + (Math.random() * 0.06 - 0.03))
-        const change = newPrice - previousPrice
-        const changePercent = (change / previousPrice) * 100
+      try {
+        // 获取关注列表中所有股票的最新价格
+        const updatedItems = await Promise.all(
+          activeWatchlist.value.items.map(async (item: WatchlistItem) => {
+            try {
+              // 获取股票最新行情
+              const stockQuote = await stockService.getStockQuote(item.symbol)
 
-        return {
-          ...item,
-          price: newPrice,
-          change,
-          changePercent,
-          volume: Math.round(Math.random() * 10000000),
-          turnover: Math.round(newPrice * Math.random() * 10000000)
+              if (stockQuote) {
+                const previousPrice = item.price || stockQuote.pre_close
+                const newPrice = stockQuote.price
+                const change = newPrice - previousPrice
+                const changePercent = (change / previousPrice) * 100
+
+                return {
+                  ...item,
+                  price: newPrice,
+                  change,
+                  changePercent,
+                  volume: stockQuote.vol || 0,
+                  turnover: stockQuote.amount || 0,
+                }
+              }
+
+              return item
+            } catch (error) {
+              console.error(`获取股票 ${item.symbol} 行情失败:`, error)
+              return item
+            }
+          })
+        )
+
+        const updatedWatchlist = {
+          ...activeWatchlist.value,
+          items: updatedItems,
         }
-      })
 
-      const updatedWatchlist = {
-        ...activeWatchlist.value,
-        items: updatedItems
-      }
+        activeWatchlist.value = updatedWatchlist
+        watchlistStocks.value = updatedWatchlist.items
 
-      activeWatchlist.value = updatedWatchlist
-      watchlistStocks.value = updatedWatchlist.items
-
-      // 更新仪表盘设置中的关注列表
-      if (dashboardSettings.value) {
-        const index = dashboardSettings.value.watchlists.findIndex((w: Watchlist) => w.id === updatedWatchlist.id)
-        if (index !== -1) {
-          dashboardSettings.value.watchlists[index] = updatedWatchlist
+        // 更新仪表盘设置中的关注列表
+        if (dashboardSettings.value) {
+          const index = dashboardSettings.value.watchlists.findIndex(
+            (w: Watchlist) => w.id === updatedWatchlist.id
+          )
+          if (index !== -1) {
+            dashboardSettings.value.watchlists[index] = updatedWatchlist
+          }
         }
+      } catch (error) {
+        console.error('更新关注列表价格失败:', error)
       }
     }
 
-    // 模拟新闻数据
-    newsItems.value = [
-      { title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元', time: '10分钟前', source: '财经日报', url: '#', important: true },
-      { title: '科技板块全线上涨，半导体行业领涨', time: '30分钟前', source: '证券时报', url: '#' },
-      { title: '多家券商上调A股目标位，看好下半年行情', time: '1小时前', source: '上海证券报', url: '#' },
-      { title: '外资连续三日净流入，北向资金今日净买入超50亿', time: '2小时前', source: '中国证券报', url: '#' },
-      { title: '新能源汽车销量创新高，相关概念股受关注', time: '3小时前', source: '第一财经', url: '#' },
-    ]
+    // 获取最新财经新闻
+    try {
+      const news = await stockService.getFinancialNews(5)
+      if (news && news.length > 0) {
+        newsItems.value = news.map((item: any) => ({
+          title: item.title,
+          time: item.time,
+          source: item.source,
+          url: item.url,
+          important: item.important,
+        }))
+      } else {
+        // 如果没有获取到新闻，使用模拟数据
+        newsItems.value = [
+          {
+            title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
+            time: '10分钟前',
+            source: '财经日报',
+            url: '#',
+            important: true,
+          },
+          {
+            title: '科技板块全线上涨，半导体行业领涨',
+            time: '30分钟前',
+            source: '证券时报',
+            url: '#',
+          },
+          {
+            title: '多家券商上调A股目标位，看好下半年行情',
+            time: '1小时前',
+            source: '上海证券报',
+            url: '#',
+          },
+          {
+            title: '外资连续三日净流入，北向资金今日净买入超50亿',
+            time: '2小时前',
+            source: '中国证券报',
+            url: '#',
+          },
+          {
+            title: '新能源汽车销量创新高，相关概念股受关注',
+            time: '3小时前',
+            source: '第一财经',
+            url: '#',
+          },
+        ]
+      }
+    } catch (error) {
+      console.error('获取财经新闻失败:', error)
+    }
   } catch (error) {
     console.error('刷新市场数据失败:', error)
   }
@@ -214,15 +294,15 @@ const updateMarketOverviewChart = () => {
     tooltip: {
       trigger: 'axis',
       axisPointer: {
-        type: 'cross'
-      }
+        type: 'cross',
+      },
     },
     grid: {
       left: '3%',
       right: '4%',
       bottom: '15%',
       top: '3%',
-      containLabel: true
+      containLabel: true,
     },
     xAxis: {
       type: 'category',
@@ -234,27 +314,27 @@ const updateMarketOverviewChart = () => {
       axisLabel: {
         formatter: function (value: string) {
           return value
-        }
-      }
+        },
+      },
     },
     yAxis: {
       type: 'value',
       scale: true,
-      splitArea: { show: true }
+      splitArea: { show: true },
     },
     dataZoom: [
       {
         type: 'inside',
         start: 50,
-        end: 100
+        end: 100,
       },
       {
         show: true,
         type: 'slider',
         bottom: '0%',
         start: 50,
-        end: 100
-      }
+        end: 100,
+      },
     ],
     series: [
       {
@@ -265,22 +345,22 @@ const updateMarketOverviewChart = () => {
         symbol: 'none',
         lineStyle: {
           width: 2,
-          color: '#e74c3c'
+          color: '#e74c3c',
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             {
               offset: 0,
-              color: 'rgba(231, 76, 60, 0.3)'
+              color: 'rgba(231, 76, 60, 0.3)',
             },
             {
               offset: 1,
-              color: 'rgba(231, 76, 60, 0.1)'
-            }
-          ])
-        }
-      }
-    ]
+              color: 'rgba(231, 76, 60, 0.1)',
+            },
+          ]),
+        },
+      },
+    ],
   }
 
   chart.value.setOption(option)
@@ -297,71 +377,106 @@ const goToStockAnalysis = (symbol: string) => {
 // 计算市场趋势图标和颜色
 const marketTrendIcon = computed(() => {
   switch (marketTrend.value) {
-    case 'up': return '📈'
-    case 'down': return '📉'
-    case 'neutral': return '📊'
-    default: return '📊'
+    case 'up':
+      return '📈'
+    case 'down':
+      return '📉'
+    case 'neutral':
+      return '📊'
+    default:
+      return '📊'
   }
 })
 
 const marketTrendColor = computed(() => {
   switch (marketTrend.value) {
-    case 'up': return 'var(--stock-up)'
-    case 'down': return 'var(--stock-down)'
-    case 'neutral': return 'var(--text-primary)'
-    default: return 'var(--text-primary)'
+    case 'up':
+      return 'var(--stock-up)'
+    case 'down':
+      return 'var(--stock-down)'
+    case 'neutral':
+      return 'var(--text-primary)'
+    default:
+      return 'var(--text-primary)'
   }
 })
 
 // 计算市场情绪图标和颜色
 const marketSentimentIcon = computed(() => {
   switch (marketSentiment.value) {
-    case 'bullish': return '🐂'
-    case 'bearish': return '🐻'
-    case 'neutral': return '🦊'
-    default: return '🦊'
+    case 'bullish':
+      return '🐂'
+    case 'bearish':
+      return '🐻'
+    case 'neutral':
+      return '🦊'
+    default:
+      return '🦊'
   }
 })
 
 const marketSentimentColor = computed(() => {
   switch (marketSentiment.value) {
-    case 'bullish': return 'var(--stock-up)'
-    case 'bearish': return 'var(--stock-down)'
-    case 'neutral': return 'var(--text-primary)'
-    default: return 'var(--text-primary)'
+    case 'bullish':
+      return 'var(--stock-up)'
+    case 'bearish':
+      return 'var(--stock-down)'
+    case 'neutral':
+      return 'var(--text-primary)'
+    default:
+      return 'var(--text-primary)'
   }
 })
 
-// 格式化数字
-const formatNumber = (num: number) => {
+// 格式化数字（用于模板中）
+function formatNumber(num: number): string {
   return new Intl.NumberFormat('zh-CN').format(num)
 }
 
 // 添加到关注列表
 const addToWatchlist = (stock: Stock) => {
-  if (!activeWatchlist.value) return
+  if (!activeWatchlist.value) {
+    // 添加错误提示
+    if (window.$message) {
+      window.$message.error('未找到活动的关注列表')
+    }
+    return
+  }
 
   // 检查是否已存在
-  const exists = activeWatchlist.value.items.some((item: WatchlistItem) => item.symbol === stock.symbol)
+  const exists = activeWatchlist.value.items.some(
+    (item: WatchlistItem) => item.symbol === stock.symbol
+  )
 
-  if (!exists) {
-    const newItem: WatchlistItem = {
-      symbol: stock.symbol,
-      name: stock.name,
-      price: 0,
-      change: 0,
-      changePercent: 0,
-      volume: 0,
-      turnover: 0,
-      addedAt: new Date().toISOString()
+  if (exists) {
+    // 添加提示
+    if (window.$message) {
+      window.$message.info(`${stock.name}(${stock.symbol}) 已在关注列表中`)
     }
+    return
+  }
 
-    activeWatchlist.value.items.push(newItem)
-    watchlistStocks.value = activeWatchlist.value.items
+  const newItem: WatchlistItem = {
+    symbol: stock.symbol,
+    name: stock.name,
+    price: 0,
+    change: 0,
+    changePercent: 0,
+    volume: 0,
+    turnover: 0,
+    addedAt: new Date().toISOString(),
+  }
 
-    // 保存设置
-    if (dashboardSettings.value) {
-      dashboardService.saveDashboardSettings(dashboardSettings.value)
+  activeWatchlist.value.items.push(newItem)
+  watchlistStocks.value = activeWatchlist.value.items
+
+  // 保存设置
+  if (dashboardSettings.value) {
+    dashboardService.saveDashboardSettings(dashboardSettings.value)
+
+    // 添加成功提示
+    if (window.$message) {
+      window.$message.success(`已将 ${stock.name}(${stock.symbol}) 添加到关注列表`)
     }
   }
 }
@@ -383,7 +498,7 @@ const saveWatchlists = (watchlists: Watchlist[], activeWatchlistId: string) => {
   dashboardService.saveDashboardSettings(dashboardSettings.value)
 
   // 更新活动的关注列表
-  const watchlist = watchlists.find(w => w.id === activeWatchlistId)
+  const watchlist = watchlists.find((w) => w.id === activeWatchlistId)
   if (watchlist) {
     activeWatchlist.value = watchlist
     watchlistStocks.value = watchlist.items
@@ -398,8 +513,18 @@ const refreshData = async () => {
     if (chart.value) {
       updateMarketOverviewChart()
     }
+    // 添加成功提示
+    if (window.$message) {
+      window.$message.success('数据刷新成功')
+    }
   } catch (error) {
     console.error('刷新数据失败:', error)
+    // 添加错误提示
+    if (window.$message) {
+      window.$message.error(
+        '数据刷新失败: ' + (error instanceof Error ? error.message : String(error))
+      )
+    }
   } finally {
     isLoading.value = false
   }
@@ -473,7 +598,9 @@ onUnmounted(() => {
             <div class="indicator-label">市场趋势</div>
             <div class="indicator-value" :style="{ color: marketTrendColor }">
               <span class="indicator-icon">{{ marketTrendIcon }}</span>
-              <span>{{ marketTrend === 'up' ? '上涨' : marketTrend === 'down' ? '下跌' : '震荡' }}</span>
+              <span>{{
+                marketTrend === 'up' ? '上涨' : marketTrend === 'down' ? '下跌' : '震荡'
+              }}</span>
             </div>
           </div>
 
@@ -481,7 +608,13 @@ onUnmounted(() => {
             <div class="indicator-label">市场情绪</div>
             <div class="indicator-value" :style="{ color: marketSentimentColor }">
               <span class="indicator-icon">{{ marketSentimentIcon }}</span>
-              <span>{{ marketSentiment === 'bullish' ? '看多' : marketSentiment === 'bearish' ? '看空' : '中性' }}</span>
+              <span>{{
+                marketSentiment === 'bullish'
+                  ? '看多'
+                  : marketSentiment === 'bearish'
+                  ? '看空'
+                  : '中性'
+              }}</span>
             </div>
           </div>
         </div>
@@ -516,9 +649,15 @@ onUnmounted(() => {
               <tr v-for="stock in watchlistStocks" :key="stock.symbol">
                 <td>{{ stock.symbol }}</td>
                 <td>{{ stock.name }}</td>
-                <td>{{ stock.price.toFixed(2) }}</td>
-                <td :class="parseFloat(stock.change) > 0 ? 'up' : 'down'">
-                  {{ parseFloat(stock.change) > 0 ? '+' + stock.change : stock.change }}%
+                <td>
+                  {{ typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price }}
+                </td>
+                <td :class="stock.changePercent > 0 ? 'up' : 'down'">
+                  {{
+                    stock.changePercent > 0
+                      ? '+' + stock.changePercent.toFixed(2)
+                      : stock.changePercent.toFixed(2)
+                  }}%
                 </td>
                 <td>
                   <button class="btn-icon-only" @click="goToStockAnalysis(stock.symbol)">
@@ -586,7 +725,7 @@ onUnmounted(() => {
             v-for="(news, index) in newsItems"
             :key="index"
             class="news-item"
-            :class="{ 'important': news.important }"
+            :class="{ important: news.important }"
           >
             <div class="news-content">
               <h3 class="news-title">{{ news.title }}</h3>
@@ -643,16 +782,16 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
-    <!-- 关注列表管理器 -->
-    <WatchlistManager
-      v-if="dashboardSettings"
-      :show="showWatchlistManager"
-      :watchlists="dashboardSettings.watchlists"
-      :activeWatchlistId="dashboardSettings.activeWatchlistId"
-      @close="showWatchlistManager = false"
-      @save="saveWatchlists"
-    />
-  </template>
+  <!-- 关注列表管理器 -->
+  <WatchlistManager
+    v-if="dashboardSettings"
+    :show="showWatchlistManager"
+    :watchlists="dashboardSettings.watchlists"
+    :activeWatchlistId="dashboardSettings.activeWatchlistId"
+    @close="showWatchlistManager = false"
+    @save="saveWatchlists"
+  />
+</template>
 
 <style scoped>
 .dashboard-view {
@@ -710,8 +849,12 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 仪表盘网格布局 */
@@ -722,9 +865,9 @@ onUnmounted(() => {
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-xl);
   grid-template-areas:
-    "market-overview market-overview watchlist"
-    "popular-stocks market-news market-news"
-    "quick-actions quick-actions quick-actions";
+    'market-overview market-overview watchlist'
+    'popular-stocks market-news market-news'
+    'quick-actions quick-actions quick-actions';
 }
 
 /* 卡片基础样式 */
@@ -1082,10 +1225,10 @@ onUnmounted(() => {
   .dashboard-grid {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
-      "market-overview market-overview"
-      "watchlist popular-stocks"
-      "market-news market-news"
-      "quick-actions quick-actions";
+      'market-overview market-overview'
+      'watchlist popular-stocks'
+      'market-news market-news'
+      'quick-actions quick-actions';
   }
 }
 
@@ -1093,11 +1236,11 @@ onUnmounted(() => {
   .dashboard-grid {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "market-overview"
-      "watchlist"
-      "popular-stocks"
-      "market-news"
-      "quick-actions";
+      'market-overview'
+      'watchlist'
+      'popular-stocks'
+      'market-news'
+      'quick-actions';
   }
 
   .dashboard-header {

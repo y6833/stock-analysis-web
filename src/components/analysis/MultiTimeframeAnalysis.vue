@@ -143,137 +143,177 @@ const initCharts = () => {
 
 // 更新图表
 const updateChart = (timeframe: TimeFrame) => {
-  if (!chartInstances.value[timeframe] || !stockData.value[timeframe]) return
+  console.log(`更新${timeframeNames[timeframe]}图表`)
+
+  if (!chartInstances.value[timeframe]) {
+    console.warn(`${timeframeNames[timeframe]}图表实例不存在`)
+    return
+  }
+
+  if (!stockData.value[timeframe]) {
+    console.warn(`${timeframeNames[timeframe]}数据不存在`)
+    return
+  }
 
   const data = stockData.value[timeframe]!
 
-  // 计算技术指标
-  const sma5 = technicalIndicatorService.calculateSMA(data.prices, 5)
-  const sma20 = technicalIndicatorService.calculateSMA(data.prices, 20)
-
-  // 准备K线图数据
-  const candlestickData = []
-
-  if (timeframe !== 'day' && data.opens && data.closes && data.highs && data.lows) {
-    // 使用OHLC数据
-    for (let i = 0; i < data.dates.length; i++) {
-      candlestickData.push([data.opens[i], data.closes[i], data.lows[i], data.highs[i]])
-    }
-  } else {
-    // 使用收盘价模拟
-    for (let i = 0; i < data.prices.length; i++) {
-      const price = data.prices[i]
-      candlestickData.push([
-        price * 0.99, // 模拟开盘价
-        price, // 收盘价
-        price * 0.98, // 最低价
-        price * 1.01, // 最高价
-      ])
-    }
+  // 检查数据完整性
+  if (!data.prices || data.prices.length === 0 || !data.dates || data.dates.length === 0) {
+    console.warn(`${timeframeNames[timeframe]}价格数据不完整`)
+    return
   }
 
-  // 设置图表选项
-  const option = {
-    title: {
-      text: `${props.symbol} ${timeframeNames[timeframe]}`,
-      left: 'center',
-      textStyle: {
-        color: '#333',
-      },
-    },
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'cross',
-      },
-    },
-    legend: {
-      data: ['K线', 'MA5', 'MA20'],
-      bottom: 10,
-    },
-    grid: {
-      left: '3%',
-      right: '3%',
-      bottom: 60,
-      top: 60,
-      containLabel: true,
-    },
-    xAxis: {
-      type: 'category',
-      data: data.dates,
-      scale: true,
-      boundaryGap: false,
-      axisLine: { onZero: false },
-      splitLine: { show: false },
-      axisLabel: {
-        formatter: (value: string) => {
-          // 简化日期显示
-          return value.substring(5) // 只显示月-日
-        },
-      },
-      min: 'dataMin',
-      max: 'dataMax',
-    },
-    yAxis: {
-      scale: true,
-      splitLine: {
-        show: true,
-        lineStyle: {
-          type: 'dashed',
-        },
-      },
-    },
-    dataZoom: [
-      {
-        type: 'inside',
-        start: 50,
-        end: 100,
-      },
-      {
-        show: true,
-        type: 'slider',
-        bottom: 30,
-        start: 50,
-        end: 100,
-      },
-    ],
-    series: [
-      {
-        name: 'K线',
-        type: 'candlestick',
-        data: candlestickData,
-        itemStyle: {
-          color: '#e74c3c', // 阳线颜色
-          color0: '#2ecc71', // 阴线颜色
-          borderColor: '#e74c3c',
-          borderColor0: '#2ecc71',
-        },
-      },
-      {
-        name: 'MA5',
-        type: 'line',
-        data: sma5,
-        smooth: true,
-        lineStyle: {
-          width: 2,
-          color: '#3498db',
-        },
-      },
-      {
-        name: 'MA20',
-        type: 'line',
-        data: sma20,
-        smooth: true,
-        lineStyle: {
-          width: 2,
-          color: '#9b59b6',
-        },
-      },
-    ],
-  }
+  try {
+    // 计算技术指标
+    const sma5 = technicalIndicatorService.calculateSMA(data.prices, 5)
+    const sma20 = technicalIndicatorService.calculateSMA(data.prices, 20)
 
-  // 设置图表选项
-  chartInstances.value[timeframe]!.setOption(option)
+    if (!sma5.length || !sma20.length) {
+      console.warn(`${timeframeNames[timeframe]}技术指标计算结果为空`)
+      return
+    }
+
+    // 准备K线图数据
+    const candlestickData = []
+
+    if (timeframe !== 'day' && data.opens && data.closes && data.highs && data.lows) {
+      // 使用OHLC数据
+      for (let i = 0; i < data.dates.length; i++) {
+        if (
+          i < data.opens.length &&
+          i < data.closes.length &&
+          i < data.lows.length &&
+          i < data.highs.length
+        ) {
+          candlestickData.push([data.opens[i], data.closes[i], data.lows[i], data.highs[i]])
+        }
+      }
+    } else {
+      // 使用收盘价模拟
+      for (let i = 0; i < data.prices.length; i++) {
+        const price = data.prices[i]
+        if (price !== undefined && !isNaN(price)) {
+          candlestickData.push([
+            price * 0.99, // 模拟开盘价
+            price, // 收盘价
+            price * 0.98, // 最低价
+            price * 1.01, // 最高价
+          ])
+        }
+      }
+    }
+
+    if (candlestickData.length === 0) {
+      console.warn(`${timeframeNames[timeframe]}K线数据为空`)
+      return
+    }
+
+    // 设置图表选项
+    const option = {
+      title: {
+        text: `${props.symbol} ${timeframeNames[timeframe]}`,
+        left: 'center',
+        textStyle: {
+          color: '#333',
+        },
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+        },
+      },
+      legend: {
+        data: ['K线', 'MA5', 'MA20'],
+        bottom: 10,
+      },
+      grid: {
+        left: '3%',
+        right: '3%',
+        bottom: 60,
+        top: 60,
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        data: data.dates,
+        scale: true,
+        boundaryGap: false,
+        axisLine: { onZero: false },
+        splitLine: { show: false },
+        axisLabel: {
+          formatter: (value: string) => {
+            // 简化日期显示
+            return value.substring(5) // 只显示月-日
+          },
+        },
+        min: 'dataMin',
+        max: 'dataMax',
+      },
+      yAxis: {
+        scale: true,
+        splitLine: {
+          show: true,
+          lineStyle: {
+            type: 'dashed',
+          },
+        },
+      },
+      dataZoom: [
+        {
+          type: 'inside',
+          start: 50,
+          end: 100,
+        },
+        {
+          show: true,
+          type: 'slider',
+          bottom: 30,
+          start: 50,
+          end: 100,
+        },
+      ],
+      series: [
+        {
+          name: 'K线',
+          type: 'candlestick',
+          data: candlestickData,
+          itemStyle: {
+            color: '#e74c3c', // 阳线颜色
+            color0: '#2ecc71', // 阴线颜色
+            borderColor: '#e74c3c',
+            borderColor0: '#2ecc71',
+          },
+        },
+        {
+          name: 'MA5',
+          type: 'line',
+          data: sma5,
+          smooth: true,
+          lineStyle: {
+            width: 2,
+            color: '#3498db',
+          },
+        },
+        {
+          name: 'MA20',
+          type: 'line',
+          data: sma20,
+          smooth: true,
+          lineStyle: {
+            width: 2,
+            color: '#9b59b6',
+          },
+        },
+      ],
+    }
+
+    console.log(`设置${timeframeNames[timeframe]}图表选项`)
+    chartInstances.value[timeframe]!.setOption(option)
+    console.log(`${timeframeNames[timeframe]}图表更新完成`)
+  } catch (error) {
+    console.error(`更新${timeframeNames[timeframe]}图表失败:`, error)
+  }
 }
 
 // 监听窗口大小变化

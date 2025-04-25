@@ -9,14 +9,16 @@ import type { StockData } from '@/types/stock'
 // 创建 Web Worker 实例
 let worker: Worker | null = null
 let isWorkerReady = false
-let pendingTasks: { resolve: Function, reject: Function, data: any }[] = []
+let pendingTasks: { resolve: Function; reject: Function; data: any }[] = []
 
 // 初始化 Worker
 function initWorker() {
   if (worker) return
 
   try {
-    worker = new Worker(new URL('../workers/technicalIndicatorWorker.js', import.meta.url), { type: 'module' })
+    worker = new Worker(new URL('../workers/technicalIndicatorWorker.js', import.meta.url), {
+      type: 'module',
+    })
 
     worker.addEventListener('message', (e) => {
       const { type, data, message } = e.data
@@ -63,7 +65,20 @@ function processPendingTasks() {
 
   while (pendingTasks.length > 0) {
     const task = pendingTasks[0] // 不移除，等待结果返回后再移除
-    worker.postMessage(task.data)
+    try {
+      // 确保数据可以被序列化
+      const clonedData = JSON.parse(JSON.stringify(task.data))
+      worker.postMessage(clonedData)
+    } catch (error) {
+      console.error('无法序列化任务数据:', error)
+      // 移除当前任务并拒绝 Promise
+      const failedTask = pendingTasks.shift()
+      if (failedTask) {
+        failedTask.reject(new Error('无法序列化任务数据: ' + error.message))
+      }
+      // 继续处理下一个任务
+      continue
+    }
     break // 只发送一个任务，等待完成后再发送下一个
   }
 }
@@ -80,9 +95,9 @@ async function calculateWithWorker(stockData: StockData, indicators: string[]): 
         type: 'calculate',
         data: {
           stockData,
-          indicators
-        }
-      }
+          indicators,
+        },
+      },
     }
 
     pendingTasks.push(task)
@@ -189,9 +204,14 @@ export function calculateRSI(prices: number[], period: number = 14): number[] {
 }
 
 // MACD (移动平均线收敛/发散)
-export function calculateMACD(prices: number[], fastPeriod: number = 12, slowPeriod: number = 26, signalPeriod: number = 9): {
-  macdLine: number[],
-  signalLine: number[],
+export function calculateMACD(
+  prices: number[],
+  fastPeriod: number = 12,
+  slowPeriod: number = 26,
+  signalPeriod: number = 9
+): {
+  macdLine: number[]
+  signalLine: number[]
   histogram: number[]
 } {
   // 计算快速和慢速EMA
@@ -209,7 +229,7 @@ export function calculateMACD(prices: number[], fastPeriod: number = 12, slowPer
   }
 
   // 计算信号线 (MACD的EMA)
-  const validMacdValues = macdLine.filter(value => !isNaN(value))
+  const validMacdValues = macdLine.filter((value) => !isNaN(value))
   const signalLine = calculateEMA(macdLine, signalPeriod)
 
   // 计算柱状图 (MACD线 - 信号线)
@@ -226,9 +246,16 @@ export function calculateMACD(prices: number[], fastPeriod: number = 12, slowPer
 }
 
 // KDJ 指标
-export function calculateKDJ(highPrices: number[], lowPrices: number[], closePrices: number[], period: number = 9, kPeriod: number = 3, dPeriod: number = 3): {
-  k: number[],
-  d: number[],
+export function calculateKDJ(
+  highPrices: number[],
+  lowPrices: number[],
+  closePrices: number[],
+  period: number = 9,
+  kPeriod: number = 3,
+  dPeriod: number = 3
+): {
+  k: number[]
+  d: number[]
   j: number[]
 } {
   const rsv: number[] = []
@@ -251,7 +278,7 @@ export function calculateKDJ(highPrices: number[], lowPrices: number[], closePri
     const lowInPeriod = Math.min(...lowPrices.slice(i - period + 1, i + 1))
 
     // 计算RSV值 (当前收盘价 - 周期内最低价) / (周期内最高价 - 周期内最低价) * 100
-    const currentRSV = (closePrices[i] - lowInPeriod) / (highInPeriod - lowInPeriod) * 100
+    const currentRSV = ((closePrices[i] - lowInPeriod) / (highInPeriod - lowInPeriod)) * 100
     rsv.push(currentRSV)
 
     // 计算K值 (前一日K值 * (kPeriod-1) + 当日RSV) / kPeriod
@@ -276,9 +303,13 @@ export function calculateKDJ(highPrices: number[], lowPrices: number[], closePri
 }
 
 // 布林带 (Bollinger Bands)
-export function calculateBollingerBands(prices: number[], period: number = 20, multiplier: number = 2): {
-  upper: number[],
-  middle: number[],
+export function calculateBollingerBands(
+  prices: number[],
+  period: number = 20,
+  multiplier: number = 2
+): {
+  upper: number[]
+  middle: number[]
   lower: number[]
 } {
   const middle = calculateSMA(prices, period)
@@ -295,7 +326,7 @@ export function calculateBollingerBands(prices: number[], period: number = 20, m
     // 计算标准差
     const slice = prices.slice(i - period + 1, i + 1)
     const mean = middle[i]
-    const squaredDiffs = slice.map(price => Math.pow(price - mean, 2))
+    const squaredDiffs = slice.map((price) => Math.pow(price - mean, 2))
     const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / period
     const stdDev = Math.sqrt(variance)
 
@@ -308,7 +339,12 @@ export function calculateBollingerBands(prices: number[], period: number = 20, m
 }
 
 // 平均真实范围 (ATR)
-export function calculateATR(highPrices: number[], lowPrices: number[], closePrices: number[], period: number = 14): number[] {
+export function calculateATR(
+  highPrices: number[],
+  lowPrices: number[],
+  closePrices: number[],
+  period: number = 14
+): number[] {
   const trueRanges: number[] = []
   const atr: number[] = []
 
@@ -367,8 +403,11 @@ export function calculateVWAP(prices: number[], volumes: number[]): number[] {
 }
 
 // 形态识别 - 头肩顶/底
-export function detectHeadAndShoulders(prices: number[], windowSize: number = 60): {
-  pattern: 'head-and-shoulders' | 'inverse-head-and-shoulders' | 'none',
+export function detectHeadAndShoulders(
+  prices: number[],
+  windowSize: number = 60
+): {
+  pattern: 'head-and-shoulders' | 'inverse-head-and-shoulders' | 'none'
   positions: number[] | null
 } {
   // 这里实现一个简化版的头肩顶/底识别算法
@@ -416,7 +455,9 @@ export function detectHeadAndShoulders(prices: number[], windowSize: number = 60
       if (shoulderDiff < 0.2) {
         return {
           pattern: 'head-and-shoulders',
-          positions: [peaks[i], peaks[i + 1], peaks[i + 2]].map(p => p + prices.length - windowSize)
+          positions: [peaks[i], peaks[i + 1], peaks[i + 2]].map(
+            (p) => p + prices.length - windowSize
+          ),
         }
       }
     }
@@ -436,7 +477,9 @@ export function detectHeadAndShoulders(prices: number[], windowSize: number = 60
       if (shoulderDiff < 0.2) {
         return {
           pattern: 'inverse-head-and-shoulders',
-          positions: [troughs[i], troughs[i + 1], troughs[i + 2]].map(p => p + prices.length - windowSize)
+          positions: [troughs[i], troughs[i + 1], troughs[i + 2]].map(
+            (p) => p + prices.length - windowSize
+          ),
         }
       }
     }
@@ -446,8 +489,11 @@ export function detectHeadAndShoulders(prices: number[], windowSize: number = 60
 }
 
 // 形态识别 - 双顶/双底
-export function detectDoubleTopBottom(prices: number[], windowSize: number = 60): {
-  pattern: 'double-top' | 'double-bottom' | 'none',
+export function detectDoubleTopBottom(
+  prices: number[],
+  windowSize: number = 60
+): {
+  pattern: 'double-top' | 'double-bottom' | 'none'
   positions: number[] | null
 } {
   // 如果数据点不足，无法识别
@@ -485,10 +531,11 @@ export function detectDoubleTopBottom(prices: number[], windowSize: number = 60)
 
     // 检查两个顶是否高度相近 (允许5%的差异)
     const topDiff = Math.abs(firstTop - secondTop) / firstTop
-    if (topDiff < 0.05 && peaks[i + 1] - peaks[i] > 5) { // 确保两个顶之间有足够的距离
+    if (topDiff < 0.05 && peaks[i + 1] - peaks[i] > 5) {
+      // 确保两个顶之间有足够的距离
       return {
         pattern: 'double-top',
-        positions: [peaks[i], peaks[i + 1]].map(p => p + prices.length - windowSize)
+        positions: [peaks[i], peaks[i + 1]].map((p) => p + prices.length - windowSize),
       }
     }
   }
@@ -500,10 +547,11 @@ export function detectDoubleTopBottom(prices: number[], windowSize: number = 60)
 
     // 检查两个底是否深度相近 (允许5%的差异)
     const bottomDiff = Math.abs(firstBottom - secondBottom) / firstBottom
-    if (bottomDiff < 0.05 && troughs[i + 1] - troughs[i] > 5) { // 确保两个底之间有足够的距离
+    if (bottomDiff < 0.05 && troughs[i + 1] - troughs[i] > 5) {
+      // 确保两个底之间有足够的距离
       return {
         pattern: 'double-bottom',
-        positions: [troughs[i], troughs[i + 1]].map(p => p + prices.length - windowSize)
+        positions: [troughs[i], troughs[i + 1]].map((p) => p + prices.length - windowSize),
       }
     }
   }
@@ -515,7 +563,10 @@ export function detectDoubleTopBottom(prices: number[], windowSize: number = 60)
  * 批量计算多个指标
  * 优先使用 Web Worker，如果 Worker 不可用则回退到主线程计算
  */
-export async function calculateIndicators(stockData: StockData, indicators: string[]): Promise<any> {
+export async function calculateIndicators(
+  stockData: StockData,
+  indicators: string[]
+): Promise<any> {
   try {
     // 尝试使用 Worker 计算
     return await calculateWithWorker(stockData, indicators)
@@ -530,14 +581,14 @@ export async function calculateIndicators(stockData: StockData, indicators: stri
         sma5: calculateSMA(stockData.prices, 5),
         sma10: calculateSMA(stockData.prices, 10),
         sma20: calculateSMA(stockData.prices, 20),
-        sma60: calculateSMA(stockData.prices, 60)
+        sma60: calculateSMA(stockData.prices, 60),
       }
     }
 
     if (indicators.includes('ema')) {
       result.ema = {
         ema12: calculateEMA(stockData.prices, 12),
-        ema26: calculateEMA(stockData.prices, 26)
+        ema26: calculateEMA(stockData.prices, 26),
       }
     }
 
@@ -547,7 +598,7 @@ export async function calculateIndicators(stockData: StockData, indicators: stri
 
     if (indicators.includes('rsi')) {
       result.rsi = {
-        rsi14: calculateRSI(stockData.prices, 14)
+        rsi14: calculateRSI(stockData.prices, 14),
       }
     }
 
@@ -567,7 +618,7 @@ export async function calculateIndicators(stockData: StockData, indicators: stri
       result.volume = {
         volume: stockData.volumes,
         ma5: calculateSMA(stockData.volumes, 5),
-        ma10: calculateSMA(stockData.volumes, 10)
+        ma10: calculateSMA(stockData.volumes, 10),
       }
     }
 
@@ -582,9 +633,10 @@ export async function calculateIndicators(stockData: StockData, indicators: stri
           pattern: headAndShoulders.pattern,
           positions: headAndShoulders.positions,
           confidence: 0.8,
-          description: headAndShoulders.pattern === 'head-and-shoulders'
-            ? '头肩顶形态，可能预示着下跌趋势'
-            : '头肩底形态，可能预示着上涨趋势'
+          description:
+            headAndShoulders.pattern === 'head-and-shoulders'
+              ? '头肩顶形态，可能预示着下跌趋势'
+              : '头肩底形态，可能预示着上涨趋势',
         })
       }
 
@@ -593,9 +645,10 @@ export async function calculateIndicators(stockData: StockData, indicators: stri
           pattern: doubleTopBottom.pattern,
           positions: doubleTopBottom.positions,
           confidence: 0.75,
-          description: doubleTopBottom.pattern === 'double-top'
-            ? '双顶形态，可能预示着下跌趋势'
-            : '双底形态，可能预示着上涨趋势'
+          description:
+            doubleTopBottom.pattern === 'double-top'
+              ? '双顶形态，可能预示着下跌趋势'
+              : '双底形态，可能预示着上涨趋势',
         })
       }
     }
@@ -616,7 +669,7 @@ export const technicalIndicatorService = {
   calculateVWAP,
   detectHeadAndShoulders,
   detectDoubleTopBottom,
-  calculateIndicators
+  calculateIndicators,
 }
 
 export default technicalIndicatorService

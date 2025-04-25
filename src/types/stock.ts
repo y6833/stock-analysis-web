@@ -90,6 +90,38 @@ export interface TrendLine {
 // 时间周期
 export type TimeFrame = 'day' | 'week' | 'month' | 'year'
 
+// 股票实时行情
+export interface StockQuote {
+  symbol: string
+  name: string
+  price: number
+  open: number
+  high: number
+  low: number
+  close: number
+  pre_close: number
+  change: number
+  pct_chg: number
+  vol: number
+  amount: number
+  turnover_rate?: number
+  pe?: number
+  pb?: number
+  total_mv?: number
+  circ_mv?: number
+  update_time: string
+}
+
+// 财经新闻
+export interface FinancialNews {
+  title: string
+  time: string
+  source: string
+  url: string
+  important: boolean
+  content?: string
+}
+
 // 股票分析结果
 export interface StockAnalysis {
   lastPrice: number

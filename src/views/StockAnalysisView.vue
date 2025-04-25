@@ -4,7 +4,9 @@ import { useRoute } from 'vue-router'
 import * as echarts from 'echarts'
 import { stockService } from '@/services/stockService'
 import { technicalIndicatorService } from '@/services/technicalIndicatorService'
+import { dashboardService } from '@/services/dashboardService'
 import type { Stock, StockData, TrendLine } from '@/types/stock'
+import type { Watchlist, WatchlistItem } from '@/types/dashboard'
 import TechnicalIndicatorPanel from '@/components/analysis/TechnicalIndicatorPanel.vue'
 import TrendLineTools from '@/components/analysis/TrendLineTools.vue'
 import MultiTimeframeAnalysis from '@/components/analysis/MultiTimeframeAnalysis.vue'
@@ -165,6 +167,110 @@ const searchStocks = async () => {
   }
 }
 
+// 显示用户关注的股票
+const showWatchlistStocks = async () => {
+  try {
+    // 获取仪表盘设置
+    const settings = dashboardService.getDashboardSettings()
+
+    // 获取活动的关注列表
+    const watchlist = settings.watchlists.find(
+      (w: Watchlist) => w.id === settings.activeWatchlistId
+    )
+
+    if (!watchlist || watchlist.items.length === 0) {
+      if (window.$message) {
+        window.$message.info('您的关注列表为空，请先添加股票到关注列表')
+      }
+      return
+    }
+
+    // 显示关注列表中的股票
+    searchResults.value = watchlist.items.map((item: WatchlistItem) => ({
+      symbol: item.symbol,
+      name: item.name,
+      market: item.symbol.endsWith('.SH') ? '上海' : item.symbol.endsWith('.SZ') ? '深圳' : '未知',
+      industry: '关注列表',
+    }))
+
+    // 显示搜索结果
+    showSearchResults.value = true
+
+    if (window.$message) {
+      window.$message.success(`已显示您关注的 ${searchResults.value.length} 只股票`)
+    }
+  } catch (error) {
+    console.error('获取关注列表失败:', error)
+    if (window.$message) {
+      window.$message.error('获取关注列表失败')
+    }
+  }
+}
+
+// 显示用户持仓的股票
+const showPortfolioStocks = async () => {
+  try {
+    // 获取用户持仓
+    // 注意：这里需要实现获取用户持仓的逻辑，目前使用模拟数据
+    const portfolioStocks = [
+      {
+        symbol: '600519.SH',
+        name: '贵州茅台',
+        market: '上海',
+        industry: '白酒',
+        shares: 100,
+        cost: 1800,
+      },
+      {
+        symbol: '000858.SZ',
+        name: '五粮液',
+        market: '深圳',
+        industry: '白酒',
+        shares: 200,
+        cost: 150,
+      },
+      {
+        symbol: '601318.SH',
+        name: '中国平安',
+        market: '上海',
+        industry: '保险',
+        shares: 500,
+        cost: 60,
+      },
+      {
+        symbol: '600036.SH',
+        name: '招商银行',
+        market: '上海',
+        industry: '银行',
+        shares: 1000,
+        cost: 40,
+      },
+    ]
+
+    if (portfolioStocks.length === 0) {
+      if (window.$message) {
+        window.$message.info('您的持仓为空，请先添加股票到持仓')
+      }
+      return
+    }
+
+    // 显示持仓中的股票
+    searchResults.value = portfolioStocks
+
+    // 显示搜索结果
+    showSearchResults.value = true
+
+    if (window.$message) {
+      window.$message.success(`已显示您持仓的 ${searchResults.value.length} 只股票`)
+    }
+  } catch (error) {
+    console.error('获取持仓失败:', error)
+    if (window.$message) {
+      window.$message.error('获取持仓失败')
+    }
+  }
+}
+
 // 选择股票
 const selectStock = (stock: Stock) => {
   stockSymbol.value = stock.symbol
@@ -176,255 +282,307 @@ const selectStock = (stock: Stock) => {
 
 // 初始化图表
 const initChart = () => {
-  if (!chartRef.value || !stockData.value) return
+  console.log('初始化图表', chartRef.value, stockData.value)
 
-  if (chart.value) {
-    chart.value.dispose()
+  if (!chartRef.value) {
+    console.warn('图表引用为空，无法初始化图表')
+    // 添加消息提示
+    if (window.$message) {
+      window.$message.error('图表容器未准备好，请刷新页面重试')
+    }
+    return
   }
 
-  chart.value = echarts.init(chartRef.value)
-
-  // 计算技术指标
-  const prices = stockData.value.prices
-  const sma5 = calculateSMA(prices, 5)
-  const sma10 = calculateSMA(prices, 10)
-  const sma20 = calculateSMA(prices, 20)
-  const sma60 = calculateSMA(prices, 60)
-  const rsi = calculateRSI(prices)
-
-  // 计算成交量柱状图数据
-  const volumeData = stockData.value.volumes.map((volume: number, index: number) => {
-    const price = prices[index]
-    const prevPrice = index > 0 ? prices[index - 1] : price
-    // 价格上涨显示红色，下跌显示绿色
-    const color = price >= prevPrice ? '#ef5350' : '#26a69a'
-    return {
-      value: volume,
-      itemStyle: {
-        color: color,
-      },
+  if (!stockData.value) {
+    console.warn('股票数据为空，无法初始化图表')
+    // 添加消息提示
+    if (window.$message) {
+      window.$message.error('未获取到股票数据，请检查股票代码是否正确')
     }
-  })
+    return
+  }
 
-  const option = {
-    title: {
-      text: `${stockName.value} (${stockSymbol.value}) 股票走势`,
-      left: 'center',
-    },
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'cross',
-      },
-      formatter: function (params: any) {
-        const date = params[0].axisValue
-        let tooltipText = `<div style="font-weight:bold;margin-bottom:5px">日期: ${date}</div>`
+  // 检查数据完整性
+  if (
+    !stockData.value.prices ||
+    stockData.value.prices.length === 0 ||
+    !stockData.value.dates ||
+    stockData.value.dates.length === 0 ||
+    !stockData.value.volumes ||
+    stockData.value.volumes.length === 0
+  ) {
+    console.warn('股票数据不完整，无法初始化图表')
+    return
+  }
 
-        params.forEach((param: any) => {
-          const color = param.color
-          const seriesName = param.seriesName
-          const value = param.value
+  try {
+    if (chart.value) {
+      console.log('销毁旧图表实例')
+      chart.value.dispose()
+    }
 
-          if (value !== undefined && !isNaN(value)) {
-            tooltipText += `<div style="display:flex;justify-content:space-between;align-items:center;margin:3px 0">
-              <span style="margin-right:15px">
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${color};margin-right:5px"></span>
-                ${seriesName}:
-              </span>
-              <span style="font-weight:bold">${
-                typeof value === 'object' ? value.value : value
-              }</span>
-            </div>`
-          }
-        })
+    console.log('创建新图表实例')
+    chart.value = echarts.init(chartRef.value)
 
-        return tooltipText
+    // 计算技术指标
+    const prices = stockData.value.prices
+    const sma5 = calculateSMA(prices, 5)
+    const sma10 = calculateSMA(prices, 10)
+    const sma20 = calculateSMA(prices, 20)
+    const sma60 = calculateSMA(prices, 60)
+    const rsi = calculateRSI(prices)
+
+    // 计算成交量柱状图数据
+    const volumeData = stockData.value.volumes.map((volume: number, index: number) => {
+      const price = prices[index]
+      const prevPrice = index > 0 ? prices[index - 1] : price
+      // 价格上涨显示红色，下跌显示绿色
+      const color = price >= prevPrice ? '#ef5350' : '#26a69a'
+      return {
+        value: volume,
+        itemStyle: {
+          color: color,
+        },
+      }
+    })
+
+    // 确保所有数据都有效
+    if (!sma5.length || !sma10.length || !sma20.length || !sma60.length || !rsi.length) {
+      console.warn('技术指标计算结果为空')
+      return
+    }
+
+    const option = {
+      title: {
+        text: `${stockName.value} (${stockSymbol.value}) 股票走势`,
+        left: 'center',
       },
-    },
-    legend: {
-      data: ['价格', '5日均线', '10日均线', '20日均线', '60日均线', 'RSI'],
-      top: 30,
-    },
-    grid: [
-      {
-        left: '3%',
-        right: '4%',
-        top: '80px',
-        height: '50%',
-        containLabel: true,
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+        },
+        formatter: function (params: any) {
+          if (!params || !params.length) return ''
+
+          const date = params[0].axisValue
+          let tooltipText = `<div style="font-weight:bold;margin-bottom:5px">日期: ${date}</div>`
+
+          params.forEach((param: any) => {
+            if (!param) return
+
+            const color = param.color || '#ccc'
+            const seriesName = param.seriesName || '未知'
+            const value = param.value
+
+            if (value !== undefined && !isNaN(value)) {
+              tooltipText += `<div style="display:flex;justify-content:space-between;align-items:center;margin:3px 0">
+                <span style="margin-right:15px">
+                  <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${color};margin-right:5px"></span>
+                  ${seriesName}:
+                </span>
+                <span style="font-weight:bold">${
+                  typeof value === 'object' ? value.value || value : value
+                }</span>
+              </div>`
+            }
+          })
+
+          return tooltipText
+        },
       },
-      {
-        left: '3%',
-        right: '4%',
-        top: '65%',
-        height: '15%',
-        containLabel: true,
+      legend: {
+        data: ['价格', '5日均线', '10日均线', '20日均线', '60日均线', 'RSI'],
+        top: 30,
       },
-    ],
-    xAxis: [
-      {
-        type: 'category',
-        data: stockData.value.dates,
-        scale: true,
-        boundaryGap: false,
-        axisLabel: {
-          rotate: 45,
-          formatter: function (value: string) {
-            return value.substring(5) // 只显示月-日
+      grid: [
+        {
+          left: '3%',
+          right: '4%',
+          top: '80px',
+          height: '50%',
+          containLabel: true,
+        },
+        {
+          left: '3%',
+          right: '4%',
+          top: '65%',
+          height: '15%',
+          containLabel: true,
+        },
+      ],
+      xAxis: [
+        {
+          type: 'category',
+          data: stockData.value.dates,
+          scale: true,
+          boundaryGap: false,
+          axisLabel: {
+            rotate: 45,
+            formatter: function (value: string) {
+              return value && typeof value === 'string' ? value.substring(5) : '' // 只显示月-日
+            },
+          },
+          axisLine: { onZero: false },
+          splitLine: { show: false },
+          gridIndex: 0,
+        },
+        {
+          type: 'category',
+          data: stockData.value.dates,
+          scale: true,
+          boundaryGap: false,
+          axisLabel: { show: false },
+          axisLine: { onZero: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          gridIndex: 1,
+        },
+      ],
+      yAxis: [
+        {
+          type: 'value',
+          scale: true,
+          splitArea: { show: true },
+          axisLabel: {
+            formatter: '{value} 元',
+          },
+          gridIndex: 0,
+        },
+        {
+          type: 'value',
+          scale: true,
+          gridIndex: 1,
+          splitNumber: 2,
+          axisLabel: { show: true },
+          axisLine: { show: true },
+          axisTick: { show: false },
+          splitLine: { show: false },
+        },
+      ],
+      dataZoom: [
+        {
+          type: 'inside',
+          xAxisIndex: [0, 1],
+          start: 50,
+          end: 100,
+        },
+        {
+          show: true,
+          xAxisIndex: [0, 1],
+          type: 'slider',
+          bottom: '0%',
+          start: 50,
+          end: 100,
+        },
+      ],
+      series: [
+        {
+          name: '价格',
+          type: 'line',
+          data: stockData.value.prices,
+          smooth: true,
+          lineStyle: {
+            color: '#5470C6',
+            width: 2,
+          },
+          markPoint: {
+            data: [
+              { type: 'max', name: '最高价' },
+              { type: 'min', name: '最低价' },
+            ],
+          },
+          markLine: {
+            data: [{ type: 'average', name: '平均值' }],
           },
         },
-        axisLine: { onZero: false },
-        splitLine: { show: false },
-        gridIndex: 0,
-      },
-      {
-        type: 'category',
-        data: stockData.value.dates,
-        scale: true,
-        boundaryGap: false,
-        axisLabel: { show: false },
-        axisLine: { onZero: false },
-        axisTick: { show: false },
-        splitLine: { show: false },
-        gridIndex: 1,
-      },
-    ],
-    yAxis: [
-      {
-        type: 'value',
-        scale: true,
-        splitArea: { show: true },
-        axisLabel: {
-          formatter: '{value} 元',
+        {
+          name: '5日均线',
+          type: 'line',
+          data: sma5,
+          smooth: true,
+          lineStyle: {
+            color: '#FF9800',
+            width: 1.5,
+          },
+          symbol: 'none',
         },
-        gridIndex: 0,
-      },
-      {
-        type: 'value',
-        scale: true,
-        gridIndex: 1,
-        splitNumber: 2,
-        axisLabel: { show: true },
-        axisLine: { show: true },
-        axisTick: { show: false },
-        splitLine: { show: false },
-      },
-    ],
-    dataZoom: [
-      {
-        type: 'inside',
-        xAxisIndex: [0, 1],
-        start: 50,
-        end: 100,
-      },
-      {
-        show: true,
-        xAxisIndex: [0, 1],
-        type: 'slider',
-        bottom: '0%',
-        start: 50,
-        end: 100,
-      },
-    ],
-    series: [
-      {
-        name: '价格',
-        type: 'line',
-        data: stockData.value.prices,
-        smooth: true,
-        lineStyle: {
-          color: '#5470C6',
-          width: 2,
+        {
+          name: '10日均线',
+          type: 'line',
+          data: sma10,
+          smooth: true,
+          lineStyle: {
+            color: '#4CAF50',
+            width: 1.5,
+          },
+          symbol: 'none',
         },
-        markPoint: {
-          data: [
-            { type: 'max', name: '最高价' },
-            { type: 'min', name: '最低价' },
-          ],
+        {
+          name: '20日均线',
+          type: 'line',
+          data: sma20,
+          smooth: true,
+          lineStyle: {
+            color: '#9C27B0',
+            width: 1.5,
+          },
+          symbol: 'none',
         },
-        markLine: {
-          data: [{ type: 'average', name: '平均值' }],
+        {
+          name: '60日均线',
+          type: 'line',
+          data: sma60,
+          smooth: true,
+          lineStyle: {
+            color: '#E91E63',
+            width: 1.5,
+          },
+          symbol: 'none',
         },
-      },
-      {
-        name: '5日均线',
-        type: 'line',
-        data: sma5,
-        smooth: true,
-        lineStyle: {
-          color: '#FF9800',
-          width: 1.5,
+        {
+          name: 'RSI',
+          type: 'line',
+          yAxisIndex: 1,
+          xAxisIndex: 1,
+          data: rsi,
+          smooth: true,
+          lineStyle: {
+            color: '#2196F3',
+            width: 1.5,
+          },
+          symbol: 'none',
+          markLine: {
+            data: [
+              { yAxis: 70, lineStyle: { color: '#F44336' } },
+              { yAxis: 30, lineStyle: { color: '#4CAF50' } },
+            ],
+          },
         },
-        symbol: 'none',
-      },
-      {
-        name: '10日均线',
-        type: 'line',
-        data: sma10,
-        smooth: true,
-        lineStyle: {
-          color: '#4CAF50',
-          width: 1.5,
+        {
+          name: '成交量',
+          type: 'bar',
+          xAxisIndex: 1,
+          yAxisIndex: 1,
+          data: volumeData,
         },
-        symbol: 'none',
-      },
-      {
-        name: '20日均线',
-        type: 'line',
-        data: sma20,
-        smooth: true,
-        lineStyle: {
-          color: '#9C27B0',
-          width: 1.5,
-        },
-        symbol: 'none',
-      },
-      {
-        name: '60日均线',
-        type: 'line',
-        data: sma60,
-        smooth: true,
-        lineStyle: {
-          color: '#E91E63',
-          width: 1.5,
-        },
-        symbol: 'none',
-      },
-      {
-        name: 'RSI',
-        type: 'line',
-        yAxisIndex: 1,
-        xAxisIndex: 1,
-        data: rsi,
-        smooth: true,
-        lineStyle: {
-          color: '#2196F3',
-          width: 1.5,
-        },
-        symbol: 'none',
-        markLine: {
-          data: [
-            { yAxis: 70, lineStyle: { color: '#F44336' } },
-            { yAxis: 30, lineStyle: { color: '#4CAF50' } },
-          ],
-        },
-      },
-      {
-        name: '成交量',
-        type: 'bar',
-        xAxisIndex: 1,
-        yAxisIndex: 1,
-        data: volumeData,
-      },
-    ],
+      ],
+    }
+
+    console.log('设置图表选项')
+    chart.value.setOption(option)
+
+    // 响应窗口大小变化
+    window.addEventListener('resize', () => {
+      if (chart.value) {
+        chart.value.resize()
+      }
+    })
+
+    console.log('图表初始化完成')
+  } catch (error) {
+    console.error('初始化图表失败:', error)
   }
-
-  chart.value.setOption(option)
-
-  // 响应窗口大小变化
-  window.addEventListener('resize', () => {
-    chart.value?.resize()
-  })
 }
 
 // 分析股票数据
@@ -607,6 +765,8 @@ onMounted(() => {
         <button class="filter-btn" @click="searchQuery = '000001'">$平安银行</button>
         <button class="filter-btn" @click="searchQuery = '601318'">$中国平安</button>
         <button class="filter-btn" @click="searchQuery = '600036'">$招商银行</button>
+        <button class="filter-btn special-btn" @click="showWatchlistStocks">我的关注</button>
+        <button class="filter-btn special-btn" @click="showPortfolioStocks">我的持仓</button>
       </div>
     </div>
 
@@ -667,7 +827,12 @@ onMounted(() => {
       </div>
 
       <div class="chart-container-wrapper">
-        <div ref="chartRef" class="chart-container"></div>
+        <div ref="chartRef" class="chart-container">
+          <div v-if="isLoading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在加载数据...</div>
+          </div>
+        </div>
         <TrendLineTools
           v-if="showTrendLineTools && chart"
           :chartInstance="chart"
@@ -1012,6 +1177,18 @@ onMounted(() => {
   color: var(--accent-color);
 }
 
+.filter-btn.special-btn {
+  background-color: var(--primary-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.filter-btn.special-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
 /* 按钮样式 */
 .search-btn {
   padding: var(--spacing-sm) var(--spacing-lg);
@@ -1091,6 +1268,47 @@ onMounted(() => {
   padding: var(--spacing-md);
   background-color: var(--bg-primary);
   transition: all var(--transition-normal);
+  position: relative;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  border-radius: var(--border-radius-lg);
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(66, 185, 131, 0.2);
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+.loading-text {
+  font-size: var(--font-size-md);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 高级分析容器 */

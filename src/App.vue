@@ -1,9 +1,13 @@
 <script setup lang="ts">
 // RouterLink 和 RouterView 组件在模板中自动导入
+import MessageToast from '@/components/common/MessageToast.vue'
 </script>
 
 <template>
   <div class="app-container">
+    <!-- 消息提示组件 -->
+    <MessageToast />
+
     <header class="app-header">
       <div class="header-content">
         <div class="logo-section">
