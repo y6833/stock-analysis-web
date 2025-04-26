@@ -547,5 +547,39 @@
       "jwt",
       "wrappedController"
     ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "portfolioId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      },
+      {
+        "name": "tradeId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:portfolioId/trades/:tradeId",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/trades\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
   }
 ]

@@ -361,6 +361,30 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
+  // 删除交易记录
+  async function deleteTradeRecord(portfolioId: number, tradeId: number) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      await portfolioService.deleteTradeRecord(portfolioId, tradeId)
+
+      // 更新交易记录列表
+      if (currentPortfolioId.value === portfolioId) {
+        tradeRecords.value = tradeRecords.value.filter((record) => record.id !== tradeId)
+      }
+
+      return true
+    } catch (err) {
+      console.error('删除交易记录失败:', err)
+      error.value = '删除交易记录失败，请稍后再试'
+      // 删除交易记录失败
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // 切换当前投资组合
   async function switchPortfolio(portfolioId: number) {
     if (currentPortfolioId.value === portfolioId) return
@@ -451,6 +475,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     deleteHolding,
     addTradeRecord,
     fetchTradeRecords,
+    deleteTradeRecord,
     switchPortfolio,
 
     // 兼容旧版本的API

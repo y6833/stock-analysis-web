@@ -43,4 +43,5 @@ module.exports = app => {
   router.delete('/api/portfolios/:portfolioId/holdings/:holdingId', jwt, controller.portfolio.deleteHolding);
   router.post('/api/portfolios/:id/trades', jwt, controller.portfolio.addTradeRecord);
   router.get('/api/portfolios/:id/trades', jwt, controller.portfolio.getTradeRecords);
+  router.delete('/api/portfolios/:portfolioId/trades/:tradeId', jwt, controller.portfolio.deleteTradeRecord);
 };

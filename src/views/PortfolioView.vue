@@ -11,6 +11,12 @@ const positions = ref<Position[]>([])
 const isLoading = ref(false)
 const error = ref('')
 
+// 展开的持仓
+const expandedPosition = ref<string | null>(null)
+
+// 交易记录
+const tradeRecords = ref<any[]>([])
+
 // 新增仓位表单
 const showAddForm = ref(false)
 const newPosition = ref<Partial<Position>>({
@@ -22,6 +28,60 @@ const newPosition = ref<Partial<Position>>({
   lastPrice: 0,
   lastUpdate: new Date().toISOString(),
 })
+
+// 修改仓位表单
+const showEditForm = ref(false)
+const editingPosition = ref<Partial<Position>>({
+  symbol: '',
+  name: '',
+  quantity: 0,
+  buyPrice: 0,
+  buyDate: new Date().toISOString().split('T')[0],
+  lastPrice: 0,
+  lastUpdate: new Date().toISOString(),
+  id: undefined,
+})
+const editingIndex = ref(-1)
+
+// 加仓表单
+const showAddToForm = ref(false)
+const addToPosition = ref<{
+  symbol: string
+  name: string
+  quantity: number
+  price: number
+  date: string
+  notes: string
+  id?: number
+}>({
+  symbol: '',
+  name: '',
+  quantity: 0,
+  price: 0,
+  date: new Date().toISOString().split('T')[0],
+  notes: '',
+})
+const addToIndex = ref(-1)
+
+// 减仓表单
+const showReduceForm = ref(false)
+const reducePosition = ref<{
+  symbol: string
+  name: string
+  quantity: number
+  price: number
+  date: string
+  notes: string
+  id?: number
+}>({
+  symbol: '',
+  name: '',
+  quantity: 0,
+  price: 0,
+  date: new Date().toISOString().split('T')[0],
+  notes: '',
+})
+const reduceIndex = ref(-1)
 
 // 搜索相关
 const searchQuery = ref('')
@@ -176,6 +236,18 @@ const addPosition = async () => {
     // 使用portfolioStore添加持仓
     const portfolioStore = usePortfolioStore()
 
+    // 首先添加交易记录
+    await portfolioStore.addTradeRecord({
+      stockCode: position.symbol,
+      stockName: position.name,
+      tradeType: 'buy', // 买入
+      quantity: position.quantity,
+      price: position.buyPrice,
+      tradeDate: position.buyDate,
+      notes: position.notes || '初始建仓',
+    })
+
+    // 然后添加或更新持仓
     const result = await portfolioStore.addHolding({
       stockCode: position.symbol,
       stockName: position.name,
@@ -206,7 +278,9 @@ const addPosition = async () => {
       error.value = ''
 
       // 显示成功消息
-      alert('添加持仓成功！')
+      import('@/utils/toast').then(({ toast }) => {
+        toast.success('添加持仓成功！')
+      })
     } else {
       error.value = '添加持仓失败，请稍后再试'
     }
@@ -220,7 +294,8 @@ const addPosition = async () => {
 
 // 删除仓位
 const removePosition = async (index: number) => {
-  if (confirm('确定要删除这个持仓吗？')) {
+  // 使用 confirm 对话框，因为需要用户确认
+  if (confirm('确定要删除这个持仓吗？这将同时删除该股票的所有交易记录！')) {
     isLoading.value = true
 
     try {
@@ -233,21 +308,308 @@ const removePosition = async (index: number) => {
       )
 
       if (holding) {
+        // 获取该股票的所有交易记录
+        await loadTradeRecordsForStock(position.symbol)
+
+        // 删除该股票的所有交易记录
+        for (const record of tradeRecords.value) {
+          if (record.id) {
+            await portfolioStore.deleteTradeRecord(portfolioStore.currentPortfolioId!, record.id)
+          }
+        }
+
         // 使用portfolioStore删除持仓
         await portfolioStore.deleteHolding(holding.id)
 
         // 重新加载持仓数据
         await loadPositions()
+
+        // 显示成功消息
+        import('@/utils/toast').then(({ toast }) => {
+          toast.success('删除持仓及相关交易记录成功！')
+        })
       } else {
         // 如果找不到持仓ID，直接从本地数组中删除
         positions.value.splice(index, 1)
+
+        // 显示成功消息
+        import('@/utils/toast').then(({ toast }) => {
+          toast.success('删除持仓成功！')
+        })
       }
     } catch (err) {
       console.error('删除持仓失败:', err)
       error.value = '删除持仓失败，请稍后再试'
+
+      // 显示错误消息
+      import('@/utils/toast').then(({ toast }) => {
+        toast.error('删除持仓失败，请稍后再试')
+      })
     } finally {
       isLoading.value = false
     }
+  }
+}
+
+// 显示加仓表单
+const showAddToPosition = (index: number) => {
+  const position = positions.value[index]
+
+  // 复制持仓数据到加仓表单
+  addToPosition.value = {
+    symbol: position.symbol,
+    name: position.name,
+    quantity: 0, // 默认为0，用户需要输入加仓数量
+    price: position.lastPrice, // 默认使用最新价格
+    date: new Date().toISOString().split('T')[0],
+    notes: '',
+    id: position.id,
+  }
+
+  addToIndex.value = index
+  showAddToForm.value = true
+}
+
+// 显示减仓表单
+const showReducePosition = (index: number) => {
+  const position = positions.value[index]
+
+  // 复制持仓数据到减仓表单
+  reducePosition.value = {
+    symbol: position.symbol,
+    name: position.name,
+    quantity: 0, // 默认为0，用户需要输入减仓数量
+    price: position.lastPrice, // 默认使用最新价格
+    date: new Date().toISOString().split('T')[0],
+    notes: '',
+    id: position.id,
+  }
+
+  reduceIndex.value = index
+  showReduceForm.value = true
+}
+
+// 执行加仓操作
+const addToPositionSubmit = async () => {
+  if (!addToPosition.value.quantity || !addToPosition.value.price) {
+    error.value = '请填写完整的加仓信息'
+    return
+  }
+
+  if (addToPosition.value.quantity <= 0) {
+    error.value = '加仓数量必须大于0'
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    const portfolioStore = usePortfolioStore()
+
+    // 添加交易记录
+    const result = await portfolioStore.addTradeRecord({
+      stockCode: addToPosition.value.symbol,
+      stockName: addToPosition.value.name,
+      tradeType: 'buy', // 买入
+      quantity: addToPosition.value.quantity,
+      price: addToPosition.value.price,
+      tradeDate: addToPosition.value.date,
+      notes: addToPosition.value.notes,
+    })
+
+    if (result) {
+      // 加仓成功，关闭加仓界面
+      showAddToForm.value = false
+
+      // 重新加载持仓数据
+      await loadPositions()
+
+      // 如果当前有展开的持仓，刷新其交易记录
+      if (expandedPosition.value === addToPosition.value.symbol) {
+        await loadTradeRecordsForStock(addToPosition.value.symbol)
+      }
+
+      // 重置加仓表单
+      addToPosition.value = {
+        symbol: '',
+        name: '',
+        quantity: 0,
+        price: 0,
+        date: new Date().toISOString().split('T')[0],
+        notes: '',
+      }
+
+      addToIndex.value = -1
+      error.value = ''
+
+      // 显示成功消息
+      import('@/utils/toast').then(({ toast }) => {
+        toast.success('加仓成功！')
+      })
+    } else {
+      error.value = '加仓失败，请稍后再试'
+    }
+  } catch (err) {
+    console.error('加仓失败:', err)
+    error.value = '加仓失败，请稍后再试'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 执行减仓操作
+const reducePositionSubmit = async () => {
+  if (!reducePosition.value.quantity || !reducePosition.value.price) {
+    error.value = '请填写完整的减仓信息'
+    return
+  }
+
+  const position = positions.value[reduceIndex.value]
+
+  if (reducePosition.value.quantity <= 0) {
+    error.value = '减仓数量必须大于0'
+    return
+  }
+
+  if (reducePosition.value.quantity > position.quantity) {
+    error.value = '减仓数量不能大于持仓数量'
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    const portfolioStore = usePortfolioStore()
+
+    // 添加交易记录
+    const result = await portfolioStore.addTradeRecord({
+      stockCode: reducePosition.value.symbol,
+      stockName: reducePosition.value.name,
+      tradeType: 'sell', // 卖出
+      quantity: reducePosition.value.quantity,
+      price: reducePosition.value.price,
+      tradeDate: reducePosition.value.date,
+      notes: reducePosition.value.notes,
+    })
+
+    if (result) {
+      // 减仓成功，关闭减仓界面
+      showReduceForm.value = false
+
+      // 重新加载持仓数据
+      await loadPositions()
+
+      // 如果当前有展开的持仓，刷新其交易记录
+      if (expandedPosition.value === reducePosition.value.symbol) {
+        await loadTradeRecordsForStock(reducePosition.value.symbol)
+      }
+
+      // 重置减仓表单
+      reducePosition.value = {
+        symbol: '',
+        name: '',
+        quantity: 0,
+        price: 0,
+        date: new Date().toISOString().split('T')[0],
+        notes: '',
+      }
+
+      reduceIndex.value = -1
+      error.value = ''
+
+      // 显示成功消息
+      import('@/utils/toast').then(({ toast }) => {
+        toast.success('减仓成功！')
+      })
+    } else {
+      error.value = '减仓失败，请稍后再试'
+    }
+  } catch (err) {
+    console.error('减仓失败:', err)
+    error.value = '减仓失败，请稍后再试'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 开始编辑持仓
+const editPosition = (index: number) => {
+  const position = positions.value[index]
+
+  // 复制持仓数据到编辑表单
+  editingPosition.value = { ...position }
+  editingIndex.value = index
+  showEditForm.value = true
+}
+
+// 保存编辑的持仓
+const saveEditedPosition = async () => {
+  if (
+    !editingPosition.value.symbol ||
+    !editingPosition.value.name ||
+    !editingPosition.value.quantity ||
+    !editingPosition.value.buyPrice
+  ) {
+    error.value = '请填写完整的仓位信息'
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    const portfolioStore = usePortfolioStore()
+
+    // 查找持仓ID
+    const holding = portfolioStore.holdings.find(
+      (h: portfolioService.Holding) => h.stockCode === editingPosition.value.symbol
+    )
+
+    if (holding) {
+      // 使用portfolioStore更新持仓
+      const result = await portfolioStore.updateHolding(holding.id, {
+        quantity: editingPosition.value.quantity!,
+        averageCost: editingPosition.value.buyPrice!,
+        currentPrice: editingPosition.value.lastPrice!,
+        notes: editingPosition.value.notes,
+      })
+
+      if (result) {
+        // 更新成功，关闭编辑界面
+        showEditForm.value = false
+
+        // 重新加载持仓数据
+        await loadPositions()
+
+        // 重置编辑表单
+        editingPosition.value = {
+          symbol: '',
+          name: '',
+          quantity: 0,
+          buyPrice: 0,
+          buyDate: new Date().toISOString().split('T')[0],
+          lastPrice: 0,
+          lastUpdate: new Date().toISOString(),
+          id: undefined,
+        }
+        editingIndex.value = -1
+
+        error.value = ''
+
+        // 显示成功消息
+        import('@/utils/toast').then(({ toast }) => {
+          toast.success('更新持仓成功！')
+        })
+      } else {
+        error.value = '更新持仓失败，请稍后再试'
+      }
+    } else {
+      error.value = '找不到要更新的持仓'
+    }
+  } catch (err) {
+    console.error('更新持仓失败:', err)
+    error.value = '更新持仓失败，请稍后再试'
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -283,9 +645,19 @@ const updatePrices = async () => {
         }
       }
     }
+
+    // 显示成功消息
+    import('@/utils/toast').then(({ toast }) => {
+      toast.success('价格更新成功！')
+    })
   } catch (err) {
     console.error('更新价格失败:', err)
     error.value = '更新价格失败，请稍后再试'
+
+    // 显示错误消息
+    import('@/utils/toast').then(({ toast }) => {
+      toast.error('更新价格失败，请稍后再试')
+    })
   } finally {
     isLoading.value = false
   }
@@ -295,6 +667,63 @@ const updatePrices = async () => {
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('zh-CN')
+}
+
+// 加载特定股票的交易记录
+const loadTradeRecordsForStock = async (symbol: string) => {
+  isLoading.value = true
+  try {
+    const portfolioStore = usePortfolioStore()
+
+    // 确保有当前选中的投资组合
+    if (portfolioStore.currentPortfolioId) {
+      // 获取所有交易记录
+      const allRecords = await portfolioStore.fetchTradeRecords()
+
+      // 过滤出特定股票的交易记录
+      tradeRecords.value = allRecords.filter((record) => record.stockCode === symbol)
+    } else {
+      console.error('没有可用的投资组合')
+      error.value = '没有可用的投资组合，请创建一个投资组合'
+    }
+  } catch (err) {
+    console.error('加载交易记录失败:', err)
+    error.value = '加载交易记录失败，请稍后再试'
+
+    // 显示错误消息
+    import('@/utils/toast').then(({ toast }) => {
+      toast.error('加载交易记录失败，请稍后再试')
+    })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 切换展开/收缩持仓
+const togglePosition = async (symbol: string) => {
+  // 如果已经展开了这个持仓，则收缩
+  if (expandedPosition.value === symbol) {
+    expandedPosition.value = null
+    return
+  }
+
+  // 否则展开这个持仓
+  expandedPosition.value = symbol
+
+  // 加载该持仓的交易记录
+  await loadTradeRecordsForStock(symbol)
+}
+
+// 格式化交易类型
+const formatTradeType = (type: string) => {
+  switch (type) {
+    case 'buy':
+      return '买入'
+    case 'sell':
+      return '卖出'
+    default:
+      return type
+  }
 }
 
 // 初始化
@@ -334,6 +763,8 @@ onMounted(async () => {
     </div>
 
     <div v-if="error" class="error-message">{{ error }}</div>
+
+    <!-- 没有标签页切换，直接显示持仓列表 -->
 
     <!-- 添加持仓表单 -->
     <div v-if="showAddForm" class="add-position-form">
@@ -423,6 +854,181 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- 编辑持仓表单 -->
+    <div v-if="showEditForm" class="edit-position-form">
+      <h2>编辑持仓</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>股票代码</label>
+          <input v-model="editingPosition.symbol" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label>股票名称</label>
+          <input v-model="editingPosition.name" class="form-control" readonly />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>持仓数量</label>
+          <input
+            v-model.number="editingPosition.quantity"
+            type="number"
+            min="1"
+            class="form-control"
+          />
+        </div>
+        <div class="form-group">
+          <label>买入价格</label>
+          <input
+            v-model.number="editingPosition.buyPrice"
+            type="number"
+            min="0"
+            step="0.01"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>买入日期</label>
+          <input v-model="editingPosition.buyDate" type="date" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>最新价格</label>
+          <input
+            v-model.number="editingPosition.lastPrice"
+            type="number"
+            min="0"
+            step="0.01"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>备注</label>
+        <textarea v-model="editingPosition.notes" class="form-control"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn secondary" @click="showEditForm = false">取消</button>
+        <button class="btn primary" @click="saveEditedPosition">保存</button>
+      </div>
+    </div>
+
+    <!-- 加仓表单 -->
+    <div v-if="showAddToForm" class="add-to-position-form">
+      <h2>加仓</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>股票代码</label>
+          <input v-model="addToPosition.symbol" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label>股票名称</label>
+          <input v-model="addToPosition.name" class="form-control" readonly />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>加仓数量</label>
+          <input
+            v-model.number="addToPosition.quantity"
+            type="number"
+            min="1"
+            class="form-control"
+          />
+        </div>
+        <div class="form-group">
+          <label>买入价格</label>
+          <input
+            v-model.number="addToPosition.price"
+            type="number"
+            min="0"
+            step="0.01"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>买入日期</label>
+          <input v-model="addToPosition.date" type="date" class="form-control" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>备注</label>
+        <textarea v-model="addToPosition.notes" class="form-control"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn secondary" @click="showAddToForm = false">取消</button>
+        <button class="btn primary" @click="addToPositionSubmit">确认加仓</button>
+      </div>
+    </div>
+
+    <!-- 减仓表单 -->
+    <div v-if="showReduceForm" class="reduce-position-form">
+      <h2>减仓</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>股票代码</label>
+          <input v-model="reducePosition.symbol" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label>股票名称</label>
+          <input v-model="reducePosition.name" class="form-control" readonly />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>减仓数量</label>
+          <input
+            v-model.number="reducePosition.quantity"
+            type="number"
+            min="1"
+            class="form-control"
+          />
+        </div>
+        <div class="form-group">
+          <label>卖出价格</label>
+          <input
+            v-model.number="reducePosition.price"
+            type="number"
+            min="0"
+            step="0.01"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>卖出日期</label>
+          <input v-model="reducePosition.date" type="date" class="form-control" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>备注</label>
+        <textarea v-model="reducePosition.notes" class="form-control"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn secondary" @click="showReduceForm = false">取消</button>
+        <button class="btn primary" @click="reducePositionSubmit">确认减仓</button>
+      </div>
+    </div>
+
     <!-- 持仓列表 -->
     <div class="positions-table-container">
       <table class="positions-table" v-if="positions.length > 0">
@@ -441,47 +1047,113 @@ onMounted(async () => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(position, index) in positions" :key="position.symbol">
-            <td>{{ position.symbol }}</td>
-            <td>{{ position.name }}</td>
-            <td>{{ position.quantity }}</td>
-            <td>{{ Number(position.buyPrice).toFixed(2) }}</td>
-            <td>{{ formatDate(position.buyDate) }}</td>
-            <td>{{ Number(position.lastPrice).toFixed(2) }}</td>
-            <td>{{ (position.quantity * Number(position.lastPrice)).toFixed(2) }}</td>
-            <td
-              :class="{
-                profit: Number(position.lastPrice) > Number(position.buyPrice),
-                loss: Number(position.lastPrice) < Number(position.buyPrice),
-              }"
-            >
-              {{
-                (
-                  (Number(position.lastPrice) - Number(position.buyPrice)) *
-                  position.quantity
-                ).toFixed(2)
-              }}
-            </td>
-            <td
-              :class="{
-                profit: Number(position.lastPrice) > Number(position.buyPrice),
-                loss: Number(position.lastPrice) < Number(position.buyPrice),
-              }"
-            >
-              {{
-                (
-                  ((Number(position.lastPrice) - Number(position.buyPrice)) /
-                    Number(position.buyPrice)) *
-                  100
-                ).toFixed(2)
-              }}%
-            </td>
-            <td>
-              <button class="btn-icon delete" @click="removePosition(index)" title="删除">
-                <span>×</span>
-              </button>
-            </td>
-          </tr>
+          <template v-for="(position, index) in positions" :key="position.symbol">
+            <tr :class="{ 'zero-position': position.quantity === 0 }">
+              <td class="clickable" @click="togglePosition(position.symbol)">
+                {{ position.symbol }}
+                <span class="toggle-icon">{{
+                  expandedPosition === position.symbol ? '▼' : '▶'
+                }}</span>
+              </td>
+              <td class="clickable" @click="togglePosition(position.symbol)">
+                {{ position.name }}
+              </td>
+              <td>{{ position.quantity }}</td>
+              <td>{{ Number(position.buyPrice).toFixed(2) }}</td>
+              <td>{{ formatDate(position.buyDate) }}</td>
+              <td>{{ Number(position.lastPrice).toFixed(2) }}</td>
+              <td>{{ (position.quantity * Number(position.lastPrice)).toFixed(2) }}</td>
+              <td
+                :class="{
+                  profit: Number(position.lastPrice) > Number(position.buyPrice),
+                  loss: Number(position.lastPrice) < Number(position.buyPrice),
+                }"
+              >
+                {{
+                  (
+                    (Number(position.lastPrice) - Number(position.buyPrice)) *
+                    position.quantity
+                  ).toFixed(2)
+                }}
+              </td>
+              <td
+                :class="{
+                  profit: Number(position.lastPrice) > Number(position.buyPrice),
+                  loss: Number(position.lastPrice) < Number(position.buyPrice),
+                }"
+              >
+                {{
+                  (
+                    ((Number(position.lastPrice) - Number(position.buyPrice)) /
+                      Number(position.buyPrice)) *
+                    100
+                  ).toFixed(2)
+                }}%
+              </td>
+              <td>
+                <div class="action-buttons-cell">
+                  <button class="btn-icon add" @click="showAddToPosition(index)" title="加仓">
+                    <span>+</span>
+                  </button>
+                  <button
+                    class="btn-icon reduce"
+                    @click="showReducePosition(index)"
+                    title="减仓"
+                    :disabled="position.quantity === 0"
+                  >
+                    <span>-</span>
+                  </button>
+                  <button class="btn-icon edit" @click="editPosition(index)" title="编辑">
+                    <span>✎</span>
+                  </button>
+                  <button class="btn-icon delete" @click="removePosition(index)" title="删除">
+                    <span>×</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 交易历史记录 -->
+            <tr v-if="expandedPosition === position.symbol" class="trade-history-row">
+              <td colspan="10" class="trade-history-cell">
+                <div class="trade-history">
+                  <h3>交易历史记录</h3>
+                  <table class="trade-history-table" v-if="tradeRecords.length > 0">
+                    <thead>
+                      <tr>
+                        <th>交易类型</th>
+                        <th>交易数量</th>
+                        <th>交易价格</th>
+                        <th>交易日期</th>
+                        <th>交易金额</th>
+                        <th>备注</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="record in tradeRecords" :key="record.id">
+                        <td
+                          :class="{
+                            'buy-type': record.tradeType === 'buy',
+                            'sell-type': record.tradeType === 'sell',
+                          }"
+                        >
+                          {{ formatTradeType(record.tradeType) }}
+                        </td>
+                        <td>{{ record.quantity }}</td>
+                        <td>{{ Number(record.price).toFixed(2) }}</td>
+                        <td>{{ formatDate(record.tradeDate || record.createdAt) }}</td>
+                        <td>{{ (record.quantity * Number(record.price)).toFixed(2) }}</td>
+                        <td>{{ record.notes }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div v-else class="no-records">
+                    <p>暂无交易记录</p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
 
@@ -587,12 +1259,30 @@ onMounted(async () => {
   text-align: center;
 }
 
-.add-position-form {
+.add-position-form,
+.edit-position-form,
+.add-to-position-form,
+.reduce-position-form {
   background-color: #f8f8f8;
   border-radius: 8px;
   padding: 20px;
   margin: 20px 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.edit-position-form {
+  background-color: #f5f5f5;
+  border-left: 4px solid #2196f3;
+}
+
+.add-to-position-form {
+  background-color: #f5f5f5;
+  border-left: 4px solid #4caf50;
+}
+
+.reduce-position-form {
+  background-color: #f5f5f5;
+  border-left: 4px solid #ffc107;
 }
 
 .form-group {
@@ -681,6 +1371,38 @@ textarea.form-control {
   transition: background-color 0.2s;
 }
 
+.action-buttons-cell {
+  display: flex;
+  gap: 5px;
+}
+
+.add {
+  background-color: #e8f5e9;
+  color: #4caf50;
+}
+
+.add:hover {
+  background-color: #c8e6c9;
+}
+
+.reduce {
+  background-color: #fff8e1;
+  color: #ffc107;
+}
+
+.reduce:hover {
+  background-color: #ffecb3;
+}
+
+.edit {
+  background-color: #e3f2fd;
+  color: #2196f3;
+}
+
+.edit:hover {
+  background-color: #bbdefb;
+}
+
 .delete {
   background-color: #ffebee;
   color: #f44336;
@@ -688,6 +1410,91 @@ textarea.form-control {
 
 .delete:hover {
   background-color: #ffcdd2;
+}
+
+/* 可点击的单元格 */
+.clickable {
+  cursor: pointer;
+  position: relative;
+}
+
+.clickable:hover {
+  background-color: #f5f5f5;
+}
+
+/* 展开/收缩图标 */
+.toggle-icon {
+  margin-left: 5px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* 交易历史记录 */
+.trade-history-row {
+  background-color: #f9f9f9;
+}
+
+.trade-history-cell {
+  padding: 0;
+}
+
+.trade-history {
+  padding: 15px;
+  border-top: 1px solid #eee;
+}
+
+.trade-history h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #333;
+}
+
+.trade-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.trade-history-table th,
+.trade-history-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.trade-history-table th {
+  background-color: #f5f5f5;
+  font-weight: 500;
+}
+
+.buy-type {
+  color: #4caf50;
+}
+
+.sell-type {
+  color: #f44336;
+}
+
+.no-records {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+/* 零持仓样式 */
+.zero-position {
+  background-color: #f9f9f9;
+  color: #999;
+}
+
+.zero-position .clickable {
+  color: #666;
+}
+
+.zero-position .btn-icon.reduce {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .no-positions {

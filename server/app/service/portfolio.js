@@ -10,7 +10,7 @@ class PortfolioService extends Service {
    */
   async getUserPortfolios(userId) {
     const { ctx } = this;
-    
+
     // 查找用户的所有投资组合
     const portfolios = await ctx.model.UserPortfolio.findAll({
       where: { userId },
@@ -39,7 +39,7 @@ class PortfolioService extends Service {
   async createPortfolio(userId, data) {
     const { ctx } = this;
     const { name, description, isDefault = false } = data;
-    
+
     // 如果设置为默认组合，先将其他组合设为非默认
     if (isDefault) {
       await ctx.model.UserPortfolio.update(
@@ -47,7 +47,7 @@ class PortfolioService extends Service {
         { where: { userId, isDefault: true } }
       );
     }
-    
+
     // 创建投资组合
     const portfolio = await ctx.model.UserPortfolio.create({
       userId,
@@ -71,7 +71,7 @@ class PortfolioService extends Service {
   async updatePortfolio(userId, portfolioId, data) {
     const { ctx } = this;
     const { name, description, isDefault } = data;
-    
+
     // 查找组合
     const portfolio = await ctx.model.UserPortfolio.findOne({
       where: { id: portfolioId, userId },
@@ -108,7 +108,7 @@ class PortfolioService extends Service {
    */
   async deletePortfolio(userId, portfolioId) {
     const { ctx } = this;
-    
+
     // 查找组合
     const portfolio = await ctx.model.UserPortfolio.findOne({
       where: { id: portfolioId, userId },
@@ -137,7 +137,7 @@ class PortfolioService extends Service {
    */
   async getPortfolioHoldings(userId, portfolioId) {
     const { ctx } = this;
-    
+
     // 查找组合
     const portfolio = await ctx.model.UserPortfolio.findOne({
       where: { id: portfolioId, userId },
@@ -166,7 +166,7 @@ class PortfolioService extends Service {
   async addHolding(userId, portfolioId, data) {
     const { ctx } = this;
     const { stockCode, stockName, quantity, averageCost, currentPrice, notes } = data;
-    
+
     // 查找组合
     const portfolio = await ctx.model.UserPortfolio.findOne({
       where: { id: portfolioId, userId },
@@ -224,7 +224,7 @@ class PortfolioService extends Service {
    */
   async updateHolding(userId, portfolioId, holdingId, data) {
     const { ctx } = this;
-    
+
     // 查找组合
     const portfolio = await ctx.model.UserPortfolio.findOne({
       where: { id: portfolioId, userId },
@@ -265,7 +265,7 @@ class PortfolioService extends Service {
    */
   async deleteHolding(userId, portfolioId, holdingId) {
     const { ctx } = this;
-    
+
     // 查找组合
     const portfolio = await ctx.model.UserPortfolio.findOne({
       where: { id: portfolioId, userId },
@@ -284,6 +284,15 @@ class PortfolioService extends Service {
       return false;
     }
 
+    // 删除该股票的所有交易记录
+    await ctx.model.TradeRecord.destroy({
+      where: {
+        portfolioId,
+        userId,
+        stockCode: holding.stockCode
+      }
+    });
+
     // 删除持仓
     await holding.destroy();
 
@@ -300,7 +309,7 @@ class PortfolioService extends Service {
   async addTradeRecord(userId, portfolioId, data) {
     const { ctx } = this;
     const { stockCode, stockName, tradeType, quantity, price, tradeDate, notes } = data;
-    
+
     // 查找组合
     const portfolio = await ctx.model.UserPortfolio.findOne({
       where: { id: portfolioId, userId },
@@ -348,8 +357,12 @@ class PortfolioService extends Service {
 
       if (holding) {
         if (quantity >= holding.quantity) {
-          // 全部卖出
-          await holding.destroy();
+          // 全部卖出，但不删除记录，而是将数量设为0
+          await holding.update({
+            quantity: 0,
+            currentPrice: price,
+            updatedAt: new Date(),
+          });
         } else {
           // 部分卖出
           await holding.update({
@@ -372,7 +385,7 @@ class PortfolioService extends Service {
    */
   async getTradeRecords(userId, portfolioId) {
     const { ctx } = this;
-    
+
     // 查找组合
     const portfolio = await ctx.model.UserPortfolio.findOne({
       where: { id: portfolioId, userId },
@@ -389,6 +402,73 @@ class PortfolioService extends Service {
     });
 
     return records;
+  }
+
+  /**
+   * 删除交易记录
+   * @param {number} userId - 用户ID
+   * @param {number} portfolioId - 组合ID
+   * @param {number} tradeId - 交易记录ID
+   * @return {boolean} 删除成功返回true，如果交易记录不存在或无权限则返回false
+   */
+  async deleteTradeRecord(userId, portfolioId, tradeId) {
+    const { ctx } = this;
+
+    // 查找组合
+    const portfolio = await ctx.model.UserPortfolio.findOne({
+      where: { id: portfolioId, userId },
+    });
+
+    if (!portfolio) {
+      return false;
+    }
+
+    // 查找交易记录
+    const record = await ctx.model.TradeRecord.findOne({
+      where: { id: tradeId, portfolioId, userId },
+    });
+
+    if (!record) {
+      return false;
+    }
+
+    // 删除交易记录
+    await record.destroy();
+
+    // 如果是卖出记录，不需要更新持仓
+    if (record.tradeType === 'sell') {
+      return true;
+    }
+
+    // 如果是买入记录，需要更新持仓
+    const stockCode = record.stockCode;
+    const quantity = record.quantity;
+
+    // 查找持仓
+    const holding = await ctx.model.PortfolioHolding.findOne({
+      where: { portfolioId, stockCode },
+    });
+
+    if (holding) {
+      // 计算新的持仓数量
+      const newQuantity = holding.quantity - quantity;
+
+      if (newQuantity <= 0) {
+        // 如果新的持仓数量小于等于0，将持仓数量设为0
+        await holding.update({
+          quantity: 0,
+          updatedAt: new Date(),
+        });
+      } else {
+        // 否则更新持仓数量
+        await holding.update({
+          quantity: newQuantity,
+          updatedAt: new Date(),
+        });
+      }
+    }
+
+    return true;
   }
 }
 

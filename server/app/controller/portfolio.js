@@ -278,6 +278,28 @@ class PortfolioController extends Controller {
       ctx.logger.error(error);
     }
   }
+
+  // 删除交易记录
+  async deleteTradeRecord() {
+    const { ctx, service } = this;
+    const userId = ctx.state.user.id;
+    const portfolioId = parseInt(ctx.params.portfolioId);
+    const tradeId = parseInt(ctx.params.tradeId);
+
+    try {
+      const success = await service.portfolio.deleteTradeRecord(userId, portfolioId, tradeId);
+      if (!success) {
+        ctx.status = 404;
+        ctx.body = { message: '交易记录不存在或无权限删除' };
+        return;
+      }
+      ctx.status = 204;
+    } catch (error) {
+      ctx.status = 500;
+      ctx.body = { message: '删除交易记录失败，请稍后再试' };
+      ctx.logger.error(error);
+    }
+  }
 }
 
 module.exports = PortfolioController;

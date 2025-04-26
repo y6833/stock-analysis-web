@@ -11,14 +11,14 @@ const userStore = useUserStore()
 const loginForm = reactive<LoginRequest>({
   username: '',
   password: '',
-  remember: false
+  remember: false,
 })
 
 // 表单验证
 const formErrors = reactive({
   username: '',
   password: '',
-  general: ''
+  general: '',
 })
 
 // 表单状态
@@ -28,18 +28,18 @@ const showPassword = ref(false)
 // 验证表单
 const validateForm = (): boolean => {
   let isValid = true
-  
+
   // 重置错误
   formErrors.username = ''
   formErrors.password = ''
   formErrors.general = ''
-  
+
   // 验证用户名
   if (!loginForm.username.trim()) {
     formErrors.username = '请输入用户名或邮箱'
     isValid = false
   }
-  
+
   // 验证密码
   if (!loginForm.password) {
     formErrors.password = '请输入密码'
@@ -48,22 +48,22 @@ const validateForm = (): boolean => {
     formErrors.password = '密码长度不能少于6个字符'
     isValid = false
   }
-  
+
   return isValid
 }
 
 // 提交登录
 const handleSubmit = async () => {
   if (!validateForm()) return
-  
+
   isSubmitting.value = true
-  
+
   try {
     const success = await userStore.login(loginForm)
-    
+
     if (success) {
       // 登录成功，跳转到仪表盘
-      router.push('/dashboard')
+      router.push('/')
     } else {
       // 登录失败，显示错误信息
       formErrors.general = userStore.error || '登录失败，请检查用户名和密码'
@@ -100,13 +100,13 @@ const forgotPassword = () => {
         <h1 class="auth-title">登录到快乐股市</h1>
         <p class="auth-subtitle">登录您的账户以访问个性化的股票分析工具</p>
       </div>
-      
+
       <form @submit.prevent="handleSubmit" class="auth-form">
         <!-- 错误提示 -->
         <div v-if="formErrors.general" class="form-error general-error">
           {{ formErrors.general }}
         </div>
-        
+
         <!-- 用户名/邮箱 -->
         <div class="form-group">
           <label for="username" class="form-label">用户名或邮箱</label>
@@ -126,7 +126,7 @@ const forgotPassword = () => {
             {{ formErrors.username }}
           </div>
         </div>
-        
+
         <!-- 密码 -->
         <div class="form-group">
           <label for="password" class="form-label">密码</label>
@@ -141,11 +141,7 @@ const forgotPassword = () => {
               placeholder="请输入密码"
               autocomplete="current-password"
             />
-            <button 
-              type="button" 
-              class="toggle-password" 
-              @click="togglePasswordVisibility"
-            >
+            <button type="button" class="toggle-password" @click="togglePasswordVisibility">
               {{ showPassword ? '👁️' : '👁️‍🗨️' }}
             </button>
           </div>
@@ -153,7 +149,7 @@ const forgotPassword = () => {
             {{ formErrors.password }}
           </div>
         </div>
-        
+
         <!-- 记住我 & 忘记密码 -->
         <div class="form-options">
           <div class="remember-me">
@@ -165,22 +161,16 @@ const forgotPassword = () => {
             />
             <label for="remember">记住我</label>
           </div>
-          <button type="button" class="forgot-password" @click="forgotPassword">
-            忘记密码?
-          </button>
+          <button type="button" class="forgot-password" @click="forgotPassword">忘记密码?</button>
         </div>
-        
+
         <!-- 提交按钮 -->
-        <button 
-          type="submit" 
-          class="btn btn-primary btn-block" 
-          :disabled="isSubmitting"
-        >
+        <button type="submit" class="btn btn-primary btn-block" :disabled="isSubmitting">
           <span v-if="isSubmitting">登录中...</span>
           <span v-else>登录</span>
         </button>
       </form>
-      
+
       <div class="auth-footer">
         <p>还没有账户? <button @click="goToRegister" class="text-link">立即注册</button></p>
       </div>
