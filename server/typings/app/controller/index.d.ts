@@ -4,11 +4,15 @@
 
 import 'egg';
 import ExportHome = require('../../../app/controller/home');
+import ExportPortfolio = require('../../../app/controller/portfolio');
 import ExportUser = require('../../../app/controller/user');
+import ExportWatchlist = require('../../../app/controller/watchlist');
 
 declare module 'egg' {
   interface IController {
     home: ExportHome;
+    portfolio: ExportPortfolio;
     user: ExportUser;
+    watchlist: ExportWatchlist;
   }
 }

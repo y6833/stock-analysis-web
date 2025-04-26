@@ -27,7 +27,7 @@ const USER_KEY = 'user_info'
 /**
  * 获取存储的认证令牌
  */
-function getToken(): string | null {
+export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }
 

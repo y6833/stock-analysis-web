@@ -74,7 +74,8 @@ module.exports = app => {
   });
 
   UserPreference.associate = function () {
-    app.model.UserPreference.belongsTo(app.model.User, { foreignKey: 'userId' });
+    // 使用 this 而不是 app.model.UserPreference
+    this.belongsTo(app.model.User, { foreignKey: 'userId' });
   };
 
   return UserPreference;

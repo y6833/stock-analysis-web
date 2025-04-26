@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useStockStore } from '@/stores/stockStore'
-import type { Position, PositionSummary } from '@/types/portfolio'
+import { usePortfolioStore } from '@/stores/portfolioStore'
+import type { Position } from '@/types/portfolio'
 import { stockService } from '@/services/stockService'
+import * as portfolioService from '@/services/portfolioService'
 
 // 仓位数据
 const positions = ref<Position[]>([])
@@ -18,7 +20,7 @@ const newPosition = ref<Partial<Position>>({
   buyPrice: 0,
   buyDate: new Date().toISOString().split('T')[0],
   lastPrice: 0,
-  lastUpdate: new Date().toISOString()
+  lastUpdate: new Date().toISOString(),
 })
 
 // 搜索相关
@@ -50,17 +52,61 @@ const profitPercentage = computed(() => {
 })
 
 // 获取仓位数据
-const loadPositions = () => {
-  // 从本地存储加载仓位数据
-  const savedPositions = localStorage.getItem('portfolio')
-  if (savedPositions) {
-    positions.value = JSON.parse(savedPositions)
+const loadPositions = async () => {
+  isLoading.value = true
+  try {
+    // 使用portfolioStore加载仓位数据
+    const portfolioStore = usePortfolioStore()
+
+    // 先获取投资组合列表
+    await portfolioStore.fetchPortfolios()
+
+    // 如果没有当前选中的投资组合，创建一个默认组合
+    if (!portfolioStore.currentPortfolioId && portfolioStore.portfolios.length === 0) {
+      await portfolioStore.createPortfolio({
+        name: '默认组合',
+        description: '系统自动创建的默认投资组合',
+        isDefault: true,
+      })
+    }
+
+    // 确保有当前选中的投资组合
+    if (portfolioStore.currentPortfolioId) {
+      // 加载当前投资组合的持仓
+      await portfolioStore.fetchHoldings(portfolioStore.currentPortfolioId)
+
+      // 将数据从store复制到本地状态
+      if (portfolioStore.holdings.length > 0) {
+        positions.value = portfolioStore.holdings.map((holding: portfolioService.Holding) => ({
+          symbol: holding.stockCode,
+          name: holding.stockName,
+          quantity: holding.quantity,
+          buyPrice: holding.averageCost,
+          buyDate: new Date(holding.createdAt).toISOString().split('T')[0],
+          lastPrice: holding.currentPrice,
+          lastUpdate: holding.updatedAt,
+          notes: holding.notes,
+          id: holding.id,
+        }))
+      } else {
+        // 如果没有持仓，清空本地状态
+        positions.value = []
+      }
+    } else {
+      console.error('没有可用的投资组合')
+      error.value = '没有可用的投资组合，请创建一个投资组合'
+    }
+  } catch (err) {
+    console.error('加载仓位数据失败:', err)
+    error.value = '加载仓位数据失败，请稍后再试'
+  } finally {
+    isLoading.value = false
   }
 }
 
 // 保存仓位数据
 const savePositions = () => {
-  localStorage.setItem('portfolio', JSON.stringify(positions.value))
+  // 不再需要保存到本地存储，数据已经保存到数据库
 }
 
 // 搜索股票
@@ -70,9 +116,9 @@ const searchStocks = async () => {
     showSearchResults.value = false
     return
   }
-  
+
   isSearching.value = true
-  
+
   try {
     searchResults.value = await stockService.searchStocks(searchQuery.value)
     showSearchResults.value = true
@@ -89,7 +135,7 @@ const selectStock = async (stock: any) => {
   newPosition.value.name = stock.name
   searchQuery.value = ''
   showSearchResults.value = false
-  
+
   // 获取最新价格
   try {
     const stockData = await stockService.getStockData(stock.symbol)
@@ -102,12 +148,17 @@ const selectStock = async (stock: any) => {
 }
 
 // 添加仓位
-const addPosition = () => {
-  if (!newPosition.value.symbol || !newPosition.value.name || !newPosition.value.quantity || !newPosition.value.buyPrice) {
+const addPosition = async () => {
+  if (
+    !newPosition.value.symbol ||
+    !newPosition.value.name ||
+    !newPosition.value.quantity ||
+    !newPosition.value.buyPrice
+  ) {
     error.value = '请填写完整的仓位信息'
     return
   }
-  
+
   const position: Position = {
     symbol: newPosition.value.symbol!,
     name: newPosition.value.name!,
@@ -116,77 +167,122 @@ const addPosition = () => {
     buyDate: newPosition.value.buyDate || new Date().toISOString().split('T')[0],
     lastPrice: newPosition.value.lastPrice || newPosition.value.buyPrice!,
     lastUpdate: new Date().toISOString(),
-    notes: newPosition.value.notes
+    notes: newPosition.value.notes,
   }
-  
-  // 检查是否已存在相同股票的持仓
-  const existingIndex = positions.value.findIndex(p => p.symbol === position.symbol)
-  
-  if (existingIndex >= 0) {
-    // 如果存在，更新持仓（这里采用平均成本法）
-    const existing = positions.value[existingIndex]
-    const totalQuantity = existing.quantity + position.quantity
-    const totalCost = existing.quantity * existing.buyPrice + position.quantity * position.buyPrice
-    const averagePrice = totalCost / totalQuantity
-    
-    positions.value[existingIndex] = {
-      ...existing,
-      quantity: totalQuantity,
-      buyPrice: averagePrice,
-      buyDate: position.buyDate, // 更新为最新买入日期
-      lastPrice: position.lastPrice,
-      lastUpdate: position.lastUpdate
+
+  isLoading.value = true
+
+  try {
+    // 使用portfolioStore添加持仓
+    const portfolioStore = usePortfolioStore()
+
+    const result = await portfolioStore.addHolding({
+      stockCode: position.symbol,
+      stockName: position.name,
+      quantity: position.quantity,
+      averageCost: position.buyPrice,
+      currentPrice: position.lastPrice,
+      notes: position.notes,
+    })
+
+    if (result) {
+      // 添加成功，关闭添加界面
+      showAddForm.value = false
+
+      // 重新加载持仓数据
+      await loadPositions()
+
+      // 重置表单
+      newPosition.value = {
+        symbol: '',
+        name: '',
+        quantity: 0,
+        buyPrice: 0,
+        buyDate: new Date().toISOString().split('T')[0],
+        lastPrice: 0,
+        lastUpdate: new Date().toISOString(),
+      }
+
+      error.value = ''
+
+      // 显示成功消息
+      alert('添加持仓成功！')
+    } else {
+      error.value = '添加持仓失败，请稍后再试'
     }
-  } else {
-    // 如果不存在，添加新持仓
-    positions.value.push(position)
+  } catch (err) {
+    console.error('添加持仓失败:', err)
+    error.value = '添加持仓失败，请稍后再试'
+  } finally {
+    isLoading.value = false
   }
-  
-  // 保存到本地存储
-  savePositions()
-  
-  // 重置表单
-  newPosition.value = {
-    symbol: '',
-    name: '',
-    quantity: 0,
-    buyPrice: 0,
-    buyDate: new Date().toISOString().split('T')[0],
-    lastPrice: 0,
-    lastUpdate: new Date().toISOString()
-  }
-  
-  showAddForm.value = false
-  error.value = ''
 }
 
 // 删除仓位
-const removePosition = (index: number) => {
+const removePosition = async (index: number) => {
   if (confirm('确定要删除这个持仓吗？')) {
-    positions.value.splice(index, 1)
-    savePositions()
+    isLoading.value = true
+
+    try {
+      const position = positions.value[index]
+      const portfolioStore = usePortfolioStore()
+
+      // 查找持仓ID
+      const holding = portfolioStore.holdings.find(
+        (h: portfolioService.Holding) => h.stockCode === position.symbol
+      )
+
+      if (holding) {
+        // 使用portfolioStore删除持仓
+        await portfolioStore.deleteHolding(holding.id)
+
+        // 重新加载持仓数据
+        await loadPositions()
+      } else {
+        // 如果找不到持仓ID，直接从本地数组中删除
+        positions.value.splice(index, 1)
+      }
+    } catch (err) {
+      console.error('删除持仓失败:', err)
+      error.value = '删除持仓失败，请稍后再试'
+    } finally {
+      isLoading.value = false
+    }
   }
 }
 
 // 更新股票价格
 const updatePrices = async () => {
   isLoading.value = true
-  
+
   try {
+    const portfolioStore = usePortfolioStore()
+
     for (let i = 0; i < positions.value.length; i++) {
       const position = positions.value[i]
       const stockData = await stockService.getStockData(position.symbol)
-      
+
       if (stockData && stockData.prices.length > 0) {
+        const newPrice = stockData.prices[stockData.prices.length - 1]
+
+        // 更新本地状态
         positions.value[i] = {
           ...position,
-          lastPrice: stockData.prices[stockData.prices.length - 1],
-          lastUpdate: new Date().toISOString()
+          lastPrice: newPrice,
+          lastUpdate: new Date().toISOString(),
+        }
+
+        // 更新数据库
+        const holding = portfolioStore.holdings.find(
+          (h: portfolioService.Holding) => h.stockCode === position.symbol
+        )
+        if (holding) {
+          await portfolioStore.updateHolding(holding.id, {
+            currentPrice: newPrice,
+          })
         }
       }
     }
-    
-    savePositions()
   } catch (err) {
     console.error('更新价格失败:', err)
     error.value = '更新价格失败，请稍后再试'
@@ -202,15 +298,15 @@ const formatDate = (dateString: string) => {
 }
 
 // 初始化
-onMounted(() => {
-  loadPositions()
+onMounted(async () => {
+  await loadPositions()
 })
 </script>
 
 <template>
   <div class="portfolio-view">
     <h1>仓位管理</h1>
-    
+
     <div class="portfolio-header">
       <div class="portfolio-summary">
         <div class="summary-item">
@@ -223,12 +319,12 @@ onMounted(() => {
         </div>
         <div class="summary-item">
           <span class="label">总收益:</span>
-          <span class="value" :class="{ 'profit': totalProfit > 0, 'loss': totalProfit < 0 }">
+          <span class="value" :class="{ profit: totalProfit > 0, loss: totalProfit < 0 }">
             {{ totalProfit.toFixed(2) }} 元 ({{ profitPercentage.toFixed(2) }}%)
           </span>
         </div>
       </div>
-      
+
       <div class="action-buttons">
         <button class="btn primary" @click="showAddForm = true">添加持仓</button>
         <button class="btn secondary" @click="updatePrices" :disabled="isLoading">
@@ -236,18 +332,18 @@ onMounted(() => {
         </button>
       </div>
     </div>
-    
+
     <div v-if="error" class="error-message">{{ error }}</div>
-    
+
     <!-- 添加持仓表单 -->
     <div v-if="showAddForm" class="add-position-form">
       <h2>添加新持仓</h2>
-      
+
       <div class="form-group">
         <label>股票代码/名称</label>
         <div class="search-input-container">
-          <input 
-            v-model="searchQuery" 
+          <input
+            v-model="searchQuery"
             @input="searchStocks"
             @focus="showSearchResults = !!searchQuery"
             placeholder="搜索股票代码或名称"
@@ -256,9 +352,9 @@ onMounted(() => {
           <div v-if="showSearchResults" class="search-results">
             <div v-if="isSearching" class="searching">搜索中...</div>
             <div v-else-if="searchResults.length === 0" class="no-results">未找到相关股票</div>
-            <div 
-              v-else 
-              v-for="stock in searchResults" 
+            <div
+              v-else
+              v-for="stock in searchResults"
               :key="stock.symbol"
               class="search-result-item"
               @click="selectStock(stock)"
@@ -270,7 +366,7 @@ onMounted(() => {
           </div>
         </div>
       </div>
-      
+
       <div class="form-row">
         <div class="form-group">
           <label>股票代码</label>
@@ -281,7 +377,7 @@ onMounted(() => {
           <input v-model="newPosition.name" class="form-control" readonly />
         </div>
       </div>
-      
+
       <div class="form-row">
         <div class="form-group">
           <label>买入数量</label>
@@ -289,10 +385,16 @@ onMounted(() => {
         </div>
         <div class="form-group">
           <label>买入价格</label>
-          <input v-model.number="newPosition.buyPrice" type="number" min="0" step="0.01" class="form-control" />
+          <input
+            v-model.number="newPosition.buyPrice"
+            type="number"
+            min="0"
+            step="0.01"
+            class="form-control"
+          />
         </div>
       </div>
-      
+
       <div class="form-row">
         <div class="form-group">
           <label>买入日期</label>
@@ -300,21 +402,27 @@ onMounted(() => {
         </div>
         <div class="form-group">
           <label>最新价格</label>
-          <input v-model.number="newPosition.lastPrice" type="number" min="0" step="0.01" class="form-control" />
+          <input
+            v-model.number="newPosition.lastPrice"
+            type="number"
+            min="0"
+            step="0.01"
+            class="form-control"
+          />
         </div>
       </div>
-      
+
       <div class="form-group">
         <label>备注</label>
         <textarea v-model="newPosition.notes" class="form-control"></textarea>
       </div>
-      
+
       <div class="form-actions">
         <button class="btn secondary" @click="showAddForm = false">取消</button>
         <button class="btn primary" @click="addPosition">添加</button>
       </div>
     </div>
-    
+
     <!-- 持仓列表 -->
     <div class="positions-table-container">
       <table class="positions-table" v-if="positions.length > 0">
@@ -337,15 +445,36 @@ onMounted(() => {
             <td>{{ position.symbol }}</td>
             <td>{{ position.name }}</td>
             <td>{{ position.quantity }}</td>
-            <td>{{ position.buyPrice.toFixed(2) }}</td>
+            <td>{{ Number(position.buyPrice).toFixed(2) }}</td>
             <td>{{ formatDate(position.buyDate) }}</td>
-            <td>{{ position.lastPrice.toFixed(2) }}</td>
-            <td>{{ (position.quantity * position.lastPrice).toFixed(2) }}</td>
-            <td :class="{ 'profit': position.lastPrice > position.buyPrice, 'loss': position.lastPrice < position.buyPrice }">
-              {{ ((position.lastPrice - position.buyPrice) * position.quantity).toFixed(2) }}
+            <td>{{ Number(position.lastPrice).toFixed(2) }}</td>
+            <td>{{ (position.quantity * Number(position.lastPrice)).toFixed(2) }}</td>
+            <td
+              :class="{
+                profit: Number(position.lastPrice) > Number(position.buyPrice),
+                loss: Number(position.lastPrice) < Number(position.buyPrice),
+              }"
+            >
+              {{
+                (
+                  (Number(position.lastPrice) - Number(position.buyPrice)) *
+                  position.quantity
+                ).toFixed(2)
+              }}
             </td>
-            <td :class="{ 'profit': position.lastPrice > position.buyPrice, 'loss': position.lastPrice < position.buyPrice }">
-              {{ (((position.lastPrice - position.buyPrice) / position.buyPrice) * 100).toFixed(2) }}%
+            <td
+              :class="{
+                profit: Number(position.lastPrice) > Number(position.buyPrice),
+                loss: Number(position.lastPrice) < Number(position.buyPrice),
+              }"
+            >
+              {{
+                (
+                  ((Number(position.lastPrice) - Number(position.buyPrice)) /
+                    Number(position.buyPrice)) *
+                  100
+                ).toFixed(2)
+              }}%
             </td>
             <td>
               <button class="btn-icon delete" @click="removePosition(index)" title="删除">
@@ -355,7 +484,7 @@ onMounted(() => {
           </tr>
         </tbody>
       </table>
-      
+
       <div v-else class="no-positions">
         <p>您还没有添加任何持仓</p>
         <button class="btn primary" @click="showAddForm = true">添加持仓</button>
@@ -618,7 +747,8 @@ textarea.form-control {
   font-size: 0.9em;
 }
 
-.searching, .no-results {
+.searching,
+.no-results {
   padding: 12px 16px;
   color: #666;
   text-align: center;
@@ -629,12 +759,12 @@ textarea.form-control {
     flex-direction: column;
     gap: 20px;
   }
-  
+
   .portfolio-summary {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .form-row {
     flex-direction: column;
     gap: 15px;

@@ -84,7 +84,27 @@ module.exports = app => {
   });
 
   User.associate = function () {
-    app.model.User.hasOne(app.model.UserPreference, { foreignKey: 'userId' });
+    // 使用 this 而不是 app.model.User
+    this.hasOne(app.model.UserPreference, { foreignKey: 'userId' });
+
+    // 关注的股票
+    this.hasMany(app.model.UserWatchlist, { foreignKey: 'userId' });
+
+    // 投资组合
+    this.hasMany(app.model.UserPortfolio, { foreignKey: 'userId' });
+    this.hasMany(app.model.TradeRecord, { foreignKey: 'userId' });
+
+    // 自定义看板
+    this.hasMany(app.model.UserDashboard, { foreignKey: 'userId' });
+
+    // 提醒设置
+    this.hasMany(app.model.UserAlert, { foreignKey: 'userId' });
+
+    // 自定义策略
+    this.hasMany(app.model.UserStrategy, { foreignKey: 'userId' });
+
+    // 浏览历史
+    this.hasMany(app.model.UserBrowsingHistory, { foreignKey: 'userId' });
   };
 
   return User;

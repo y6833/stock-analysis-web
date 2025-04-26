@@ -114,5 +114,438 @@
       "jwt",
       "wrappedController"
     ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/watchlists",
+    "regexp": "/^\\/api\\/watchlists(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/watchlists",
+    "regexp": "/^\\/api\\/watchlists(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/watchlists/:id",
+    "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/watchlists/:id",
+    "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/watchlists/:id/stocks",
+    "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))\\/stocks(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/watchlists/:id/stocks",
+    "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))\\/stocks(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "watchlistId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      },
+      {
+        "name": "itemId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/watchlists/:watchlistId/stocks/:itemId",
+    "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))\\/stocks\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "watchlistId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      },
+      {
+        "name": "itemId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/watchlists/:watchlistId/stocks/:itemId/notes",
+    "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))\\/stocks\\/((?:[^\\/]+?))\\/notes(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/portfolios",
+    "regexp": "/^\\/api\\/portfolios(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/portfolios",
+    "regexp": "/^\\/api\\/portfolios(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:id",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:id",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:id/holdings",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/holdings(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:id/holdings",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/holdings(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "portfolioId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      },
+      {
+        "name": "holdingId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:portfolioId/holdings/:holdingId",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/holdings\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "portfolioId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      },
+      {
+        "name": "holdingId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:portfolioId/holdings/:holdingId",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/holdings\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:id/trades",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/trades(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/portfolios/:id/trades",
+    "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/trades(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
   }
 ]
