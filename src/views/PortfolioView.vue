@@ -5,6 +5,7 @@ import { usePortfolioStore } from '@/stores/portfolioStore'
 import type { Position } from '@/types/portfolio'
 import { stockService } from '@/services/stockService'
 import * as portfolioService from '@/services/portfolioService'
+import StockSearch from '@/components/StockSearch.vue'
 
 // 仓位数据
 const positions = ref<Position[]>([])
@@ -83,11 +84,7 @@ const reducePosition = ref<{
 })
 const reduceIndex = ref(-1)
 
-// 搜索相关
-const searchQuery = ref('')
-const searchResults = ref<any[]>([])
-const isSearching = ref(false)
-const showSearchResults = ref(false)
+// 不再需要搜索相关变量，已使用 StockSearch 组件
 
 // 计算属性
 const totalInvestment = computed(() => {
@@ -169,32 +166,10 @@ const savePositions = () => {
   // 不再需要保存到本地存储，数据已经保存到数据库
 }
 
-// 搜索股票
-const searchStocks = async () => {
-  if (!searchQuery.value) {
-    searchResults.value = []
-    showSearchResults.value = false
-    return
-  }
-
-  isSearching.value = true
-
-  try {
-    searchResults.value = await stockService.searchStocks(searchQuery.value)
-    showSearchResults.value = true
-  } catch (err) {
-    console.error('搜索股票失败:', err)
-  } finally {
-    isSearching.value = false
-  }
-}
-
 // 选择股票
 const selectStock = async (stock: any) => {
   newPosition.value.symbol = stock.symbol
   newPosition.value.name = stock.name
-  searchQuery.value = ''
-  showSearchResults.value = false
 
   // 获取最新价格
   try {
@@ -772,30 +747,7 @@ onMounted(async () => {
 
       <div class="form-group">
         <label>股票代码/名称</label>
-        <div class="search-input-container">
-          <input
-            v-model="searchQuery"
-            @input="searchStocks"
-            @focus="showSearchResults = !!searchQuery"
-            placeholder="搜索股票代码或名称"
-            class="form-control"
-          />
-          <div v-if="showSearchResults" class="search-results">
-            <div v-if="isSearching" class="searching">搜索中...</div>
-            <div v-else-if="searchResults.length === 0" class="no-results">未找到相关股票</div>
-            <div
-              v-else
-              v-for="stock in searchResults"
-              :key="stock.symbol"
-              class="search-result-item"
-              @click="selectStock(stock)"
-            >
-              <span class="stock-symbol">{{ stock.symbol }}</span>
-              <span class="stock-name">{{ stock.name }}</span>
-              <span class="stock-market">{{ stock.market }}</span>
-            </div>
-          </div>
-        </div>
+        <StockSearch @select="selectStock" />
       </div>
 
       <div class="form-row">

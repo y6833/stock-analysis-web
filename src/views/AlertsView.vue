@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { Stock } from '@/types/stock'
+import StockSearch from '@/components/StockSearch.vue'
 
 // 股票列表
 const stocks = ref<Stock[]>([])
@@ -14,6 +15,7 @@ const alerts = ref<any[]>([])
 // 新提醒表单
 const newAlert = reactive({
   symbol: '',
+  stockName: '', // 添加股票名称字段
   condition: 'price_above', // 默认条件：价格高于
   value: 0,
   message: '',
@@ -44,33 +46,39 @@ const fetchStocks = async () => {
   }
 }
 
+// 选择股票
+const selectStock = (stock: any) => {
+  newAlert.symbol = stock.symbol
+  // 如果股票名称存在，也设置它
+  if (stock.name) {
+    newAlert.stockName = stock.name
+  }
+}
+
 // 添加提醒
 const addAlert = () => {
   if (!newAlert.symbol) {
-    alert('请选择股票')
+    window.alert('请选择股票')
     return
   }
 
   if (!newAlert.value) {
-    alert('请输入条件值')
+    window.alert('请输入条件值')
     return
   }
-
-  // 获取股票信息
-  const stock = stocks.value.find((s) => s.symbol === newAlert.symbol)
 
   // 创建新提醒
   const alert = {
     id: Date.now(),
     symbol: newAlert.symbol,
-    stockName: stock?.name || '',
+    stockName: newAlert.stockName || '',
     condition: newAlert.condition,
     conditionName: conditions.find((c) => c.id === newAlert.condition)?.name || '',
     value: newAlert.value,
     unit: conditions.find((c) => c.id === newAlert.condition)?.unit || '',
     message:
       newAlert.message ||
-      `${stock?.name || newAlert.symbol} ${
+      `${newAlert.stockName || newAlert.symbol} ${
         conditions.find((c) => c.id === newAlert.condition)?.name || ''
       } ${newAlert.value}${conditions.find((c) => c.id === newAlert.condition)?.unit || ''}`,
     active: true,
@@ -88,12 +96,12 @@ const addAlert = () => {
   // 保存到本地存储
   saveAlerts()
 
-  alert('提醒已添加')
+  window.alert('提醒已添加')
 }
 
 // 删除提醒
 const deleteAlert = (id: number) => {
-  if (confirm('确定要删除这个提醒吗？')) {
+  if (window.confirm('确定要删除这个提醒吗？')) {
     alerts.value = alerts.value.filter((alert) => alert.id !== id)
     saveAlerts()
   }
@@ -276,13 +284,8 @@ onUnmounted(() => {
           <h2>添加新提醒</h2>
 
           <div class="form-group">
-            <label for="stock-select">选择股票</label>
-            <select id="stock-select" v-model="newAlert.symbol" class="form-control">
-              <option value="">请选择股票</option>
-              <option v-for="stock in stocks" :key="stock.symbol" :value="stock.symbol">
-                {{ stock.name }} ({{ stock.symbol }})
-              </option>
-            </select>
+            <label>选择股票</label>
+            <StockSearch @select="selectStock" />
           </div>
 
           <div class="form-group">

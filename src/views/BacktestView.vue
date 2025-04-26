@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { Stock } from '@/types/stock'
+import StockSearch from '@/components/StockSearch.vue'
 
 // 股票列表
 const stocks = ref<Stock[]>([])
@@ -298,6 +299,11 @@ const strategyParameters = computed(() => {
   }
 })
 
+// 选择股票
+const selectStock = (stock: any) => {
+  backtestParams.symbol = stock.symbol
+}
+
 // 组件挂载时获取股票列表
 onMounted(() => {
   fetchStocks()
@@ -317,13 +323,8 @@ onMounted(() => {
           <h2>回测参数</h2>
 
           <div class="form-group">
-            <label for="stock-select">选择股票</label>
-            <select id="stock-select" v-model="backtestParams.symbol" class="form-control">
-              <option value="">请选择股票</option>
-              <option v-for="stock in stocks" :key="stock.symbol" :value="stock.symbol">
-                {{ stock.name }} ({{ stock.symbol }})
-              </option>
-            </select>
+            <label>选择股票</label>
+            <StockSearch @select="selectStock" />
           </div>
 
           <div class="form-group">

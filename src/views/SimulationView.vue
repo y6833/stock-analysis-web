@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { Stock } from '@/types/stock'
+import StockSearch from '@/components/StockSearch.vue'
 
 // 股票列表
 const stocks = ref<Stock[]>([])
@@ -12,22 +13,23 @@ const error = ref('')
 const account = reactive({
   cash: 100000, // 初始资金
   positions: [] as any[],
-  transactions: [] as any[]
+  transactions: [] as any[],
 })
 
 // 交易表单
 const tradeForm = reactive({
   symbol: '',
+  stockName: '', // 添加股票名称字段
   action: 'buy', // 买入或卖出
   quantity: 0,
-  price: 0
+  price: 0,
 })
 
 // 获取股票列表
 const fetchStocks = async () => {
   isLoading.value = true
   error.value = ''
-  
+
   try {
     stocks.value = await stockService.getStocks()
   } catch (err: any) {
@@ -50,6 +52,17 @@ const fetchStockPrice = async (symbol: string) => {
   }
 }
 
+// 选择股票
+const selectStock = async (stock: any) => {
+  tradeForm.symbol = stock.symbol
+  // 如果股票名称存在，也设置它
+  if (stock.name) {
+    tradeForm.stockName = stock.name
+  }
+  // 更新价格
+  await updatePrice()
+}
+
 // 当选择股票时更新价格
 const updatePrice = async () => {
   if (tradeForm.symbol) {
@@ -62,39 +75,44 @@ const updatePrice = async () => {
 // 执行交易
 const executeTrade = async () => {
   if (!tradeForm.symbol) {
-    alert('请选择股票')
+    window.alert('请选择股票')
     return
   }
-  
+
   if (tradeForm.quantity <= 0) {
-    alert('请输入有效的数量')
+    window.alert('请输入有效的数量')
     return
   }
-  
+
   // 获取股票信息
-  const stock = stocks.value.find(s => s.symbol === tradeForm.symbol)
-  if (!stock) {
-    alert('股票不存在')
-    return
+  let stockName = tradeForm.stockName
+  if (!stockName) {
+    const stock = stocks.value.find((s) => s.symbol === tradeForm.symbol)
+    if (stock) {
+      stockName = stock.name
+      tradeForm.stockName = stockName
+    } else {
+      stockName = tradeForm.symbol
+    }
   }
-  
+
   // 更新价格
   await updatePrice()
-  
+
   const amount = tradeForm.quantity * tradeForm.price
-  
+
   if (tradeForm.action === 'buy') {
     // 检查资金是否足够
     if (account.cash < amount) {
-      alert('资金不足')
+      window.alert('资金不足')
       return
     }
-    
+
     // 扣除资金
     account.cash -= amount
-    
+
     // 添加持仓
-    const existingPosition = account.positions.find(p => p.symbol === tradeForm.symbol)
+    const existingPosition = account.positions.find((p) => p.symbol === tradeForm.symbol)
     if (existingPosition) {
       // 更新现有持仓
       const totalCost = existingPosition.quantity * existingPosition.avgPrice + amount
@@ -103,65 +121,69 @@ const executeTrade = async () => {
       existingPosition.quantity = totalQuantity
       existingPosition.currentPrice = tradeForm.price
       existingPosition.value = existingPosition.quantity * existingPosition.currentPrice
-      existingPosition.profit = existingPosition.value - (existingPosition.avgPrice * existingPosition.quantity)
-      existingPosition.profitPercent = (existingPosition.profit / (existingPosition.avgPrice * existingPosition.quantity)) * 100
+      existingPosition.profit =
+        existingPosition.value - existingPosition.avgPrice * existingPosition.quantity
+      existingPosition.profitPercent =
+        (existingPosition.profit / (existingPosition.avgPrice * existingPosition.quantity)) * 100
     } else {
       // 创建新持仓
       account.positions.push({
         symbol: tradeForm.symbol,
-        name: stock.name,
+        name: tradeForm.stockName || tradeForm.symbol,
         quantity: tradeForm.quantity,
         avgPrice: tradeForm.price,
         currentPrice: tradeForm.price,
         value: tradeForm.quantity * tradeForm.price,
         profit: 0,
-        profitPercent: 0
+        profitPercent: 0,
       })
     }
   } else {
     // 卖出
-    const existingPosition = account.positions.find(p => p.symbol === tradeForm.symbol)
+    const existingPosition = account.positions.find((p) => p.symbol === tradeForm.symbol)
     if (!existingPosition || existingPosition.quantity < tradeForm.quantity) {
-      alert('持仓不足')
+      window.alert('持仓不足')
       return
     }
-    
+
     // 增加资金
     account.cash += amount
-    
+
     // 更新持仓
     existingPosition.quantity -= tradeForm.quantity
     existingPosition.value = existingPosition.quantity * existingPosition.currentPrice
-    existingPosition.profit = existingPosition.value - (existingPosition.avgPrice * existingPosition.quantity)
-    existingPosition.profitPercent = existingPosition.quantity > 0 
-      ? (existingPosition.profit / (existingPosition.avgPrice * existingPosition.quantity)) * 100
-      : 0
-    
+    existingPosition.profit =
+      existingPosition.value - existingPosition.avgPrice * existingPosition.quantity
+    existingPosition.profitPercent =
+      existingPosition.quantity > 0
+        ? (existingPosition.profit / (existingPosition.avgPrice * existingPosition.quantity)) * 100
+        : 0
+
     // 如果持仓为0，则移除
     if (existingPosition.quantity === 0) {
-      account.positions = account.positions.filter(p => p.symbol !== tradeForm.symbol)
+      account.positions = account.positions.filter((p) => p.symbol !== tradeForm.symbol)
     }
   }
-  
+
   // 添加交易记录
   account.transactions.push({
     id: Date.now(),
     date: new Date().toLocaleString(),
     symbol: tradeForm.symbol,
-    name: stock.name,
+    name: tradeForm.stockName || tradeForm.symbol,
     action: tradeForm.action,
     quantity: tradeForm.quantity,
     price: tradeForm.price,
-    amount: amount
+    amount: amount,
   })
-  
+
   // 重置表单
   tradeForm.quantity = 0
-  
+
   // 保存到本地存储
   saveAccount()
-  
-  alert(tradeForm.action === 'buy' ? '买入成功' : '卖出成功')
+
+  window.alert(tradeForm.action === 'buy' ? '买入成功' : '卖出成功')
 }
 
 // 更新所有持仓的当前价格和收益
@@ -169,10 +191,10 @@ const updatePositions = async () => {
   for (const position of account.positions) {
     position.currentPrice = await fetchStockPrice(position.symbol)
     position.value = position.quantity * position.currentPrice
-    position.profit = position.value - (position.avgPrice * position.quantity)
+    position.profit = position.value - position.avgPrice * position.quantity
     position.profitPercent = (position.profit / (position.avgPrice * position.quantity)) * 100
   }
-  
+
   saveAccount()
 }
 
@@ -189,7 +211,10 @@ const totalProfit = computed(() => {
 
 // 计算总收益率
 const totalProfitPercent = computed(() => {
-  const totalCost = account.positions.reduce((sum, position) => sum + (position.avgPrice * position.quantity), 0)
+  const totalCost = account.positions.reduce(
+    (sum, position) => sum + position.avgPrice * position.quantity,
+    0
+  )
   return totalCost > 0 ? (totalProfit.value / totalCost) * 100 : 0
 })
 
@@ -215,12 +240,12 @@ const loadAccount = () => {
 
 // 重置账户
 const resetAccount = () => {
-  if (confirm('确定要重置模拟账户吗？这将清除所有持仓和交易记录。')) {
+  if (window.confirm('确定要重置模拟账户吗？这将清除所有持仓和交易记录。')) {
     account.cash = 100000
     account.positions = []
     account.transactions = []
     saveAccount()
-    alert('账户已重置')
+    window.alert('账户已重置')
   }
 }
 
@@ -238,133 +263,112 @@ onMounted(() => {
       <h1>模拟交易</h1>
       <p class="subtitle">使用虚拟资金测试交易策略，无需承担实际风险</p>
     </div>
-    
+
     <div class="simulation-container">
       <div class="simulation-sidebar">
         <div class="panel">
           <h2>交易操作</h2>
-          
+
           <div class="form-group">
-            <label for="stock-select">选择股票</label>
-            <select 
-              id="stock-select" 
-              v-model="tradeForm.symbol" 
-              class="form-control"
-              @change="updatePrice"
-            >
-              <option value="">请选择股票</option>
-              <option v-for="stock in stocks" :key="stock.symbol" :value="stock.symbol">
-                {{ stock.name }} ({{ stock.symbol }})
-              </option>
-            </select>
+            <label>选择股票</label>
+            <StockSearch @select="selectStock" />
           </div>
-          
+
           <div class="form-group">
             <label>交易类型</label>
             <div class="radio-group">
               <label class="radio-label">
-                <input type="radio" v-model="tradeForm.action" value="buy">
+                <input type="radio" v-model="tradeForm.action" value="buy" />
                 买入
               </label>
               <label class="radio-label">
-                <input type="radio" v-model="tradeForm.action" value="sell">
+                <input type="radio" v-model="tradeForm.action" value="sell" />
                 卖出
               </label>
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="quantity">数量</label>
-            <input 
-              type="number" 
-              id="quantity" 
-              v-model="tradeForm.quantity" 
+            <input
+              type="number"
+              id="quantity"
+              v-model="tradeForm.quantity"
               class="form-control"
               min="1"
               step="1"
-            >
+            />
           </div>
-          
+
           <div class="form-group">
             <label for="price">价格</label>
             <div class="input-group">
-              <input 
-                type="number" 
-                id="price" 
-                v-model="tradeForm.price" 
+              <input
+                type="number"
+                id="price"
+                v-model="tradeForm.price"
                 class="form-control"
                 step="0.01"
                 readonly
-              >
+              />
               <span class="input-group-text">元</span>
             </div>
           </div>
-          
+
           <div class="trade-summary">
             <div class="summary-item">
               <span class="summary-label">交易金额:</span>
-              <span class="summary-value">{{ (tradeForm.quantity * tradeForm.price).toFixed(2) }} 元</span>
+              <span class="summary-value"
+                >{{ (tradeForm.quantity * tradeForm.price).toFixed(2) }} 元</span
+              >
             </div>
             <div class="summary-item">
               <span class="summary-label">可用资金:</span>
               <span class="summary-value">{{ account.cash.toFixed(2) }} 元</span>
             </div>
           </div>
-          
+
           <div class="form-actions">
-            <button 
-              class="btn btn-primary" 
-              @click="executeTrade"
-            >
+            <button class="btn btn-primary" @click="executeTrade">
               {{ tradeForm.action === 'buy' ? '买入' : '卖出' }}
             </button>
-            <button 
-              class="btn btn-outline" 
-              @click="updatePositions"
-            >
-              刷新价格
-            </button>
+            <button class="btn btn-outline" @click="updatePositions">刷新价格</button>
           </div>
-          
+
           <div class="reset-account">
-            <button 
-              class="btn btn-danger" 
-              @click="resetAccount"
-            >
-              重置账户
-            </button>
+            <button class="btn btn-danger" @click="resetAccount">重置账户</button>
           </div>
         </div>
       </div>
-      
+
       <div class="simulation-content">
         <div v-if="isLoading" class="loading-state">
           <div class="loading-spinner"></div>
           <p>正在加载，请稍候...</p>
         </div>
-        
+
         <div v-else-if="error" class="error-state">
           <p>{{ error }}</p>
           <button class="btn btn-primary" @click="fetchStocks">重试</button>
         </div>
-        
+
         <div v-else class="account-overview">
           <div class="account-summary">
             <div class="summary-card">
               <div class="summary-title">总资产</div>
               <div class="summary-value">{{ totalAssets.toFixed(2) }} 元</div>
             </div>
-            
+
             <div class="summary-card">
               <div class="summary-title">可用资金</div>
               <div class="summary-value">{{ account.cash.toFixed(2) }} 元</div>
             </div>
-            
+
             <div class="summary-card">
               <div class="summary-title">持仓市值</div>
               <div class="summary-value">{{ (totalAssets - account.cash).toFixed(2) }} 元</div>
             </div>
-            
+
             <div class="summary-card">
               <div class="summary-title">总收益</div>
               <div class="summary-value" :class="totalProfit >= 0 ? 'positive' : 'negative'">
@@ -372,14 +376,14 @@ onMounted(() => {
               </div>
             </div>
           </div>
-          
+
           <div class="positions-section">
             <h3>持仓列表</h3>
-            
+
             <div v-if="account.positions.length === 0" class="empty-positions">
               <p>暂无持仓</p>
             </div>
-            
+
             <table v-else class="positions-table">
               <thead>
                 <tr>
@@ -409,14 +413,14 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
-          
+
           <div class="transactions-section">
             <h3>交易记录</h3>
-            
+
             <div v-if="account.transactions.length === 0" class="empty-transactions">
               <p>暂无交易记录</p>
             </div>
-            
+
             <table v-else class="transactions-table">
               <thead>
                 <tr>
@@ -429,7 +433,10 @@ onMounted(() => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="transaction in account.transactions.slice().reverse()" :key="transaction.id">
+                <tr
+                  v-for="transaction in account.transactions.slice().reverse()"
+                  :key="transaction.id"
+                >
                   <td>{{ transaction.date }}</td>
                   <td>{{ transaction.name }} ({{ transaction.symbol }})</td>
                   <td :class="transaction.action === 'buy' ? 'buy' : 'sell'">
@@ -618,8 +625,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state {
@@ -686,7 +697,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   padding: var(--spacing-sm);
   text-align: left;
   border-bottom: 1px solid var(--border-light);
@@ -732,7 +744,7 @@ th {
   .simulation-container {
     flex-direction: column;
   }
-  
+
   .simulation-sidebar {
     width: 100%;
   }
