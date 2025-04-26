@@ -130,6 +130,7 @@
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-cors\\config\\locales",
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-validate\\config\\locales",
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\locales",
+        "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-redis\\config\\locales",
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\locales",
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\locales"
       ],
@@ -254,6 +255,21 @@
         "password": "<String len: 4>",
         "database": "stock_analysis"
       }
+    },
+    "redis": {
+      "default": {},
+      "app": true,
+      "agent": false,
+      "supportTimeCommand": true,
+      "client": {
+        "port": 6379,
+        "host": "127.0.0.1",
+        "password": "<String len: 6>",
+        "db": 0,
+        "retry_strategy": "<Function retry_strategy>",
+        "connect_timeout": 3000
+      },
+      "allowFail": true
     },
     "env": "local",
     "name": "stock-analysis-server",
@@ -434,16 +450,8 @@
       "match": "/api"
     },
     "tushare": {
-      "token": "983b25aa025eee598034c4741dc776ddc53ddcffbb180cf61",
+      "token": "983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61",
       "api_url": "http://api.tushare.pro"
-    },
-    "redis": {
-      "client": {
-        "port": 6379,
-        "host": "127.0.0.1",
-        "password": "<String len: 0>",
-        "db": 0
-      }
     },
     "auth": {
       "enable": false,
@@ -667,7 +675,7 @@
       "version": "3.4.0"
     },
     "redis": {
-      "enable": false,
+      "enable": true,
       "package": "egg-redis",
       "name": "redis",
       "dependencies": [],

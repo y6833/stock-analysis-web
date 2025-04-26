@@ -54,8 +54,14 @@ module.exports = app => {
   router.post('/api/simulation/accounts/:id/trade', jwt, controller.simulation.executeTrade);
 
   // 股票行情相关路由
+  router.get('/api/stocks', controller.stock.getStockList);
   router.get('/api/stocks/:code/quote', controller.stock.getQuote);
   router.get('/api/stocks/:code/history', controller.stock.getHistory);
+
+  // 测试相关路由
+  router.get('/api/test/redis', controller.stock.testRedis);
+  router.get('/api/test/store-stock', controller.stock.storeStockData);
+  router.get('/api/test/store-all-stocks', controller.stock.storeAllStocks);
 
   // 环境信息路由
   router.get('/api/env/info', controller.env.info);

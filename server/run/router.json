@@ -714,6 +714,19 @@
       "HEAD",
       "GET"
     ],
+    "paramNames": [],
+    "path": "/api/stocks",
+    "regexp": "/^\\/api\\/stocks(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
     "paramNames": [
       {
         "name": "code",
@@ -752,6 +765,45 @@
     ],
     "path": "/api/stocks/:code/history",
     "regexp": "/^\\/api\\/stocks\\/((?:[^\\/]+?))\\/history(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/test/redis",
+    "regexp": "/^\\/api\\/test\\/redis(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/test/store-stock",
+    "regexp": "/^\\/api\\/test\\/store-stock(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/test/store-all-stocks",
+    "regexp": "/^\\/api\\/test\\/store-all-stocks(?:\\/(?=$))?$/",
     "stack": [
       "wrappedController"
     ]

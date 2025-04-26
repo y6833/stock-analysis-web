@@ -220,6 +220,21 @@
         "database": "stock_analysis"
       }
     },
+    "redis": {
+      "default": {},
+      "app": true,
+      "agent": false,
+      "supportTimeCommand": true,
+      "client": {
+        "port": 6379,
+        "host": "127.0.0.1",
+        "password": "<String len: 6>",
+        "db": 0,
+        "retry_strategy": "<Function retry_strategy>",
+        "connect_timeout": 3000
+      },
+      "allowFail": true
+    },
     "env": "local",
     "name": "stock-analysis-server",
     "keys": "<String len: 40>",
@@ -392,16 +407,8 @@
       "match": "/api"
     },
     "tushare": {
-      "token": "983b25aa025eee598034c4741dc776ddc53ddcffbb180cf61",
+      "token": "983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61",
       "api_url": "http://api.tushare.pro"
-    },
-    "redis": {
-      "client": {
-        "port": 6379,
-        "host": "127.0.0.1",
-        "password": "<String len: 0>",
-        "db": 0
-      }
     },
     "auth": {
       "enable": false,
@@ -625,7 +632,7 @@
       "version": "3.4.0"
     },
     "redis": {
-      "enable": false,
+      "enable": true,
       "package": "egg-redis",
       "name": "redis",
       "dependencies": [],

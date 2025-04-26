@@ -83,6 +83,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/api-test',
+      name: 'api-test',
+      component: () => import('../views/ApiTestView.vue'),
+      meta: { requiresAuth: false }, // 暂时禁用认证要求，方便测试
+    },
+    {
       path: '/export',
       name: 'export',
       component: () => import('../views/ExportView.vue'),
