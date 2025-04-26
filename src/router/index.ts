@@ -1,75 +1,170 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { userService } from '@/services/userService'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // 公开路由 - 无需登录
     {
       path: '/',
       name: 'home',
       component: HomeView,
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: () => import('../views/DashboardView.vue'),
+      meta: { requiresAuth: false },
     },
     {
       path: '/about',
       name: 'about',
       component: () => import('../views/AboutView.vue'),
+      meta: { requiresAuth: false },
+    },
+
+    // 认证相关路由
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/auth/LoginView.vue'),
+      meta: { requiresAuth: false, hideForAuth: true },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/auth/RegisterView.vue'),
+      meta: { requiresAuth: false, hideForAuth: true },
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('../views/auth/ForgotPasswordView.vue'),
+      meta: { requiresAuth: false, hideForAuth: true },
+    },
+
+    // 需要认证的路由
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: () => import('../views/DashboardView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/stock',
       name: 'stock',
       component: () => import('../views/StockAnalysisView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/portfolio',
       name: 'portfolio',
       component: () => import('../views/PortfolioView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/market-heatmap',
       name: 'market-heatmap',
       component: () => import('../views/MarketHeatmapView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/industry-analysis',
       name: 'industry-analysis',
       component: () => import('../views/IndustryAnalysisView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/market-scanner',
       name: 'market-scanner',
       component: () => import('../views/MarketScannerView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/tushare-test',
       name: 'tushare-test',
       component: () => import('../views/TushareTestView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/export',
       name: 'export',
       component: () => import('../views/ExportView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/backtest',
       name: 'backtest',
       component: () => import('../views/BacktestView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/alerts',
       name: 'alerts',
       component: () => import('../views/AlertsView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/simulation',
       name: 'simulation',
       component: () => import('../views/SimulationView.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // 用户相关路由
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/user/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/user/SettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // 404 路由
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue'),
+      meta: { requiresAuth: false },
     },
   ],
+})
+
+// 全局前置守卫
+router.beforeEach((to, from, next) => {
+  // 检查路由是否需要认证和权限
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
+  const hideForAuth = to.matched.some((record) => record.meta.hideForAuth)
+  const isLoggedIn = userService.isLoggedIn()
+
+  // 获取当前用户信息
+  const currentUser = userService.getCurrentUser()
+  const isAdmin = currentUser?.role === 'admin'
+
+  // 如果路由需要认证且用户未登录，重定向到登录页面
+  if (requiresAuth && !isLoggedIn) {
+    next({
+      name: 'login',
+      query: { redirect: to.fullPath }, // 保存原始目标路径
+    })
+  }
+  // 如果路由需要管理员权限但用户不是管理员，重定向到仪表盘
+  else if (requiresAdmin && !isAdmin) {
+    next({
+      name: 'dashboard',
+      query: { error: 'permission' }, // 传递权限错误信息
+    })
+  }
+  // 如果用户已登录且路由是登录/注册页面，重定向到仪表盘
+  else if (isLoggedIn && hideForAuth) {
+    next({ name: 'dashboard' })
+  }
+  // 其他情况正常导航
+  else {
+    next()
+  }
 })
 
 export default router

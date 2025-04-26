@@ -1,0 +1,49 @@
+{
+  "name": "stock-analysis-server",
+  "version": "1.0.0",
+  "description": "Backend server for stock analysis web application",
+  "private": true,
+  "egg": {
+    "declarations": true
+  },
+  "dependencies": {
+    "egg": "^3.30.1",
+    "egg-cors": "^2.2.4",
+    "egg-jwt": "^3.1.7",
+    "egg-mysql": "^3.4.0",
+    "egg-scripts": "^2.17.0",
+    "egg-sequelize": "^6.0.0",
+    "mysql2": "^3.14.0"
+  },
+  "devDependencies": {
+    "egg-bin": "^5.19.0",
+    "egg-ci": "^2.2.0",
+    "egg-mock": "^5.15.1",
+    "eslint": "^8.57.1",
+    "eslint-config-egg": "^12.3.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {
+    "start": "egg-scripts start --daemon --title=egg-server-stock-analysis-server",
+    "stop": "egg-scripts stop --title=egg-server-stock-analysis-server",
+    "dev": "egg-bin dev",
+    "debug": "egg-bin debug",
+    "test": "npm run lint -- --fix && npm run test-local",
+    "test-local": "egg-bin test",
+    "cov": "egg-bin cov",
+    "lint": "eslint .",
+    "ci": "npm run lint && npm run cov"
+  },
+  "ci": {
+    "version": "16, 18",
+    "type": "github"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "author": "",
+  "license": "MIT"
+}

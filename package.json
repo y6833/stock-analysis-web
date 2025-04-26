@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --skipLibCheck",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "proxy": "node proxy-server.cjs",
+    "start": "run-p dev proxy"
   },
   "dependencies": {
     "axios": "^1.4.0",
@@ -35,6 +37,7 @@
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.8.8",
     "typescript": "~5.0.4",

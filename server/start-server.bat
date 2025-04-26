@@ -1,0 +1,3 @@
+@echo off
+echo Starting Egg.js server...
+npm run dev

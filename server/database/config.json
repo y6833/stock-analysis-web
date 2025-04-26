@@ -1,0 +1,50 @@
+{
+  "development": {
+    "username": "root",
+    "password": "root",
+    "database": "stock_analysis",
+    "host": "127.0.0.1",
+    "dialect": "mysql",
+    "timezone": "+08:00",
+    "define": {
+      "underscored": true,
+      "charset": "utf8mb4",
+      "dialectOptions": {
+        "collate": "utf8mb4_general_ci"
+      },
+      "timestamps": true
+    }
+  },
+  "test": {
+    "username": "root",
+    "password": "root",
+    "database": "stock_analysis_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql",
+    "timezone": "+08:00",
+    "define": {
+      "underscored": true,
+      "charset": "utf8mb4",
+      "dialectOptions": {
+        "collate": "utf8mb4_general_ci"
+      },
+      "timestamps": true
+    }
+  },
+  "production": {
+    "username": "root",
+    "password": "root",
+    "database": "stock_analysis_production",
+    "host": "127.0.0.1",
+    "dialect": "mysql",
+    "timezone": "+08:00",
+    "define": {
+      "underscored": true,
+      "charset": "utf8mb4",
+      "dialectOptions": {
+        "collate": "utf8mb4_general_ci"
+      },
+      "timestamps": true
+    }
+  }
+}

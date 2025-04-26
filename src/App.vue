@@ -1,11 +1,17 @@
 <script setup lang="ts">
 // RouterLink 和 RouterView 组件在模板中自动导入
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/userStore'
+
+const router = useRouter()
+const userStore = useUserStore()
 
 // 下拉菜单状态
 const dropdownOpen = ref({
   analysis: false,
   strategy: false,
+  user: false,
 })
 
 // 切换下拉菜单
@@ -43,9 +49,33 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-// 组件挂载时添加点击事件监听
-onMounted(() => {
+// 用户登录状态
+const isLoggedIn = computed(() => userStore.isAuthenticated)
+const username = computed(() => userStore.username)
+const userAvatar = computed(() => userStore.userAvatar)
+
+// 登录
+const login = () => {
+  router.push('/login')
+}
+
+// 注册
+const register = () => {
+  router.push('/register')
+}
+
+// 登出
+const logout = () => {
+  userStore.logout()
+  router.push('/')
+}
+
+// 初始化用户状态
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+
+  // 初始化用户状态
+  await userStore.initUserState()
 })
 
 // 组件卸载时移除点击事件监听
@@ -140,7 +170,7 @@ onUnmounted(() => {
           </div>
 
           <!-- 其他链接 -->
-          <RouterLink to="/tushare-test" class="nav-link">
+          <RouterLink v-if="userStore.userRole === 'admin'" to="/tushare-test" class="nav-link">
             <span class="nav-icon">📊</span>
             <span class="nav-text">API测试</span>
           </RouterLink>
@@ -151,12 +181,63 @@ onUnmounted(() => {
         </nav>
 
         <div class="user-section">
+          <!-- 搜索按钮 -->
           <button class="btn btn-outline">
             <span class="icon">🔍</span>
           </button>
+
+          <!-- 通知按钮 -->
           <button class="btn btn-outline">
             <span class="icon">🔔</span>
           </button>
+
+          <!-- 未登录状态 -->
+          <template v-if="!isLoggedIn">
+            <button @click="login" class="btn btn-outline login-btn">登录</button>
+            <button @click="register" class="btn btn-primary register-btn">注册</button>
+          </template>
+
+          <!-- 已登录状态 - 用户菜单 -->
+          <div v-else class="dropdown-container user-dropdown">
+            <button
+              class="user-avatar-btn"
+              :class="{ active: dropdownOpen.user }"
+              @click="toggleDropdown('user')"
+            >
+              <img :src="userAvatar" :alt="username" class="user-avatar" />
+              <span class="username">{{ username }}</span>
+              <span class="dropdown-arrow">▼</span>
+            </button>
+
+            <div class="dropdown-menu user-menu" v-show="dropdownOpen.user">
+              <div class="user-menu-header">
+                <img :src="userAvatar" :alt="username" class="user-menu-avatar" />
+                <div class="user-menu-info">
+                  <div class="user-menu-name">{{ username }}</div>
+                  <div class="user-menu-role">普通用户</div>
+                </div>
+              </div>
+
+              <div class="user-menu-divider"></div>
+
+              <RouterLink to="/profile" class="dropdown-item">
+                <span class="item-icon">👤</span>
+                <span>个人资料</span>
+              </RouterLink>
+
+              <RouterLink to="/settings" class="dropdown-item">
+                <span class="item-icon">⚙️</span>
+                <span>账户设置</span>
+              </RouterLink>
+
+              <div class="user-menu-divider"></div>
+
+              <button @click="logout" class="dropdown-item logout-item">
+                <span class="item-icon">🚪</span>
+                <span>退出登录</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </header>
@@ -212,7 +293,6 @@ onUnmounted(() => {
   width: 40px;
   height: 40px;
   object-fit: contain;
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.1));
 }
 
 .app-title {
@@ -318,6 +398,7 @@ onUnmounted(() => {
 .user-section {
   display: flex;
   gap: var(--spacing-sm);
+  align-items: center;
 }
 
 .user-section .btn {
@@ -332,6 +413,101 @@ onUnmounted(() => {
 
 .user-section .icon {
   font-size: var(--font-size-md);
+}
+
+.login-btn,
+.register-btn {
+  width: auto !important;
+  height: auto !important;
+  padding: var(--spacing-xs) var(--spacing-md) !important;
+  border-radius: var(--border-radius-md) !important;
+}
+
+/* 用户头像按钮 */
+.user-avatar-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.user-avatar-btn:hover,
+.user-avatar-btn.active {
+  background-color: var(--bg-secondary);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.username {
+  font-weight: 500;
+  color: var(--text-primary);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 用户下拉菜单 */
+.user-dropdown {
+  position: relative;
+}
+
+.user-menu {
+  right: 0;
+  left: auto;
+  min-width: 240px;
+}
+
+.user-menu-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+}
+
+.user-menu-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-menu-info {
+  flex: 1;
+}
+
+.user-menu-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.user-menu-role {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.user-menu-divider {
+  height: 1px;
+  background-color: var(--border-light);
+  margin: var(--spacing-xs) 0;
+}
+
+.item-icon {
+  margin-right: var(--spacing-xs);
+}
+
+.logout-item {
+  color: var(--danger-color);
 }
 
 /* 主内容区 */
