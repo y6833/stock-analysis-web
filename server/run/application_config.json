@@ -128,6 +128,8 @@
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-sequelize\\config\\locales",
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-jwt\\config\\locales",
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-cors\\config\\locales",
+        "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-validate\\config\\locales",
+        "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\locales",
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\locales",
         "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\locales"
       ],
@@ -234,6 +236,25 @@
       "credentials": true,
       "hasCustomOriginHandler": true
     },
+    "validate": {
+      "convert": true,
+      "validateRoot": true
+    },
+    "mysql": {
+      "default": {
+        "database": null,
+        "connectionLimit": 5
+      },
+      "app": true,
+      "agent": false,
+      "client": {
+        "host": "127.0.0.1",
+        "port": "3306",
+        "user": "root",
+        "password": "<String len: 4>",
+        "database": "stock_analysis"
+      }
+    },
     "env": "local",
     "name": "stock-analysis-server",
     "keys": "<String len: 40>",
@@ -259,7 +280,8 @@
         "egg-mysql": "^3.4.0",
         "egg-scripts": "^2.17.0",
         "egg-sequelize": "^6.0.0",
-        "mysql2": "^3.14.0"
+        "mysql2": "^3.14.0",
+        "sequelize": "^6.37.7"
       },
       "devDependencies": {
         "egg-bin": "^5.19.0",
@@ -334,8 +356,8 @@
       "dir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\logs",
       "encoding": "utf8",
       "env": "local",
-      "level": "INFO",
-      "consoleLevel": "INFO",
+      "level": "DEBUG",
+      "consoleLevel": "DEBUG",
       "disableConsoleAfterReady": false,
       "outputJSON": false,
       "buffer": true,
@@ -411,9 +433,24 @@
     "errorHandler": {
       "match": "/api"
     },
-    "validate": {
-      "convert": true,
-      "validateRoot": true
+    "tushare": {
+      "token": "983b25aa025eee598034c4741dc776ddc53ddcffbb180cf61",
+      "api_url": "http://api.tushare.pro"
+    },
+    "redis": {
+      "client": {
+        "port": 6379,
+        "host": "127.0.0.1",
+        "password": "<String len: 0>",
+        "db": 0
+      }
+    },
+    "auth": {
+      "enable": false,
+      "defaultUser": {
+        "id": 1,
+        "username": "dev_user"
+      }
     },
     "coreMiddlewares": "~config~coreMiddleware",
     "appMiddlewares": "~config~middleware",
@@ -606,6 +643,39 @@
       "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
       "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-cors",
       "version": "2.2.4"
+    },
+    "validate": {
+      "enable": true,
+      "package": "egg-validate",
+      "name": "validate",
+      "dependencies": [],
+      "optionalDependencies": [],
+      "env": [],
+      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-validate",
+      "version": "2.0.2"
+    },
+    "mysql": {
+      "enable": true,
+      "package": "egg-mysql",
+      "name": "mysql",
+      "dependencies": [],
+      "optionalDependencies": [],
+      "env": [],
+      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-mysql",
+      "version": "3.4.0"
+    },
+    "redis": {
+      "enable": false,
+      "package": "egg-redis",
+      "name": "redis",
+      "dependencies": [],
+      "optionalDependencies": [],
+      "env": [],
+      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-redis",
+      "version": "2.6.1"
     }
   },
   "appInfo": {
@@ -629,7 +699,8 @@
         "egg-mysql": "^3.4.0",
         "egg-scripts": "^2.17.0",
         "egg-sequelize": "^6.0.0",
-        "mysql2": "^3.14.0"
+        "mysql2": "^3.14.0",
+        "sequelize": "^6.37.7"
       },
       "devDependencies": {
         "egg-bin": "^5.19.0",

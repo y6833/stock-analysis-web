@@ -75,6 +75,35 @@ module.exports = appInfo => {
     consoleLevel: 'INFO',
   };
 
+  // Tushare API 配置
+  config.tushare = {
+    token: '983b25aa025eee598034c4741dc776ddc53ddcffbb180cf61',
+    api_url: 'http://api.tushare.pro',
+  };
+
+  // MySQL 客户端配置（用于直接操作 MySQL）
+  config.mysql = {
+    client: {
+      host: '127.0.0.1',
+      port: '3306',
+      user: 'root',
+      password: 'root',
+      database: 'stock_analysis',
+    },
+    app: true,
+    agent: false,
+  };
+
+  // Redis 配置
+  config.redis = {
+    client: {
+      port: 6379,
+      host: '127.0.0.1',
+      password: '',
+      db: 0,
+    },
+  };
+
   return {
     ...config,
   };

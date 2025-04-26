@@ -581,5 +581,192 @@
       "jwt",
       "wrappedController"
     ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/simulation/accounts",
+    "regexp": "/^\\/api\\/simulation\\/accounts(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/simulation/accounts",
+    "regexp": "/^\\/api\\/simulation\\/accounts(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/simulation/accounts/:id",
+    "regexp": "/^\\/api\\/simulation\\/accounts\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/simulation/accounts/:id/positions",
+    "regexp": "/^\\/api\\/simulation\\/accounts\\/((?:[^\\/]+?))\\/positions(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/simulation/accounts/:id/transactions",
+    "regexp": "/^\\/api\\/simulation\\/accounts\\/((?:[^\\/]+?))\\/transactions(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/simulation/accounts/:id/trade",
+    "regexp": "/^\\/api\\/simulation\\/accounts\\/((?:[^\\/]+?))\\/trade(?:\\/(?=$))?$/",
+    "stack": [
+      "jwt",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "code",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/stocks/:code/quote",
+    "regexp": "/^\\/api\\/stocks\\/((?:[^\\/]+?))\\/quote(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "code",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/stocks/:code/history",
+    "regexp": "/^\\/api\\/stocks\\/((?:[^\\/]+?))\\/history(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/env/info",
+    "regexp": "/^\\/api\\/env\\/info(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
   }
 ]

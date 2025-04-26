@@ -1,259 +1,238 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { stockService } from '@/services/stockService'
-import type { Stock } from '@/types/stock'
+import { simulationService, type SimulationAccount, type SimulationPosition, type SimulationTransaction } from '@/services/simulationService'
 import StockSearch from '@/components/StockSearch.vue'
+import { useToast } from '@/composables/useToast'
 
-// 股票列表
-const stocks = ref<Stock[]>([])
+// 使用 Toast 提示
+const { showToast } = useToast()
+
+// 加载状态
 const isLoading = ref(false)
 const error = ref('')
 
-// 模拟账户
-const account = reactive({
-  cash: 100000, // 初始资金
-  positions: [] as any[],
-  transactions: [] as any[],
-})
+// 当前选中的模拟账户
+const currentAccount = ref<SimulationAccount | null>(null)
+const accounts = ref<SimulationAccount[]>([])
 
 // 交易表单
 const tradeForm = reactive({
   symbol: '',
-  stockName: '', // 添加股票名称字段
+  stockName: '',
   action: 'buy', // 买入或卖出
   quantity: 0,
   price: 0,
 })
 
-// 获取股票列表
-const fetchStocks = async () => {
+// 获取模拟账户列表
+const fetchAccounts = async () => {
   isLoading.value = true
   error.value = ''
-
+  
   try {
-    stocks.value = await stockService.getStocks()
+    accounts.value = await simulationService.getAccounts()
+    
+    // 如果有账户，默认选择第一个
+    if (accounts.value.length > 0) {
+      await selectAccount(accounts.value[0].id)
+    } else {
+      // 如果没有账户，创建一个默认账户
+      await createDefaultAccount()
+    }
   } catch (err: any) {
-    console.error('获取股票列表失败:', err)
-    error.value = `获取股票列表失败: ${err.message || '未知错误'}`
+    console.error('获取模拟账户失败:', err)
+    error.value = `获取模拟账户失败: ${err.message || '未知错误'}`
   } finally {
     isLoading.value = false
   }
 }
 
-// 获取股票当前价格
-const fetchStockPrice = async (symbol: string) => {
+// 创建默认账户
+const createDefaultAccount = async () => {
   try {
-    // 在实际应用中，这里应该调用API获取最新的股票价格
-    // 这里使用模拟数据
-    return parseFloat((Math.random() * 100 + 10).toFixed(2))
-  } catch (err) {
-    console.error('获取股票价格失败:', err)
-    return 0
+    const newAccount = await simulationService.createAccount('默认账户', 100000)
+    accounts.value.push(newAccount)
+    await selectAccount(newAccount.id)
+    showToast('已创建默认模拟账户', 'success')
+  } catch (err: any) {
+    console.error('创建默认账户失败:', err)
+    error.value = `创建默认账户失败: ${err.message || '未知错误'}`
+  }
+}
+
+// 选择账户
+const selectAccount = async (accountId: number) => {
+  isLoading.value = true
+  error.value = ''
+  
+  try {
+    currentAccount.value = await simulationService.getAccount(accountId)
+  } catch (err: any) {
+    console.error('获取账户详情失败:', err)
+    error.value = `获取账户详情失败: ${err.message || '未知错误'}`
+  } finally {
+    isLoading.value = false
   }
 }
 
 // 选择股票
 const selectStock = async (stock: any) => {
   tradeForm.symbol = stock.symbol
-  // 如果股票名称存在，也设置它
-  if (stock.name) {
-    tradeForm.stockName = stock.name
-  }
+  tradeForm.stockName = stock.name || stock.symbol
+  
   // 更新价格
   await updatePrice()
 }
 
-// 当选择股票时更新价格
+// 获取股票当前价格
 const updatePrice = async () => {
-  if (tradeForm.symbol) {
-    tradeForm.price = await fetchStockPrice(tradeForm.symbol)
-  } else {
+  if (!tradeForm.symbol) {
     tradeForm.price = 0
+    return
+  }
+  
+  try {
+    const quote = await simulationService.getStockQuote(tradeForm.symbol)
+    if (quote) {
+      tradeForm.price = quote.price
+    } else {
+      // 如果获取不到实时价格，使用模拟价格
+      tradeForm.price = parseFloat((Math.random() * 100 + 10).toFixed(2))
+    }
+  } catch (err) {
+    console.error('获取股票价格失败:', err)
+    // 使用模拟价格
+    tradeForm.price = parseFloat((Math.random() * 100 + 10).toFixed(2))
   }
 }
 
 // 执行交易
 const executeTrade = async () => {
+  if (!currentAccount.value) {
+    showToast('请先选择或创建模拟账户', 'error')
+    return
+  }
+  
   if (!tradeForm.symbol) {
-    window.alert('请选择股票')
+    showToast('请选择股票', 'error')
     return
   }
-
+  
   if (tradeForm.quantity <= 0) {
-    window.alert('请输入有效的数量')
+    showToast('请输入有效的数量', 'error')
     return
   }
-
-  // 获取股票信息
-  let stockName = tradeForm.stockName
-  if (!stockName) {
-    const stock = stocks.value.find((s) => s.symbol === tradeForm.symbol)
-    if (stock) {
-      stockName = stock.name
-      tradeForm.stockName = stockName
-    } else {
-      stockName = tradeForm.symbol
-    }
+  
+  isLoading.value = true
+  
+  try {
+    const result = await simulationService.executeTrade(currentAccount.value.id, {
+      stockCode: tradeForm.symbol,
+      stockName: tradeForm.stockName,
+      action: tradeForm.action as 'buy' | 'sell',
+      quantity: tradeForm.quantity,
+      price: tradeForm.price
+    })
+    
+    // 更新当前账户信息
+    currentAccount.value = result.account
+    
+    // 重置表单
+    tradeForm.quantity = 0
+    
+    showToast(tradeForm.action === 'buy' ? '买入成功' : '卖出成功', 'success')
+  } catch (err: any) {
+    console.error('交易执行失败:', err)
+    showToast(err.message || '交易执行失败', 'error')
+  } finally {
+    isLoading.value = false
   }
-
-  // 更新价格
-  await updatePrice()
-
-  const amount = tradeForm.quantity * tradeForm.price
-
-  if (tradeForm.action === 'buy') {
-    // 检查资金是否足够
-    if (account.cash < amount) {
-      window.alert('资金不足')
-      return
-    }
-
-    // 扣除资金
-    account.cash -= amount
-
-    // 添加持仓
-    const existingPosition = account.positions.find((p) => p.symbol === tradeForm.symbol)
-    if (existingPosition) {
-      // 更新现有持仓
-      const totalCost = existingPosition.quantity * existingPosition.avgPrice + amount
-      const totalQuantity = existingPosition.quantity + tradeForm.quantity
-      existingPosition.avgPrice = totalCost / totalQuantity
-      existingPosition.quantity = totalQuantity
-      existingPosition.currentPrice = tradeForm.price
-      existingPosition.value = existingPosition.quantity * existingPosition.currentPrice
-      existingPosition.profit =
-        existingPosition.value - existingPosition.avgPrice * existingPosition.quantity
-      existingPosition.profitPercent =
-        (existingPosition.profit / (existingPosition.avgPrice * existingPosition.quantity)) * 100
-    } else {
-      // 创建新持仓
-      account.positions.push({
-        symbol: tradeForm.symbol,
-        name: tradeForm.stockName || tradeForm.symbol,
-        quantity: tradeForm.quantity,
-        avgPrice: tradeForm.price,
-        currentPrice: tradeForm.price,
-        value: tradeForm.quantity * tradeForm.price,
-        profit: 0,
-        profitPercent: 0,
-      })
-    }
-  } else {
-    // 卖出
-    const existingPosition = account.positions.find((p) => p.symbol === tradeForm.symbol)
-    if (!existingPosition || existingPosition.quantity < tradeForm.quantity) {
-      window.alert('持仓不足')
-      return
-    }
-
-    // 增加资金
-    account.cash += amount
-
-    // 更新持仓
-    existingPosition.quantity -= tradeForm.quantity
-    existingPosition.value = existingPosition.quantity * existingPosition.currentPrice
-    existingPosition.profit =
-      existingPosition.value - existingPosition.avgPrice * existingPosition.quantity
-    existingPosition.profitPercent =
-      existingPosition.quantity > 0
-        ? (existingPosition.profit / (existingPosition.avgPrice * existingPosition.quantity)) * 100
-        : 0
-
-    // 如果持仓为0，则移除
-    if (existingPosition.quantity === 0) {
-      account.positions = account.positions.filter((p) => p.symbol !== tradeForm.symbol)
-    }
-  }
-
-  // 添加交易记录
-  account.transactions.push({
-    id: Date.now(),
-    date: new Date().toLocaleString(),
-    symbol: tradeForm.symbol,
-    name: tradeForm.stockName || tradeForm.symbol,
-    action: tradeForm.action,
-    quantity: tradeForm.quantity,
-    price: tradeForm.price,
-    amount: amount,
-  })
-
-  // 重置表单
-  tradeForm.quantity = 0
-
-  // 保存到本地存储
-  saveAccount()
-
-  window.alert(tradeForm.action === 'buy' ? '买入成功' : '卖出成功')
 }
 
 // 更新所有持仓的当前价格和收益
 const updatePositions = async () => {
-  for (const position of account.positions) {
-    position.currentPrice = await fetchStockPrice(position.symbol)
-    position.value = position.quantity * position.currentPrice
-    position.profit = position.value - position.avgPrice * position.quantity
-    position.profitPercent = (position.profit / (position.avgPrice * position.quantity)) * 100
+  if (!currentAccount.value) return
+  
+  isLoading.value = true
+  
+  try {
+    const positions = await simulationService.getPositions(currentAccount.value.id)
+    if (currentAccount.value) {
+      currentAccount.value.positions = positions
+    }
+    showToast('持仓价格已更新', 'success')
+  } catch (err) {
+    console.error('更新持仓失败:', err)
+    showToast('更新持仓失败', 'error')
+  } finally {
+    isLoading.value = false
   }
-
-  saveAccount()
 }
 
 // 计算总资产
 const totalAssets = computed(() => {
-  const positionsValue = account.positions.reduce((sum, position) => sum + position.value, 0)
-  return account.cash + positionsValue
+  if (!currentAccount.value) return 0
+  
+  const positionsValue = currentAccount.value.positions?.reduce(
+    (sum, position) => sum + (position.value || 0), 0
+  ) || 0
+  
+  return currentAccount.value.cash + positionsValue
 })
 
 // 计算总收益
 const totalProfit = computed(() => {
-  return account.positions.reduce((sum, position) => sum + position.profit, 0)
+  if (!currentAccount.value) return 0
+  
+  return currentAccount.value.positions?.reduce(
+    (sum, position) => sum + (position.profit || 0), 0
+  ) || 0
 })
 
 // 计算总收益率
 const totalProfitPercent = computed(() => {
-  const totalCost = account.positions.reduce(
-    (sum, position) => sum + position.avgPrice * position.quantity,
-    0
-  )
+  if (!currentAccount.value) return 0
+  
+  const totalCost = currentAccount.value.positions?.reduce(
+    (sum, position) => sum + (position.avgPrice * position.quantity), 0
+  ) || 0
+  
   return totalCost > 0 ? (totalProfit.value / totalCost) * 100 : 0
 })
 
-// 保存账户到本地存储
-const saveAccount = () => {
-  localStorage.setItem('simulationAccount', JSON.stringify(account))
-}
-
-// 从本地存储加载账户
-const loadAccount = () => {
-  const savedAccount = localStorage.getItem('simulationAccount')
-  if (savedAccount) {
-    try {
-      const parsedAccount = JSON.parse(savedAccount)
-      account.cash = parsedAccount.cash
-      account.positions = parsedAccount.positions
-      account.transactions = parsedAccount.transactions
-    } catch (err) {
-      console.error('加载账户失败:', err)
-    }
-  }
-}
-
 // 重置账户
-const resetAccount = () => {
+const resetAccount = async () => {
+  if (!currentAccount.value) return
+  
   if (window.confirm('确定要重置模拟账户吗？这将清除所有持仓和交易记录。')) {
-    account.cash = 100000
-    account.positions = []
-    account.transactions = []
-    saveAccount()
-    window.alert('账户已重置')
+    isLoading.value = true
+    
+    try {
+      // 创建一个新账户替代当前账户
+      const newAccount = await simulationService.createAccount(
+        `${currentAccount.value.name} (重置)`, 
+        100000
+      )
+      
+      // 更新账户列表
+      accounts.value = await simulationService.getAccounts()
+      
+      // 选择新账户
+      await selectAccount(newAccount.id)
+      
+      showToast('账户已重置', 'success')
+    } catch (err: any) {
+      console.error('重置账户失败:', err)
+      showToast('重置账户失败', 'error')
+    } finally {
+      isLoading.value = false
+    }
   }
 }
 
 // 组件挂载时
 onMounted(() => {
-  fetchStocks()
-  loadAccount()
-  updatePositions() // 更新持仓价格
+  fetchAccounts()
 })
 </script>
 
@@ -263,17 +242,35 @@ onMounted(() => {
       <h1>模拟交易</h1>
       <p class="subtitle">使用虚拟资金测试交易策略，无需承担实际风险</p>
     </div>
-
+    
     <div class="simulation-container">
       <div class="simulation-sidebar">
         <div class="panel">
           <h2>交易操作</h2>
-
+          
+          <!-- 账户选择 -->
+          <div class="form-group" v-if="accounts.length > 1">
+            <label>选择账户</label>
+            <select 
+              v-model="currentAccount" 
+              class="form-control"
+              @change="selectAccount(currentAccount?.id || 0)"
+            >
+              <option 
+                v-for="account in accounts" 
+                :key="account.id" 
+                :value="account"
+              >
+                {{ account.name }} ({{ account.cash.toFixed(2) }}元)
+              </option>
+            </select>
+          </div>
+          
           <div class="form-group">
             <label>选择股票</label>
             <StockSearch @select="selectStock" />
           </div>
-
+          
           <div class="form-group">
             <label>交易类型</label>
             <div class="radio-group">
@@ -287,7 +284,7 @@ onMounted(() => {
               </label>
             </div>
           </div>
-
+          
           <div class="form-group">
             <label for="quantity">数量</label>
             <input
@@ -299,7 +296,7 @@ onMounted(() => {
               step="1"
             />
           </div>
-
+          
           <div class="form-group">
             <label for="price">价格</label>
             <div class="input-group">
@@ -314,61 +311,75 @@ onMounted(() => {
               <span class="input-group-text">元</span>
             </div>
           </div>
-
+          
           <div class="trade-summary">
             <div class="summary-item">
               <span class="summary-label">交易金额:</span>
-              <span class="summary-value"
-                >{{ (tradeForm.quantity * tradeForm.price).toFixed(2) }} 元</span
-              >
+              <span class="summary-value">{{ (tradeForm.quantity * tradeForm.price).toFixed(2) }} 元</span>
             </div>
             <div class="summary-item">
               <span class="summary-label">可用资金:</span>
-              <span class="summary-value">{{ account.cash.toFixed(2) }} 元</span>
+              <span class="summary-value">{{ currentAccount?.cash.toFixed(2) || '0.00' }} 元</span>
             </div>
           </div>
-
+          
           <div class="form-actions">
-            <button class="btn btn-primary" @click="executeTrade">
+            <button 
+              class="btn btn-primary" 
+              @click="executeTrade"
+              :disabled="isLoading"
+            >
               {{ tradeForm.action === 'buy' ? '买入' : '卖出' }}
             </button>
-            <button class="btn btn-outline" @click="updatePositions">刷新价格</button>
+            <button 
+              class="btn btn-outline" 
+              @click="updatePositions"
+              :disabled="isLoading"
+            >
+              刷新价格
+            </button>
           </div>
-
+          
           <div class="reset-account">
-            <button class="btn btn-danger" @click="resetAccount">重置账户</button>
+            <button 
+              class="btn btn-danger" 
+              @click="resetAccount"
+              :disabled="isLoading"
+            >
+              重置账户
+            </button>
           </div>
         </div>
       </div>
-
+      
       <div class="simulation-content">
         <div v-if="isLoading" class="loading-state">
           <div class="loading-spinner"></div>
           <p>正在加载，请稍候...</p>
         </div>
-
+        
         <div v-else-if="error" class="error-state">
           <p>{{ error }}</p>
-          <button class="btn btn-primary" @click="fetchStocks">重试</button>
+          <button class="btn btn-primary" @click="fetchAccounts">重试</button>
         </div>
-
-        <div v-else class="account-overview">
+        
+        <div v-else-if="currentAccount" class="account-overview">
           <div class="account-summary">
             <div class="summary-card">
               <div class="summary-title">总资产</div>
               <div class="summary-value">{{ totalAssets.toFixed(2) }} 元</div>
             </div>
-
+            
             <div class="summary-card">
               <div class="summary-title">可用资金</div>
-              <div class="summary-value">{{ account.cash.toFixed(2) }} 元</div>
+              <div class="summary-value">{{ currentAccount.cash.toFixed(2) }} 元</div>
             </div>
-
+            
             <div class="summary-card">
               <div class="summary-title">持仓市值</div>
-              <div class="summary-value">{{ (totalAssets - account.cash).toFixed(2) }} 元</div>
+              <div class="summary-value">{{ (totalAssets - currentAccount.cash).toFixed(2) }} 元</div>
             </div>
-
+            
             <div class="summary-card">
               <div class="summary-title">总收益</div>
               <div class="summary-value" :class="totalProfit >= 0 ? 'positive' : 'negative'">
@@ -376,14 +387,14 @@ onMounted(() => {
               </div>
             </div>
           </div>
-
+          
           <div class="positions-section">
             <h3>持仓列表</h3>
-
-            <div v-if="account.positions.length === 0" class="empty-positions">
+            
+            <div v-if="!currentAccount.positions || currentAccount.positions.length === 0" class="empty-positions">
               <p>暂无持仓</p>
             </div>
-
+            
             <table v-else class="positions-table">
               <thead>
                 <tr>
@@ -397,30 +408,30 @@ onMounted(() => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="position in account.positions" :key="position.symbol">
-                  <td>{{ position.name }} ({{ position.symbol }})</td>
+                <tr v-for="position in currentAccount.positions" :key="position.stockCode">
+                  <td>{{ position.stockName }} ({{ position.stockCode }})</td>
                   <td>{{ position.quantity }}</td>
                   <td>{{ position.avgPrice.toFixed(2) }}</td>
-                  <td>{{ position.currentPrice.toFixed(2) }}</td>
-                  <td>{{ position.value.toFixed(2) }}</td>
-                  <td :class="position.profit >= 0 ? 'positive' : 'negative'">
-                    {{ position.profit.toFixed(2) }}
+                  <td>{{ (position.currentPrice || 0).toFixed(2) }}</td>
+                  <td>{{ (position.value || 0).toFixed(2) }}</td>
+                  <td :class="(position.profit || 0) >= 0 ? 'positive' : 'negative'">
+                    {{ (position.profit || 0).toFixed(2) }}
                   </td>
-                  <td :class="position.profitPercent >= 0 ? 'positive' : 'negative'">
-                    {{ position.profitPercent.toFixed(2) }}%
+                  <td :class="(position.profitPercent || 0) >= 0 ? 'positive' : 'negative'">
+                    {{ (position.profitPercent || 0).toFixed(2) }}%
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-
+          
           <div class="transactions-section">
             <h3>交易记录</h3>
-
-            <div v-if="account.transactions.length === 0" class="empty-transactions">
+            
+            <div v-if="!currentAccount.transactions || currentAccount.transactions.length === 0" class="empty-transactions">
               <p>暂无交易记录</p>
             </div>
-
+            
             <table v-else class="transactions-table">
               <thead>
                 <tr>
@@ -433,12 +444,9 @@ onMounted(() => {
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="transaction in account.transactions.slice().reverse()"
-                  :key="transaction.id"
-                >
-                  <td>{{ transaction.date }}</td>
-                  <td>{{ transaction.name }} ({{ transaction.symbol }})</td>
+                <tr v-for="transaction in currentAccount.transactions" :key="transaction.id">
+                  <td>{{ new Date(transaction.transactionDate).toLocaleString() }}</td>
+                  <td>{{ transaction.stockName }} ({{ transaction.stockCode }})</td>
                   <td :class="transaction.action === 'buy' ? 'buy' : 'sell'">
                     {{ transaction.action === 'buy' ? '买入' : '卖出' }}
                   </td>
@@ -697,8 +705,7 @@ table {
   border-collapse: collapse;
 }
 
-th,
-td {
+th, td {
   padding: var(--spacing-sm);
   text-align: left;
   border-bottom: 1px solid var(--border-light);
@@ -744,7 +751,7 @@ th {
   .simulation-container {
     flex-direction: column;
   }
-
+  
   .simulation-sidebar {
     width: 100%;
   }

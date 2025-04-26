@@ -137,7 +137,7 @@ class UserController extends Controller {
   // 获取当前用户信息
   async getCurrentUser() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
 
     try {
       const user = await service.user.findById(userId);
@@ -159,7 +159,7 @@ class UserController extends Controller {
   // 更新用户资料
   async updateProfile() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const data = ctx.request.body;
 
     // 参数验证
@@ -193,7 +193,7 @@ class UserController extends Controller {
   // 更新用户偏好设置
   async updatePreferences() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const data = ctx.request.body;
 
     // 参数验证
@@ -241,7 +241,7 @@ class UserController extends Controller {
   // 更新用户密码
   async updatePassword() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const data = ctx.request.body;
 
     // 参数验证

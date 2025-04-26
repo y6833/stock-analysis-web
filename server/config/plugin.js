@@ -20,9 +20,21 @@ module.exports = {
     package: 'egg-cors',
   },
 
-  // 暂时禁用参数验证插件
-  // validate: {
-  //   enable: true,
-  //   package: 'egg-validate',
-  // },
+  // 启用参数验证插件
+  validate: {
+    enable: true,
+    package: 'egg-validate',
+  },
+
+  // 启用 MySQL 插件
+  mysql: {
+    enable: true,
+    package: 'egg-mysql',
+  },
+
+  // 暂时禁用 Redis 插件
+  redis: {
+    enable: false,
+    package: 'egg-redis',
+  },
 };

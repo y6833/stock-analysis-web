@@ -18,6 +18,8 @@ import 'egg-view';
 import 'egg-sequelize';
 import 'egg-jwt';
 import 'egg-cors';
+import 'egg-validate';
+import 'egg-mysql';
 import { EggPluginItem } from 'egg';
 declare module 'egg' {
   interface EggPlugin {
@@ -36,5 +38,8 @@ declare module 'egg' {
     sequelize?: EggPluginItem;
     jwt?: EggPluginItem;
     cors?: EggPluginItem;
+    validate?: EggPluginItem;
+    mysql?: EggPluginItem;
+    redis?: EggPluginItem;
   }
 }

@@ -6,7 +6,7 @@ class PortfolioController extends Controller {
   // 获取用户的所有投资组合
   async getUserPortfolios() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
 
     try {
       const portfolios = await service.portfolio.getUserPortfolios(userId);
@@ -21,7 +21,7 @@ class PortfolioController extends Controller {
   // 创建投资组合
   async createPortfolio() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const data = ctx.request.body;
 
     // 手动验证
@@ -45,7 +45,7 @@ class PortfolioController extends Controller {
   // 更新投资组合
   async updatePortfolio() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.id);
     const data = ctx.request.body;
 
@@ -74,7 +74,7 @@ class PortfolioController extends Controller {
   // 删除投资组合
   async deletePortfolio() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.id);
 
     try {
@@ -95,7 +95,7 @@ class PortfolioController extends Controller {
   // 获取投资组合中的持仓
   async getPortfolioHoldings() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.id);
 
     try {
@@ -116,7 +116,7 @@ class PortfolioController extends Controller {
   // 添加持仓到投资组合
   async addHolding() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.id);
     const data = ctx.request.body;
 
@@ -166,7 +166,7 @@ class PortfolioController extends Controller {
   // 更新持仓
   async updateHolding() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.portfolioId);
     const holdingId = parseInt(ctx.params.holdingId);
     const data = ctx.request.body;
@@ -189,7 +189,7 @@ class PortfolioController extends Controller {
   // 删除持仓
   async deleteHolding() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.portfolioId);
     const holdingId = parseInt(ctx.params.holdingId);
 
@@ -211,7 +211,7 @@ class PortfolioController extends Controller {
   // 添加交易记录
   async addTradeRecord() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.id);
     const data = ctx.request.body;
 
@@ -261,7 +261,7 @@ class PortfolioController extends Controller {
   // 获取交易记录
   async getTradeRecords() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.id);
 
     try {
@@ -282,7 +282,7 @@ class PortfolioController extends Controller {
   // 删除交易记录
   async deleteTradeRecord() {
     const { ctx, service } = this;
-    const userId = ctx.state.user.id;
+    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
     const portfolioId = parseInt(ctx.params.portfolioId);
     const tradeId = parseInt(ctx.params.tradeId);
 

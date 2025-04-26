@@ -44,4 +44,19 @@ module.exports = app => {
   router.post('/api/portfolios/:id/trades', jwt, controller.portfolio.addTradeRecord);
   router.get('/api/portfolios/:id/trades', jwt, controller.portfolio.getTradeRecords);
   router.delete('/api/portfolios/:portfolioId/trades/:tradeId', jwt, controller.portfolio.deleteTradeRecord);
+
+  // 模拟交易相关路由（需要认证）
+  router.get('/api/simulation/accounts', jwt, controller.simulation.getAccounts);
+  router.post('/api/simulation/accounts', jwt, controller.simulation.createAccount);
+  router.get('/api/simulation/accounts/:id', jwt, controller.simulation.getAccount);
+  router.get('/api/simulation/accounts/:id/positions', jwt, controller.simulation.getPositions);
+  router.get('/api/simulation/accounts/:id/transactions', jwt, controller.simulation.getTransactions);
+  router.post('/api/simulation/accounts/:id/trade', jwt, controller.simulation.executeTrade);
+
+  // 股票行情相关路由
+  router.get('/api/stocks/:code/quote', controller.stock.getQuote);
+  router.get('/api/stocks/:code/history', controller.stock.getHistory);
+
+  // 环境信息路由
+  router.get('/api/env/info', controller.env.info);
 };

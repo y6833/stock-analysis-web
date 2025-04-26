@@ -14,8 +14,12 @@
     "start": "run-p dev proxy"
   },
   "dependencies": {
-    "axios": "^1.4.0",
+    "axios": "^1.9.0",
     "echarts": "^5.4.3",
+    "egg-mysql": "^5.0.0",
+    "egg-redis": "^2.6.1",
+    "egg-validate": "^2.0.2",
+    "element-plus": "^2.9.8",
     "file-saver": "^2.0.5",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
@@ -40,6 +44,7 @@
     "jsonwebtoken": "^9.0.2",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.8.8",
+    "sequelize-cli": "^6.6.2",
     "typescript": "~5.0.4",
     "vite": "^4.3.9",
     "vite-plugin-vue-devtools": "^1.0.0-rc.5",
