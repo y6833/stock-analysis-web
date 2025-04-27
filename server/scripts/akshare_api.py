@@ -1,30 +1,78 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import akshare as ak
 import json
 import sys
 import datetime
 import traceback
+import os
+import pandas as pd
+
+# 禁用进度条显示
+os.environ['TQDM_DISABLE'] = '1'
+
+# 设置标准输出编码为 UTF-8
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+# 导入 akshare
+try:
+    import akshare as ak
+except ImportError:
+    print(json.dumps({
+        'success': False,
+        'message': 'AKShare 库未安装，请运行 install_akshare.py 脚本安装'
+    }, ensure_ascii=False))
+    sys.exit(1)
 
 def test_connection():
     """测试与 AKShare 的连接"""
     try:
         # 尝试获取上证指数行情，如果成功则连接正常
-        # 使用 stock_zh_a_spot_em 函数，这是获取A股实时行情的函数
-        stock_df = ak.stock_zh_a_spot_em()
-        if not stock_df.empty:
-            return {'success': True, 'message': 'AKShare API连接成功'}
-        else:
-            return {'success': False, 'message': 'AKShare API返回空数据'}
+        print(json.dumps({'status': 'progress', 'message': '正在测试连接...'}, ensure_ascii=False), flush=True)
+
+        # 使用 stock_zh_a_spot_em 函数测试连接
+        # 这个函数获取A股实时行情数据，是比较稳定的API
+        try:
+            # 首先尝试获取A股实时行情
+            stock_df = ak.stock_zh_a_spot_em()
+            if not stock_df.empty:
+                return {'success': True, 'message': 'AKShare API连接成功 (A股实时行情)'}
+        except Exception as e1:
+            print(json.dumps({'status': 'progress', 'message': f'A股实时行情获取失败，尝试其他API: {str(e1)}'}, ensure_ascii=False), flush=True)
+
+            try:
+                # 尝试获取指数行情
+                index_df = ak.index_zh_a_hist(symbol="000001", period="daily", start_date="20230101", end_date="20230110")
+                if not index_df.empty:
+                    return {'success': True, 'message': 'AKShare API连接成功 (指数历史数据)'}
+            except Exception as e2:
+                print(json.dumps({'status': 'progress', 'message': f'指数历史数据获取失败，尝试其他API: {str(e2)}'}, ensure_ascii=False), flush=True)
+
+                try:
+                    # 尝试获取股票列表
+                    stock_list = ak.stock_info_a_code_name()
+                    if not stock_list.empty:
+                        return {'success': True, 'message': 'AKShare API连接成功 (股票列表)'}
+                except Exception as e3:
+                    # 所有尝试都失败，返回错误
+                    return {'success': False, 'message': f'AKShare API连接失败: {str(e3)}', 'traceback': traceback.format_exc()}
+
+        # 如果执行到这里，说明没有成功获取数据
+        return {'success': False, 'message': 'AKShare API返回空数据'}
     except Exception as e:
-        return {'success': False, 'message': str(e), 'traceback': traceback.format_exc()}
+        return {'success': False, 'message': f"测试连接失败: {str(e)}", 'traceback': traceback.format_exc()}
 
 def get_stock_list():
     """获取股票列表"""
     try:
         # 获取A股股票列表
+        print(json.dumps({'status': 'progress', 'message': '正在获取股票列表...'}, ensure_ascii=False), flush=True)
         stock_df = ak.stock_zh_a_spot_em()
+
+        # 如果数据为空，返回错误
+        if stock_df.empty:
+            return {'success': False, 'message': '获取股票列表失败，返回数据为空'}
 
         # 转换为标准格式
         stocks = []
@@ -49,16 +97,21 @@ def get_stock_list():
                     market = '未知'
                     symbol = code
 
+            # 检查所属行业是否存在
+            industry = '未知'
+            if '所属行业' in row.index and not pd.isna(row['所属行业']):
+                industry = row['所属行业']
+
             stocks.append({
                 'symbol': symbol,
                 'name': row['名称'],
                 'market': market,
-                'industry': row['所属行业'] if '所属行业' in row else '未知'
+                'industry': industry
             })
 
         return {'success': True, 'data': stocks}
     except Exception as e:
-        return {'success': False, 'message': str(e), 'traceback': traceback.format_exc()}
+        return {'success': False, 'message': f"获取股票列表失败: {str(e)}", 'traceback': traceback.format_exc()}
 
 def get_stock_quote(symbol):
     """获取股票实时行情"""
@@ -170,7 +223,7 @@ def search_stocks(keyword):
                 'symbol': symbol,
                 'name': row['名称'],
                 'market': market,
-                'industry': row['所属行业'] if '所属行业' in row else '未知'
+                'industry': row['所属行业'] if '所属行业' in row.index else '未知'
             })
 
         return {'success': True, 'data': stocks}

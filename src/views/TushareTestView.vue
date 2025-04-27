@@ -30,8 +30,8 @@
       <p>正在加载数据，请稍候...</p>
     </div>
 
-    <div v-if="error" class="error">
-      <h3>错误信息</h3>
+    <div v-if="error" :class="['message', messageType]">
+      <h3>{{ messageTitle }}</h3>
       <pre>{{ error }}</pre>
     </div>
 
@@ -195,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import axios from 'axios'
 import type { Stock, StockData } from '@/types/stock'
 import { tushareService } from '@/services/tushareService'
@@ -210,6 +210,24 @@ const stockData = ref<StockData | null>(null)
 const rawResponse = ref('')
 const redisResponse = ref<any>(null)
 const customStockCode = ref('')
+const errorType = ref<'error' | 'warning' | 'info'>('error') // 默认为错误
+
+// 计算消息类型
+const messageType = computed(() => {
+  return errorType.value
+})
+
+// 计算消息标题
+const messageTitle = computed(() => {
+  switch (errorType.value) {
+    case 'warning':
+      return '警告信息'
+    case 'info':
+      return '提示信息'
+    default:
+      return '错误信息'
+  }
+})
 
 // Tushare API 配置
 // 使用本地代理服务器避免 CORS 问题
@@ -341,7 +359,27 @@ const getStockList = async () => {
       connectionStatus.value = '获取股票列表失败或列表为空'
     }
   } catch (err: any) {
-    error.value = err.message || '获取股票列表失败'
+    // 检查错误类型
+    if (err.response && err.response.data) {
+      const responseData = err.response.data
+
+      // 根据响应中的类型字段设置错误类型
+      if (responseData.type === 'warning') {
+        errorType.value = 'warning'
+        error.value = responseData.warning || responseData.message || '获取股票列表失败'
+      } else if (responseData.type === 'info') {
+        errorType.value = 'info'
+        error.value = responseData.message || '获取股票列表失败'
+      } else {
+        errorType.value = 'error'
+        error.value = responseData.error || responseData.message || '获取股票列表失败'
+      }
+    } else {
+      // 默认为错误
+      errorType.value = 'error'
+      error.value = err.message || '获取股票列表失败'
+    }
+
     console.error('获取股票列表错误:', err)
   } finally {
     isLoading.value = false
@@ -658,9 +696,28 @@ button:disabled {
   background-color: #f0f0f0;
 }
 
-.error {
+.message {
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.message.error {
   background-color: #ffebee;
   color: #c62828;
+  border-left: 4px solid #c62828;
+}
+
+.message.warning {
+  background-color: #fff8e1;
+  color: #ff8f00;
+  border-left: 4px solid #ff8f00;
+}
+
+.message.info {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border-left: 4px solid #1976d2;
 }
 
 .status {

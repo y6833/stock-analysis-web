@@ -1,26 +1,31 @@
 <template>
   <div class="api-test">
     <h1>API 和 Redis 缓存测试</h1>
-    
+    <div class="nav-links">
+      <router-link to="/tushare-test" class="nav-link">Tushare 数据库测试</router-link>
+    </div>
+
     <div class="test-section">
       <h2>股票行情测试</h2>
       <div class="input-group">
         <input v-model="stockCode" placeholder="输入股票代码 (例如: 000001.SZ)" />
         <button @click="getStockQuote" :disabled="isLoading">获取股票行情</button>
       </div>
-      
+
       <div v-if="isLoading" class="loading">
         <p>正在加载数据，请稍候...</p>
       </div>
-      
+
       <div v-if="error" class="error">
         <p>{{ error }}</p>
       </div>
-      
+
       <div v-if="quoteData" class="data-display">
         <h3>股票行情数据</h3>
         <p><strong>数据来源:</strong> {{ quoteData.fromCache ? '缓存' : 'API' }}</p>
-        <p v-if="quoteData.fromCache"><strong>缓存时间:</strong> {{ formatDate(quoteData.cacheTime) }}</p>
+        <p v-if="quoteData.fromCache">
+          <strong>缓存时间:</strong> {{ formatDate(quoteData.cacheTime) }}
+        </p>
         <table>
           <tr>
             <th>股票代码</th>
@@ -63,19 +68,19 @@
         </table>
       </div>
     </div>
-    
+
     <div class="test-section">
       <h2>股票列表测试</h2>
       <button @click="getStockList" :disabled="isLoadingList">获取股票列表</button>
-      
+
       <div v-if="isLoadingList" class="loading">
         <p>正在加载股票列表，请稍候...</p>
       </div>
-      
+
       <div v-if="listError" class="error">
         <p>{{ listError }}</p>
       </div>
-      
+
       <div v-if="stockList && stockList.length > 0" class="data-display">
         <h3>股票列表 (显示前 20 条)</h3>
         <table>
@@ -93,9 +98,7 @@
               <td>{{ stock.name }}</td>
               <td>{{ stock.industry }}</td>
               <td>
-                <button @click="selectStock(stock.symbol)" class="small-button">
-                  查看行情
-                </button>
+                <button @click="selectStock(stock.symbol)" class="small-button">查看行情</button>
               </td>
             </tr>
           </tbody>
@@ -103,30 +106,30 @@
         <p class="list-info">共加载 {{ stockList.length }} 只股票</p>
       </div>
     </div>
-    
+
     <div class="test-section">
       <h2>Redis 缓存测试</h2>
       <button @click="testRedisConnection" :disabled="isLoadingRedis">测试 Redis 连接</button>
-      
+
       <div v-if="isLoadingRedis" class="loading">
         <p>正在测试 Redis 连接，请稍候...</p>
       </div>
-      
+
       <div v-if="redisError" class="error">
         <p>{{ redisError }}</p>
       </div>
-      
+
       <div v-if="redisData" class="data-display">
         <h3>Redis 测试结果</h3>
         <div v-if="redisData.success" class="redis-success">
           <p><strong>状态:</strong> 成功</p>
           <p v-if="redisData.redisAvailable"><strong>Redis 可用:</strong> 是</p>
-          
+
           <div v-if="redisData.testData">
             <h4>测试数据:</h4>
             <pre>{{ JSON.stringify(redisData.testData, null, 2) }}</pre>
           </div>
-          
+
           <div v-if="redisData.existingKeys && redisData.existingKeys.length > 0">
             <h4>Redis 键:</h4>
             <ul>
@@ -134,7 +137,7 @@
             </ul>
           </div>
         </div>
-        
+
         <div v-else class="redis-error">
           <p><strong>状态:</strong> 失败</p>
           <p><strong>错误信息:</strong> {{ redisData.error }}</p>
@@ -165,11 +168,11 @@ const redisError = ref('')
 // 获取股票行情
 const getStockQuote = async () => {
   if (!stockCode.value) return
-  
+
   isLoading.value = true
   error.value = ''
   quoteData.value = null
-  
+
   try {
     const response = await axios.get(`/api/stocks/${stockCode.value}/quote`)
     quoteData.value = response.data
@@ -186,7 +189,7 @@ const getStockQuote = async () => {
 const getStockList = async () => {
   isLoadingList.value = true
   listError.value = ''
-  
+
   try {
     const response = await axios.get('/api/stocks')
     stockList.value = response.data
@@ -210,7 +213,7 @@ const testRedisConnection = async () => {
   isLoadingRedis.value = true
   redisError.value = ''
   redisData.value = null
-  
+
   try {
     const response = await axios.get('/api/test/redis')
     redisData.value = response.data
@@ -242,6 +245,25 @@ const formatNumber = (num) => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.nav-links {
+  margin-bottom: 20px;
+}
+
+.nav-link {
+  display: inline-block;
+  background-color: #1976d2;
+  color: white;
+  padding: 8px 15px;
+  text-decoration: none;
+  border-radius: 4px;
+  margin-right: 10px;
+  transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+  background-color: #1565c0;
 }
 
 h1 {
@@ -302,7 +324,9 @@ button:disabled {
   font-size: 14px;
 }
 
-.loading, .error, .data-display {
+.loading,
+.error,
+.data-display {
   margin-top: 20px;
   padding: 15px;
   border-radius: 4px;
@@ -327,7 +351,8 @@ table {
   margin-top: 10px;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: left;

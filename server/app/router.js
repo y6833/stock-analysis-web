@@ -105,4 +105,10 @@ module.exports = app => {
   router.get('/api/akshare/search', controller.akshare.search);
   router.get('/api/akshare/history', controller.akshare.history);
   router.get('/api/akshare/news', controller.akshare.news);
+
+  // Tushare API路由
+  router.get('/api/tushare/test', controller.tushare.test);
+  router.get('/api/tushare/stock-basic', controller.tushare.getStockBasic);
+  router.post('/api/tushare/update-stock-basic', controller.tushare.updateStockBasic);
+  router.post('/api/tushare', controller.tushare.proxy);
 };

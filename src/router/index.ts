@@ -79,8 +79,13 @@ const router = createRouter({
     {
       path: '/tushare-test',
       name: 'tushare-test',
-      component: () => import('../views/TushareTestView.vue'),
+      component: () => import('../views/TushareTest.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/tushare-test2',
+      name: 'tushare-test2',
+      component: () => import('../views/TushareTestView.vue'),
     },
     {
       path: '/api-test',

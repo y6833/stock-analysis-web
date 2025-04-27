@@ -13,6 +13,7 @@ import ExportSimulation = require('../../../app/controller/simulation');
 import ExportSina = require('../../../app/controller/sina');
 import ExportStock = require('../../../app/controller/stock');
 import ExportTencent = require('../../../app/controller/tencent');
+import ExportTushare = require('../../../app/controller/tushare');
 import ExportUser = require('../../../app/controller/user');
 import ExportWatchlist = require('../../../app/controller/watchlist');
 
@@ -28,6 +29,7 @@ declare module 'egg' {
     sina: ExportSina;
     stock: ExportStock;
     tencent: ExportTencent;
+    tushare: ExportTushare;
     user: ExportUser;
     watchlist: ExportWatchlist;
   }

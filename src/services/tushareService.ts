@@ -3,7 +3,7 @@ import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 
 // Tushare API 配置
 // 使用本地代理服务器避免 CORS 问题
-const TUSHARE_API_URL = 'http://localhost:3000/api/tushare'
+const TUSHARE_API_URL = '/api/tushare'
 const TOKEN = '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61'
 
 // 调试模式 - 开启可以看到更多日志
@@ -282,25 +282,51 @@ function cacheSectorList(data: any[]): void {
 export const tushareService = {
   // 获取股票列表
   async getStocks(): Promise<Stock[]> {
-    // 尝试从缓存获取
-    const cachedData = getCachedStockBasic()
-    if (cachedData) {
-      log('从缓存获取股票基础数据')
-      return cachedData
-    }
-
     try {
-      const data = await tushareRequest('stock_basic', {
-        exchange: '',
-        list_status: 'L',
-        fields: 'ts_code,name,industry,market,list_date',
-      })
-      const stocks = convertStockList(data)
-      cacheStockBasic(stocks)
-      return stocks
+      // 尝试从缓存获取
+      const cachedData = getCachedStockBasic()
+      if (cachedData) {
+        log('从缓存获取股票基础数据')
+        return cachedData
+      }
+
+      // 使用新的后端接口获取股票基本信息
+      log('从后端获取股票基本信息')
+      const response = await axios.get(`${TUSHARE_API_URL}/stock-basic`)
+
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        const stocks = response.data.data.map((item: any) => ({
+          symbol: item.ts_code,
+          name: item.name,
+          market: item.market || (item.ts_code.includes('SH') ? '上海' : '深圳'),
+          industry: item.industry || '未知',
+        }))
+
+        // 缓存数据
+        cacheStockBasic(stocks)
+
+        log(`成功获取 ${stocks.length} 条股票基本信息 (来源: ${response.data.source})`)
+        return stocks
+      } else {
+        throw new Error(response.data?.message || '获取股票列表失败')
+      }
     } catch (error) {
-      logError('获取股票列表失败:', error)
-      return []
+      // 如果后端接口失败，尝试使用原来的方法
+      try {
+        log('后端接口失败，尝试使用原来的方法获取股票列表')
+        const data = await tushareRequest('stock_basic', {
+          exchange: '',
+          list_status: 'L',
+          fields: 'ts_code,name,industry,market,list_date',
+        })
+        const stocks = convertStockList(data)
+        cacheStockBasic(stocks)
+        return stocks
+      } catch (fallbackError) {
+        logError('获取股票列表失败:', error)
+        logError('原来的方法也失败:', fallbackError)
+        return []
+      }
     }
   },
 
