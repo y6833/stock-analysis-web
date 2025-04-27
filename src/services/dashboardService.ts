@@ -313,58 +313,77 @@ export function removeStockFromWatchlist(watchlistId: string, symbol: string): v
  * 添加提醒到关注列表项
  * @param watchlistId 关注列表ID
  * @param symbol 股票代码
+ * @param stockName 股票名称
  * @param alert 提醒信息
  */
-export function addAlertToWatchlistItem(
+export async function addAlertToWatchlistItem(
   watchlistId: string,
   symbol: string,
-  alert: Omit<WatchlistAlert, 'id' | 'createdAt' | 'triggered'>
-): void {
-  const settings = getDashboardSettings()
-  const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+  stockName: string,
+  alert: {
+    condition: string
+    value: number
+    message?: string
+  }
+): Promise<void> {
+  try {
+    // 导入alertService
+    const { alertService } = await import('@/services/alertService')
 
-  if (watchlist) {
-    const item = watchlist.items.find((item) => item.symbol === symbol)
-
-    if (item) {
-      if (!item.alerts) {
-        item.alerts = []
-      }
-
-      const newAlert: WatchlistAlert = {
-        ...alert,
-        id: uuidv4(),
-        triggered: false,
-        createdAt: new Date().toISOString(),
-      }
-
-      item.alerts.push(newAlert)
-      saveDashboardSettings(settings)
+    // 创建提醒请求
+    const alertRequest = {
+      watchlistId,
+      symbol,
+      stockName,
+      condition: alert.condition as any,
+      value: alert.value,
+      message: alert.message,
     }
+
+    // 调用API创建提醒
+    await alertService.addWatchlistAlert(alertRequest)
+  } catch (error) {
+    console.error('添加关注列表提醒失败:', error)
+    throw error
   }
 }
 
 /**
  * 移除关注列表项的提醒
  * @param watchlistId 关注列表ID
- * @param symbol 股票代码
  * @param alertId 提醒ID
  */
-export function removeAlertFromWatchlistItem(
+export async function removeAlertFromWatchlistItem(
   watchlistId: string,
-  symbol: string,
-  alertId: string
-): void {
-  const settings = getDashboardSettings()
-  const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+  alertId: number
+): Promise<void> {
+  try {
+    // 导入alertService
+    const { alertService } = await import('@/services/alertService')
 
-  if (watchlist) {
-    const item = watchlist.items.find((item) => item.symbol === symbol)
+    // 调用API删除提醒
+    await alertService.removeWatchlistAlert(watchlistId, alertId)
+  } catch (error) {
+    console.error('删除关注列表提醒失败:', error)
+    throw error
+  }
+}
 
-    if (item && item.alerts) {
-      item.alerts = item.alerts.filter((alert) => alert.id !== alertId)
-      saveDashboardSettings(settings)
-    }
+/**
+ * 获取关注列表项的提醒
+ * @param watchlistId 关注列表ID
+ * @returns 提醒列表
+ */
+export async function getWatchlistAlerts(watchlistId: string): Promise<any[]> {
+  try {
+    // 导入alertService
+    const { alertService } = await import('@/services/alertService')
+
+    // 调用API获取提醒
+    return await alertService.getWatchlistAlerts(watchlistId)
+  } catch (error) {
+    console.error('获取关注列表提醒失败:', error)
+    return []
   }
 }
 

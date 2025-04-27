@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { userService } from '@/services/userService'
+import { tushareService } from '@/services/tushareService'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -137,6 +138,12 @@ const router = createRouter({
       component: () => import('../views/DataSourceSettingsView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/settings/cache',
+      name: 'cache-management',
+      component: () => import('../views/CacheManagementView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
 
     // 404 路由
     {
@@ -150,6 +157,9 @@ const router = createRouter({
 
 // 全局前置守卫
 router.beforeEach((to, from, next) => {
+  // 更新当前路径，用于API调用控制
+  tushareService.updateCurrentPath(to.path)
+
   // 检查路由是否需要认证和权限
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)

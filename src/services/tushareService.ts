@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
+import { getAuthHeaders } from '@/utils/auth'
 
 // Tushare API 配置
 // 使用本地代理服务器避免 CORS 问题
@@ -8,6 +9,18 @@ const TOKEN = '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61'
 
 // 调试模式 - 开启可以看到更多日志
 const DEBUG_MODE = true
+
+// API调用控制
+// 控制是否允许调用Tushare API
+// 只有在以下情况下允许调用：
+// 1. 用户登录成功后
+// 2. 用户点击刷新按钮时
+// 3. 在API测试模块中
+// 4. 在切换数据源模块中
+let allowApiCall = false
+
+// 当前页面路径
+let currentPath = window.location.pathname
 
 // 缓存配置
 const STOCK_BASIC_CACHE_KEY = 'tushare_stock_basic_cache'
@@ -60,9 +73,44 @@ async function checkRateLimit(api_name: string): Promise<void> {
   lastRequestTime[api_name] = Date.now()
 }
 
+// 检查是否允许API调用
+function checkApiCallAllowed(): boolean {
+  // 检查当前路径是否为API测试页面或数据源切换页面
+  const isApiTestPage = currentPath.includes('/tushare-test') || currentPath.includes('/api-test')
+  const isDataSourcePage = currentPath.includes('/data-source')
+
+  // 如果是API测试页面或数据源切换页面，始终允许调用
+  if (isApiTestPage || isDataSourcePage) {
+    return true
+  }
+
+  // 否则，根据allowApiCall标志决定
+  return allowApiCall
+}
+
+// 设置允许API调用
+export function setAllowApiCall(allow: boolean): void {
+  allowApiCall = allow
+  log(`API调用权限已${allow ? '开启' : '关闭'}`)
+}
+
+// 更新当前路径
+export function updateCurrentPath(path: string): void {
+  currentPath = path
+  log(`当前路径已更新为: ${path}`)
+}
+
 // Tushare API 请求函数
 async function tushareRequest(api_name: string, params: any = {}, retryCount = 0): Promise<any> {
   try {
+    // 检查是否允许API调用
+    if (!checkApiCallAllowed()) {
+      log(
+        `API调用被限制: ${api_name}。只有在登录成功后、点击刷新按钮时、API测试页面或数据源切换页面才允许调用。`
+      )
+      throw new Error('API调用被限制，请在允许的场景下使用')
+    }
+
     // 检查请求频率限制
     await checkRateLimit(api_name)
 
@@ -77,7 +125,15 @@ async function tushareRequest(api_name: string, params: any = {}, retryCount = 0
 
     log('请求数据:', JSON.stringify(requestData))
 
-    const response = await axios.post(TUSHARE_API_URL, requestData, {
+    // 添加force_api参数，根据allowApiCall决定是否强制使用API
+    const requestWithForce = {
+      ...requestData,
+      force_api: allowApiCall,
+    }
+
+    log('添加force_api参数:', allowApiCall)
+
+    const response = await axios.post(TUSHARE_API_URL, requestWithForce, {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json, text/plain, */*',
@@ -96,10 +152,24 @@ async function tushareRequest(api_name: string, params: any = {}, retryCount = 0
     log('响应数据:', response.data)
 
     if (response.data.code === 0) {
+      // 记录数据来源信息
+      const dataSource = response.data.data_source || 'Tushare API'
+      const dataSourceMessage = response.data.data_source_message || '数据来源未知'
+      const isRealTime = response.data.is_real_time || false
+      const isCache = response.data.cache || false
+
       log(`Tushare API ${api_name} 请求成功，获取到 ${response.data.data.items.length} 条数据`)
+      log(
+        `数据来源: ${dataSource}, ${dataSourceMessage}, 实时数据: ${isRealTime}, 缓存: ${isCache}`
+      )
+
       return {
         fields: response.data.data.fields,
         items: response.data.data.items,
+        data_source: dataSource,
+        data_source_message: dataSourceMessage,
+        is_real_time: isRealTime,
+        is_cache: isCache,
       }
     } else {
       // 如果是频率限制错误，尝试重试
@@ -280,6 +350,10 @@ function cacheSectorList(data: any[]): void {
 
 // Tushare 服务
 export const tushareService = {
+  // API调用控制
+  setAllowApiCall,
+  updateCurrentPath,
+
   // 获取股票列表
   async getStocks(): Promise<Stock[]> {
     try {

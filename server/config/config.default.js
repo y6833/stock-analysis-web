@@ -77,7 +77,7 @@ module.exports = (appInfo) => {
 
   // Tushare API 配置
   config.tushare = {
-    token: process.env.TUSHARE_TOKEN || 'your-tushare-token-here', // 请替换为您的实际token
+    token: process.env.TUSHARE_TOKEN || '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61', // 使用用户提供的 token
     api_url: 'http://api.tushare.pro',
   }
 

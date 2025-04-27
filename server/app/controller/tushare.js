@@ -100,7 +100,7 @@ class TushareController extends Controller {
   // 代理 Tushare API 请求
   async proxy() {
     const { ctx } = this;
-    const { api_name, params, token } = ctx.request.body;
+    const { api_name, params, token, force_api = false } = ctx.request.body;
 
     if (!api_name) {
       ctx.status = 400;
@@ -112,7 +112,101 @@ class TushareController extends Controller {
     }
 
     try {
-      this.ctx.logger.info(`代理 Tushare API 请求: ${api_name}`);
+      this.ctx.logger.info(`代理 Tushare API 请求: ${api_name}, 强制API: ${force_api}`);
+
+      // 检查是否应该从缓存获取数据
+      if (!force_api) {
+        // 尝试从Redis缓存获取数据
+        const cacheKey = `tushare:${api_name}:${JSON.stringify(params || {})}`;
+        const cachedData = await ctx.app.redis.get(cacheKey);
+
+        if (cachedData) {
+          try {
+            const parsedData = JSON.parse(cachedData);
+            this.ctx.logger.info(`从缓存获取数据: ${api_name}`);
+
+            // 记录缓存命中
+            ctx.service.cacheStats.recordHit('tushare', api_name);
+
+            // 添加明确的数据来源信息
+            const dataSource = "Redis缓存";
+            const cacheTime = parsedData.cache_time || new Date().toISOString();
+            const timeDiff = Math.round((new Date() - new Date(cacheTime)) / 1000 / 60); // 分钟
+
+            // 检查缓存是否接近过期（超过80%的过期时间）
+            const cacheExpire = 60 * 60; // 1小时（秒）
+            const cacheAgeSeconds = Math.round((new Date() - new Date(cacheTime)) / 1000);
+            const cacheExpiryPercentage = (cacheAgeSeconds / cacheExpire) * 100;
+            const isNearExpiry = cacheExpiryPercentage > 80;
+
+            ctx.body = {
+              ...parsedData,
+              cache: true,
+              cache_time: cacheTime,
+              cache_age: cacheAgeSeconds,
+              cache_expiry_percentage: cacheExpiryPercentage.toFixed(2),
+              is_near_expiry: isNearExpiry,
+              data_source: dataSource,
+              data_source_message: `数据来自${dataSource}，最后更新于${timeDiff}分钟前`,
+              is_real_time: false
+            };
+
+            // 如果缓存接近过期，在后台异步刷新缓存
+            if (isNearExpiry && !ctx.app.cacheRefreshing) {
+              ctx.app.cacheRefreshing = true;
+
+              // 构建请求 URL 和数据（在闭包内部定义，避免引用外部变量）
+              const refreshUrl = 'http://api.tushare.pro';
+              const refreshData = {
+                api_name,
+                token: token || '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61',
+                params: params || {}
+              };
+
+              // 异步刷新缓存
+              setTimeout(async () => {
+                try {
+                  this.ctx.logger.info(`缓存接近过期，异步刷新: ${api_name}`);
+
+                  // 发送请求到 Tushare API
+                  const refreshResponse = await ctx.curl(refreshUrl, {
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(refreshData),
+                    dataType: 'json',
+                    timeout: 30000 // 30秒超时
+                  });
+
+                  if (refreshResponse.status === 200 && refreshResponse.data && refreshResponse.data.code === 0) {
+                    // 更新缓存
+                    const dataToCache = {
+                      ...refreshResponse.data,
+                      cache_time: new Date().toISOString()
+                    };
+
+                    await ctx.app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', cacheExpire);
+                    this.ctx.logger.info(`缓存已异步刷新: ${api_name}`);
+                  }
+                } catch (refreshError) {
+                  this.ctx.logger.warn(`异步刷新缓存失败: ${refreshError.message}`);
+                } finally {
+                  ctx.app.cacheRefreshing = false;
+                }
+              }, 0);
+            }
+
+            return;
+          } catch (parseError) {
+            this.ctx.logger.warn(`解析缓存数据失败: ${parseError.message}`);
+            // 记录错误
+            ctx.service.cacheStats.recordError('tushare', api_name, parseError);
+            // 继续执行，从API获取数据
+          }
+        } else {
+          // 记录缓存未命中
+          ctx.service.cacheStats.recordMiss('tushare', api_name);
+        }
+      }
 
       // 构建请求 URL
       const tushareUrl = 'http://api.tushare.pro';
@@ -123,6 +217,9 @@ class TushareController extends Controller {
         token: token || '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61', // 使用提供的 token 或默认 token
         params: params || {}
       };
+
+      // 记录API调用
+      ctx.service.cacheStats.recordApiCall('tushare', api_name);
 
       // 发送请求到 Tushare API
       const response = await ctx.curl(tushareUrl, {
@@ -135,6 +232,9 @@ class TushareController extends Controller {
 
       // 检查响应状态
       if (response.status !== 200) {
+        // 记录错误
+        ctx.service.cacheStats.recordError('tushare', api_name, new Error(`HTTP ${response.status}`));
+
         ctx.status = response.status;
         ctx.body = {
           code: response.status,
@@ -143,10 +243,39 @@ class TushareController extends Controller {
         return;
       }
 
-      // 返回 Tushare API 的响应
-      ctx.body = response.data;
+      // 如果请求成功，将数据缓存到 Redis
+      if (response.data && response.data.code === 0) {
+        try {
+          const cacheKey = `tushare:${api_name}:${JSON.stringify(params || {})}`;
+          const dataToCache = {
+            ...response.data,
+            cache_time: new Date().toISOString()
+          };
+
+          // 缓存数据，设置过期时间（默认1小时）
+          const cacheExpire = 60 * 60; // 1小时
+          await ctx.app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', cacheExpire);
+          this.ctx.logger.info(`数据已缓存: ${api_name}, 过期时间: ${cacheExpire}秒`);
+        } catch (cacheError) {
+          this.ctx.logger.warn(`缓存数据失败: ${cacheError.message}`);
+          // 继续执行，不影响返回结果
+        }
+      }
+
+      // 返回 Tushare API 的响应，添加明确的数据来源信息
+      ctx.body = {
+        ...response.data,
+        cache: false,
+        api_time: new Date().toISOString(),
+        data_source: "Tushare API",
+        data_source_message: "数据来自Tushare API实时查询，最新数据",
+        is_real_time: true
+      };
     } catch (error) {
       this.ctx.logger.error(`代理 Tushare API 请求失败: ${error.message}`);
+
+      // 记录错误
+      ctx.service.cacheStats.recordError('tushare', api_name, error);
 
       ctx.status = 500;
       ctx.body = {

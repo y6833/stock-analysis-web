@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { userService } from '@/services/userService'
+import { tushareService } from '@/services/tushareService'
 import type {
   User,
   UserProfile,
@@ -44,14 +45,28 @@ export const useUserStore = defineStore('user', () => {
           isAuthenticated.value = true
           // 获取用户详细资料
           await fetchUserProfile()
+
+          // 允许API调用
+          tushareService.setAllowApiCall(true)
+          console.log('用户状态初始化成功，已允许API调用')
         } else {
           // 令牌无效，清除用户状态
           logout()
         }
+      } else {
+        // 没有存储的用户信息，禁止API调用
+        tushareService.setAllowApiCall(false)
+        console.log('未检测到登录状态，已禁止API调用')
       }
+
+      // 更新当前路径
+      tushareService.updateCurrentPath(window.location.pathname)
     } catch (err) {
       console.error('初始化用户状态失败:', err)
       error.value = '初始化用户状态失败'
+
+      // 出错时禁止API调用
+      tushareService.setAllowApiCall(false)
     } finally {
       isLoading.value = false
     }
@@ -87,6 +102,10 @@ export const useUserStore = defineStore('user', () => {
       // 获取用户详细资料
       await fetchUserProfile()
 
+      // 允许API调用
+      tushareService.setAllowApiCall(true)
+      console.log('登录成功，已允许API调用')
+
       return true
     } catch (err: any) {
       console.error('登录失败:', err)
@@ -104,6 +123,10 @@ export const useUserStore = defineStore('user', () => {
     profile.value = null
     isAuthenticated.value = false
     error.value = null
+
+    // 禁止API调用
+    tushareService.setAllowApiCall(false)
+    console.log('登出成功，已禁止API调用')
   }
 
   // 获取用户详细资料

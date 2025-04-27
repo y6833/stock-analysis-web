@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Tushare API 配置
-const TUSHARE_API_URL = 'https://api.tushare.pro';
+const TUSHARE_API_URL = 'http://api.tushare.pro';
 const TOKEN = '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61';
 
 async function testDailyAPI() {
@@ -10,7 +10,7 @@ async function testDailyAPI() {
   console.log('当前时间:', new Date().toISOString());
   console.log('API URL:', TUSHARE_API_URL);
   console.log('Token:', TOKEN ? '已设置' : '未设置');
-  
+
   try {
     const requestData = {
       api_name: 'daily',
@@ -21,9 +21,9 @@ async function testDailyAPI() {
         end_date: '20240410'
       }
     };
-    
+
     console.log('请求数据:', JSON.stringify(requestData, null, 2));
-    
+
     const response = await axios.post(TUSHARE_API_URL, requestData, {
       headers: {
         'Content-Type': 'application/json',
@@ -35,9 +35,9 @@ async function testDailyAPI() {
         'sec-ch-ua-platform': '"Windows"'
       }
     });
-    
+
     console.log('响应状态码:', response.status);
-    
+
     if (response.data && response.data.code === 0) {
       console.log('Tushare daily API 请求成功!');
       console.log('数据字段:', response.data.data.fields);

@@ -195,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import type { Stock, StockData } from '@/types/stock'
 import { tushareService } from '@/services/tushareService'
@@ -565,6 +565,19 @@ const storeAllStocksToRedis = async () => {
     isLoading.value = false
   }
 }
+
+// 生命周期钩子
+onMounted(() => {
+  // 在API测试页面上允许API调用
+  tushareService.setAllowApiCall(true)
+  console.log('API测试页面已加载，已允许API调用')
+})
+
+onUnmounted(() => {
+  // 组件卸载时恢复API调用限制
+  tushareService.setAllowApiCall(false)
+  console.log('API测试页面已卸载，已恢复API调用限制')
+})
 </script>
 
 <style scoped>

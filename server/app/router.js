@@ -111,4 +111,27 @@ module.exports = app => {
   router.get('/api/tushare/stock-basic', controller.tushare.getStockBasic);
   router.post('/api/tushare/update-stock-basic', controller.tushare.updateStockBasic);
   router.post('/api/tushare', controller.tushare.proxy);
+
+  // 提醒相关路由（需要认证）
+  router.get('/api/alerts', auth, controller.alert.getAlerts);
+  router.post('/api/alerts', auth, controller.alert.createAlert);
+  router.patch('/api/alerts/:id', auth, controller.alert.updateAlert);
+  router.delete('/api/alerts/:id', auth, controller.alert.deleteAlert);
+  router.get('/api/alerts/:id/history', auth, controller.alert.getAlertHistory);
+  router.patch('/api/alerts/history/:historyId', auth, controller.alert.markHistoryAsRead);
+
+  // 关注列表提醒相关路由（需要认证）
+  router.get('/api/watchlist-alerts', auth, controller.alert.getWatchlistAlerts);
+  router.post('/api/watchlist-alerts', auth, controller.alert.addWatchlistAlert);
+  router.delete('/api/watchlist-alerts/:watchlistId/:alertId', auth, controller.alert.removeWatchlistAlert);
+
+  // 缓存相关路由（需要认证）
+  router.get('/api/cache/status', auth, controller.cache.getStatus);
+  router.post('/api/cache/refresh', auth, controller.cache.refreshCache);
+  router.delete('/api/cache/:dataSource', auth, controller.cache.clearCache);
+  router.get('/api/cache/refresh-limit', auth, controller.cache.checkRefreshLimit);
+
+  // 缓存统计相关路由（需要认证）
+  router.get('/api/cache-stats', auth, controller.cacheStats.getStats);
+  router.post('/api/cache-stats/reset', auth, controller.cacheStats.resetStats);
 };

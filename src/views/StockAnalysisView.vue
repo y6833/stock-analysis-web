@@ -14,6 +14,7 @@ import MultiTimeframeAnalysis from '@/components/analysis/MultiTimeframeAnalysis
 import SignalSystem from '@/components/analysis/SignalSystem.vue'
 import FundamentalAnalysis from '@/components/fundamental/FundamentalAnalysis.vue'
 import NewsAggregation from '@/components/news/NewsAggregation.vue'
+import DataSourceInfo from '@/components/common/DataSourceInfo.vue'
 
 const route = useRoute()
 const { showToast } = useToast()
@@ -26,6 +27,12 @@ const analysisResult = ref('')
 const isLoading = ref(false)
 const error = ref('')
 const chart = ref<echarts.ECharts | null>(null)
+
+// 数据来源信息
+const dataSource = ref('未知')
+const dataSourceMessage = ref('数据来源未知')
+const isRealTime = ref(false)
+const isCache = ref(false)
 
 // 高级技术分析相关
 const activeTab = ref('basic') // 'basic', 'advanced', 'multiframe'
@@ -138,7 +145,25 @@ const fetchStockData = async () => {
       stockSymbol.value = symbol
     }
 
-    stockData.value = await stockService.getStockData(stockSymbol.value)
+    const result = await stockService.getStockData(stockSymbol.value)
+
+    // 保存股票数据
+    stockData.value = result
+
+    // 保存数据来源信息
+    if (result.data_source) {
+      dataSource.value = result.data_source
+      dataSourceMessage.value = result.data_source_message || `数据来自${result.data_source}`
+      isRealTime.value = result.is_real_time || false
+      isCache.value = result.is_cache || false
+
+      // 显示数据来源提示
+      const sourceType = isRealTime.value ? '实时' : '缓存'
+      const toastType = isRealTime.value ? 'success' : 'info'
+      showToast(dataSourceMessage.value, toastType)
+
+      console.log(`数据来源: ${dataSource.value}, ${sourceType}数据`)
+    }
 
     // 添加延迟，确保DOM已经完全渲染
     console.log('数据加载完成，延迟300ms初始化图表')
@@ -873,6 +898,15 @@ onMounted(() => {
       </div>
 
       <div class="chart-container-wrapper">
+        <!-- 数据来源信息 -->
+        <DataSourceInfo
+          v-if="stockData && dataSource !== '未知'"
+          :dataSource="dataSource"
+          :dataSourceMessage="dataSourceMessage"
+          :isRealTime="isRealTime"
+          :isCache="isCache"
+        />
+
         <div ref="chartRef" class="chart-container">
           <div v-if="isLoading" class="loading-overlay">
             <div class="loading-spinner"></div>

@@ -4,6 +4,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import DataSourceIndicator from '@/components/common/DataSourceIndicator.vue'
+import DataRefreshButton from '@/components/common/DataRefreshButton.vue'
+import CacheStatusIndicator from '@/components/common/CacheStatusIndicator.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -78,6 +80,18 @@ onMounted(async () => {
   // 初始化用户状态
   await userStore.initUserState()
 })
+
+// 处理数据刷新成功
+const handleRefreshSuccess = (result: any) => {
+  // 这里可以添加Toast提示或其他反馈
+  console.log('数据刷新成功:', result)
+}
+
+// 处理数据刷新失败
+const handleRefreshError = (error: string) => {
+  // 这里可以添加Toast提示或其他反馈
+  console.error('数据刷新失败:', error)
+}
 
 // 组件卸载时移除点击事件监听
 onUnmounted(() => {
@@ -184,6 +198,19 @@ onUnmounted(() => {
         <div class="user-section">
           <!-- 数据源状态指示器 -->
           <DataSourceIndicator v-if="isLoggedIn" />
+
+          <!-- 数据刷新按钮 -->
+          <DataRefreshButton
+            v-if="isLoggedIn"
+            :showText="false"
+            @refresh-success="handleRefreshSuccess"
+            @refresh-error="handleRefreshError"
+          />
+
+          <!-- 缓存状态指示器 -->
+          <div class="cache-indicator-wrapper" v-if="isLoggedIn && userStore.userRole === 'admin'">
+            <CacheStatusIndicator />
+          </div>
 
           <!-- 搜索按钮 -->
           <button class="btn btn-outline">
@@ -403,6 +430,14 @@ onUnmounted(() => {
   display: flex;
   gap: var(--spacing-sm);
   align-items: center;
+}
+
+/* 缓存状态指示器包装器 */
+.cache-indicator-wrapper {
+  position: relative;
+  margin: 0 var(--spacing-xs);
+  z-index: 1000; /* 确保在较高层级 */
+  display: inline-block; /* 确保工具提示定位正确 */
 }
 
 .user-section .btn {

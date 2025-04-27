@@ -120,6 +120,18 @@ class UserController extends Controller {
       // 更新最后登录时间
       await service.user.updateLastLogin(user.id);
 
+      // 异步初始化股票数据缓存（不阻塞登录响应）
+      const dataSource = user.preferences?.defaultDataSource || 'tushare';
+      ctx.runInBackground(async () => {
+        try {
+          ctx.logger.info(`开始为用户 ${user.username} 初始化 ${dataSource} 数据源缓存`);
+          const cacheResult = await ctx.service.cache.initStockDataCache({ dataSource });
+          ctx.logger.info(`用户 ${user.username} 的数据缓存初始化结果:`, cacheResult);
+        } catch (cacheErr) {
+          ctx.logger.error(`用户 ${user.username} 的数据缓存初始化失败:`, cacheErr);
+        }
+      });
+
       // 返回用户信息和令牌
       ctx.body = {
         user,

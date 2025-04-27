@@ -393,34 +393,85 @@ class StockService extends Service {
 
     // 使用缓存包装器
     return this.withCache(cacheKey, 86400, async () => { // 24小时过期
-      // 使用Tushare API获取股票列表
-      const response = await axios.post('http://api.tushare.pro', {
-        api_name: 'stock_basic',
-        token: app.config.tushare.token,
-        params: {
-          exchange: '',
-          list_status: 'L',
-          fields: 'ts_code,symbol,name,area,industry,list_date',
-        },
-      });
+      try {
+        ctx.logger.info('开始获取股票列表...');
+        ctx.logger.info(`使用 Tushare API: ${app.config.tushare.api_url}`);
+        ctx.logger.info(`Token 是否设置: ${app.config.tushare.token ? '是' : '否'}`);
 
-      if (!response.data || !response.data.code !== 0 || !response.data.data || !response.data.data.items) {
-        throw new Error('获取股票列表失败');
+        // 构建请求数据
+        const requestData = {
+          api_name: 'stock_basic',
+          token: app.config.tushare.token,
+          params: {
+            exchange: '',
+            list_status: 'L',
+            fields: 'ts_code,symbol,name,area,industry,list_date',
+          },
+        };
+
+        ctx.logger.info(`请求数据: ${JSON.stringify(requestData)}`);
+
+        // 使用Tushare API获取股票列表
+        const response = await axios.post(app.config.tushare.api_url || 'http://api.tushare.pro', requestData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+          },
+          timeout: 30000 // 30秒超时
+        });
+
+        ctx.logger.info(`响应状态码: ${response.status}`);
+
+        // 检查响应数据
+        if (!response.data) {
+          ctx.logger.error('Tushare API 响应数据为空');
+          throw new Error('获取股票列表失败: 响应数据为空');
+        }
+
+        if (response.data.code !== 0) {
+          ctx.logger.error(`Tushare API 返回错误码: ${response.data.code}, 错误信息: ${response.data.msg || '未知错误'}`);
+          throw new Error(`获取股票列表失败: ${response.data.msg || '未知错误'}`);
+        }
+
+        if (!response.data.data || !response.data.data.items) {
+          ctx.logger.error('Tushare API 响应数据格式不正确');
+          throw new Error('获取股票列表失败: 响应数据格式不正确');
+        }
+
+        const { fields, items } = response.data.data;
+        ctx.logger.info(`获取到 ${items.length} 条股票数据`);
+
+        const tsCodeIndex = fields.indexOf('ts_code');
+        const nameIndex = fields.indexOf('name');
+        const industryIndex = fields.indexOf('industry');
+
+        if (tsCodeIndex === -1 || nameIndex === -1) {
+          ctx.logger.error(`字段索引错误: ts_code=${tsCodeIndex}, name=${nameIndex}, industry=${industryIndex}`);
+          throw new Error('获取股票列表失败: 响应数据字段不完整');
+        }
+
+        // 转换为应用所需格式
+        const stocks = items.map(item => ({
+          symbol: item[tsCodeIndex],
+          name: item[nameIndex],
+          industry: industryIndex !== -1 && item[industryIndex] ? item[industryIndex] : '未知',
+        }));
+
+        ctx.logger.info(`股票列表处理完成，共 ${stocks.length} 条数据`);
+        return stocks;
+      } catch (error) {
+        ctx.logger.error('获取股票列表过程中发生错误:', error);
+
+        if (error.response) {
+          ctx.logger.error(`HTTP 错误: ${error.response.status}`);
+          ctx.logger.error(`响应数据: ${JSON.stringify(error.response.data)}`);
+        } else if (error.request) {
+          ctx.logger.error('未收到响应，可能是网络问题或服务器超时');
+        }
+
+        throw new Error(`获取股票列表失败: ${error.message}`);
       }
-
-      const { fields, items } = response.data.data;
-      const tsCodeIndex = fields.indexOf('ts_code');
-      const nameIndex = fields.indexOf('name');
-      const industryIndex = fields.indexOf('industry');
-
-      // 转换为应用所需格式
-      const stocks = items.map(item => ({
-        symbol: item[tsCodeIndex],
-        name: item[nameIndex],
-        industry: industryIndex !== -1 && item[industryIndex] ? item[industryIndex] : '未知',
-      }));
-
-      return stocks;
     }).catch(err => {
       ctx.logger.error('获取股票列表失败:', err);
       return []; // 返回空数组而不是抛出错误

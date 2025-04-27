@@ -3,17 +3,43 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { stockService } from '@/services/stockService'
 import type { Stock } from '@/types/stock'
+import DataSourceInfo from '@/components/common/DataSourceInfo.vue'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const { showToast } = useToast()
 const popularStocks = ref<Stock[]>([])
 const isLoading = ref(true)
+
+// 数据来源信息
+const dataSource = ref('未知')
+const dataSourceMessage = ref('数据来源未知')
+const isRealTime = ref(false)
+const isCache = ref(false)
 
 // 获取热门股票
 onMounted(async () => {
   try {
     // 获取所有股票并取前10个作为热门股票
-    const stocks = await stockService.getStocks()
-    popularStocks.value = stocks.slice(0, 10)
+    const result = await stockService.getStocks()
+
+    // 保存股票数据
+    popularStocks.value = result.slice(0, 10)
+
+    // 保存数据来源信息
+    if (result.data_source) {
+      dataSource.value = result.data_source
+      dataSourceMessage.value = result.data_source_message || `数据来自${result.data_source}`
+      isRealTime.value = result.is_real_time || false
+      isCache.value = result.is_cache || false
+
+      // 显示数据来源提示
+      const sourceType = isRealTime.value ? '实时' : '缓存'
+      const toastType = isRealTime.value ? 'success' : 'info'
+      showToast(dataSourceMessage.value, toastType)
+
+      console.log(`数据来源: ${dataSource.value}, ${sourceType}数据`)
+    }
   } catch (error) {
     console.error('获取热门股票失败:', error)
   } finally {
@@ -107,6 +133,17 @@ const goToStockAnalysis = (symbol: string) => {
 
     <section class="popular-stocks">
       <h2>热门股票</h2>
+
+      <!-- 数据来源信息 -->
+      <DataSourceInfo
+        v-if="!isLoading && dataSource !== '未知'"
+        :dataSource="dataSource"
+        :dataSourceMessage="dataSourceMessage"
+        :isRealTime="isRealTime"
+        :isCache="isCache"
+        class="data-source-info-container"
+      />
+
       <div v-if="isLoading" class="loading">
         <div class="loading-spinner"></div>
         <p>正在加载热门股票...</p>
@@ -269,7 +306,7 @@ const goToStockAnalysis = (symbol: string) => {
   transform: translateX(-50%);
   width: 80%;
   height: 20px;
-  background: radial-gradient(ellipse at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 70%);
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
   z-index: 1;
 }
 
@@ -358,6 +395,13 @@ const goToStockAnalysis = (symbol: string) => {
   padding: var(--spacing-xl) 0;
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius-lg);
+  position: relative;
+}
+
+/* 数据来源信息容器 */
+.data-source-info-container {
+  max-width: 600px;
+  margin: 0 auto var(--spacing-md);
 }
 
 .popular-stocks h2 {
@@ -464,5 +508,4 @@ const goToStockAnalysis = (symbol: string) => {
     transform: none;
   }
 }
-
 </style>

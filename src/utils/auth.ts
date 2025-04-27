@@ -71,3 +71,16 @@ export function getUserId(): number {
   const userInfo = getUserInfo()
   return userInfo ? userInfo.id : 0
 }
+
+/**
+ * 获取带有认证头的配置对象
+ * 用于API请求
+ */
+export function getAuthHeaders() {
+  const token = getToken()
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+}

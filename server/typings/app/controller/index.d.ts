@@ -4,8 +4,12 @@
 
 import 'egg';
 import ExportAkshare = require('../../../app/controller/akshare');
+import ExportAlert = require('../../../app/controller/alert');
+import ExportCache = require('../../../app/controller/cache');
+import ExportCacheStats = require('../../../app/controller/cacheStats');
 import ExportEastmoney = require('../../../app/controller/eastmoney');
 import ExportEnv = require('../../../app/controller/env');
+import ExportFundamental = require('../../../app/controller/fundamental');
 import ExportHome = require('../../../app/controller/home');
 import ExportNetease = require('../../../app/controller/netease');
 import ExportPortfolio = require('../../../app/controller/portfolio');
@@ -20,8 +24,12 @@ import ExportWatchlist = require('../../../app/controller/watchlist');
 declare module 'egg' {
   interface IController {
     akshare: ExportAkshare;
+    alert: ExportAlert;
+    cache: ExportCache;
+    cacheStats: ExportCacheStats;
     eastmoney: ExportEastmoney;
     env: ExportEnv;
+    fundamental: ExportFundamental;
     home: ExportHome;
     netease: ExportNetease;
     portfolio: ExportPortfolio;

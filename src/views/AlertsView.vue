@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { stockService } from '@/services/stockService'
+import { alertService, type Alert, type AlertCondition } from '@/services/alertService'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import type { Stock } from '@/types/stock'
@@ -14,13 +15,13 @@ const isLoading = ref(false)
 const error = ref('')
 
 // 提醒列表
-const alerts = ref<any[]>([])
+const alerts = ref<Alert[]>([])
 
 // 新提醒表单
 const newAlert = reactive({
   symbol: '',
   stockName: '', // 添加股票名称字段
-  condition: 'price_above', // 默认条件：价格高于
+  condition: 'price_above' as AlertCondition, // 默认条件：价格高于
   value: 0,
   message: '',
   active: true,
@@ -50,6 +51,21 @@ const fetchStocks = async () => {
   }
 }
 
+// 获取提醒列表
+const fetchAlerts = async () => {
+  isLoading.value = true
+  error.value = ''
+
+  try {
+    alerts.value = await alertService.getAlerts()
+  } catch (err: any) {
+    console.error('获取提醒列表失败:', err)
+    error.value = `获取提醒列表失败: ${err.message || '未知错误'}`
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // 选择股票
 const selectStock = (stock: any) => {
   newAlert.symbol = stock.symbol
@@ -60,7 +76,7 @@ const selectStock = (stock: any) => {
 }
 
 // 添加提醒
-const addAlert = () => {
+const addAlert = async () => {
   if (!newAlert.symbol) {
     showToast('请选择股票', 'warning')
     return
@@ -71,36 +87,42 @@ const addAlert = () => {
     return
   }
 
-  // 创建新提醒
-  const alert = {
-    id: Date.now(),
-    symbol: newAlert.symbol,
-    stockName: newAlert.stockName || '',
-    condition: newAlert.condition,
-    conditionName: conditions.find((c) => c.id === newAlert.condition)?.name || '',
-    value: newAlert.value,
-    unit: conditions.find((c) => c.id === newAlert.condition)?.unit || '',
-    message:
-      newAlert.message ||
-      `${newAlert.stockName || newAlert.symbol} ${
-        conditions.find((c) => c.id === newAlert.condition)?.name || ''
-      } ${newAlert.value}${conditions.find((c) => c.id === newAlert.condition)?.unit || ''}`,
-    active: true,
-    createdAt: new Date().toLocaleString(),
+  isLoading.value = true
+
+  try {
+    // 创建新提醒
+    const alertData = {
+      stockCode: newAlert.symbol,
+      stockName: newAlert.stockName || '',
+      alertType: 'price', // 默认为价格提醒
+      condition: newAlert.condition,
+      value: newAlert.value,
+      message:
+        newAlert.message ||
+        `${newAlert.stockName || newAlert.symbol} ${
+          conditions.find((c) => c.id === newAlert.condition)?.name || ''
+        } ${newAlert.value}${conditions.find((c) => c.id === newAlert.condition)?.unit || ''}`,
+    }
+
+    // 调用API创建提醒
+    const createdAlert = await alertService.createAlert(alertData)
+
+    // 添加到提醒列表
+    alerts.value.push(createdAlert)
+
+    // 重置表单
+    newAlert.symbol = ''
+    newAlert.stockName = ''
+    newAlert.value = 0
+    newAlert.message = ''
+
+    showToast('提醒已添加', 'success')
+  } catch (err: any) {
+    console.error('添加提醒失败:', err)
+    showToast(`添加提醒失败: ${err.message || '未知错误'}`, 'error')
+  } finally {
+    isLoading.value = false
   }
-
-  // 添加到提醒列表
-  alerts.value.push(alert)
-
-  // 重置表单
-  newAlert.symbol = ''
-  newAlert.value = 0
-  newAlert.message = ''
-
-  // 保存到本地存储
-  saveAlerts()
-
-  showToast('提醒已添加', 'success')
 }
 
 // 删除提醒
@@ -110,10 +132,19 @@ const deleteAlert = (id: number) => {
     cancelButtonText: '取消',
     type: 'warning',
   })
-    .then(() => {
-      alerts.value = alerts.value.filter((alert) => alert.id !== id)
-      saveAlerts()
-      showToast('提醒已删除', 'success')
+    .then(async () => {
+      try {
+        // 调用API删除提醒
+        await alertService.deleteAlert(id)
+
+        // 从列表中移除
+        alerts.value = alerts.value.filter((alert) => alert.id !== id)
+
+        showToast('提醒已删除', 'success')
+      } catch (err: any) {
+        console.error('删除提醒失败:', err)
+        showToast(`删除提醒失败: ${err.message || '未知错误'}`, 'error')
+      }
     })
     .catch(() => {
       // 用户取消删除，不做任何操作
@@ -121,165 +152,74 @@ const deleteAlert = (id: number) => {
 }
 
 // 切换提醒状态
-const toggleAlertStatus = (id: number) => {
+const toggleAlertStatus = async (id: number) => {
   const alert = alerts.value.find((a) => a.id === id)
   if (alert) {
-    alert.active = !alert.active
-    saveAlerts()
-  }
-}
-
-// 保存提醒到本地存储
-const saveAlerts = () => {
-  localStorage.setItem('stockAlerts', JSON.stringify(alerts.value))
-}
-
-// 从本地存储加载提醒
-const loadAlerts = () => {
-  const savedAlerts = localStorage.getItem('stockAlerts')
-  if (savedAlerts) {
     try {
-      alerts.value = JSON.parse(savedAlerts)
-    } catch (err) {
-      console.error('加载提醒失败:', err)
+      // 调用API更新提醒状态
+      const updatedAlert = await alertService.toggleAlertStatus(id, !alert.isActive)
+
+      // 更新本地状态
+      Object.assign(alert, updatedAlert)
+
+      showToast(`提醒已${alert.isActive ? '启用' : '停用'}`, 'success')
+    } catch (err: any) {
+      console.error('更新提醒状态失败:', err)
+      showToast(`更新提醒状态失败: ${err.message || '未知错误'}`, 'error')
     }
   }
 }
 
-// 模拟检查提醒条件
-let checkInterval: number | null = null
+// 获取条件名称
+const getConditionName = (condition: string): string => {
+  const conditionMap = {
+    price_above: '价格高于',
+    price_below: '价格低于',
+    volume_above: '成交量高于',
+    change_above: '涨幅高于',
+    change_below: '跌幅高于',
+  }
 
-const checkAlerts = async () => {
-  // 检查每个活跃的提醒
-  for (const alert of alerts.value) {
-    if (!alert.active) continue
+  return conditionMap[condition as keyof typeof conditionMap] || condition
+}
 
-    try {
-      // 获取股票实时行情
-      const quote = await stockService.getStockQuote(alert.symbol)
+// 获取条件单位
+const getConditionUnit = (condition: string): string => {
+  const unitMap = {
+    price_above: '元',
+    price_below: '元',
+    volume_above: '手',
+    change_above: '%',
+    change_below: '%',
+  }
 
-      if (!quote) {
-        console.warn(`无法获取股票 ${alert.symbol} 的实时行情`)
-        continue
-      }
+  return unitMap[condition as keyof typeof unitMap] || ''
+}
 
-      // 获取当前价格、成交量和涨跌幅
-      const currentPrice = quote.price
-      const currentVolume = quote.vol / 100 // 转换为手
-      const currentChange = quote.pct_chg
+// 手动检查提醒状态
+const checkAlertStatus = async () => {
+  isLoading.value = true
 
-      console.log(
-        `检查提醒 - ${alert.stockName}(${alert.symbol}): 价格=${currentPrice}, 成交量=${currentVolume}, 涨跌幅=${currentChange}%`
-      )
-
-      let triggered = false
-
-      // 根据条件判断是否触发提醒
-      switch (alert.condition) {
-        case 'price_above':
-          triggered = currentPrice > alert.value
-          break
-        case 'price_below':
-          triggered = currentPrice < alert.value
-          break
-        case 'volume_above':
-          triggered = currentVolume > alert.value
-          break
-        case 'change_above':
-          triggered = currentChange > alert.value
-          break
-        case 'change_below':
-          triggered = -currentChange > alert.value
-          break
-      }
-
-      if (triggered) {
-        console.log(`提醒触发: ${alert.message}`)
-
-        // 如果浏览器支持通知
-        if ('Notification' in window) {
-          if (Notification.permission === 'granted') {
-            new Notification('股票提醒', {
-              body: alert.message,
-              icon: '/favicon.ico',
-            })
-          } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then((permission) => {
-              if (permission === 'granted') {
-                new Notification('股票提醒', {
-                  body: alert.message,
-                  icon: '/favicon.ico',
-                })
-              }
-            })
-          }
-        }
-      }
-    } catch (err) {
-      console.error(`检查提醒 ${alert.symbol} 失败:`, err)
-      // 如果获取真实数据失败，使用模拟数据
-      console.warn('使用模拟数据进行提醒检查')
-
-      // 模拟随机价格
-      const currentPrice = Math.random() * 100
-      const currentVolume = Math.random() * 10000
-      const currentChange = Math.random() * 10 - 5
-
-      let triggered = false
-
-      switch (alert.condition) {
-        case 'price_above':
-          triggered = currentPrice > alert.value
-          break
-        case 'price_below':
-          triggered = currentPrice < alert.value
-          break
-        case 'volume_above':
-          triggered = currentVolume > alert.value
-          break
-        case 'change_above':
-          triggered = currentChange > alert.value
-          break
-        case 'change_below':
-          triggered = -currentChange > alert.value
-          break
-      }
-
-      if (triggered) {
-        console.log(`提醒触发(模拟数据): ${alert.message}`)
-
-        // 如果浏览器支持通知
-        if ('Notification' in window) {
-          if (Notification.permission === 'granted') {
-            new Notification('股票提醒 (模拟数据)', {
-              body: alert.message,
-              icon: '/favicon.ico',
-            })
-          }
-        }
-      }
-    }
+  try {
+    // 刷新提醒列表
+    await fetchAlerts()
+    showToast('提醒状态已更新', 'success')
+  } catch (err: any) {
+    console.error('检查提醒状态失败:', err)
+    showToast(`检查提醒状态失败: ${err.message || '未知错误'}`, 'error')
+  } finally {
+    isLoading.value = false
   }
 }
 
 // 组件挂载时
 onMounted(() => {
   fetchStocks()
-  loadAlerts()
+  fetchAlerts()
 
   // 请求通知权限
   if ('Notification' in window) {
     Notification.requestPermission()
-  }
-
-  // 设置定时检查
-  checkInterval = window.setInterval(checkAlerts, 10000) // 每10秒检查一次
-})
-
-// 组件卸载时
-onUnmounted(() => {
-  if (checkInterval !== null) {
-    clearInterval(checkInterval)
   }
 })
 </script>
@@ -361,19 +301,25 @@ onUnmounted(() => {
         </div>
 
         <div v-else class="alerts-list">
-          <h3>我的提醒 ({{ alerts.length }})</h3>
+          <div class="alerts-header">
+            <h3>我的提醒 ({{ alerts.length }})</h3>
+            <button class="btn btn-secondary" @click="checkAlertStatus" :disabled="isLoading">
+              <span v-if="isLoading">刷新中...</span>
+              <span v-else>刷新状态</span>
+            </button>
+          </div>
 
           <div class="alert-card" v-for="alert in alerts" :key="alert.id">
             <div class="alert-header">
-              <div class="alert-title">{{ alert.stockName || alert.symbol }}</div>
+              <div class="alert-title">{{ alert.stockName || alert.stockCode }}</div>
               <div class="alert-actions">
                 <button
                   class="btn-icon"
-                  :class="{ active: alert.active }"
+                  :class="{ active: alert.isActive }"
                   @click="toggleAlertStatus(alert.id)"
-                  :title="alert.active ? '停用' : '启用'"
+                  :title="alert.isActive ? '停用' : '启用'"
                 >
-                  <span v-if="alert.active">🔔</span>
+                  <span v-if="alert.isActive">🔔</span>
                   <span v-else>🔕</span>
                 </button>
                 <button class="btn-icon delete" @click="deleteAlert(alert.id)" title="删除">
@@ -383,7 +329,8 @@ onUnmounted(() => {
             </div>
 
             <div class="alert-condition">
-              {{ alert.conditionName }} {{ alert.value }}{{ alert.unit }}
+              {{ getConditionName(alert.condition) }} {{ alert.value
+              }}{{ getConditionUnit(alert.condition) }}
             </div>
 
             <div class="alert-message">
@@ -391,10 +338,10 @@ onUnmounted(() => {
             </div>
 
             <div class="alert-footer">
-              <div class="alert-status" :class="{ active: alert.active }">
-                {{ alert.active ? '已启用' : '已停用' }}
+              <div class="alert-status" :class="{ active: alert.isActive }">
+                {{ alert.isActive ? '已启用' : '已停用' }}
               </div>
-              <div class="alert-date">创建于 {{ alert.createdAt }}</div>
+              <div class="alert-date">创建于 {{ new Date(alert.createdAt).toLocaleString() }}</div>
             </div>
           </div>
         </div>
@@ -564,11 +511,37 @@ onUnmounted(() => {
   padding: var(--spacing-md);
 }
 
-.alerts-list h3 {
-  font-size: var(--font-size-lg);
-  margin-top: 0;
+.alerts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--spacing-md);
+}
+
+.alerts-header h3 {
+  font-size: var(--font-size-lg);
+  margin: 0;
   color: var(--text-primary);
+}
+
+.btn-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .alert-card {

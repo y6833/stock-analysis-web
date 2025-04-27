@@ -1260,5 +1260,282 @@
     "stack": [
       "wrappedController"
     ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/alerts",
+    "regexp": "/^\\/api\\/alerts(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/alerts",
+    "regexp": "/^\\/api\\/alerts(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PATCH"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/alerts/:id",
+    "regexp": "/^\\/api\\/alerts\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/alerts/:id",
+    "regexp": "/^\\/api\\/alerts\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/alerts/:id/history",
+    "regexp": "/^\\/api\\/alerts\\/((?:[^\\/]+?))\\/history(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PATCH"
+    ],
+    "paramNames": [
+      {
+        "name": "historyId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/alerts/history/:historyId",
+    "regexp": "/^\\/api\\/alerts\\/history\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/watchlist-alerts",
+    "regexp": "/^\\/api\\/watchlist-alerts(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/watchlist-alerts",
+    "regexp": "/^\\/api\\/watchlist-alerts(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "watchlistId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      },
+      {
+        "name": "alertId",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/watchlist-alerts/:watchlistId/:alertId",
+    "regexp": "/^\\/api\\/watchlist-alerts\\/((?:[^\\/]+?))\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/cache/status",
+    "regexp": "/^\\/api\\/cache\\/status(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/cache/refresh",
+    "regexp": "/^\\/api\\/cache\\/refresh(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "dataSource",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/cache/:dataSource",
+    "regexp": "/^\\/api\\/cache\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/cache/refresh-limit",
+    "regexp": "/^\\/api\\/cache\\/refresh-limit(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/cache-stats",
+    "regexp": "/^\\/api\\/cache-stats(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/cache-stats/reset",
+    "regexp": "/^\\/api\\/cache-stats\\/reset(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
   }
 ]

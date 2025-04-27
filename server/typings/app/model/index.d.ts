@@ -20,6 +20,8 @@ import ExportUserPortfolio = require('../../../app/model/user_portfolio');
 import ExportUserPreference = require('../../../app/model/user_preference');
 import ExportUserStrategy = require('../../../app/model/user_strategy');
 import ExportUserWatchlist = require('../../../app/model/user_watchlist');
+import ExportWatchlistAlert = require('../../../app/model/watchlist_alert');
+import ExportWatchlistAlertHistory = require('../../../app/model/watchlist_alert_history');
 import ExportWatchlistItem = require('../../../app/model/watchlist_item');
 
 declare module 'egg' {
@@ -41,6 +43,8 @@ declare module 'egg' {
     UserPreference: ReturnType<typeof ExportUserPreference>;
     UserStrategy: ReturnType<typeof ExportUserStrategy>;
     UserWatchlist: ReturnType<typeof ExportUserWatchlist>;
+    WatchlistAlert: ReturnType<typeof ExportWatchlistAlert>;
+    WatchlistAlertHistory: ReturnType<typeof ExportWatchlistAlertHistory>;
     WatchlistItem: ReturnType<typeof ExportWatchlistItem>;
   }
 }

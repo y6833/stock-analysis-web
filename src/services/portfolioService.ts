@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getToken } from './userService'
+import { getAuthHeaders } from '@/utils/auth'
 
 // API基础URL
 const API_URL = 'http://localhost:7001/api'
@@ -78,12 +78,7 @@ export interface AddTradeRecordRequest {
  * @returns 投资组合列表
  */
 export async function getUserPortfolios(): Promise<Portfolio[]> {
-  const token = getToken()
-  const response = await axios.get(`${API_URL}/portfolios`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const response = await axios.get(`${API_URL}/portfolios`, getAuthHeaders())
   return response.data
 }
 
@@ -93,12 +88,7 @@ export async function getUserPortfolios(): Promise<Portfolio[]> {
  * @returns 创建的组合
  */
 export async function createPortfolio(data: CreatePortfolioRequest): Promise<Portfolio> {
-  const token = getToken()
-  const response = await axios.post(`${API_URL}/portfolios`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const response = await axios.post(`${API_URL}/portfolios`, data, getAuthHeaders())
   return response.data
 }
 
@@ -112,12 +102,7 @@ export async function updatePortfolio(
   id: number,
   data: CreatePortfolioRequest
 ): Promise<Portfolio> {
-  const token = getToken()
-  const response = await axios.put(`${API_URL}/portfolios/${id}`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const response = await axios.put(`${API_URL}/portfolios/${id}`, data, getAuthHeaders())
   return response.data
 }
 
@@ -126,12 +111,7 @@ export async function updatePortfolio(
  * @param id 组合ID
  */
 export async function deletePortfolio(id: number): Promise<void> {
-  const token = getToken()
-  await axios.delete(`${API_URL}/portfolios/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  await axios.delete(`${API_URL}/portfolios/${id}`, getAuthHeaders())
 }
 
 /**
@@ -140,12 +120,7 @@ export async function deletePortfolio(id: number): Promise<void> {
  * @returns 持仓列表
  */
 export async function getPortfolioHoldings(id: number): Promise<Holding[]> {
-  const token = getToken()
-  const response = await axios.get(`${API_URL}/portfolios/${id}/holdings`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const response = await axios.get(`${API_URL}/portfolios/${id}/holdings`, getAuthHeaders())
   return response.data
 }
 
@@ -156,12 +131,11 @@ export async function getPortfolioHoldings(id: number): Promise<Holding[]> {
  * @returns 添加的持仓
  */
 export async function addHolding(portfolioId: number, data: AddHoldingRequest): Promise<Holding> {
-  const token = getToken()
-  const response = await axios.post(`${API_URL}/portfolios/${portfolioId}/holdings`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const response = await axios.post(
+    `${API_URL}/portfolios/${portfolioId}/holdings`,
+    data,
+    getAuthHeaders()
+  )
   return response.data
 }
 
@@ -177,15 +151,10 @@ export async function updateHolding(
   holdingId: number,
   data: Partial<AddHoldingRequest>
 ): Promise<Holding> {
-  const token = getToken()
   const response = await axios.put(
     `${API_URL}/portfolios/${portfolioId}/holdings/${holdingId}`,
     data,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+    getAuthHeaders()
   )
   return response.data
 }
@@ -196,12 +165,7 @@ export async function updateHolding(
  * @param holdingId 持仓ID
  */
 export async function deleteHolding(portfolioId: number, holdingId: number): Promise<void> {
-  const token = getToken()
-  await axios.delete(`${API_URL}/portfolios/${portfolioId}/holdings/${holdingId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  await axios.delete(`${API_URL}/portfolios/${portfolioId}/holdings/${holdingId}`, getAuthHeaders())
 }
 
 /**
@@ -214,12 +178,11 @@ export async function addTradeRecord(
   portfolioId: number,
   data: AddTradeRecordRequest
 ): Promise<TradeRecord> {
-  const token = getToken()
-  const response = await axios.post(`${API_URL}/portfolios/${portfolioId}/trades`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const response = await axios.post(
+    `${API_URL}/portfolios/${portfolioId}/trades`,
+    data,
+    getAuthHeaders()
+  )
   return response.data
 }
 
@@ -229,12 +192,7 @@ export async function addTradeRecord(
  * @returns 交易记录列表
  */
 export async function getTradeRecords(portfolioId: number): Promise<TradeRecord[]> {
-  const token = getToken()
-  const response = await axios.get(`${API_URL}/portfolios/${portfolioId}/trades`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const response = await axios.get(`${API_URL}/portfolios/${portfolioId}/trades`, getAuthHeaders())
   return response.data
 }
 
@@ -244,10 +202,5 @@ export async function getTradeRecords(portfolioId: number): Promise<TradeRecord[
  * @param tradeId 交易记录ID
  */
 export async function deleteTradeRecord(portfolioId: number, tradeId: number): Promise<void> {
-  const token = getToken()
-  await axios.delete(`${API_URL}/portfolios/${portfolioId}/trades/${tradeId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  await axios.delete(`${API_URL}/portfolios/${portfolioId}/trades/${tradeId}`, getAuthHeaders())
 }
