@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 import 'egg';
+import ExportAkshare = require('../../../app/controller/akshare');
 import ExportEastmoney = require('../../../app/controller/eastmoney');
 import ExportEnv = require('../../../app/controller/env');
 import ExportHome = require('../../../app/controller/home');
@@ -17,6 +18,7 @@ import ExportWatchlist = require('../../../app/controller/watchlist');
 
 declare module 'egg' {
   interface IController {
+    akshare: ExportAkshare;
     eastmoney: ExportEastmoney;
     env: ExportEnv;
     home: ExportHome;

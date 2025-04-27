@@ -4,11 +4,19 @@ import { SinaDataSource } from './SinaDataSource'
 import { EastMoneyDataSource } from './EastMoneyDataSource'
 import { TencentDataSource } from './TencentDataSource'
 import { NetEaseDataSource } from './NetEaseDataSource'
+import { AKShareDataSource } from './AKShareDataSource'
 
 /**
  * 数据源类型
  */
-export type DataSourceType = 'tushare' | 'sina' | 'eastmoney' | 'tencent' | 'netease' | 'yahoo'
+export type DataSourceType =
+  | 'tushare'
+  | 'sina'
+  | 'eastmoney'
+  | 'tencent'
+  | 'netease'
+  | 'akshare'
+  | 'yahoo'
 
 /**
  * 数据源工厂
@@ -32,6 +40,8 @@ export class DataSourceFactory {
         return new TencentDataSource()
       case 'netease':
         return new NetEaseDataSource()
+      case 'akshare':
+        return new AKShareDataSource()
       case 'yahoo':
         // Yahoo数据源暂未实现，使用Tushare数据源代替
         console.log(`Yahoo数据源尚未实现，暂时使用Tushare数据源代替`)
@@ -47,7 +57,7 @@ export class DataSourceFactory {
    * @returns 数据源类型数组
    */
   static getAvailableDataSources(): DataSourceType[] {
-    return ['tushare', 'sina', 'eastmoney', 'tencent', 'netease', 'yahoo']
+    return ['tushare', 'sina', 'eastmoney', 'tencent', 'netease', 'akshare', 'yahoo']
   }
 
   /**

@@ -97,4 +97,12 @@ module.exports = app => {
   router.get('/api/netease/search', controller.netease.search);
   router.get('/api/netease/history', controller.netease.history);
   router.get('/api/netease/news', controller.netease.news);
+
+  // AKShare API代理路由
+  router.get('/api/akshare/test', controller.akshare.test);
+  router.get('/api/akshare/quote', controller.akshare.quote);
+  router.get('/api/akshare/stock-list', controller.akshare.stockList);
+  router.get('/api/akshare/search', controller.akshare.search);
+  router.get('/api/akshare/history', controller.akshare.history);
+  router.get('/api/akshare/news', controller.akshare.news);
 };
