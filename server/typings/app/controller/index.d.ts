@@ -3,23 +3,29 @@
 /* eslint-disable */
 
 import 'egg';
+import ExportEastmoney = require('../../../app/controller/eastmoney');
 import ExportEnv = require('../../../app/controller/env');
 import ExportHome = require('../../../app/controller/home');
+import ExportNetease = require('../../../app/controller/netease');
 import ExportPortfolio = require('../../../app/controller/portfolio');
 import ExportSimulation = require('../../../app/controller/simulation');
 import ExportSina = require('../../../app/controller/sina');
 import ExportStock = require('../../../app/controller/stock');
+import ExportTencent = require('../../../app/controller/tencent');
 import ExportUser = require('../../../app/controller/user');
 import ExportWatchlist = require('../../../app/controller/watchlist');
 
 declare module 'egg' {
   interface IController {
+    eastmoney: ExportEastmoney;
     env: ExportEnv;
     home: ExportHome;
+    netease: ExportNetease;
     portfolio: ExportPortfolio;
     simulation: ExportSimulation;
     sina: ExportSina;
     stock: ExportStock;
+    tencent: ExportTencent;
     user: ExportUser;
     watchlist: ExportWatchlist;
   }

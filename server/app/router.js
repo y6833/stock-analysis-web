@@ -73,4 +73,28 @@ module.exports = app => {
   router.get('/api/sina/search', controller.sina.search);
   router.get('/api/sina/history', controller.sina.history);
   router.get('/api/sina/news', controller.sina.news);
+
+  // 东方财富API代理路由
+  router.get('/api/eastmoney/test', controller.eastmoney.test);
+  router.get('/api/eastmoney/quote', controller.eastmoney.quote);
+  router.get('/api/eastmoney/stock-list', controller.eastmoney.stockList);
+  router.get('/api/eastmoney/search', controller.eastmoney.search);
+  router.get('/api/eastmoney/history', controller.eastmoney.history);
+  router.get('/api/eastmoney/news', controller.eastmoney.news);
+
+  // 腾讯股票API代理路由
+  router.get('/api/tencent/test', controller.tencent.test);
+  router.get('/api/tencent/quote', controller.tencent.quote);
+  router.get('/api/tencent/stock-list', controller.tencent.stockList);
+  router.get('/api/tencent/search', controller.tencent.search);
+  router.get('/api/tencent/history', controller.tencent.history);
+  router.get('/api/tencent/news', controller.tencent.news);
+
+  // 网易财经API代理路由
+  router.get('/api/netease/test', controller.netease.test);
+  router.get('/api/netease/quote', controller.netease.quote);
+  router.get('/api/netease/stock-list', controller.netease.stockList);
+  router.get('/api/netease/search', controller.netease.search);
+  router.get('/api/netease/history', controller.netease.history);
+  router.get('/api/netease/news', controller.netease.news);
 };
