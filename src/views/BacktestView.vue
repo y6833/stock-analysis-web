@@ -3,7 +3,9 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { Stock } from '@/types/stock'
 import StockSearch from '@/components/StockSearch.vue'
+import { useToast } from '@/composables/useToast'
 
+const { showToast } = useToast()
 // 股票列表
 const stocks = ref<Stock[]>([])
 const isLoading = ref(false)
@@ -75,7 +77,7 @@ const fetchStocks = async () => {
 // 运行回测
 const runBacktest = async () => {
   if (!backtestParams.symbol) {
-    alert('请选择股票')
+    showToast('请选择股票')
     return
   }
 
@@ -103,17 +105,17 @@ const runBacktest = async () => {
     } catch (dataErr) {
       console.warn('获取真实数据失败，使用模拟数据:', dataErr)
       // 如果获取真实数据失败，提示用户但继续使用模拟数据
-      alert('获取真实数据失败，将使用模拟数据进行回测')
+      showToast('获取真实数据失败，将使用模拟数据进行回测')
     }
 
     // 使用模拟数据进行回测
     await simulateBacktest()
 
-    alert('回测完成')
+    showToast('回测完成')
   } catch (err: any) {
     console.error('回测失败:', err)
     error.value = `回测失败: ${err.message || '未知错误'}`
-    alert(`回测失败: ${err.message || '未知错误'}`)
+    showToast(`回测失败: ${err.message || '未知错误'}`)
   } finally {
     isBacktesting.value = false
   }

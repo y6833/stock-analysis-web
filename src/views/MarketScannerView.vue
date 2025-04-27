@@ -5,7 +5,9 @@ import { technicalIndicatorService } from '@/services/technicalIndicatorService'
 import type { Stock } from '@/types/stock'
 import AbnormalMovementMonitor from '@/components/scanner/AbnormalMovementMonitor.vue'
 import SectorRotationAnalysis from '@/components/scanner/SectorRotationAnalysis.vue'
+import { useToast } from '@/composables/useToast'
 
+const { showToast } = useToast()
 // 当前活动的标签页
 const activeTab = ref('filter') // 'filter', 'abnormal', 'rotation'
 
@@ -93,7 +95,7 @@ const runScan = async () => {
 
   try {
     // 显示加载提示
-    alert('正在扫描市场，请稍候...')
+    showToast('正在扫描市场，请稍候...')
 
     // 获取所有股票
     const allStocks = await stockService.getStocks()
@@ -172,7 +174,7 @@ const runScan = async () => {
         })
       } catch (priceError) {
         console.error('获取价格数据失败，使用模拟数据进行筛选:', priceError)
-        alert('获取实时价格数据失败，将使用模拟数据进行筛选')
+        showToast('获取实时价格数据失败，将使用模拟数据进行筛选')
 
         // 如果获取真实价格数据失败，使用模拟数据
         filteredStocks = filteredStocks.filter((stock) => {
@@ -235,11 +237,11 @@ const runScan = async () => {
     scanResults.value = filteredStocks.slice(0, 50)
 
     // 显示成功提示
-    alert(`扫描完成，找到 ${scanResults.value.length} 只符合条件的股票`)
+    showToast(`扫描完成，找到 ${scanResults.value.length} 只符合条件的股票`)
   } catch (error: any) {
     console.error('市场扫描失败:', error)
     scanError.value = `扫描失败: ${error.message || '未知错误'}`
-    alert(`扫描失败: ${error.message || '未知错误'}`)
+    showToast(`扫描失败: ${error.message || '未知错误'}`)
   } finally {
     isScanning.value = false
   }
