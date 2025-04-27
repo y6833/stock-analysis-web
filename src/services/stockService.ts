@@ -2,9 +2,11 @@ import axios from 'axios'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 import { tushareService } from './tushareService'
 import { marketDataService } from './marketDataService'
+import { useToast } from '@/composables/useToast'
 
 // 是否使用 Tushare 数据
 const USE_TUSHARE = true // 始终使用真实数据
+const { showToast } = useToast()
 
 // 模拟数据
 const mockStocks: Stock[] = [
@@ -300,7 +302,7 @@ export const stockService = {
         }
       } catch (error) {
         console.error('Tushare 获取股票列表失败，使用模拟数据:', error)
-        alert('获取真实股票数据失败，将使用模拟数据。请检查网络连接或稍后再试。')
+        showToast('获取真实股票数据失败，将使用模拟数据。请检查网络连接或稍后再试。', 'warning')
         return mockStocks
       }
     }
@@ -324,7 +326,10 @@ export const stockService = {
         }
       } catch (error) {
         console.error(`Tushare 获取股票 ${symbol} 数据失败，使用模拟数据:`, error)
-        alert(`获取 ${symbol} 的真实历史数据失败，将使用模拟数据。请检查网络连接或稍后再试。`)
+        showToast(
+          `获取 ${symbol} 的真实历史数据失败，将使用模拟数据。请检查网络连接或稍后再试。`,
+          'warning'
+        )
         return generateMockStockData(symbol)
       }
     }

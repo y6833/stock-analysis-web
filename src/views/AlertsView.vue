@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { stockService } from '@/services/stockService'
+import { useToast } from '@/composables/useToast'
+import { ElMessageBox } from 'element-plus'
 import type { Stock } from '@/types/stock'
 import StockSearch from '@/components/StockSearch.vue'
+
+const { showToast } = useToast()
 
 // 股票列表
 const stocks = ref<Stock[]>([])
@@ -58,12 +62,12 @@ const selectStock = (stock: any) => {
 // 添加提醒
 const addAlert = () => {
   if (!newAlert.symbol) {
-    window.alert('请选择股票')
+    showToast('请选择股票', 'warning')
     return
   }
 
   if (!newAlert.value) {
-    window.alert('请输入条件值')
+    showToast('请输入条件值', 'warning')
     return
   }
 
@@ -96,15 +100,24 @@ const addAlert = () => {
   // 保存到本地存储
   saveAlerts()
 
-  window.alert('提醒已添加')
+  showToast('提醒已添加', 'success')
 }
 
 // 删除提醒
 const deleteAlert = (id: number) => {
-  if (window.confirm('确定要删除这个提醒吗？')) {
-    alerts.value = alerts.value.filter((alert) => alert.id !== id)
-    saveAlerts()
-  }
+  ElMessageBox.confirm('确定要删除这个提醒吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
+    .then(() => {
+      alerts.value = alerts.value.filter((alert) => alert.id !== id)
+      saveAlerts()
+      showToast('提醒已删除', 'success')
+    })
+    .catch(() => {
+      // 用户取消删除，不做任何操作
+    })
 }
 
 // 切换提醒状态

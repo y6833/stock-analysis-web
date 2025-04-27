@@ -5,6 +5,7 @@ import * as echarts from 'echarts'
 import { stockService } from '@/services/stockService'
 import { technicalIndicatorService } from '@/services/technicalIndicatorService'
 import { dashboardService } from '@/services/dashboardService'
+import { useToast } from '@/composables/useToast'
 import type { Stock, StockData, TrendLine } from '@/types/stock'
 import type { Watchlist, WatchlistItem } from '@/types/dashboard'
 import TechnicalIndicatorPanel from '@/components/analysis/TechnicalIndicatorPanel.vue'
@@ -15,6 +16,7 @@ import FundamentalAnalysis from '@/components/fundamental/FundamentalAnalysis.vu
 import NewsAggregation from '@/components/news/NewsAggregation.vue'
 
 const route = useRoute()
+const { showToast } = useToast()
 
 const chartRef = ref<HTMLElement | null>(null)
 const stockSymbol = ref('')
@@ -184,9 +186,7 @@ const showWatchlistStocks = async () => {
     )
 
     if (!watchlist || watchlist.items.length === 0) {
-      if (window.$message) {
-        window.$message.info('您的关注列表为空，请先添加股票到关注列表')
-      }
+      showToast('您的关注列表为空，请先添加股票到关注列表', 'info')
       return
     }
 
@@ -201,14 +201,10 @@ const showWatchlistStocks = async () => {
     // 显示搜索结果
     showSearchResults.value = true
 
-    if (window.$message) {
-      window.$message.success(`已显示您关注的 ${searchResults.value.length} 只股票`)
-    }
+    showToast(`已显示您关注的 ${searchResults.value.length} 只股票`, 'success')
   } catch (error) {
     console.error('获取关注列表失败:', error)
-    if (window.$message) {
-      window.$message.error('获取关注列表失败')
-    }
+    showToast('获取关注列表失败', 'error')
   }
 }
 
@@ -253,9 +249,7 @@ const showPortfolioStocks = async () => {
     ]
 
     if (portfolioStocks.length === 0) {
-      if (window.$message) {
-        window.$message.info('您的持仓为空，请先添加股票到持仓')
-      }
+      showToast('您的持仓为空，请先添加股票到持仓', 'info')
       return
     }
 
@@ -265,14 +259,10 @@ const showPortfolioStocks = async () => {
     // 显示搜索结果
     showSearchResults.value = true
 
-    if (window.$message) {
-      window.$message.success(`已显示您持仓的 ${searchResults.value.length} 只股票`)
-    }
+    showToast(`已显示您持仓的 ${searchResults.value.length} 只股票`, 'success')
   } catch (error) {
     console.error('获取持仓失败:', error)
-    if (window.$message) {
-      window.$message.error('获取持仓失败')
-    }
+    showToast('获取持仓失败', 'error')
   }
 }
 
@@ -299,7 +289,7 @@ const initChart = () => {
         initChart()
       } else {
         console.error('重试初始化图表失败，图表引用仍为空')
-        alert('图表容器未准备好，请刷新页面重试')
+        showToast('图表容器未准备好，请刷新页面重试', 'error')
       }
     }, 500)
     return
@@ -308,9 +298,7 @@ const initChart = () => {
   if (!stockData.value) {
     console.warn('股票数据为空，无法初始化图表')
     // 添加消息提示
-    if (window.$message) {
-      window.$message.error('未获取到股票数据，请检查股票代码是否正确')
-    }
+    showToast('未获取到股票数据，请检查股票代码是否正确', 'error')
     return
   }
 
@@ -351,9 +339,9 @@ const initChart = () => {
       // 初始化图表
       chart.value = echarts.init(chartRef.value)
       console.log('图表实例创建成功')
-    } catch (err) {
+    } catch (err: any) {
       console.error('创建图表实例失败:', err)
-      alert('创建图表失败: ' + (err.message || '未知错误'))
+      showToast('创建图表失败: ' + (err.message || '未知错误'), 'error')
     }
 
     // 计算技术指标
@@ -602,7 +590,12 @@ const initChart = () => {
     }
 
     console.log('设置图表选项')
-    chart.value.setOption(option)
+    if (chart.value) {
+      chart.value.setOption(option)
+    } else {
+      console.error('图表实例为空，无法设置选项')
+      showToast('图表初始化失败，请刷新页面重试', 'error')
+    }
 
     // 响应窗口大小变化
     window.addEventListener('resize', () => {
