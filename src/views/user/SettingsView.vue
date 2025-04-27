@@ -14,14 +14,14 @@ const preferencesForm = reactive<PreferencesUpdateRequest>({
   pushNotifications: true,
   defaultStockSymbol: '',
   defaultTimeframe: '',
-  defaultChartType: ''
+  defaultChartType: '',
 })
 
 // 密码更新表单
 const passwordForm = reactive<PasswordUpdateRequest>({
   oldPassword: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 })
 
 // 表单状态
@@ -36,19 +36,19 @@ const passwordError = ref('')
 const passwordFormErrors = reactive({
   oldPassword: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 })
 
 // 初始化表单数据
 onMounted(async () => {
   isLoading.value = true
-  
+
   try {
     // 确保用户资料已加载
     if (!userStore.profile) {
       await userStore.fetchUserProfile()
     }
-    
+
     // 填充偏好设置表单
     if (userStore.profile && userStore.profile.preferences) {
       const prefs = userStore.profile.preferences
@@ -79,10 +79,10 @@ const savePreferences = async () => {
   isSavingPreferences.value = true
   preferencesError.value = ''
   showPreferencesSuccess.value = false
-  
+
   try {
     const success = await userStore.updatePreferences(preferencesForm)
-    
+
     if (success) {
       showPreferencesSuccess.value = true
       setTimeout(() => {
@@ -102,18 +102,18 @@ const savePreferences = async () => {
 // 验证密码表单
 const validatePasswordForm = (): boolean => {
   let isValid = true
-  
+
   // 重置错误
   passwordFormErrors.oldPassword = ''
   passwordFormErrors.newPassword = ''
   passwordFormErrors.confirmPassword = ''
-  
+
   // 验证旧密码
   if (!passwordForm.oldPassword) {
     passwordFormErrors.oldPassword = '请输入当前密码'
     isValid = false
   }
-  
+
   // 验证新密码
   if (!passwordForm.newPassword) {
     passwordFormErrors.newPassword = '请输入新密码'
@@ -122,7 +122,7 @@ const validatePasswordForm = (): boolean => {
     passwordFormErrors.newPassword = '密码长度不能少于6个字符'
     isValid = false
   }
-  
+
   // 验证确认密码
   if (!passwordForm.confirmPassword) {
     passwordFormErrors.confirmPassword = '请确认新密码'
@@ -131,28 +131,28 @@ const validatePasswordForm = (): boolean => {
     passwordFormErrors.confirmPassword = '两次输入的密码不一致'
     isValid = false
   }
-  
+
   return isValid
 }
 
 // 更新密码
 const updatePassword = async () => {
   if (!validatePasswordForm()) return
-  
+
   isSavingPassword.value = true
   passwordError.value = ''
   showPasswordSuccess.value = false
-  
+
   try {
     const success = await userStore.updatePassword(passwordForm)
-    
+
     if (success) {
       showPasswordSuccess.value = true
       // 清空表单
       passwordForm.oldPassword = ''
       passwordForm.newPassword = ''
       passwordForm.confirmPassword = ''
-      
+
       setTimeout(() => {
         showPasswordSuccess.value = false
       }, 3000)
@@ -174,53 +174,51 @@ const updatePassword = async () => {
       <h1>账户设置</h1>
       <p class="page-description">管理您的账户设置和偏好</p>
     </div>
-    
+
     <div class="settings-container">
       <div v-if="isLoading" class="loading-state">
         <div class="spinner"></div>
         <p>加载中...</p>
       </div>
-      
+
       <template v-else>
         <!-- 设置标签页 -->
         <div class="settings-tabs">
-          <button 
-            class="tab-button" 
+          <button
+            class="tab-button"
             :class="{ active: activeTab === 'preferences' }"
             @click="switchTab('preferences')"
           >
             偏好设置
           </button>
-          <button 
-            class="tab-button" 
+          <button
+            class="tab-button"
             :class="{ active: activeTab === 'security' }"
             @click="switchTab('security')"
           >
             安全设置
           </button>
-          <button 
-            class="tab-button" 
+          <button
+            class="tab-button"
             :class="{ active: activeTab === 'notifications' }"
             @click="switchTab('notifications')"
           >
             通知设置
           </button>
         </div>
-        
+
         <!-- 偏好设置 -->
         <div v-if="activeTab === 'preferences'" class="settings-panel">
           <h2 class="panel-title">偏好设置</h2>
-          
+
           <!-- 成功提示 -->
-          <div v-if="showPreferencesSuccess" class="success-message">
-            偏好设置已成功更新
-          </div>
-          
+          <div v-if="showPreferencesSuccess" class="success-message">偏好设置已成功更新</div>
+
           <!-- 错误提示 -->
           <div v-if="preferencesError" class="error-message">
             {{ preferencesError }}
           </div>
-          
+
           <form @submit.prevent="savePreferences" class="settings-form">
             <!-- 主题 -->
             <div class="form-group">
@@ -231,7 +229,7 @@ const updatePassword = async () => {
                 <option value="auto">跟随系统</option>
               </select>
             </div>
-            
+
             <!-- 语言 -->
             <div class="form-group">
               <label for="language" class="form-label">语言</label>
@@ -240,17 +238,21 @@ const updatePassword = async () => {
                 <option value="en-US">English</option>
               </select>
             </div>
-            
+
             <!-- 默认仪表盘布局 -->
             <div class="form-group">
               <label for="defaultLayout" class="form-label">默认仪表盘布局</label>
-              <select id="defaultLayout" v-model="preferencesForm.defaultDashboardLayout" class="form-select">
+              <select
+                id="defaultLayout"
+                v-model="preferencesForm.defaultDashboardLayout"
+                class="form-select"
+              >
                 <option value="default">默认布局</option>
                 <option value="compact">紧凑布局</option>
                 <option value="expanded">扩展布局</option>
               </select>
             </div>
-            
+
             <!-- 默认股票 -->
             <div class="form-group">
               <label for="defaultStock" class="form-label">默认股票</label>
@@ -262,11 +264,15 @@ const updatePassword = async () => {
                 placeholder="例如: 000001.SZ"
               />
             </div>
-            
+
             <!-- 默认时间周期 -->
             <div class="form-group">
               <label for="defaultTimeframe" class="form-label">默认时间周期</label>
-              <select id="defaultTimeframe" v-model="preferencesForm.defaultTimeframe" class="form-select">
+              <select
+                id="defaultTimeframe"
+                v-model="preferencesForm.defaultTimeframe"
+                class="form-select"
+              >
                 <option value="">请选择</option>
                 <option value="day">日线</option>
                 <option value="week">周线</option>
@@ -274,49 +280,47 @@ const updatePassword = async () => {
                 <option value="year">年线</option>
               </select>
             </div>
-            
+
             <!-- 默认图表类型 -->
             <div class="form-group">
               <label for="defaultChartType" class="form-label">默认图表类型</label>
-              <select id="defaultChartType" v-model="preferencesForm.defaultChartType" class="form-select">
+              <select
+                id="defaultChartType"
+                v-model="preferencesForm.defaultChartType"
+                class="form-select"
+              >
                 <option value="">请选择</option>
                 <option value="candle">K线图</option>
                 <option value="line">折线图</option>
                 <option value="area">面积图</option>
               </select>
             </div>
-            
+
             <!-- 提交按钮 -->
             <div class="form-actions">
-              <button 
-                type="submit" 
-                class="btn btn-primary" 
-                :disabled="isSavingPreferences"
-              >
+              <button type="submit" class="btn btn-primary" :disabled="isSavingPreferences">
                 <span v-if="isSavingPreferences">保存中...</span>
                 <span v-else>保存设置</span>
               </button>
             </div>
           </form>
         </div>
-        
+
         <!-- 安全设置 -->
         <div v-if="activeTab === 'security'" class="settings-panel">
           <h2 class="panel-title">安全设置</h2>
-          
+
           <!-- 成功提示 -->
-          <div v-if="showPasswordSuccess" class="success-message">
-            密码已成功更新
-          </div>
-          
+          <div v-if="showPasswordSuccess" class="success-message">密码已成功更新</div>
+
           <!-- 错误提示 -->
           <div v-if="passwordError" class="error-message">
             {{ passwordError }}
           </div>
-          
+
           <form @submit.prevent="updatePassword" class="settings-form">
             <h3 class="section-title">更改密码</h3>
-            
+
             <!-- 当前密码 -->
             <div class="form-group">
               <label for="oldPassword" class="form-label">当前密码</label>
@@ -332,7 +336,7 @@ const updatePassword = async () => {
                 {{ passwordFormErrors.oldPassword }}
               </div>
             </div>
-            
+
             <!-- 新密码 -->
             <div class="form-group">
               <label for="newPassword" class="form-label">新密码</label>
@@ -348,7 +352,7 @@ const updatePassword = async () => {
                 {{ passwordFormErrors.newPassword }}
               </div>
             </div>
-            
+
             <!-- 确认新密码 -->
             <div class="form-group">
               <label for="confirmPassword" class="form-label">确认新密码</label>
@@ -364,53 +368,53 @@ const updatePassword = async () => {
                 {{ passwordFormErrors.confirmPassword }}
               </div>
             </div>
-            
+
             <!-- 提交按钮 -->
             <div class="form-actions">
-              <button 
-                type="submit" 
-                class="btn btn-primary" 
-                :disabled="isSavingPassword"
-              >
+              <button type="submit" class="btn btn-primary" :disabled="isSavingPassword">
                 <span v-if="isSavingPassword">更新中...</span>
                 <span v-else>更新密码</span>
               </button>
             </div>
           </form>
-          
+
           <div class="security-section">
             <h3 class="section-title">双因素认证</h3>
             <p class="section-description">
               双因素认证为您的账户提供额外的安全保障。启用后，登录时除了密码外，还需要输入手机验证码。
             </p>
-            <button class="btn btn-outline">
-              设置双因素认证
-            </button>
+            <button class="btn btn-outline">设置双因素认证</button>
           </div>
-          
+
           <div class="security-section">
             <h3 class="section-title">登录活动</h3>
             <p class="section-description">
               查看您的账户最近的登录活动，如果发现可疑活动，请立即更改密码。
             </p>
-            <button class="btn btn-outline">
-              查看登录活动
-            </button>
+            <button class="btn btn-outline">查看登录活动</button>
+          </div>
+
+          <div class="security-section">
+            <h3 class="section-title">数据源设置</h3>
+            <p class="section-description">
+              配置和管理股票数据源，您可以选择不同的数据提供商来获取股票数据。
+            </p>
+            <router-link to="/settings/data-source" class="btn btn-outline">
+              管理数据源
+            </router-link>
           </div>
         </div>
-        
+
         <!-- 通知设置 -->
         <div v-if="activeTab === 'notifications'" class="settings-panel">
           <h2 class="panel-title">通知设置</h2>
-          
+
           <!-- 成功提示 -->
-          <div v-if="showPreferencesSuccess" class="success-message">
-            通知设置已成功更新
-          </div>
-          
+          <div v-if="showPreferencesSuccess" class="success-message">通知设置已成功更新</div>
+
           <form @submit.prevent="savePreferences" class="settings-form">
             <h3 class="section-title">通知方式</h3>
-            
+
             <!-- 邮件通知 -->
             <div class="form-group checkbox-group">
               <input
@@ -424,7 +428,7 @@ const updatePassword = async () => {
                 <span class="checkbox-description">接收重要更新和提醒的邮件</span>
               </label>
             </div>
-            
+
             <!-- 推送通知 -->
             <div class="form-group checkbox-group">
               <input
@@ -438,58 +442,39 @@ const updatePassword = async () => {
                 <span class="checkbox-description">接收浏览器推送通知</span>
               </label>
             </div>
-            
+
             <h3 class="section-title">通知类型</h3>
-            
+
             <!-- 价格提醒 -->
             <div class="form-group checkbox-group">
-              <input
-                id="priceAlerts"
-                type="checkbox"
-                class="form-checkbox"
-                checked
-              />
+              <input id="priceAlerts" type="checkbox" class="form-checkbox" checked />
               <label for="priceAlerts">
                 <span class="checkbox-label">价格提醒</span>
                 <span class="checkbox-description">当股票价格达到您设置的条件时通知您</span>
               </label>
             </div>
-            
+
             <!-- 技术指标提醒 -->
             <div class="form-group checkbox-group">
-              <input
-                id="indicatorAlerts"
-                type="checkbox"
-                class="form-checkbox"
-                checked
-              />
+              <input id="indicatorAlerts" type="checkbox" class="form-checkbox" checked />
               <label for="indicatorAlerts">
                 <span class="checkbox-label">技术指标提醒</span>
                 <span class="checkbox-description">当技术指标发出信号时通知您</span>
               </label>
             </div>
-            
+
             <!-- 新闻提醒 -->
             <div class="form-group checkbox-group">
-              <input
-                id="newsAlerts"
-                type="checkbox"
-                class="form-checkbox"
-                checked
-              />
+              <input id="newsAlerts" type="checkbox" class="form-checkbox" checked />
               <label for="newsAlerts">
                 <span class="checkbox-label">新闻提醒</span>
                 <span class="checkbox-description">当您关注的股票有重要新闻时通知您</span>
               </label>
             </div>
-            
+
             <!-- 提交按钮 -->
             <div class="form-actions">
-              <button 
-                type="submit" 
-                class="btn btn-primary" 
-                :disabled="isSavingPreferences"
-              >
+              <button type="submit" class="btn btn-primary" :disabled="isSavingPreferences">
                 <span v-if="isSavingPreferences">保存中...</span>
                 <span v-else>保存设置</span>
               </button>
@@ -549,7 +534,9 @@ const updatePassword = async () => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .settings-tabs {
@@ -689,13 +676,13 @@ const updatePassword = async () => {
     flex-direction: column;
     border-bottom: none;
   }
-  
+
   .tab-button {
     text-align: left;
     padding: var(--spacing-sm) 0;
     border-bottom: 1px solid var(--border-light);
   }
-  
+
   .tab-button.active {
     border-bottom-color: var(--border-light);
     color: var(--primary-color);

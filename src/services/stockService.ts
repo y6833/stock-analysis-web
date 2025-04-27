@@ -1,11 +1,20 @@
 import axios from 'axios'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
-import { tushareService } from './tushareService'
-import { marketDataService } from './marketDataService'
 import { useToast } from '@/composables/useToast'
+import { DataSourceFactory } from './dataSource/DataSourceFactory'
+import type { DataSourceType } from './dataSource/DataSourceFactory'
+import eventBus from '@/utils/eventBus'
 
-// 是否使用 Tushare 数据
-const USE_TUSHARE = true // 始终使用真实数据
+// 从本地存储获取当前数据源类型
+const getCurrentDataSourceType = (): DataSourceType => {
+  const savedSource = localStorage.getItem('preferredDataSource')
+  return (savedSource as DataSourceType) || 'tushare'
+}
+
+// 初始化数据源
+let currentDataSourceType = getCurrentDataSourceType()
+let dataSource = DataSourceFactory.createDataSource(currentDataSourceType)
+
 const { showToast } = useToast()
 
 // 模拟数据
@@ -289,130 +298,152 @@ function generateMockStockData(symbol: string): StockData {
 
 // 股票服务
 export const stockService = {
+  // 获取当前数据源类型
+  getCurrentDataSourceType: () => currentDataSourceType,
+
+  // 获取所有可用数据源
+  getAvailableDataSources: () => DataSourceFactory.getAvailableDataSources(),
+
+  // 获取数据源信息
+  getDataSourceInfo: (type: DataSourceType) => DataSourceFactory.getDataSourceInfo(type),
+
+  // 切换数据源
+  switchDataSource: (type: DataSourceType): boolean => {
+    try {
+      dataSource = DataSourceFactory.createDataSource(type)
+      currentDataSourceType = type
+      localStorage.setItem('preferredDataSource', type)
+      showToast(`已切换到${DataSourceFactory.getDataSourceInfo(type).name}`, 'success')
+
+      // 发出数据源切换事件
+      eventBus.emit('data-source-changed', type)
+
+      return true
+    } catch (error) {
+      console.error('切换数据源失败:', error)
+      showToast('切换数据源失败', 'error')
+      return false
+    }
+  },
+
+  // 测试数据源连接
+  async testDataSource(type: DataSourceType): Promise<boolean> {
+    try {
+      const testDataSource = DataSourceFactory.createDataSource(type)
+      const result = await testDataSource.testConnection()
+      if (result) {
+        showToast(`${testDataSource.getName()}连接测试成功`, 'success')
+      } else {
+        showToast(`${testDataSource.getName()}连接测试失败`, 'error')
+      }
+      return result
+    } catch (error) {
+      console.error(`${type}数据源连接测试失败:`, error)
+      showToast(
+        `数据源连接测试失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        'error'
+      )
+      return false
+    }
+  },
+
+  // 清除数据源缓存
+  async clearDataSourceCache(type: DataSourceType): Promise<boolean> {
+    try {
+      // 清除本地存储中的缓存
+      const cacheKeys = Object.keys(localStorage).filter(
+        (key) => key.startsWith(`${type}_`) || key.includes(`_${type}_`) || key.endsWith(`_${type}`)
+      )
+
+      if (cacheKeys.length > 0) {
+        cacheKeys.forEach((key) => localStorage.removeItem(key))
+        console.log(`已清除${type}数据源的${cacheKeys.length}项本地缓存`)
+      }
+
+      // 清除Redis缓存（通过API）
+      try {
+        const response = await axios.delete(`http://localhost:7001/api/cache/${type}`)
+        if (response.data && response.data.success) {
+          console.log(`已清除${type}数据源的Redis缓存: ${response.data.message}`)
+        }
+      } catch (redisError) {
+        console.warn(`清除${type}数据源的Redis缓存失败:`, redisError)
+        // 继续执行，不影响本地缓存的清除
+      }
+
+      showToast(`已清除${DataSourceFactory.getDataSourceInfo(type).name}的缓存数据`, 'success')
+
+      // 发出缓存清除事件
+      eventBus.emit('data-source-cache-cleared', type)
+
+      return true
+    } catch (error) {
+      console.error(`清除${type}数据源缓存失败:`, error)
+      showToast(`清除缓存失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
+      return false
+    }
+  },
+
   // 获取股票列表
   async getStocks(): Promise<Stock[]> {
-    if (USE_TUSHARE) {
-      try {
-        const stocks = await tushareService.getStocks()
-        if (stocks && stocks.length > 0) {
-          console.log(`成功获取 ${stocks.length} 只股票的基本信息`)
-          return stocks
-        } else {
-          throw new Error('获取到的股票列表为空')
-        }
-      } catch (error) {
-        console.error('Tushare 获取股票列表失败，使用模拟数据:', error)
-        showToast('获取真实股票数据失败，将使用模拟数据。请检查网络连接或稍后再试。', 'warning')
-        return mockStocks
-      }
+    try {
+      return await dataSource.getStocks()
+    } catch (error) {
+      console.error(`${dataSource.getName()}获取股票列表失败，使用模拟数据:`, error)
+      showToast('获取股票列表失败，将使用模拟数据。请检查网络连接或稍后再试。', 'warning')
+      return mockStocks
     }
-
-    // 使用模拟数据
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockStocks), 500)
-    })
   },
 
   // 获取单个股票数据
   async getStockData(symbol: string): Promise<StockData> {
-    if (USE_TUSHARE) {
-      try {
-        const stockData = await tushareService.getStockData(symbol)
-        if (stockData && stockData.prices && stockData.prices.length > 0) {
-          console.log(`成功获取 ${symbol} 的历史数据，共 ${stockData.prices.length} 条记录`)
-          return stockData
-        } else {
-          throw new Error('获取到的股票历史数据为空')
-        }
-      } catch (error) {
-        console.error(`Tushare 获取股票 ${symbol} 数据失败，使用模拟数据:`, error)
-        showToast(
-          `获取 ${symbol} 的真实历史数据失败，将使用模拟数据。请检查网络连接或稍后再试。`,
-          'warning'
-        )
-        return generateMockStockData(symbol)
-      }
+    try {
+      return await dataSource.getStockData(symbol)
+    } catch (error) {
+      console.error(`${dataSource.getName()}获取股票${symbol}数据失败，使用模拟数据:`, error)
+      showToast(
+        `获取${symbol}的历史数据失败，将使用模拟数据。请检查网络连接或稍后再试。`,
+        'warning'
+      )
+      return generateMockStockData(symbol)
     }
-
-    // 使用模拟数据
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(generateMockStockData(symbol)), 800)
-    })
   },
 
   // 搜索股票
   async searchStocks(query: string): Promise<Stock[]> {
-    if (USE_TUSHARE) {
-      try {
-        return await tushareService.searchStocks(query)
-      } catch (error) {
-        console.error('Tushare 搜索股票失败，使用模拟数据:', error)
-        // 使用模拟数据进行过滤
-        const results = mockStocks.filter(
-          (stock) =>
-            stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
-            stock.name.toLowerCase().includes(query.toLowerCase())
-        )
-        return results
-      }
-    }
-
-    // 使用模拟数据进行过滤
-    return new Promise((resolve) => {
+    try {
+      return await dataSource.searchStocks(query)
+    } catch (error) {
+      console.error(`${dataSource.getName()}搜索股票失败，使用模拟数据:`, error)
+      // 使用模拟数据进行过滤
       const results = mockStocks.filter(
         (stock) =>
           stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
           stock.name.toLowerCase().includes(query.toLowerCase())
       )
-      setTimeout(() => resolve(results), 300)
-    })
+      return results
+    }
   },
 
   // 获取股票实时行情
   async getStockQuote(symbol: string): Promise<StockQuote> {
-    if (USE_TUSHARE) {
-      try {
-        const quote = await marketDataService.getStockQuote(symbol)
-        if (quote) {
-          console.log(`成功获取 ${symbol} 的实时行情数据`)
-          return quote
-        } else {
-          throw new Error('获取到的股票行情数据为空')
-        }
-      } catch (error) {
-        console.error(`获取股票 ${symbol} 行情失败，使用模拟数据:`, error)
-        console.warn(`将使用模拟数据显示 ${symbol} 的行情`)
-        return generateMockStockQuote(symbol)
-      }
+    try {
+      return await dataSource.getStockQuote(symbol)
+    } catch (error) {
+      console.error(`${dataSource.getName()}获取股票${symbol}行情失败，使用模拟数据:`, error)
+      console.warn(`将使用模拟数据显示${symbol}的行情`)
+      return generateMockStockQuote(symbol)
     }
-
-    // 使用模拟数据
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(generateMockStockQuote(symbol)), 300)
-    })
   },
 
   // 获取财经新闻
   async getFinancialNews(count: number = 5): Promise<FinancialNews[]> {
-    if (USE_TUSHARE) {
-      try {
-        const news = await marketDataService.getFinancialNews(count)
-        if (news && news.length > 0) {
-          console.log(`成功获取 ${news.length} 条财经新闻`)
-          return news
-        } else {
-          throw new Error('获取到的财经新闻为空')
-        }
-      } catch (error) {
-        console.error('获取财经新闻失败，使用模拟数据:', error)
-        console.warn('将使用模拟数据显示财经新闻')
-        return generateMockFinancialNews(count)
-      }
+    try {
+      return await dataSource.getFinancialNews(count)
+    } catch (error) {
+      console.error(`${dataSource.getName()}获取财经新闻失败，使用模拟数据:`, error)
+      console.warn('将使用模拟数据显示财经新闻')
+      return generateMockFinancialNews(count)
     }
-
-    // 使用模拟数据
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(generateMockFinancialNews(count)), 300)
-    })
   },
 }

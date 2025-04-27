@@ -126,6 +126,12 @@ const router = createRouter({
       component: () => import('../views/user/SettingsView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/settings/data-source',
+      name: 'data-source-settings',
+      component: () => import('../views/DataSourceSettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
 
     // 404 路由
     {

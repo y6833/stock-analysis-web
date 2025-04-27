@@ -65,4 +65,12 @@ module.exports = app => {
 
   // 环境信息路由
   router.get('/api/env/info', controller.env.info);
+
+  // 新浪财经API代理路由
+  router.get('/api/sina/test', controller.sina.test);
+  router.get('/api/sina/quote', controller.sina.quote);
+  router.get('/api/sina/stock-list', controller.sina.stockList);
+  router.get('/api/sina/search', controller.sina.search);
+  router.get('/api/sina/history', controller.sina.history);
+  router.get('/api/sina/news', controller.sina.news);
 };

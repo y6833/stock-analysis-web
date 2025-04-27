@@ -3,6 +3,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
+import DataSourceIndicator from '@/components/common/DataSourceIndicator.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -181,6 +182,9 @@ onUnmounted(() => {
         </nav>
 
         <div class="user-section">
+          <!-- 数据源状态指示器 -->
+          <DataSourceIndicator v-if="isLoggedIn" />
+
           <!-- 搜索按钮 -->
           <button class="btn btn-outline">
             <span class="icon">🔍</span>
