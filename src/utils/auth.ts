@@ -3,8 +3,8 @@
  */
 
 // Token 存储的键名
-const TOKEN_KEY = 'stock_analysis_token'
-const USER_INFO_KEY = 'stock_analysis_user_info'
+const TOKEN_KEY = 'auth_token'
+const USER_INFO_KEY = 'user_info'
 
 /**
  * 获取 Token

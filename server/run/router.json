@@ -58,7 +58,7 @@
     "path": "/api/auth/validate-token",
     "regexp": "/^\\/api\\/auth\\/validate-token(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -72,7 +72,7 @@
     "path": "/api/users/profile",
     "regexp": "/^\\/api\\/users\\/profile(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -85,7 +85,7 @@
     "path": "/api/users/profile",
     "regexp": "/^\\/api\\/users\\/profile(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -98,7 +98,7 @@
     "path": "/api/users/preferences",
     "regexp": "/^\\/api\\/users\\/preferences(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -111,7 +111,7 @@
     "path": "/api/users/password",
     "regexp": "/^\\/api\\/users\\/password(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -125,7 +125,7 @@
     "path": "/api/watchlists",
     "regexp": "/^\\/api\\/watchlists(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -138,7 +138,7 @@
     "path": "/api/watchlists",
     "regexp": "/^\\/api\\/watchlists(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -162,7 +162,7 @@
     "path": "/api/watchlists/:id",
     "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -186,7 +186,7 @@
     "path": "/api/watchlists/:id",
     "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -211,7 +211,7 @@
     "path": "/api/watchlists/:id/stocks",
     "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))\\/stocks(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -235,7 +235,7 @@
     "path": "/api/watchlists/:id/stocks",
     "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))\\/stocks(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -269,7 +269,7 @@
     "path": "/api/watchlists/:watchlistId/stocks/:itemId",
     "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))\\/stocks\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -303,7 +303,7 @@
     "path": "/api/watchlists/:watchlistId/stocks/:itemId/notes",
     "regexp": "/^\\/api\\/watchlists\\/((?:[^\\/]+?))\\/stocks\\/((?:[^\\/]+?))\\/notes(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -317,7 +317,7 @@
     "path": "/api/portfolios",
     "regexp": "/^\\/api\\/portfolios(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -330,7 +330,7 @@
     "path": "/api/portfolios",
     "regexp": "/^\\/api\\/portfolios(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -354,7 +354,7 @@
     "path": "/api/portfolios/:id",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -378,7 +378,7 @@
     "path": "/api/portfolios/:id",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -403,7 +403,7 @@
     "path": "/api/portfolios/:id/holdings",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/holdings(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -427,7 +427,7 @@
     "path": "/api/portfolios/:id/holdings",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/holdings(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -461,7 +461,7 @@
     "path": "/api/portfolios/:portfolioId/holdings/:holdingId",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/holdings\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -495,7 +495,7 @@
     "path": "/api/portfolios/:portfolioId/holdings/:holdingId",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/holdings\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -519,7 +519,7 @@
     "path": "/api/portfolios/:id/trades",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/trades(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -544,7 +544,7 @@
     "path": "/api/portfolios/:id/trades",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/trades(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -578,7 +578,7 @@
     "path": "/api/portfolios/:portfolioId/trades/:tradeId",
     "regexp": "/^\\/api\\/portfolios\\/((?:[^\\/]+?))\\/trades\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -592,7 +592,7 @@
     "path": "/api/simulation/accounts",
     "regexp": "/^\\/api\\/simulation\\/accounts(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -605,7 +605,7 @@
     "path": "/api/simulation/accounts",
     "regexp": "/^\\/api\\/simulation\\/accounts(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -630,7 +630,7 @@
     "path": "/api/simulation/accounts/:id",
     "regexp": "/^\\/api\\/simulation\\/accounts\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -655,7 +655,7 @@
     "path": "/api/simulation/accounts/:id/positions",
     "regexp": "/^\\/api\\/simulation\\/accounts\\/((?:[^\\/]+?))\\/positions(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -680,7 +680,7 @@
     "path": "/api/simulation/accounts/:id/transactions",
     "regexp": "/^\\/api\\/simulation\\/accounts\\/((?:[^\\/]+?))\\/transactions(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },
@@ -704,7 +704,7 @@
     "path": "/api/simulation/accounts/:id/trade",
     "regexp": "/^\\/api\\/simulation\\/accounts\\/((?:[^\\/]+?))\\/trade(?:\\/(?=$))?$/",
     "stack": [
-      "jwt",
+      "auth",
       "wrappedController"
     ]
   },

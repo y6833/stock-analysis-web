@@ -401,6 +401,7 @@
     },
     "onClientError": null,
     "middleware": [
+      "auth",
       "errorHandler"
     ],
     "errorHandler": {

@@ -14,7 +14,7 @@ module.exports = (appInfo) => {
   config.keys = appInfo.name + '_1682323267123_3344'
 
   // 添加中间件
-  config.middleware = ['errorHandler']
+  config.middleware = ['auth', 'errorHandler']
 
   // 错误处理中间件配置
   config.errorHandler = {
@@ -114,6 +114,13 @@ module.exports = (appInfo) => {
     },
     // 允许 Redis 连接失败，不影响应用启动
     allowFail: true,
+  }
+
+  // 认证配置
+  config.auth = {
+    enable: true, // 默认启用认证
+    // 只在开发环境中提供默认用户
+    defaultUser: process.env.NODE_ENV === 'development' ? { id: 1, username: 'dev_user' } : null,
   }
 
   return {

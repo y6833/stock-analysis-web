@@ -3,12 +3,12 @@
 /* eslint-disable */
 
 import 'egg';
+import ExportAuth = require('../../../app/middleware/auth');
 import ExportErrorHandler = require('../../../app/middleware/error_handler');
-import ExportJwt = require('../../../app/middleware/jwt');
 
 declare module 'egg' {
   interface IMiddleware {
+    auth: typeof ExportAuth;
     errorHandler: typeof ExportErrorHandler;
-    jwt: typeof ExportJwt;
   }
 }

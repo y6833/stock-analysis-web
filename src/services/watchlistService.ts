@@ -46,8 +46,8 @@ export async function getUserWatchlists(): Promise<Watchlist[]> {
   const token = getToken()
   const response = await axios.get(`${API_URL}/watchlists`, {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   })
   return response.data
 }
@@ -61,8 +61,8 @@ export async function createWatchlist(data: CreateWatchlistRequest): Promise<Wat
   const token = getToken()
   const response = await axios.post(`${API_URL}/watchlists`, data, {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   })
   return response.data
 }
@@ -73,12 +73,15 @@ export async function createWatchlist(data: CreateWatchlistRequest): Promise<Wat
  * @param data 更新数据
  * @returns 更新后的分组
  */
-export async function updateWatchlist(id: number, data: CreateWatchlistRequest): Promise<Watchlist> {
+export async function updateWatchlist(
+  id: number,
+  data: CreateWatchlistRequest
+): Promise<Watchlist> {
   const token = getToken()
   const response = await axios.put(`${API_URL}/watchlists/${id}`, data, {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   })
   return response.data
 }
@@ -91,8 +94,8 @@ export async function deleteWatchlist(id: number): Promise<void> {
   const token = getToken()
   await axios.delete(`${API_URL}/watchlists/${id}`, {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   })
 }
 
@@ -105,8 +108,8 @@ export async function getWatchlistItems(id: number): Promise<WatchlistItem[]> {
   const token = getToken()
   const response = await axios.get(`${API_URL}/watchlists/${id}/stocks`, {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   })
   return response.data
 }
@@ -117,12 +120,15 @@ export async function getWatchlistItems(id: number): Promise<WatchlistItem[]> {
  * @param data 股票数据
  * @returns 添加的股票
  */
-export async function addStockToWatchlist(watchlistId: number, data: AddStockRequest): Promise<WatchlistItem> {
+export async function addStockToWatchlist(
+  watchlistId: number,
+  data: AddStockRequest
+): Promise<WatchlistItem> {
   const token = getToken()
   const response = await axios.post(`${API_URL}/watchlists/${watchlistId}/stocks`, data, {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   })
   return response.data
 }
@@ -136,8 +142,8 @@ export async function removeStockFromWatchlist(watchlistId: number, itemId: numb
   const token = getToken()
   await axios.delete(`${API_URL}/watchlists/${watchlistId}/stocks/${itemId}`, {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   })
 }
 
@@ -148,12 +154,20 @@ export async function removeStockFromWatchlist(watchlistId: number, itemId: numb
  * @param notes 备注
  * @returns 更新后的股票
  */
-export async function updateWatchlistItemNotes(watchlistId: number, itemId: number, notes: string): Promise<WatchlistItem> {
+export async function updateWatchlistItemNotes(
+  watchlistId: number,
+  itemId: number,
+  notes: string
+): Promise<WatchlistItem> {
   const token = getToken()
-  const response = await axios.put(`${API_URL}/watchlists/${watchlistId}/stocks/${itemId}/notes`, { notes }, {
-    headers: {
-      Authorization: `Bearer ${token}`
+  const response = await axios.put(
+    `${API_URL}/watchlists/${watchlistId}/stocks/${itemId}/notes`,
+    { notes },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     }
-  })
+  )
   return response.data
 }

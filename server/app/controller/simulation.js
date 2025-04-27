@@ -6,7 +6,15 @@ class SimulationController extends Controller {
   // 获取用户的所有模拟账户
   async getAccounts() {
     const { ctx, service } = this;
-    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
+
+    // 确保用户已认证
+    if (!ctx.user) {
+      ctx.status = 401;
+      ctx.body = { message: '未认证，请先登录' };
+      return;
+    }
+
+    const userId = ctx.user.id;
 
     try {
       const accounts = await service.simulation.getAccounts(userId);
@@ -21,7 +29,15 @@ class SimulationController extends Controller {
   // 创建新的模拟账户
   async createAccount() {
     const { ctx, service } = this;
-    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
+
+    // 确保用户已认证
+    if (!ctx.user) {
+      ctx.status = 401;
+      ctx.body = { message: '未认证，请先登录' };
+      return;
+    }
+
+    const userId = ctx.user.id;
     const { name, initialCash } = ctx.request.body;
 
     try {
@@ -38,7 +54,15 @@ class SimulationController extends Controller {
   // 获取账户详情
   async getAccount() {
     const { ctx, service } = this;
-    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
+
+    // 确保用户已认证
+    if (!ctx.user) {
+      ctx.status = 401;
+      ctx.body = { message: '未认证，请先登录' };
+      return;
+    }
+
+    const userId = ctx.user.id;
     const accountId = parseInt(ctx.params.id);
 
     try {
@@ -59,7 +83,15 @@ class SimulationController extends Controller {
   // 获取账户持仓
   async getPositions() {
     const { ctx, service } = this;
-    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
+
+    // 确保用户已认证
+    if (!ctx.user) {
+      ctx.status = 401;
+      ctx.body = { message: '未认证，请先登录' };
+      return;
+    }
+
+    const userId = ctx.user.id;
     const accountId = parseInt(ctx.params.id);
 
     try {
@@ -75,7 +107,15 @@ class SimulationController extends Controller {
   // 获取交易记录
   async getTransactions() {
     const { ctx, service } = this;
-    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
+
+    // 确保用户已认证
+    if (!ctx.user) {
+      ctx.status = 401;
+      ctx.body = { message: '未认证，请先登录' };
+      return;
+    }
+
+    const userId = ctx.user.id;
     const accountId = parseInt(ctx.params.id);
 
     try {
@@ -91,7 +131,15 @@ class SimulationController extends Controller {
   // 执行交易
   async executeTrade() {
     const { ctx, service } = this;
-    const userId = ctx.user ? ctx.user.id : 1; // 如果没有用户信息，使用默认用户ID
+
+    // 确保用户已认证
+    if (!ctx.user) {
+      ctx.status = 401;
+      ctx.body = { message: '未认证，请先登录' };
+      return;
+    }
+
+    const userId = ctx.user.id;
     const accountId = parseInt(ctx.params.id);
     const { stockCode, stockName, action, quantity, price } = ctx.request.body;
 

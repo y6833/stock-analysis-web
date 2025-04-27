@@ -444,6 +444,7 @@
     "onClientError": null,
     "middleware": [
       "jwt",
+      "auth",
       "errorHandler"
     ],
     "errorHandler": {

@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = options => {
-  return async function jwt(ctx, next) {
+  return async function auth(ctx, next) {
     // 获取 token
     const token = ctx.request.header.authorization;
 
@@ -10,10 +10,14 @@ module.exports = options => {
     const needAuth = authConfig.enable !== false; // 默认需要认证
     const defaultUser = authConfig.defaultUser || { id: 1, username: 'dev_user' };
 
+    // 检查是否是开发环境
+    const isDev = process.env.NODE_ENV === 'development';
+
     if (!token || token === 'Bearer') {
-      if (!needAuth) {
-        // 如果不需要认证，使用默认用户
+      if (!needAuth && isDev) {
+        // 只有在开发环境且明确配置不需要认证时，才使用默认用户
         ctx.user = defaultUser;
+        ctx.logger.warn('使用默认用户访问API，仅用于开发环境');
         await next();
         return;
       } else {
