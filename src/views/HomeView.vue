@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { stockService } from '@/services/stockService'
 import type { Stock } from '@/types/stock'
+import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import DataSourceInfo from '@/components/common/DataSourceInfo.vue'
 import { useToast } from '@/composables/useToast'
+import eventBus from '@/utils/eventBus'
 
 const router = useRouter()
 const { showToast } = useToast()
@@ -17,8 +19,10 @@ const dataSourceMessage = ref('数据来源未知')
 const isRealTime = ref(false)
 const isCache = ref(false)
 
-// 获取热门股票
-onMounted(async () => {
+// 获取热门股票和数据源信息
+const fetchStocksAndUpdateInfo = async () => {
+  isLoading.value = true
+
   try {
     // 获取所有股票并取前10个作为热门股票
     const result = await stockService.getStocks()
@@ -45,6 +49,24 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+// 组件挂载时获取数据
+onMounted(async () => {
+  // 获取热门股票和数据源信息
+  await fetchStocksAndUpdateInfo()
+
+  // 监听数据源变化事件
+  eventBus.on('data-source-changed', async (type: DataSourceType) => {
+    console.log(`数据源已切换到: ${type}，正在更新数据...`)
+    await fetchStocksAndUpdateInfo()
+  })
+})
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  // 移除事件监听
+  eventBus.off('data-source-changed')
 })
 
 // 跳转到股票分析页面

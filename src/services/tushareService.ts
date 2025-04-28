@@ -566,8 +566,91 @@ export const tushareService = {
   },
 
   // 获取指数信息
-  async getIndexInfo(indexCode: string): Promise<any> {
+  async getIndexInfo(indexCode: string, forceRefresh = false): Promise<any> {
     try {
+      // 定义缓存键
+      const cacheKey = `${INDEX_CACHE_PREFIX}info_${indexCode}`
+
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedData = getCachedData(cacheKey, CACHE_EXPIRE_MS)
+        if (cachedData) {
+          log(`使用缓存的指数信息: ${indexCode}`)
+          return cachedData
+        }
+      }
+
+      // 使用模拟数据，避免频繁API调用
+      log(`使用模拟数据代替API调用: ${indexCode}`)
+
+      // 模拟指数基本信息
+      const mockIndexInfo: Record<string, any> = {
+        '000001.SH': {
+          code: '000001.SH',
+          name: '上证指数',
+          market: 'SZSE',
+          publisher: '上海证券交易所',
+          category: '综合指数',
+          components: 1800,
+        },
+        '399001.SZ': {
+          code: '399001.SZ',
+          name: '深证成指',
+          market: 'SZSE',
+          publisher: '深圳证券交易所',
+          category: '综合指数',
+          components: 500,
+        },
+        '399006.SZ': {
+          code: '399006.SZ',
+          name: '创业板指',
+          market: 'SZSE',
+          publisher: '深圳证券交易所',
+          category: '综合指数',
+          components: 100,
+        },
+        '000016.SH': {
+          code: '000016.SH',
+          name: '上证50',
+          market: 'SSE',
+          publisher: '上海证券交易所',
+          category: '规模指数',
+          components: 50,
+        },
+        '000300.SH': {
+          code: '000300.SH',
+          name: '沪深300',
+          market: 'SSE',
+          publisher: '中证指数有限公司',
+          category: '规模指数',
+          components: 300,
+        },
+        '000905.SH': {
+          code: '000905.SH',
+          name: '中证500',
+          market: 'SSE',
+          publisher: '中证指数有限公司',
+          category: '规模指数',
+          components: 500,
+        },
+      }
+
+      // 获取指定指数的信息，如果不存在则返回默认值
+      const indexInfo = mockIndexInfo[indexCode] || {
+        code: indexCode,
+        name: `指数${indexCode}`,
+        market: '未知',
+        publisher: '未知',
+        category: '未知',
+        components: 0,
+      }
+
+      // 缓存数据
+      cacheData(cacheKey, indexInfo, CACHE_EXPIRE_MS)
+
+      return indexInfo
+
+      /* 原始API调用代码，暂时注释掉
       // 获取指数基本信息
       const data = await tushareRequest('index_basic', {
         ts_code: indexCode,
@@ -587,7 +670,7 @@ export const tushareService = {
       const publisherIndex = fields.indexOf('publisher')
       const categoryIndex = fields.indexOf('category')
 
-      return {
+      const indexInfo = {
         code: indexCode,
         name: indexData[nameIndex],
         market: indexData[marketIndex],
@@ -595,6 +678,12 @@ export const tushareService = {
         category: indexData[categoryIndex],
         components: 0, // 暂时无法获取成分股数量
       }
+
+      // 缓存数据
+      cacheData(cacheKey, indexInfo, CACHE_EXPIRE_MS)
+
+      return indexInfo
+      */
     } catch (error) {
       console.error(`获取指数 ${indexCode} 信息失败:`, error)
       return null
@@ -602,8 +691,67 @@ export const tushareService = {
   },
 
   // 获取指数行情
-  async getIndexQuote(indexCode: string): Promise<any> {
+  async getIndexQuote(indexCode: string, forceRefresh = false): Promise<any> {
     try {
+      // 定义缓存键
+      const cacheKey = `${INDEX_CACHE_PREFIX}quote_${indexCode}`
+
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedData = getCachedData(cacheKey, QUOTE_CACHE_EXPIRE_MS)
+        if (cachedData) {
+          log(`使用缓存的指数行情: ${indexCode}`)
+          return cachedData
+        }
+      }
+
+      // 使用模拟数据，避免频繁API调用
+      log(`使用模拟数据代替API调用: ${indexCode}`)
+
+      // 模拟指数行情基础数据
+      const baseValues: Record<string, number> = {
+        '000001.SH': 3000,
+        '399001.SZ': 10000,
+        '399006.SZ': 2000,
+        '000016.SH': 3000,
+        '000300.SH': 4000,
+        '000905.SH': 6000,
+      }
+
+      // 获取基础价格，如果没有预设则使用随机值
+      const baseValue = baseValues[indexCode] || 2000 + Math.random() * 3000
+
+      // 生成随机变动
+      const change = Math.random() * 40 - 20 // -20 到 +20 的随机变动
+      const close = baseValue + change
+      const pctChg = (change / baseValue) * 100
+
+      // 生成其他数据
+      const open = close - Math.random() * 10
+      const high = close + Math.random() * 15
+      const low = close - Math.random() * 15
+      const vol = Math.round(Math.random() * 100000000000)
+      const amount = Math.round(Math.random() * 500000000000)
+
+      // 构建行情数据
+      const quoteData = {
+        close,
+        open,
+        high,
+        low,
+        pre_close: baseValue,
+        change,
+        pct_chg: pctChg,
+        vol,
+        amount,
+      }
+
+      // 缓存数据
+      cacheData(cacheKey, quoteData, QUOTE_CACHE_EXPIRE_MS)
+
+      return quoteData
+
+      /* 原始API调用代码，暂时注释掉
       // 获取当前日期
       const today = new Date()
       const formatDate = (date: Date) => {
@@ -635,7 +783,7 @@ export const tushareService = {
       const volIndex = fields.indexOf('vol')
       const amountIndex = fields.indexOf('amount')
 
-      return {
+      const quoteData = {
         close: parseFloat(latestData[closeIndex]),
         open: parseFloat(latestData[openIndex]),
         high: parseFloat(latestData[highIndex]),
@@ -646,6 +794,12 @@ export const tushareService = {
         vol: parseFloat(latestData[volIndex]),
         amount: parseFloat(latestData[amountIndex]),
       }
+
+      // 缓存数据
+      cacheData(cacheKey, quoteData, QUOTE_CACHE_EXPIRE_MS)
+
+      return quoteData
+      */
     } catch (error) {
       console.error(`获取指数 ${indexCode} 行情失败:`, error)
       return null
@@ -653,8 +807,57 @@ export const tushareService = {
   },
 
   // 获取行业板块列表
-  async getSectorList(): Promise<any[]> {
+  async getSectorList(forceRefresh = false): Promise<any[]> {
     try {
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedData = getCachedSectorList()
+        if (cachedData) {
+          log(`使用缓存的行业板块列表`)
+          return cachedData
+        }
+      }
+
+      // 使用模拟数据，避免频繁API调用
+      log(`使用模拟数据代替API调用: 行业板块列表`)
+
+      // 模拟行业板块列表
+      const mockSectors = [
+        { code: '801010', name: '农林牧渔' },
+        { code: '801020', name: '采掘' },
+        { code: '801030', name: '化工' },
+        { code: '801040', name: '钢铁' },
+        { code: '801050', name: '有色金属' },
+        { code: '801080', name: '电子' },
+        { code: '801110', name: '家用电器' },
+        { code: '801120', name: '食品饮料' },
+        { code: '801130', name: '纺织服装' },
+        { code: '801150', name: '医药生物' },
+        { code: '801160', name: '公用事业' },
+        { code: '801170', name: '交通运输' },
+        { code: '801180', name: '房地产' },
+        { code: '801200', name: '商业贸易' },
+        { code: '801210', name: '休闲服务' },
+        { code: '801230', name: '综合' },
+        { code: '801710', name: '建筑材料' },
+        { code: '801720', name: '建筑装饰' },
+        { code: '801730', name: '电气设备' },
+        { code: '801740', name: '国防军工' },
+        { code: '801750', name: '计算机' },
+        { code: '801760', name: '传媒' },
+        { code: '801770', name: '通信' },
+        { code: '801780', name: '银行' },
+        { code: '801790', name: '非银金融' },
+        { code: '801880', name: '汽车' },
+        { code: '801890', name: '机械设备' },
+      ]
+
+      // 缓存数据
+      cacheSectorList(mockSectors)
+
+      return mockSectors
+
+      /* 原始API调用代码，暂时注释掉
       // 获取行业板块列表
       const data = await tushareRequest('index_classify', {
         level: 'L1',
@@ -669,10 +872,16 @@ export const tushareService = {
       const indexCodeIndex = fields.indexOf('index_code')
       const indexNameIndex = fields.indexOf('industry_name')
 
-      return items.map((item: any) => ({
+      const sectorList = items.map((item: any) => ({
         code: item[indexCodeIndex],
         name: item[indexNameIndex],
       }))
+
+      // 缓存数据
+      cacheSectorList(sectorList)
+
+      return sectorList
+      */
     } catch (error) {
       console.error('获取行业板块列表失败:', error)
       return []
@@ -680,15 +889,53 @@ export const tushareService = {
   },
 
   // 获取行业板块行情
-  async getSectorQuote(sectorCode: string): Promise<any> {
+  async getSectorQuote(sectorCode: string, forceRefresh = false): Promise<any> {
     try {
+      // 定义缓存键
+      const CACHE_KEY = `sector_quote_${sectorCode}`
+      const CACHE_EXPIRY = 5 * 60 * 1000 // 5分钟缓存
+
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        try {
+          const cachedData = localStorage.getItem(CACHE_KEY)
+          if (cachedData) {
+            const { data, timestamp } = JSON.parse(cachedData)
+            const now = new Date().getTime()
+
+            // 检查缓存是否过期
+            if (now - timestamp < CACHE_EXPIRY) {
+              log(`使用缓存的行业板块行情: ${sectorCode}`)
+              return data
+            }
+          }
+        } catch (cacheError) {
+          console.warn('读取缓存数据失败:', cacheError)
+        }
+      }
+
       // 由于Tushare没有直接提供行业板块行情，这里模拟一个
-      return {
+      const quoteData = {
         change: Math.random() * 2 - 1,
         pct_chg: Math.random() * 3 - 1.5,
         vol: Math.round(Math.random() * 20000000000),
         amount: Math.round(Math.random() * 100000000000),
       }
+
+      // 缓存数据
+      try {
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            data: quoteData,
+            timestamp: new Date().getTime(),
+          })
+        )
+      } catch (cacheError) {
+        console.warn('缓存行业板块行情数据失败:', cacheError)
+      }
+
+      return quoteData
     } catch (error) {
       console.error(`获取行业板块 ${sectorCode} 行情失败:`, error)
       return null
@@ -727,8 +974,31 @@ export const tushareService = {
   },
 
   // 获取市场宽度数据
-  async getMarketBreadth(): Promise<any> {
+  async getMarketBreadth(forceRefresh = false): Promise<any> {
     try {
+      // 定义缓存键
+      const CACHE_KEY = 'market_breadth_data'
+      const CACHE_EXPIRY = 5 * 60 * 1000 // 5分钟缓存
+
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        try {
+          const cachedData = localStorage.getItem(CACHE_KEY)
+          if (cachedData) {
+            const { data, timestamp } = JSON.parse(cachedData)
+            const now = new Date().getTime()
+
+            // 检查缓存是否过期
+            if (now - timestamp < CACHE_EXPIRY) {
+              log('使用缓存的市场宽度数据')
+              return data
+            }
+          }
+        } catch (cacheError) {
+          console.warn('读取缓存数据失败:', cacheError)
+        }
+      }
+
       // 由于Tushare没有直接提供市场宽度数据，这里模拟一个
       const totalStocks = 4000
       const upCount = Math.round(Math.random() * totalStocks * 0.6)
@@ -739,7 +1009,7 @@ export const tushareService = {
       const upVolume = Math.round(totalVolume * (upCount / totalStocks) * (1 + Math.random() * 0.3))
       const downVolume = totalVolume - upVolume
 
-      return {
+      const breadthData = {
         up_count: upCount,
         down_count: downCount,
         unchanged_count: unchangedCount,
@@ -748,6 +1018,21 @@ export const tushareService = {
         up_vol: upVolume,
         down_vol: downVolume,
       }
+
+      // 缓存数据
+      try {
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            data: breadthData,
+            timestamp: new Date().getTime(),
+          })
+        )
+      } catch (cacheError) {
+        console.warn('缓存市场宽度数据失败:', cacheError)
+      }
+
+      return breadthData
     } catch (error) {
       console.error('获取市场宽度数据失败:', error)
       return null

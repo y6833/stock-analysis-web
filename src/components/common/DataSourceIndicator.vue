@@ -73,11 +73,12 @@ onMounted(async () => {
   // 初始化获取数据源信息
   await updateSourceInfo()
 
-  // 定期检查数据源连接状态
-  checkInterval.value = window.setInterval(async () => {
-    const currentType = stockService.getCurrentDataSourceType()
-    isConnected.value = await stockService.testDataSource(currentType)
-  }, 5 * 60 * 1000) // 每5分钟检查一次
+  // 禁用定期检查数据源连接状态，避免频繁API调用
+  // checkInterval.value = window.setInterval(async () => {
+  //   const currentType = stockService.getCurrentDataSourceType()
+  //   isConnected.value = await stockService.testDataSource(currentType)
+  // }, 5 * 60 * 1000) // 每5分钟检查一次
+  console.log('数据源状态自动检查已禁用，避免频繁API调用')
 
   // 监听数据源变化事件
   eventBus.on('data-source-changed', async (type: DataSourceType) => {

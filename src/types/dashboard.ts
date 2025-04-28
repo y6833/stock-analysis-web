@@ -3,17 +3,17 @@
  */
 
 // 仪表盘小部件类型
-export type WidgetType = 
-  | 'watchlist'       // 关注列表
+export type WidgetType =
+  | 'watchlist' // 关注列表
   | 'market_overview' // 市场概览
-  | 'index_chart'     // 指数图表
-  | 'stock_chart'     // 股票图表
-  | 'news'            // 新闻
-  | 'calendar'        // 日历
-  | 'performance'     // 表现分析
-  | 'heatmap'         // 热力图
+  | 'index_chart' // 指数图表
+  | 'stock_chart' // 股票图表
+  | 'news' // 新闻
+  | 'calendar' // 日历
+  | 'performance' // 表现分析
+  | 'heatmap' // 热力图
   | 'sector_rotation' // 板块轮动
-  | 'custom_chart'    // 自定义图表
+  | 'custom_chart' // 自定义图表
 
 // 小部件尺寸
 export interface WidgetSize {
@@ -125,6 +125,14 @@ export interface IndustrySector {
   }[]
 }
 
+// 数据来源信息
+export interface DataSource {
+  type: 'api' | 'cache' | 'mock'
+  name: string
+  message: string
+  timestamp: number
+}
+
 // 市场概览
 export interface MarketOverview {
   indices: MarketIndex[]
@@ -139,6 +147,7 @@ export interface MarketOverview {
     decliningVolume: number
   }
   timestamp: string
+  dataSource?: DataSource
 }
 
 // 用户仪表盘设置

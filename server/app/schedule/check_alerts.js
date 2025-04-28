@@ -8,6 +8,7 @@ class CheckAlertsTask extends Subscription {
     return {
       interval: '1m', // 每1分钟执行一次
       type: 'worker', // 指定一个 worker 执行
+      disable: true, // 默认禁用定时任务，避免频繁的API调用
     };
   }
 

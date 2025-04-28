@@ -95,57 +95,14 @@
       <p>本系统支持多种数据源，您可以根据自己的需求选择合适的数据源。</p>
       <p>不同数据源的数据可能存在差异，建议选择稳定可靠的数据源。</p>
       <p>如果您遇到数据获取问题，可以尝试切换数据源或检查网络连接。</p>
-
-      <h3 class="comparison-title">数据源比较</h3>
-      <el-table :data="dataSourceComparisonData" border stripe style="width: 100%">
-        <el-table-column prop="name" label="数据源" width="120" />
-        <el-table-column prop="realtime" label="实时性" width="100">
-          <template #default="scope">
-            <el-rate
-              v-model="scope.row.realtime"
-              disabled
-              show-score
-              text-color="#ff9900"
-              score-template="{value}"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="coverage" label="覆盖范围" width="100">
-          <template #default="scope">
-            <el-rate
-              v-model="scope.row.coverage"
-              disabled
-              show-score
-              text-color="#ff9900"
-              score-template="{value}"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="stability" label="稳定性" width="100">
-          <template #default="scope">
-            <el-rate
-              v-model="scope.row.stability"
-              disabled
-              show-score
-              text-color="#ff9900"
-              score-template="{value}"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="history" label="历史数据" width="100">
-          <template #default="scope">
-            <el-rate
-              v-model="scope.row.history"
-              disabled
-              show-score
-              text-color="#ff9900"
-              score-template="{value}"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="features" label="特点" />
-      </el-table>
     </div>
+
+    <!-- 数据源比较组件 -->
+    <DataSourceComparison :current-source="currentSource" @switch-source="changeDataSource" />
+
+    <!-- 数据源状态监控组件 -->
+    <el-divider content-position="center">数据源状态监控</el-divider>
+    <DataSourceStatus :current-source="currentSource" @switch-source="changeDataSource" />
   </div>
 </template>
 
@@ -154,6 +111,8 @@ import { ref, onMounted, computed } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import { ElMessage } from 'element-plus'
+import DataSourceComparison from '@/components/settings/DataSourceComparison.vue'
+import DataSourceStatus from '@/components/settings/DataSourceStatus.vue'
 
 // 当前数据源
 const currentSource = ref<DataSourceType>('tushare')
@@ -163,58 +122,6 @@ const availableSources = ref<DataSourceType[]>([])
 const testingSource = ref<DataSourceType | null>(null)
 // 正在清除缓存的数据源
 const clearingCache = ref<DataSourceType | null>(null)
-
-// 数据源比较数据
-const dataSourceComparisonData = [
-  {
-    name: 'Tushare数据',
-    realtime: 3.5,
-    coverage: 4.5,
-    stability: 4.0,
-    history: 4.5,
-    features: 'A股全市场数据，包括行情、基本面、财务等多维度数据，API调用次数有限制',
-  },
-  {
-    name: '新浪财经',
-    realtime: 4.5,
-    coverage: 3.5,
-    stability: 3.0,
-    history: 2.5,
-    features: '实时行情数据，无需注册直接调用，历史数据有限，主要提供当日行情',
-  },
-  {
-    name: '东方财富',
-    realtime: 4.0,
-    coverage: 4.0,
-    stability: 3.0,
-    history: 3.5,
-    features: '数据丰富，更新及时，包括行情、K线等数据，API不稳定',
-  },
-  {
-    name: '腾讯股票',
-    realtime: 4.5,
-    coverage: 3.5,
-    stability: 4.0,
-    history: 2.5,
-    features: '实时行情数据，数据稳定，历史数据有限，主要提供当日行情',
-  },
-  {
-    name: '网易财经',
-    realtime: 3.0,
-    coverage: 3.5,
-    stability: 3.5,
-    history: 4.0,
-    features: '历史数据丰富，更新频率较低，提供历史数据和行情',
-  },
-  {
-    name: 'Yahoo财经',
-    realtime: 3.0,
-    coverage: 5.0,
-    stability: 4.0,
-    history: 4.5,
-    features: '覆盖全球市场，包括美股、港股等，A股数据有限，提供全球市场数据',
-  },
-]
 
 // 获取数据源信息
 const getSourceInfo = (source: DataSourceType) => {

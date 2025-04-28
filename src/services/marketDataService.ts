@@ -13,13 +13,14 @@ const USE_MOCK_DATA = false // 使用真实数据
 /**
  * 获取指数信息
  * @param indexCode 指数代码
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 指数信息
  */
-export async function getIndexInfo(indexCode: string): Promise<any> {
+export async function getIndexInfo(indexCode: string, forceRefresh = true): Promise<any> {
   try {
     if (!USE_MOCK_DATA) {
-      // 这里应该调用 tushareService 获取真实数据
-      return await tushareService.getIndexInfo(indexCode)
+      // 这里应该调用 tushareService 获取真实数据，传递 forceRefresh 参数
+      return await tushareService.getIndexInfo(indexCode, forceRefresh)
     }
 
     // 使用模拟数据
@@ -78,13 +79,14 @@ export async function getIndexInfo(indexCode: string): Promise<any> {
 /**
  * 获取指数行情
  * @param indexCode 指数代码
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 指数行情
  */
-export async function getIndexQuote(indexCode: string): Promise<any> {
+export async function getIndexQuote(indexCode: string, forceRefresh = true): Promise<any> {
   try {
     if (!USE_MOCK_DATA) {
-      // 这里应该调用 tushareService 获取真实数据
-      return await tushareService.getIndexQuote(indexCode)
+      // 这里应该调用 tushareService 获取真实数据，传递 forceRefresh 参数
+      return await tushareService.getIndexQuote(indexCode, forceRefresh)
     }
 
     // 使用模拟数据
@@ -121,13 +123,14 @@ export async function getIndexQuote(indexCode: string): Promise<any> {
 
 /**
  * 获取行业板块列表
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 行业板块列表
  */
-export async function getSectorList(): Promise<any[]> {
+export async function getSectorList(forceRefresh = true): Promise<any[]> {
   try {
     if (!USE_MOCK_DATA) {
-      // 这里应该调用 tushareService 获取真实数据
-      return await tushareService.getSectorList()
+      // 这里应该调用 tushareService 获取真实数据，传递 forceRefresh 参数
+      return await tushareService.getSectorList(forceRefresh)
     }
 
     // 使用模拟数据
@@ -245,13 +248,14 @@ export async function getSectorLeadingStocks(
 
 /**
  * 获取市场宽度数据
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 市场宽度数据
  */
-export async function getMarketBreadth(): Promise<any> {
+export async function getMarketBreadth(forceRefresh = true): Promise<any> {
   try {
     if (!USE_MOCK_DATA) {
-      // 这里应该调用 tushareService 获取真实数据
-      return await tushareService.getMarketBreadth()
+      // 这里应该调用 tushareService 获取真实数据，传递 forceRefresh 参数
+      return await tushareService.getMarketBreadth(forceRefresh)
     }
 
     // 使用模拟数据
@@ -282,14 +286,18 @@ export async function getMarketBreadth(): Promise<any> {
 /**
  * 获取财经新闻
  * @param count 数量
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 财经新闻列表
  */
-export async function getFinancialNews(count: number = 5): Promise<FinancialNews[]> {
+export async function getFinancialNews(
+  count: number = 5,
+  forceRefresh = true
+): Promise<FinancialNews[]> {
   try {
     if (!USE_MOCK_DATA) {
       try {
-        // 尝试获取真实数据
-        const news = await tushareService.getFinancialNews(count)
+        // 尝试获取真实数据，传递 forceRefresh 参数
+        const news = await tushareService.getFinancialNews(count, forceRefresh)
         if (news && news.length > 0) {
           console.log(`成功获取 ${news.length} 条财经新闻`)
           return news
@@ -412,14 +420,18 @@ export async function getFinancialNews(count: number = 5): Promise<FinancialNews
 /**
  * 获取股票实时行情
  * @param symbol 股票代码
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 股票行情
  */
-export async function getStockQuote(symbol: string): Promise<StockQuote | null> {
+export async function getStockQuote(
+  symbol: string,
+  forceRefresh = true
+): Promise<StockQuote | null> {
   try {
     if (!USE_MOCK_DATA) {
       try {
-        // 尝试获取真实数据
-        const quote = await tushareService.getStockQuote(symbol)
+        // 尝试获取真实数据，传递 forceRefresh 参数
+        const quote = await tushareService.getStockQuote(symbol, forceRefresh)
         if (quote) {
           console.log(`成功获取 ${symbol} 的实时行情数据`)
           return quote

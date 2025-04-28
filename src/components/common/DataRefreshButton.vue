@@ -228,10 +228,13 @@ onMounted(async () => {
   await fetchStatus()
   await checkRefreshLimit()
 
-  // 设置定时检查
+  // 禁用定时检查，避免频繁的API调用
+  // 注释掉定时检查代码，改为只在用户交互时更新状态
+  /*
   checkTimer.value = window.setInterval(async () => {
     await fetchStatus()
   }, 5 * 60 * 1000) // 每5分钟检查一次
+  */
 })
 
 onUnmounted(() => {

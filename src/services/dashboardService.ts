@@ -389,21 +389,100 @@ export async function getWatchlistAlerts(watchlistId: string): Promise<any[]> {
 
 /**
  * 获取市场概览数据
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 市场概览数据
  */
-export async function getMarketOverview(): Promise<MarketOverview> {
+export async function getMarketOverview(forceRefresh = true): Promise<MarketOverview> {
   try {
-    // 使用Tushare API获取真实市场数据
-    const indices = await fetchMarketIndices()
-    const sectors = await fetchIndustrySectors()
-    const breadth = await fetchMarketBreadth()
+    // 缓存键
+    const CACHE_KEY = 'market_overview_data'
+    const CACHE_EXPIRY = 5 * 60 * 1000 // 5分钟缓存
 
-    return {
+    // 如果不强制刷新，尝试从缓存获取
+    if (!forceRefresh) {
+      try {
+        const cachedData = localStorage.getItem(CACHE_KEY)
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData)
+          const now = new Date().getTime()
+
+          // 检查缓存是否过期
+          if (now - timestamp < CACHE_EXPIRY) {
+            console.log('使用缓存的市场概览数据')
+
+            // 显示数据来源提示
+            if (window.$message) {
+              const cacheTime = new Date(timestamp)
+              const timeDiff = Math.round((now - timestamp) / 1000 / 60) // 分钟
+              window.$message.info(`数据来自本地缓存，最后更新于${timeDiff}分钟前`)
+            }
+
+            // 添加数据来源信息
+            return {
+              ...data,
+              dataSource: {
+                type: 'cache',
+                name: '本地缓存',
+                message: `数据来自本地缓存，最后更新于${new Date(timestamp).toLocaleTimeString()}`,
+                timestamp: timestamp,
+              },
+            }
+          }
+        }
+      } catch (cacheError) {
+        console.warn('读取缓存数据失败:', cacheError)
+      }
+    }
+
+    // 如果强制刷新或缓存不可用，从外部数据源获取数据
+    if (forceRefresh) {
+      console.log('从外部数据源获取市场概览数据')
+
+      // 显示数据来源提示
+      if (window.$message) {
+        window.$message.info('正在从外部数据源获取最新数据...')
+      }
+    } else {
+      console.log('缓存过期或不可用，从外部数据源获取市场概览数据')
+
+      // 显示数据来源提示
+      if (window.$message) {
+        window.$message.info('缓存已过期，正在从外部数据源获取最新数据...')
+      }
+    }
+
+    // 使用API获取真实市场数据
+    const indices = await fetchMarketIndices(forceRefresh)
+    const sectors = await fetchIndustrySectors(forceRefresh)
+    const breadth = await fetchMarketBreadth(forceRefresh)
+
+    const marketOverview = {
       indices,
       sectors,
       breadth,
       timestamp: new Date().toISOString(),
+      dataSource: {
+        type: 'api',
+        name: '外部数据源',
+        message: `数据来自外部数据源，获取时间：${new Date().toLocaleTimeString()}`,
+        timestamp: new Date().getTime(),
+      },
     }
+
+    // 缓存数据
+    try {
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          data: marketOverview,
+          timestamp: new Date().getTime(),
+        })
+      )
+    } catch (cacheError) {
+      console.warn('缓存市场概览数据失败:', cacheError)
+    }
+
+    return marketOverview
   } catch (error) {
     console.error('获取市场概览数据失败:', error)
     // 如果API调用失败，回退到模拟数据
@@ -414,9 +493,10 @@ export async function getMarketOverview(): Promise<MarketOverview> {
 
 /**
  * 从API获取市场指数数据
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 市场指数数据
  */
-async function fetchMarketIndices(): Promise<MarketIndex[]> {
+async function fetchMarketIndices(forceRefresh = true): Promise<MarketIndex[]> {
   try {
     // 获取主要指数列表
     const indexCodes = [
@@ -469,9 +549,10 @@ async function fetchMarketIndices(): Promise<MarketIndex[]> {
 
 /**
  * 从API获取行业板块数据
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 行业板块数据
  */
-async function fetchIndustrySectors(): Promise<IndustrySector[]> {
+async function fetchIndustrySectors(forceRefresh = true): Promise<IndustrySector[]> {
   try {
     // 获取行业板块列表
     const sectorList = await marketDataService.getSectorList()
@@ -521,9 +602,10 @@ async function fetchIndustrySectors(): Promise<IndustrySector[]> {
 
 /**
  * 从API获取市场宽度数据
+ * @param forceRefresh 是否强制刷新（从外部数据源获取）
  * @returns 市场宽度数据
  */
-async function fetchMarketBreadth(): Promise<MarketOverview['breadth']> {
+async function fetchMarketBreadth(forceRefresh = true): Promise<MarketOverview['breadth']> {
   try {
     // 获取市场宽度数据
     const breadthData = await marketDataService.getMarketBreadth()

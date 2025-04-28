@@ -156,8 +156,9 @@ export default {
     },
   },
   mounted() {
-    // 页面加载时自动获取股票基本信息
-    this.getStockBasic()
+    // 不再自动获取股票基本信息，避免频繁的API调用
+    // this.getStockBasic()
+    console.log('TushareTest页面已加载，请手动点击按钮获取数据')
   },
 }
 </script>

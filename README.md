@@ -50,6 +50,9 @@ npm install
 
 ```sh
 # 启动前端服务
+npm run start
+
+# 启动后端服务
 npm run dev
 
 # 启动代理服务器（用于解决 API 跨域问题）

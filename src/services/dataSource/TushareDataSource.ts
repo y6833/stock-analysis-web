@@ -98,9 +98,18 @@ export class TushareDataSource implements DataSourceInterface {
    */
   async testConnection(): Promise<boolean> {
     try {
-      // 尝试获取股票列表，如果成功则连接正常
-      const stocks = await this.getStocks()
-      return stocks.length > 0
+      // 直接调用后端测试接口，避免调用getStocks()方法
+      console.log('测试Tushare数据源连接')
+      const response = await axios.get('/api/tushare/test')
+
+      // 检查响应
+      if (response.data && response.data.success) {
+        console.log(`Tushare连接测试成功: ${response.data.message || '连接正常'}`)
+        return true
+      }
+
+      console.log(`Tushare连接测试失败: ${response.data.message || '未知错误'}`)
+      return false
     } catch (error) {
       console.error('Tushare数据源连接测试失败:', error)
       return false

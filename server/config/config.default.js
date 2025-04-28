@@ -79,6 +79,7 @@ module.exports = (appInfo) => {
   config.tushare = {
     token: process.env.TUSHARE_TOKEN || '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61', // 使用用户提供的 token
     api_url: 'http://api.tushare.pro',
+    enableAutoRefresh: false, // 默认禁用自动刷新缓存，避免频繁的后台API调用
   }
 
   // MySQL 客户端配置（用于直接操作 MySQL）

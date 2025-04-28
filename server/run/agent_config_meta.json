@@ -119,7 +119,8 @@
   },
   "tushare": {
     "token": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "api_url": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    "api_url": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "enableAutoRefresh": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
   },
   "mysql": {
     "client": {

@@ -7,6 +7,8 @@ import type { Stock } from '@/types/stock'
 import type { DashboardSettings, Watchlist, WatchlistItem, MarketOverview } from '@/types/dashboard'
 import * as echarts from 'echarts'
 import WatchlistManager from '@/components/dashboard/WatchlistManager.vue'
+import eventBus from '@/utils/eventBus'
+import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 
 // 导入消息服务类型
 declare global {
@@ -28,6 +30,8 @@ const newsItems = ref<any[]>([])
 const isLoading = ref(true)
 const marketTrend = ref<string>('up') // 'up', 'down', 'neutral'
 const marketSentiment = ref<string>('bullish') // 'bullish', 'bearish', 'neutral'
+// 数据来源信息
+const dataSourceInfo = ref<{ type: 'api' | 'cache' | 'mock'; message: string } | null>(null)
 const marketOverviewChart = ref<HTMLElement | null>(null)
 const chart = ref<echarts.ECharts | null>(null)
 
@@ -58,6 +62,24 @@ onMounted(async () => {
 
     // 设置定时刷新
     setupRefreshTimer()
+
+    // 监听数据源变化事件
+    eventBus.on('data-source-changed', async (type: DataSourceType) => {
+      console.log(`数据源已切换到: ${type}，正在更新仪表盘数据...`)
+
+      // 强制刷新数据
+      await refreshMarketData(true)
+
+      // 更新图表
+      if (chart.value) {
+        updateMarketOverviewChart()
+      }
+
+      // 显示提示
+      if (window.$message) {
+        window.$message.success(`数据源已切换到: ${type}，仪表盘数据已更新`)
+      }
+    })
   } catch (error) {
     console.error('获取数据失败:', error)
   } finally {
@@ -89,10 +111,23 @@ const loadDashboardSettings = () => {
 }
 
 // 刷新市场数据
-const refreshMarketData = async () => {
+const refreshMarketData = async (forceRefresh = true) => {
   try {
-    // 获取市场概览数据
-    const marketOverview = await dashboardService.getMarketOverview()
+    // 获取市场概览数据，传递 forceRefresh 参数
+    // forceRefresh 为 true 时，强制从外部数据源获取数据
+    // forceRefresh 为 false 时，优先从缓存获取数据
+    const marketOverview = await dashboardService.getMarketOverview(forceRefresh)
+
+    // 在控制台显示数据来源信息
+    if (marketOverview.dataSource) {
+      console.log(`数据来源: ${marketOverview.dataSource.name}`, marketOverview.dataSource)
+
+      // 更新数据来源信息显示
+      dataSourceInfo.value = {
+        type: marketOverview.dataSource.type,
+        message: marketOverview.dataSource.message,
+      }
+    }
 
     // 更新市场指数数据
     marketIndices.value = marketOverview.indices
@@ -239,12 +274,20 @@ const setupRefreshTimer = () => {
     clearInterval(refreshTimer)
   }
 
-  // 设置新定时器
+  // 设置新定时器，但只从缓存获取数据
   const interval = dashboardSettings.value?.refreshInterval || 60
+  console.log(`设置定时刷新，间隔 ${interval} 秒，只从缓存获取数据`)
+
   refreshTimer = setInterval(async () => {
-    await refreshMarketData()
-    if (chart.value) {
-      updateMarketOverviewChart()
+    try {
+      // 调用刷新市场数据，但指定只从缓存获取
+      await refreshMarketData(false) // false 表示不强制刷新，只从缓存获取
+
+      if (chart.value) {
+        updateMarketOverviewChart()
+      }
+    } catch (error) {
+      console.error('自动刷新市场数据失败:', error)
     }
   }, interval * 1000) as unknown as number
 }
@@ -594,24 +637,27 @@ const saveWatchlists = (watchlists: Watchlist[], activeWatchlistId: string) => {
   }
 }
 
-// 刷新数据
+// 刷新数据（手动刷新按钮）
 const refreshData = async () => {
   isLoading.value = true
   try {
-    await refreshMarketData()
+    // 强制从外部数据源获取最新数据
+    await refreshMarketData(true) // true 表示强制刷新，从外部数据源获取
+
     if (chart.value) {
       updateMarketOverviewChart()
     }
+
     // 添加成功提示
     if (window.$message) {
-      window.$message.success('数据刷新成功')
+      window.$message.success(`数据已从外部数据源刷新成功 (${new Date().toLocaleTimeString()})`)
     }
   } catch (error) {
     console.error('刷新数据失败:', error)
     // 添加错误提示
     if (window.$message) {
       window.$message.error(
-        '数据刷新失败: ' + (error instanceof Error ? error.message : String(error))
+        '刷新数据失败: ' + (error instanceof Error ? error.message : String(error))
       )
     }
   } finally {
@@ -630,6 +676,9 @@ onUnmounted(() => {
   if (chart.value) {
     chart.value.dispose()
   }
+
+  // 移除事件监听
+  eventBus.off('data-source-changed')
 })
 </script>
 
@@ -637,6 +686,12 @@ onUnmounted(() => {
   <div class="dashboard-view">
     <div class="dashboard-header">
       <h1>市场仪表盘</h1>
+      <div class="data-source-indicator" v-if="dataSourceInfo">
+        <span class="data-source-icon" :class="dataSourceInfo.type">
+          {{ dataSourceInfo.type === 'api' ? '🔄' : dataSourceInfo.type === 'cache' ? '💾' : '📊' }}
+        </span>
+        <span class="data-source-text">{{ dataSourceInfo.message }}</span>
+      </div>
       <div class="dashboard-actions">
         <button class="btn btn-outline" @click="refreshData" :disabled="isLoading">
           <span class="btn-icon" v-if="!isLoading">🔄</span>
@@ -903,6 +958,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin: var(--spacing-lg) 0;
+  flex-wrap: wrap;
 }
 
 .dashboard-header h1 {
@@ -912,9 +968,41 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+.data-source-indicator {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  margin-left: 16px;
+  font-size: var(--font-size-sm);
+}
+
+.data-source-icon {
+  margin-right: 6px;
+  font-size: 16px;
+}
+
+.data-source-icon.api {
+  color: var(--accent-color);
+}
+
+.data-source-icon.cache {
+  color: var(--info-color);
+}
+
+.data-source-icon.mock {
+  color: var(--warning-color);
+}
+
+.data-source-text {
+  color: var(--text-secondary);
+}
+
 .dashboard-actions {
   display: flex;
   gap: var(--spacing-sm);
+  margin-left: auto;
 }
 
 .loading-container {

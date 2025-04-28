@@ -453,7 +453,8 @@
     },
     "tushare": {
       "token": "983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61",
-      "api_url": "http://api.tushare.pro"
+      "api_url": "http://api.tushare.pro",
+      "enableAutoRefresh": false
     },
     "auth": {
       "enable": false,

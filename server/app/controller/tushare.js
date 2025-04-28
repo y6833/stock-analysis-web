@@ -151,8 +151,12 @@ class TushareController extends Controller {
               is_real_time: false
             };
 
-            // 如果缓存接近过期，在后台异步刷新缓存
-            if (isNearExpiry && !ctx.app.cacheRefreshing) {
+            // 检查是否启用自动刷新缓存（默认禁用）
+            const enableAutoRefresh = ctx.app.config.tushare && ctx.app.config.tushare.enableAutoRefresh === true;
+
+            // 如果缓存接近过期且启用了自动刷新，在后台异步刷新缓存
+            if (enableAutoRefresh && isNearExpiry && !ctx.app.cacheRefreshing) {
+              this.ctx.logger.info(`自动刷新缓存已启用，准备刷新: ${api_name}`);
               ctx.app.cacheRefreshing = true;
 
               // 构建请求 URL 和数据（在闭包内部定义，避免引用外部变量）
@@ -193,6 +197,8 @@ class TushareController extends Controller {
                   ctx.app.cacheRefreshing = false;
                 }
               }, 0);
+            } else if (isNearExpiry) {
+              this.ctx.logger.info(`缓存接近过期，但自动刷新已禁用: ${api_name}`);
             }
 
             return;

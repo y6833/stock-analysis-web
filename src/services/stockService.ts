@@ -329,12 +329,18 @@ export const stockService = {
   // 测试数据源连接
   async testDataSource(type: DataSourceType): Promise<boolean> {
     try {
+      // 创建一个临时的数据源实例，避免影响当前正在使用的数据源
       const testDataSource = DataSourceFactory.createDataSource(type)
+
+      // 直接调用测试连接方法，避免调用其他可能导致API请求的方法
       const result = await testDataSource.testConnection()
+
       if (result) {
         showToast(`${testDataSource.getName()}连接测试成功`, 'success')
+        console.log(`${testDataSource.getName()}连接测试成功`)
       } else {
         showToast(`${testDataSource.getName()}连接测试失败`, 'error')
+        console.log(`${testDataSource.getName()}连接测试失败`)
       }
       return result
     } catch (error) {
@@ -385,13 +391,55 @@ export const stockService = {
   },
 
   // 获取股票列表
-  async getStocks(): Promise<Stock[]> {
+  async getStocks(): Promise<
+    Stock[] & {
+      data_source?: string
+      data_source_message?: string
+      is_real_time?: boolean
+      is_cache?: boolean
+    }
+  > {
     try {
-      return await dataSource.getStocks()
+      // 获取数据源信息
+      const sourceInfo = DataSourceFactory.getDataSourceInfo(currentDataSourceType)
+
+      // 获取股票列表
+      const stocks = await dataSource.getStocks()
+
+      // 添加数据源信息
+      const result = [...stocks] as Stock[] & {
+        data_source?: string
+        data_source_message?: string
+        is_real_time?: boolean
+        is_cache?: boolean
+      }
+
+      // 添加数据源信息
+      result.data_source = sourceInfo.name
+      result.data_source_message = `数据来自${sourceInfo.name}`
+      result.is_real_time = true
+      result.is_cache = false
+
+      return result
     } catch (error) {
       console.error(`${dataSource.getName()}获取股票列表失败，使用模拟数据:`, error)
       showToast('获取股票列表失败，将使用模拟数据。请检查网络连接或稍后再试。', 'warning')
-      return mockStocks
+
+      // 添加数据源信息
+      const result = [...mockStocks] as Stock[] & {
+        data_source?: string
+        data_source_message?: string
+        is_real_time?: boolean
+        is_cache?: boolean
+      }
+
+      // 添加数据源信息
+      result.data_source = '模拟数据'
+      result.data_source_message = '使用模拟数据，因为API调用失败'
+      result.is_real_time = false
+      result.is_cache = true
+
+      return result
     }
   },
 
