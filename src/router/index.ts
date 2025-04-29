@@ -133,6 +133,36 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/membership',
+      name: 'membership',
+      component: () => import('../views/MembershipView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/membership-test',
+      name: 'membership-test',
+      component: () => import('../views/MembershipTestView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/alerts-migration-test',
+      name: 'alerts-migration-test',
+      component: () => import('../views/AlertsMigrationTestView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/data-source-test',
+      name: 'data-source-test',
+      component: () => import('../views/DataSourceTestView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/test-dashboard',
+      name: 'test-dashboard',
+      component: () => import('../views/TestDashboardView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/settings/data-source',
       name: 'data-source-settings',
       component: () => import('../views/DataSourceSettingsView.vue'),

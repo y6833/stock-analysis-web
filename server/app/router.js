@@ -134,4 +134,14 @@ module.exports = app => {
   // 缓存统计相关路由（需要认证）
   router.get('/api/cache-stats', auth, controller.cacheStats.getStats);
   router.post('/api/cache-stats/reset', auth, controller.cacheStats.resetStats);
+
+  // 数据刷新相关路由（需要认证）
+  router.post('/api/refresh-data', auth, controller.data.refreshData);
+  router.get('/api/refresh-status', auth, controller.data.getRefreshStatus);
+
+  // 会员相关路由
+  router.get('/api/membership', auth, controller.membership.getUserMembership);
+  router.get('/api/membership/levels', controller.membership.getMembershipLevels);
+  router.get('/api/membership/check-access', auth, controller.membership.checkFeatureAccess);
+  router.post('/api/membership/update', auth, controller.membership.updateMembership);
 };

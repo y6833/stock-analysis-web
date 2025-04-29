@@ -55,6 +55,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { cacheService } from '@/services/cacheService'
 import { tushareService } from '@/services/tushareService'
+import { dataRefreshService } from '@/services/dataRefreshService'
+import { useUserStore } from '@/stores/userStore'
 import type { CacheStatus, RefreshLimit } from '@/services/cacheService'
 
 // 组件属性
@@ -166,7 +168,8 @@ const handleRefresh = async () => {
   }, 30000) // 30秒后自动恢复限制
 
   try {
-    const result = await cacheService.refreshCache(props.dataSource)
+    // 使用新的数据刷新服务
+    const result = await dataRefreshService.refreshAllData(true) // 强制刷新，忽略冷却时间
 
     if (result.success) {
       // 刷新成功
@@ -177,11 +180,21 @@ const handleRefresh = async () => {
 
       // 设置刷新限制
       canRefresh.value = false
-      const limitMs = 60 * 60 * 1000 // 1小时
+
+      // 根据用户角色设置不同的冷却时间
+      const userStore = useUserStore()
+      let limitMs = 60 * 60 * 1000 // 默认1小时
+
+      if (userStore.userRole === 'admin') {
+        limitMs = 5 * 60 * 1000 // 管理员5分钟
+      } else if (userStore.userRole === 'premium') {
+        limitMs = 30 * 60 * 1000 // 高级会员30分钟
+      }
+
       updateTimeRemaining(limitMs)
       startRefreshTimer(limitMs)
     } else {
-      emit('refresh-error', result.error || '刷新失败')
+      emit('refresh-error', result.message || '刷新失败')
     }
   } catch (error: any) {
     console.error('刷新数据失败:', error)

@@ -404,6 +404,14 @@ const updatePassword = async () => {
             </router-link>
           </div>
 
+          <div class="security-section">
+            <h3 class="section-title">会员管理</h3>
+            <p class="section-description">
+              管理您的会员等级，查看会员权益，升级会员以获取更多功能。
+            </p>
+            <router-link to="/membership" class="btn btn-outline"> 会员中心 </router-link>
+          </div>
+
           <div class="security-section" v-if="userStore.userRole === 'admin'">
             <h3 class="section-title">缓存管理</h3>
             <p class="section-description">管理和监控数据缓存，优化应用性能，提高数据访问速度。</p>

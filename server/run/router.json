@@ -1537,5 +1537,86 @@
       "auth",
       "wrappedController"
     ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/refresh-data",
+    "regexp": "/^\\/api\\/refresh-data(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/refresh-status",
+    "regexp": "/^\\/api\\/refresh-status(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/membership",
+    "regexp": "/^\\/api\\/membership(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/membership/levels",
+    "regexp": "/^\\/api\\/membership\\/levels(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/membership/check-access",
+    "regexp": "/^\\/api\\/membership\\/check-access(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/membership/update",
+    "regexp": "/^\\/api\\/membership\\/update(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
   }
 ]

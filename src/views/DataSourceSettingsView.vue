@@ -9,9 +9,34 @@
 
     <el-divider content-position="center">可用数据源</el-divider>
 
+    <div class="source-controls">
+      <div class="search-box">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索数据源..."
+          prefix-icon="el-icon-search"
+          clearable
+          @input="filterSources"
+        >
+          <template #prefix>
+            <span class="search-icon">🔍</span>
+          </template>
+        </el-input>
+      </div>
+      <div class="sort-controls">
+        <span class="sort-label">排序方式:</span>
+        <el-select v-model="sortBy" placeholder="排序方式" @change="sortSources">
+          <el-option label="默认排序" value="default"></el-option>
+          <el-option label="按热度排序" value="popularity"></el-option>
+          <el-option label="按更新时间排序" value="updateTime"></el-option>
+          <el-option label="按数据量排序" value="dataVolume"></el-option>
+        </el-select>
+      </div>
+    </div>
+
     <div class="source-list">
       <el-card
-        v-for="source in availableSources"
+        v-for="source in filteredSources"
         :key="source"
         class="source-item"
         :class="{ active: source === currentSource }"
@@ -118,10 +143,59 @@ import DataSourceStatus from '@/components/settings/DataSourceStatus.vue'
 const currentSource = ref<DataSourceType>('tushare')
 // 可用数据源
 const availableSources = ref<DataSourceType[]>([])
+// 过滤后的数据源
+const filteredSources = ref<DataSourceType[]>([])
 // 正在测试的数据源
 const testingSource = ref<DataSourceType | null>(null)
 // 正在清除缓存的数据源
 const clearingCache = ref<DataSourceType | null>(null)
+// 搜索关键词
+const searchQuery = ref('')
+// 排序方式
+const sortBy = ref('default')
+
+// 数据源元数据
+const sourceMetadata = ref<
+  Record<
+    DataSourceType,
+    {
+      popularity: number
+      updateTime: Date
+      dataVolume: number
+    }
+  >
+>({
+  tushare: {
+    popularity: 90,
+    updateTime: new Date('2023-04-20'),
+    dataVolume: 95,
+  },
+  sina: {
+    popularity: 85,
+    updateTime: new Date('2023-04-18'),
+    dataVolume: 80,
+  },
+  eastmoney: {
+    popularity: 80,
+    updateTime: new Date('2023-04-15'),
+    dataVolume: 85,
+  },
+  tencent: {
+    popularity: 75,
+    updateTime: new Date('2023-04-10'),
+    dataVolume: 75,
+  },
+  netease: {
+    popularity: 70,
+    updateTime: new Date('2023-04-05'),
+    dataVolume: 70,
+  },
+  yahoo: {
+    popularity: 65,
+    updateTime: new Date('2023-04-01'),
+    dataVolume: 90,
+  },
+})
 
 // 获取数据源信息
 const getSourceInfo = (source: DataSourceType) => {
@@ -132,14 +206,6 @@ const getSourceInfo = (source: DataSourceType) => {
 const currentSourceInfo = computed(() => {
   return getSourceInfo(currentSource.value)
 })
-
-// 切换数据源
-const changeDataSource = async (source: DataSourceType) => {
-  if (stockService.switchDataSource(source)) {
-    currentSource.value = source
-    ElMessage.success(`已切换到${getSourceInfo(source).name}`)
-  }
-}
 
 // 测试数据源连接
 const testDataSource = async (source: DataSourceType) => {
@@ -169,11 +235,115 @@ const clearSourceCache = async (source: DataSourceType) => {
   }
 }
 
+// 过滤数据源
+const filterSources = () => {
+  if (!searchQuery.value.trim()) {
+    // 如果搜索框为空，显示所有数据源
+    filteredSources.value = [...availableSources.value]
+  } else {
+    const query = searchQuery.value.toLowerCase().trim()
+    // 根据名称和描述过滤
+    filteredSources.value = availableSources.value.filter((source) => {
+      const info = getSourceInfo(source)
+      return (
+        info.name.toLowerCase().includes(query) || info.description.toLowerCase().includes(query)
+      )
+    })
+  }
+
+  // 应用当前排序
+  sortSources()
+}
+
+// 排序数据源
+const sortSources = () => {
+  const sources = [...filteredSources.value]
+
+  switch (sortBy.value) {
+    case 'popularity':
+      // 按热度排序（从高到低）
+      sources.sort(
+        (a, b) => sourceMetadata.value[b].popularity - sourceMetadata.value[a].popularity
+      )
+      break
+    case 'updateTime':
+      // 按更新时间排序（从新到旧）
+      sources.sort(
+        (a, b) =>
+          sourceMetadata.value[b].updateTime.getTime() -
+          sourceMetadata.value[a].updateTime.getTime()
+      )
+      break
+    case 'dataVolume':
+      // 按数据量排序（从高到低）
+      sources.sort(
+        (a, b) => sourceMetadata.value[b].dataVolume - sourceMetadata.value[a].dataVolume
+      )
+      break
+    default:
+      // 默认排序（当前数据源优先，其他按字母顺序）
+      sources.sort((a, b) => {
+        if (a === currentSource.value) return -1
+        if (b === currentSource.value) return 1
+        return a.localeCompare(b)
+      })
+  }
+
+  filteredSources.value = sources
+}
+
+// 检查数据源切换冷却时间
+const checkSourceSwitchCooldown = () => {
+  const lastSwitchTime = localStorage.getItem('last_source_switch_time')
+  if (!lastSwitchTime) return true
+
+  const now = Date.now()
+  const elapsed = now - parseInt(lastSwitchTime)
+  const cooldownPeriod = 60 * 60 * 1000 // 1小时
+
+  return elapsed >= cooldownPeriod
+}
+
+// 获取剩余冷却时间（分钟）
+const getRemainingCooldown = () => {
+  const lastSwitchTime = localStorage.getItem('last_source_switch_time')
+  if (!lastSwitchTime) return 0
+
+  const now = Date.now()
+  const elapsed = now - parseInt(lastSwitchTime)
+  const cooldownPeriod = 60 * 60 * 1000 // 1小时
+
+  const remainingMs = Math.max(0, cooldownPeriod - elapsed)
+  return Math.ceil(remainingMs / (60 * 1000))
+}
+
+// 切换数据源
+const changeDataSource = async (source: DataSourceType) => {
+  // 检查冷却时间
+  if (!checkSourceSwitchCooldown()) {
+    const remainingMinutes = getRemainingCooldown()
+    ElMessage.warning(`数据源切换过于频繁，请在 ${remainingMinutes} 分钟后再试`)
+    return
+  }
+
+  if (stockService.switchDataSource(source)) {
+    currentSource.value = source
+    ElMessage.success(`已切换到${getSourceInfo(source).name}`)
+
+    // 更新切换时间
+    localStorage.setItem('last_source_switch_time', Date.now().toString())
+  }
+}
+
 onMounted(() => {
   // 获取当前数据源
   currentSource.value = stockService.getCurrentDataSourceType()
   // 获取可用数据源
   availableSources.value = stockService.getAvailableDataSources()
+  // 初始化过滤后的数据源
+  filteredSources.value = [...availableSources.value]
+  // 应用默认排序
+  sortSources()
 })
 </script>
 
@@ -195,6 +365,37 @@ onMounted(() => {
   border-radius: 8px;
   margin-bottom: 30px;
   text-align: center;
+}
+
+.source-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 250px;
+  max-width: 400px;
+}
+
+.search-icon {
+  margin-right: 5px;
+  font-size: 16px;
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-label {
+  white-space: nowrap;
+  color: var(--el-text-color-regular);
 }
 
 .source-list {

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { userService } from '@/services/userService'
 import { tushareService } from '@/services/tushareService'
+import { membershipService } from '@/services/membershipService'
 import type {
   User,
   UserProfile,
@@ -11,6 +12,7 @@ import type {
   PreferencesUpdateRequest,
   PasswordUpdateRequest,
 } from '@/types/user'
+import type { UserMembership } from '@/services/membershipService'
 
 export const useUserStore = defineStore('user', () => {
   // 状态
@@ -19,12 +21,17 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const isAuthenticated = ref(false)
+  const membership = ref<UserMembership | null>(null)
 
   // 计算属性
   const username = computed(() => user.value?.username || '')
   const userRole = computed(() => user.value?.role || 'user')
   const userAvatar = computed(() => user.value?.avatar || '/src/assets/default-avatar.svg')
   const userPreferences = computed(() => profile.value?.preferences || null)
+  const membershipLevel = computed(() => membership.value?.effectiveLevel || 'free')
+  const isPremium = computed(() =>
+    ['premium', 'enterprise'].includes(membership.value?.effectiveLevel || '')
+  )
 
   // 初始化用户状态
   async function initUserState() {
@@ -121,6 +128,7 @@ export const useUserStore = defineStore('user', () => {
     userService.logout()
     user.value = null
     profile.value = null
+    membership.value = null
     isAuthenticated.value = false
     error.value = null
 
@@ -138,12 +146,38 @@ export const useUserStore = defineStore('user', () => {
 
     try {
       profile.value = await userService.getUserProfile()
+
+      // 获取会员信息
+      await fetchMembershipInfo()
     } catch (err) {
       console.error('获取用户资料失败:', err)
       error.value = '获取用户资料失败'
     } finally {
       isLoading.value = false
     }
+  }
+
+  // 获取会员信息
+  async function fetchMembershipInfo() {
+    if (!isAuthenticated.value) return
+
+    try {
+      membership.value = await membershipService.getUserMembership()
+      return membership.value
+    } catch (err) {
+      console.error('获取会员信息失败:', err)
+      return null
+    }
+  }
+
+  // 检查功能访问权限
+  async function checkFeatureAccess(feature: string): Promise<boolean> {
+    if (!isAuthenticated.value) return false
+
+    // 管理员可以访问所有功能
+    if (userRole.value === 'admin') return true
+
+    return await membershipService.checkFeatureAccess(feature)
   }
 
   // 更新用户资料
@@ -224,12 +258,15 @@ export const useUserStore = defineStore('user', () => {
     isLoading,
     error,
     isAuthenticated,
+    membership,
 
     // 计算属性
     username,
     userRole,
     userAvatar,
     userPreferences,
+    membershipLevel,
+    isPremium,
 
     // 动作
     initUserState,
@@ -237,6 +274,8 @@ export const useUserStore = defineStore('user', () => {
     login,
     logout,
     fetchUserProfile,
+    fetchMembershipInfo,
+    checkFeatureAccess,
     updateProfile,
     updatePreferences,
     updatePassword,

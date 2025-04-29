@@ -37,6 +37,19 @@ module.exports = app => {
         isIn: [['user', 'premium', 'admin']],
       },
     },
+    membership: {
+      type: STRING(20),
+      allowNull: false,
+      defaultValue: 'free',
+      validate: {
+        isIn: [['free', 'basic', 'premium', 'enterprise']],
+      },
+    },
+    membershipExpires: {
+      type: DATE,
+      allowNull: true,
+      field: 'membership_expires',
+    },
     status: {
       type: STRING(10),
       allowNull: false,
@@ -72,6 +85,11 @@ module.exports = app => {
     lastLogin: {
       type: DATE,
       allowNull: true,
+    },
+    lastRefreshTime: {
+      type: DATE,
+      allowNull: true,
+      field: 'last_refresh_time',
     },
     createdAt: {
       type: DATE,

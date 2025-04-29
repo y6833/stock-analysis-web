@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { stockService } from '@/services/stockService'
 import { alertService, type Alert, type AlertCondition } from '@/services/alertService'
+import { alertMigrationService } from '@/services/alertMigrationService'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import type { Stock } from '@/types/stock'
@@ -212,10 +213,52 @@ const checkAlertStatus = async () => {
   }
 }
 
+// 迁移本地提醒数据到数据库
+const migrateLocalAlerts = async () => {
+  // 检查是否有本地提醒数据
+  if (!alertMigrationService.hasLocalAlerts()) {
+    return
+  }
+
+  try {
+    isLoading.value = true
+
+    // 确认迁移
+    await ElMessageBox.confirm(
+      '检测到本地存储的提醒数据，是否将其迁移到数据库？迁移后可在多设备间同步提醒数据。',
+      '数据迁移',
+      {
+        confirmButtonText: '确认迁移',
+        cancelButtonText: '暂不迁移',
+        type: 'info',
+      }
+    )
+
+    // 执行迁移
+    const result = await alertMigrationService.migrateAlertsToDatabase()
+
+    if (result.total > 0) {
+      // 迁移完成后刷新提醒列表
+      await fetchAlerts()
+    }
+  } catch (err: any) {
+    // 用户取消迁移或发生错误
+    if (err !== 'cancel') {
+      console.error('迁移提醒数据失败:', err)
+      showToast(`迁移提醒数据失败: ${err.message || '未知错误'}`, 'error')
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // 组件挂载时
 onMounted(() => {
   fetchStocks()
   fetchAlerts()
+
+  // 检查并迁移本地提醒数据
+  migrateLocalAlerts()
 
   // 请求通知权限
   if ('Notification' in window) {
@@ -303,10 +346,22 @@ onMounted(() => {
         <div v-else class="alerts-list">
           <div class="alerts-header">
             <h3>我的提醒 ({{ alerts.length }})</h3>
-            <button class="btn btn-secondary" @click="checkAlertStatus" :disabled="isLoading">
-              <span v-if="isLoading">刷新中...</span>
-              <span v-else>刷新状态</span>
-            </button>
+            <div class="alerts-actions">
+              <button
+                v-if="alertMigrationService.hasLocalAlerts()"
+                class="btn btn-primary btn-sm"
+                @click="migrateLocalAlerts"
+                :disabled="isLoading"
+                title="将本地存储的提醒数据迁移到数据库"
+              >
+                <span v-if="isLoading">迁移中...</span>
+                <span v-else>迁移本地数据</span>
+              </button>
+              <button class="btn btn-secondary" @click="checkAlertStatus" :disabled="isLoading">
+                <span v-if="isLoading">刷新中...</span>
+                <span v-else>刷新状态</span>
+              </button>
+            </div>
           </div>
 
           <div class="alert-card" v-for="alert in alerts" :key="alert.id">
@@ -522,6 +577,16 @@ onMounted(() => {
   font-size: var(--font-size-lg);
   margin: 0;
   color: var(--text-primary);
+}
+
+.alerts-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.btn-sm {
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
 }
 
 .btn-secondary {

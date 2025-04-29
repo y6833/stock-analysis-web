@@ -189,6 +189,10 @@ onUnmounted(() => {
             <span class="nav-icon">📊</span>
             <span class="nav-text">API测试</span>
           </RouterLink>
+          <RouterLink to="/test-dashboard" class="nav-link">
+            <span class="nav-icon">🧪</span>
+            <span class="nav-text">功能测试</span>
+          </RouterLink>
           <RouterLink to="/about" class="nav-link">
             <span class="nav-icon">ℹ️</span>
             <span class="nav-text">关于</span>
@@ -245,7 +249,14 @@ onUnmounted(() => {
                 <img :src="userAvatar" :alt="username" class="user-menu-avatar" />
                 <div class="user-menu-info">
                   <div class="user-menu-name">{{ username }}</div>
-                  <div class="user-menu-role">普通用户</div>
+                  <div class="user-menu-role">
+                    <span
+                      class="membership-badge"
+                      :class="`membership-${userStore.membershipLevel}`"
+                    >
+                      {{ userStore.membershipLevel.toUpperCase() }}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -254,6 +265,11 @@ onUnmounted(() => {
               <RouterLink to="/profile" class="dropdown-item">
                 <span class="item-icon">👤</span>
                 <span>个人资料</span>
+              </RouterLink>
+
+              <RouterLink to="/membership" class="dropdown-item">
+                <span class="item-icon">⭐</span>
+                <span>会员中心</span>
               </RouterLink>
 
               <RouterLink to="/settings" class="dropdown-item">
@@ -533,6 +549,32 @@ onUnmounted(() => {
 .user-menu-role {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+}
+
+.membership-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 10px;
+  color: white;
+}
+
+.membership-free {
+  background-color: #909399;
+}
+
+.membership-basic {
+  background-color: #409eff;
+}
+
+.membership-premium {
+  background-color: #67c23a;
+}
+
+.membership-enterprise {
+  background-color: #e6a23c;
 }
 
 .user-menu-divider {

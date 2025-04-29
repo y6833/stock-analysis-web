@@ -1,6 +1,7 @@
 import type DataSourceInterface from './DataSourceInterface'
 import { tushareService } from '../tushareService'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
+import axios from 'axios'
 
 /**
  * Tushare数据源实现
