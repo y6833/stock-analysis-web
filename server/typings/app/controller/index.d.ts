@@ -14,6 +14,7 @@ import ExportEastmoney = require('../../../app/controller/eastmoney');
 import ExportEnv = require('../../../app/controller/env');
 import ExportFundamental = require('../../../app/controller/fundamental');
 import ExportHome = require('../../../app/controller/home');
+import ExportLogs = require('../../../app/controller/logs');
 import ExportMembership = require('../../../app/controller/membership');
 import ExportNetease = require('../../../app/controller/netease');
 import ExportPortfolio = require('../../../app/controller/portfolio');
@@ -38,6 +39,7 @@ declare module 'egg' {
     env: ExportEnv;
     fundamental: ExportFundamental;
     home: ExportHome;
+    logs: ExportLogs;
     membership: ExportMembership;
     netease: ExportNetease;
     portfolio: ExportPortfolio;

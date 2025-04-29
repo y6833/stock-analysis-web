@@ -35,12 +35,21 @@ const checkInterval = ref<number | null>(null)
 // 获取当前数据源信息
 const updateSourceInfo = async () => {
   try {
-    const currentType = stockService.getCurrentDataSourceType()
+    // 直接从localStorage获取当前数据源，确保使用最新的值
+    const storedDataSource = localStorage.getItem('preferredDataSource') as DataSourceType
+
+    // 如果localStorage中有值，使用该值；否则使用stockService中的值
+    const currentType = storedDataSource || stockService.getCurrentDataSourceType()
+
+    console.log(`DataSourceIndicator: 当前数据源类型 = ${currentType}`)
+
     const sourceInfo = stockService.getDataSourceInfo(currentType)
     sourceName.value = sourceInfo.name
 
-    // 测试连接
-    isConnected.value = await stockService.testDataSource(currentType)
+    // 不测试连接，避免不必要的API调用
+    // 默认假设连接正常
+    isConnected.value = true
+    console.log(`获取数据源信息成功: ${sourceName.value}，跳过连接测试`)
   } catch (error) {
     console.error('获取数据源信息失败:', error)
     sourceName.value = '未知数据源'

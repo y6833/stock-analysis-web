@@ -16,6 +16,7 @@ const dropdownOpen = ref({
   analysis: false,
   strategy: false,
   user: false,
+  admin: false,
 })
 
 // 切换下拉菜单
@@ -80,6 +81,15 @@ onMounted(async () => {
 
   // 初始化用户状态
   await userStore.initUserState()
+
+  // 确保不使用Tushare数据源
+  const currentSource = localStorage.getItem('preferredDataSource')
+  if (currentSource === 'tushare') {
+    console.log('检测到Tushare数据源，系统已配置为不使用Tushare，自动切换到eastmoney')
+    localStorage.setItem('preferredDataSource', 'eastmoney')
+    // 刷新页面以应用新的数据源设置
+    window.location.reload()
+  }
 })
 
 // 处理数据刷新成功
@@ -187,14 +197,35 @@ onUnmounted(() => {
             </div>
 
             <!-- 其他链接 -->
-            <RouterLink v-if="userStore.userRole === 'admin'" to="/admin" class="nav-link">
-              <span class="nav-icon">👑</span>
-              <span class="nav-text">管理后台</span>
-            </RouterLink>
-            <RouterLink v-if="userStore.userRole === 'admin'" to="/tushare-test" class="nav-link">
-              <span class="nav-icon">📊</span>
-              <span class="nav-text">API测试</span>
-            </RouterLink>
+            <div v-if="userStore.userRole === 'admin'" class="dropdown-container">
+              <button
+                class="nav-link dropdown-toggle"
+                :class="{ active: dropdownOpen.admin }"
+                @click="toggleDropdown('admin')"
+              >
+                <span class="nav-icon">👑</span>
+                <span class="nav-text">管理后台</span>
+                <span class="dropdown-arrow">▼</span>
+              </button>
+              <div class="dropdown-menu" v-show="dropdownOpen.admin">
+                <RouterLink to="/admin" class="dropdown-item">
+                  <span class="nav-icon">👑</span>
+                  <span class="nav-text">用户管理</span>
+                </RouterLink>
+                <RouterLink to="/admin/data-source" class="dropdown-item">
+                  <span class="nav-icon">🔌</span>
+                  <span class="nav-text">数据源管理</span>
+                </RouterLink>
+                <RouterLink to="/settings/cache" class="dropdown-item">
+                  <span class="nav-icon">💾</span>
+                  <span class="nav-text">缓存管理</span>
+                </RouterLink>
+                <RouterLink to="/tushare-test" class="dropdown-item">
+                  <span class="nav-icon">📊</span>
+                  <span class="nav-text">API测试</span>
+                </RouterLink>
+              </div>
+            </div>
             <RouterLink to="/test-dashboard" class="nav-link">
               <span class="nav-icon">🧪</span>
               <span class="nav-text">功能测试</span>

@@ -434,12 +434,18 @@ export class SinaDataSource implements DataSourceInterface {
    */
   async testConnection(): Promise<boolean> {
     try {
+      // 检查当前选择的数据源
+      const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
+
       // 使用新的通用数据源API
       console.log('测试新浪财经数据源连接')
 
-      // 使用新的API路径，传递source参数
+      // 使用新的API路径，传递source参数和当前数据源参数
       const response = await axios.get('/api/data-source/test', {
-        params: { source: 'sina' },
+        params: {
+          source: 'sina',
+          currentSource: currentDataSource,
+        },
       })
 
       // 检查响应

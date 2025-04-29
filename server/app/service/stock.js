@@ -8,6 +8,9 @@ class StockService extends Service {
   async withCache(cacheKey, ttl, fetchDataFn) {
     const { app, ctx } = this;
 
+    // 提取数据源名称
+    const dataSource = cacheKey.split(':')[0] || 'tushare';
+
     // 首先尝试从缓存获取数据
     try {
       if (app.redis) {
@@ -16,6 +19,10 @@ class StockService extends Service {
           try {
             const parsedData = JSON.parse(cachedData);
             ctx.logger.info(`从 Redis 缓存获取数据成功: ${cacheKey}`);
+
+            // 记录缓存命中
+            await ctx.service.cache.recordCacheHit(dataSource);
+
             return {
               ...parsedData,
               fromCache: true
@@ -35,12 +42,19 @@ class StockService extends Service {
         // 检查缓存是否过期
         if (cacheAge < ttl * 1000) {
           ctx.logger.info(`从内存缓存获取数据成功: ${cacheKey}`);
+
+          // 记录缓存命中
+          await ctx.service.cache.recordCacheHit(dataSource);
+
           return {
             ...cacheData,
             fromCache: true
           };
         }
       }
+
+      // 记录缓存未命中
+      await ctx.service.cache.recordCacheMiss(dataSource);
     } catch (cacheErr) {
       ctx.logger.warn(`获取缓存数据失败:`, cacheErr);
       // 继续尝试从 API 获取
@@ -85,6 +99,10 @@ class StockService extends Service {
           if (cachedData) {
             const parsedData = JSON.parse(cachedData);
             ctx.logger.info(`API调用失败，使用缓存数据: ${cacheKey}`);
+
+            // 记录缓存命中
+            await ctx.service.cache.recordCacheHit(dataSource);
+
             return {
               ...parsedData,
               fromCache: true
@@ -92,13 +110,23 @@ class StockService extends Service {
           }
         } else if (global.stockCache && global.stockCache[cacheKey]) {
           ctx.logger.info(`API调用失败，使用内存缓存数据: ${cacheKey}`);
+
+          // 记录缓存命中
+          await ctx.service.cache.recordCacheHit(dataSource);
+
           return {
             ...global.stockCache[cacheKey],
             fromCache: true
           };
         }
+
+        // 如果没有缓存数据，记录缓存未命中
+        await ctx.service.cache.recordCacheMiss(dataSource);
       } catch (cacheErr) {
         ctx.logger.warn(`获取缓存数据失败:`, cacheErr);
+
+        // 记录缓存未命中
+        await ctx.service.cache.recordCacheMiss(dataSource);
       }
 
       // 如果没有缓存数据，抛出错误

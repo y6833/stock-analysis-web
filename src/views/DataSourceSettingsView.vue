@@ -228,6 +228,13 @@ const currentSourceInfo = computed(() => {
 
 // 测试数据源连接
 const testDataSource = async (source: DataSourceType) => {
+  // 完全禁止测试Tushare数据源
+  if (source === 'tushare') {
+    console.log('系统已配置为不使用Tushare数据源，跳过测试')
+    ElMessage.info('系统已配置为不使用Tushare数据源，跳过测试')
+    return
+  }
+
   // 如果不是当前数据源，显示提示并测试当前数据源
   if (source !== currentSource.value) {
     ElMessage.info(
@@ -238,7 +245,8 @@ const testDataSource = async (source: DataSourceType) => {
 
   testingSource.value = source
   try {
-    await stockService.testDataSource(source)
+    // 传递当前数据源参数，确保后端也知道当前选择的数据源
+    await stockService.testDataSource(source, currentSource.value)
   } finally {
     testingSource.value = null
   }
@@ -375,8 +383,14 @@ const handleCacheCleared = (source: DataSourceType) => {
 }
 
 onMounted(() => {
-  // 获取当前数据源
-  currentSource.value = stockService.getCurrentDataSourceType()
+  // 直接从localStorage获取当前数据源，确保使用最新的值
+  const storedDataSource = localStorage.getItem('preferredDataSource') as DataSourceType
+
+  // 如果localStorage中有值，使用该值；否则使用stockService中的值
+  currentSource.value = storedDataSource || stockService.getCurrentDataSourceType()
+
+  console.log(`DataSourceSettingsView: 当前数据源类型 = ${currentSource.value}`)
+
   // 获取可用数据源
   availableSources.value = stockService.getAvailableDataSources()
   // 初始化过滤后的数据源

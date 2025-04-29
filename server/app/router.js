@@ -156,4 +156,20 @@ module.exports = app => {
   router.put('/api/admin/users/:userId', auth, controller.admin.updateUser);
   router.patch('/api/admin/users/:userId/status', auth, controller.admin.updateUserStatus);
   router.get('/api/admin/stats', auth, controller.admin.getSystemStats);
+
+  // 日志相关路由（需要认证）
+  router.get('/api/logs/data-source', auth, controller.logs.getDataSourceLogs);
+  router.get('/api/logs/data-source/recent', auth, controller.logs.getRecentDataSourceLogs);
+  router.post('/api/logs/data-source', auth, controller.logs.addDataSourceLog);
+  router.delete('/api/logs/data-source', auth, controller.logs.clearDataSourceLogs);
+
+  // 缓存相关路由（需要认证）
+  router.get('/api/cache/stats/:source', auth, controller.cache.getStats);
+  router.get('/api/cache/details/:source', auth, controller.cache.getDetails);
+  router.delete('/api/cache/source/:dataSource', auth, controller.cache.clearDataSourceCache);
+  router.delete('/api/cache/key', auth, controller.cache.deleteKey);
+  router.post('/api/cache/expire', auth, controller.cache.setExpire);
+  router.post('/api/cache/clean/time', auth, controller.cache.cleanCacheByTime);
+  router.post('/api/cache/clean/capacity', auth, controller.cache.cleanCacheByCapacity);
+  router.post('/api/cache/clean/auto', auth, controller.cache.autoCleanCache);
 };

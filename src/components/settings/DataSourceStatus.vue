@@ -140,11 +140,35 @@ const getStatusText = (status: 'online' | 'offline' | 'unknown' | undefined) => 
 
 // 检查数据源状态
 const checkStatus = async (source: DataSourceType) => {
+  // 完全禁止测试Tushare数据源
+  if (source === 'tushare') {
+    console.log('系统已配置为不使用Tushare数据源，跳过测试')
+    ElMessage.info('系统已配置为不使用Tushare数据源，跳过测试')
+
+    // 更新状态为未知
+    sourceStatus.value[source] = 'unknown'
+    responseTime.value[source] = '未测试'
+    lastChecked.value[source] = '未测试'
+    availability.value[source] = '未知'
+
+    return
+  }
+
+  // 如果要测试的数据源不是当前数据源，则跳过测试
+  if (source !== props.currentSource) {
+    console.log(`跳过测试非当前数据源: ${source}，当前数据源是: ${props.currentSource}`)
+    ElMessage.info(
+      `为避免不必要的API调用，只测试当前数据源: ${getSourceInfo(props.currentSource).name}`
+    )
+    source = props.currentSource
+  }
+
   checkingSource.value = source
 
   try {
     const startTime = Date.now()
     // 传递当前数据源，确保只测试当前数据源
+    console.log(`测试数据源连接: ${source}，当前数据源是: ${props.currentSource}`)
     const isOnline = await stockService.testDataSource(source, props.currentSource)
     const endTime = Date.now()
 
@@ -229,18 +253,23 @@ onMounted(async () => {
 
   // 只检查当前数据源状态，不检查其他数据源
   console.log(`只检查当前数据源: ${props.currentSource}，跳过其他数据源`)
-  await checkStatus(props.currentSource)
 
-  // 确保其他数据源保持未知状态，避免自动测试
+  // 设置所有数据源为未测试状态
   availableSources.value.forEach((source) => {
-    if (source !== props.currentSource) {
-      sourceStatus.value[source] = 'unknown'
-      // 设置一个占位符，避免自动测试
-      responseTime.value[source] = '未测试'
-      lastChecked.value[source] = '未测试'
-      availability.value[source] = '未知'
-    }
+    sourceStatus.value[source] = 'unknown'
+    responseTime.value[source] = '未测试'
+    lastChecked.value[source] = '未测试'
+    availability.value[source] = '未知'
   })
+
+  // 只有在数据源设置页面上才测试当前数据源
+  const isDataSourcePage = window.location.pathname.includes('/settings/data-source')
+  if (isDataSourcePage) {
+    // 只测试当前数据源
+    await checkStatus(props.currentSource)
+  } else {
+    console.log('不在数据源设置页面，跳过所有数据源测试')
+  }
 
   // 开始定期检查 - 只检查当前数据源
   startStatusCheck()

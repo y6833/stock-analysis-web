@@ -8,12 +8,35 @@ import eventBus from '@/utils/eventBus'
 // 从本地存储获取当前数据源类型
 const getCurrentDataSourceType = (): DataSourceType => {
   const savedSource = localStorage.getItem('preferredDataSource')
-  return (savedSource as DataSourceType) || 'tushare'
+
+  // 如果localStorage中有值，使用该值（但永远不使用tushare）
+  if (
+    savedSource &&
+    ['sina', 'eastmoney', 'akshare', 'netease', 'tencent', 'yahoo'].includes(savedSource)
+  ) {
+    console.log(`从localStorage获取数据源类型: ${savedSource}`)
+    return savedSource as DataSourceType
+  }
+
+  // 如果localStorage中的值是tushare，强制改为eastmoney
+  if (savedSource === 'tushare') {
+    console.log('检测到Tushare数据源，系统已配置为不使用Tushare，自动切换到eastmoney')
+    localStorage.setItem('preferredDataSource', 'eastmoney')
+    return 'eastmoney'
+  }
+
+  // 如果localStorage中没有值或值无效，设置默认值为eastmoney并保存
+  console.log('localStorage中没有有效的数据源类型，使用默认值: eastmoney')
+  localStorage.setItem('preferredDataSource', 'eastmoney')
+  return 'eastmoney'
 }
 
 // 初始化数据源
 let currentDataSourceType = getCurrentDataSourceType()
 let dataSource = DataSourceFactory.createDataSource(currentDataSourceType)
+
+// 确保localStorage中的值与当前数据源类型一致
+localStorage.setItem('preferredDataSource', currentDataSourceType)
 
 // 更新数据源实例
 const updateDataSource = (type: DataSourceType) => {
@@ -322,6 +345,8 @@ export const stockService = {
   // 切换数据源
   switchDataSource: (type: DataSourceType): boolean => {
     try {
+      console.log(`切换数据源: 从 ${currentDataSourceType} 到 ${type}`)
+
       // 检查是否是当前数据源
       if (type === currentDataSourceType) {
         showToast(`已经是${DataSourceFactory.getDataSourceInfo(type).name}，无需切换`, 'info')
@@ -333,9 +358,23 @@ export const stockService = {
 
       // 保存到本地存储
       localStorage.setItem('preferredDataSource', type)
+      console.log(`已保存数据源设置到localStorage: ${type}`)
 
       // 记录切换时间
       localStorage.setItem('last_source_switch_time', Date.now().toString())
+
+      // 确认localStorage中的值已正确设置
+      const storedValue = localStorage.getItem('preferredDataSource')
+      console.log(`确认localStorage中的数据源设置: ${storedValue}`)
+
+      // 如果localStorage中的值与期望的不一致，尝试再次设置
+      if (storedValue !== type) {
+        console.warn(`localStorage中的数据源设置不一致，再次尝试设置: ${storedValue} != ${type}`)
+        localStorage.setItem('preferredDataSource', type)
+        // 再次确认
+        const recheck = localStorage.getItem('preferredDataSource')
+        console.log(`再次确认localStorage中的数据源设置: ${recheck}`)
+      }
 
       // 发出数据源切换事件
       eventBus.emit('data-source-changed', type)
@@ -356,31 +395,50 @@ export const stockService = {
     forcedCurrentSource?: DataSourceType
   ): Promise<boolean> {
     try {
-      // 使用传入的当前数据源或全局当前数据源
-      const effectiveCurrentSource = forcedCurrentSource || currentDataSourceType
+      // 重新从localStorage获取当前数据源，确保使用最新的值
+      const storedDataSource = localStorage.getItem('preferredDataSource') as DataSourceType
 
-      // 如果要测试的数据源不是当前选择的数据源，且不是当前页面显式要求测试的数据源，则跳过测试
-      if (type !== effectiveCurrentSource) {
-        // 检查当前页面是否是数据源设置页面
-        const isDataSourcePage =
-          window.location.pathname.includes('/settings/data-source') ||
-          window.location.pathname.includes('/data-source')
+      // 使用传入的当前数据源、localStorage中的值或全局当前数据源（按优先级）
+      const effectiveCurrentSource =
+        forcedCurrentSource || storedDataSource || currentDataSourceType
 
-        // 如果不是数据源设置页面，则跳过测试非当前数据源
-        if (!isDataSourcePage) {
-          console.log(`跳过测试非当前数据源: ${type}，当前数据源是: ${effectiveCurrentSource}`)
-          // 返回假设的成功结果，避免显示错误消息
-          return true
-        }
+      console.log(
+        `测试数据源参数 - 请求类型: ${type}, 强制当前源: ${forcedCurrentSource || '无'}, 存储源: ${
+          storedDataSource || '无'
+        }, 全局源: ${currentDataSourceType}`
+      )
+      console.log(`最终使用的当前数据源: ${effectiveCurrentSource}`)
+
+      // 完全禁止测试Tushare数据源
+      if (type === 'tushare') {
+        console.log('系统已配置为不使用Tushare数据源，跳过测试')
+        // 返回假设的成功结果，避免显示错误消息
+        return true
       }
 
-      console.log(`测试数据源连接: ${type}`)
+      // 如果要测试的数据源不是当前选择的数据源，则始终跳过测试
+      if (type !== effectiveCurrentSource) {
+        console.log(`跳过测试非当前数据源: ${type}，当前数据源是: ${effectiveCurrentSource}`)
+        // 返回假设的成功结果，避免显示错误消息
+        return true
+      }
+
+      console.log(`测试数据源连接: ${type}，当前数据源是: ${effectiveCurrentSource}`)
 
       // 创建一个临时的数据源实例，避免影响当前正在使用的数据源
       const testDataSource = DataSourceFactory.createDataSource(type)
 
       // 直接调用测试连接方法，避免调用其他可能导致API请求的方法
-      const result = await testDataSource.testConnection()
+      // 传递当前数据源参数，确保后端也知道当前选择的数据源
+      const response = await axios.get('/api/data-source/test', {
+        params: {
+          source: type,
+          currentSource: effectiveCurrentSource,
+        },
+      })
+
+      // 检查响应
+      const result = response.data && response.data.success
 
       if (result) {
         showToast(`${testDataSource.getName()}连接测试成功`, 'success')

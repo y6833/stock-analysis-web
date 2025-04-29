@@ -214,13 +214,19 @@ onMounted(() => {
   // 获取推荐数据源
   recommendedSources.value = DataSourceFactory.getRecommendedDataSources()
 
-  // 预加载所有数据源详情 - 使用静态信息，避免创建实例
-  availableSources.value.forEach((source) => {
+  // 只加载当前数据源和推荐数据源的详情，避免加载所有数据源
+  const sourcesToLoad = [
+    props.currentSource,
+    ...recommendedSources.value.filter((source) => source !== props.currentSource),
+  ].slice(0, 3) // 最多加载3个数据源详情
+
+  // 预加载选定的数据源详情 - 使用静态信息，避免创建实例
+  sourcesToLoad.forEach((source) => {
     // 使用静态信息，避免创建实例和测试连接
     sourceDetails.value[source] = DataSourceFactory.getDataSourceDetails(source)
   })
 
-  console.log('数据源比较组件已初始化，使用静态信息，避免自动测试连接')
+  console.log('数据源比较组件已初始化，只加载当前和推荐数据源的静态信息，避免自动测试连接')
 })
 </script>
 

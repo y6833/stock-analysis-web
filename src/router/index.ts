@@ -182,6 +182,12 @@ const router = createRouter({
       component: () => import('../views/admin/AdminView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
+    {
+      path: '/admin/data-source',
+      name: 'data-source-management',
+      component: () => import('../views/DataSourceManagementView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
 
     // 404 路由
     {

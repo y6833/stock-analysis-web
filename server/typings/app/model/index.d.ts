@@ -11,6 +11,7 @@ import ExportSimulationAccount = require('../../../app/model/simulation_account'
 import ExportSimulationPosition = require('../../../app/model/simulation_position');
 import ExportSimulationTransaction = require('../../../app/model/simulation_transaction');
 import ExportStrategyExecution = require('../../../app/model/strategy_execution');
+import ExportSystemLog = require('../../../app/model/system_log');
 import ExportTradeRecord = require('../../../app/model/trade_record');
 import ExportUser = require('../../../app/model/user');
 import ExportUserAlert = require('../../../app/model/user_alert');
@@ -34,6 +35,7 @@ declare module 'egg' {
     SimulationPosition: ReturnType<typeof ExportSimulationPosition>;
     SimulationTransaction: ReturnType<typeof ExportSimulationTransaction>;
     StrategyExecution: ReturnType<typeof ExportStrategyExecution>;
+    SystemLog: ReturnType<typeof ExportSystemLog>;
     TradeRecord: ReturnType<typeof ExportTradeRecord>;
     User: ReturnType<typeof ExportUser>;
     UserAlert: ReturnType<typeof ExportUserAlert>;

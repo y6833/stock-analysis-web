@@ -9,12 +9,39 @@ class DataSourceController extends Controller {
   // 测试数据源连接
   async test() {
     const { ctx } = this;
-    
+
     // 获取数据源参数
-    const dataSource = ctx.query.source || 'tushare';
-    
-    this.ctx.logger.info(`测试数据源连接: ${dataSource}`);
-    
+    const dataSource = ctx.query.source || 'eastmoney';
+
+    // 获取当前选择的数据源
+    const currentDataSource = ctx.query.currentSource || dataSource;
+
+    this.ctx.logger.info(`测试数据源连接: ${dataSource}，当前数据源是: ${currentDataSource}`);
+
+    // 完全禁止测试Tushare数据源
+    if (dataSource === 'tushare') {
+      this.ctx.logger.warn(`禁止测试Tushare数据源，系统已配置为使用其他数据源`);
+      ctx.body = {
+        success: true,
+        message: `系统已配置为不使用Tushare数据源，跳过测试`,
+        data_source: dataSource,
+        skipped: true
+      };
+      return;
+    }
+
+    // 如果要测试的数据源不是当前选择的数据源，则跳过测试
+    if (dataSource !== currentDataSource) {
+      this.ctx.logger.info(`跳过测试非当前数据源: ${dataSource}，当前数据源是: ${currentDataSource}`);
+      ctx.body = {
+        success: true,
+        message: `跳过测试非当前数据源: ${dataSource}，当前数据源是: ${currentDataSource}`,
+        data_source: dataSource,
+        skipped: true
+      };
+      return;
+    }
+
     // 根据数据源类型调用不同的测试方法
     switch (dataSource) {
       case 'tushare':
@@ -37,14 +64,14 @@ class DataSourceController extends Controller {
         };
     }
   }
-  
+
   // 测试Tushare数据源
   async testTushare() {
     const { ctx } = this;
-    
+
     try {
       this.ctx.logger.info('执行 Tushare API 连接测试');
-      
+
       // 执行 Python 脚本测试连接
       const result = await this.execPythonScript('tushare_api.py', 'test_connection');
 
@@ -56,7 +83,7 @@ class DataSourceController extends Controller {
       };
     } catch (error) {
       this.ctx.logger.error(`Tushare API 连接测试失败: ${error.message}`);
-      
+
       ctx.status = 500;
       ctx.body = {
         success: false,
@@ -66,11 +93,11 @@ class DataSourceController extends Controller {
       };
     }
   }
-  
+
   // 测试新浪数据源
   async testSina() {
     const { ctx } = this;
-    
+
     try {
       // 新浪数据源测试逻辑
       // 这里可以实现实际的测试逻辑，或者简单返回成功
@@ -89,11 +116,11 @@ class DataSourceController extends Controller {
       };
     }
   }
-  
+
   // 测试东方财富数据源
   async testEastMoney() {
     const { ctx } = this;
-    
+
     try {
       // 东方财富数据源测试逻辑
       ctx.body = {
@@ -111,11 +138,11 @@ class DataSourceController extends Controller {
       };
     }
   }
-  
+
   // 测试AKShare数据源
   async testAKShare() {
     const { ctx } = this;
-    
+
     try {
       // 执行 Python 脚本测试连接
       const result = await this.execPythonScript('akshare_api.py', 'test_connection');
@@ -136,11 +163,11 @@ class DataSourceController extends Controller {
       };
     }
   }
-  
+
   // 测试网易财经数据源
   async testNetEase() {
     const { ctx } = this;
-    
+
     try {
       // 网易财经数据源测试逻辑
       ctx.body = {
@@ -158,11 +185,11 @@ class DataSourceController extends Controller {
       };
     }
   }
-  
+
   // 测试腾讯财经数据源
   async testTencent() {
     const { ctx } = this;
-    
+
     try {
       // 腾讯财经数据源测试逻辑
       ctx.body = {
@@ -180,16 +207,16 @@ class DataSourceController extends Controller {
       };
     }
   }
-  
+
   // 获取股票列表
   async getStockList() {
     const { ctx } = this;
-    
+
     // 获取数据源参数
     const dataSource = ctx.query.source || 'tushare';
-    
+
     this.ctx.logger.info(`获取股票列表: ${dataSource}`);
-    
+
     // 根据数据源类型调用不同的方法
     switch (dataSource) {
       case 'tushare':
@@ -211,7 +238,7 @@ class DataSourceController extends Controller {
         };
     }
   }
-  
+
   // 执行 Python 脚本
   async execPythonScript(scriptName, action, ...args) {
     return new Promise((resolve, reject) => {

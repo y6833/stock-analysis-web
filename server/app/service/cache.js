@@ -362,6 +362,323 @@ class CacheService extends Service {
 
     return result;
   }
+
+  /**
+   * 记录缓存命中
+   * @param {string} dataSource - 数据源
+   */
+  async recordCacheHit(dataSource) {
+    const { app } = this;
+    const redis = app.redis;
+
+    try {
+      // 增加命中计数
+      await redis.incr(`${dataSource}:hit_count`);
+    } catch (error) {
+      this.ctx.logger.error('记录缓存命中失败:', error);
+    }
+  }
+
+  /**
+   * 记录缓存未命中
+   * @param {string} dataSource - 数据源
+   */
+  async recordCacheMiss(dataSource) {
+    const { app } = this;
+    const redis = app.redis;
+
+    try {
+      // 增加未命中计数
+      await redis.incr(`${dataSource}:miss_count`);
+    } catch (error) {
+      this.ctx.logger.error('记录缓存未命中失败:', error);
+    }
+  }
+
+  /**
+   * 设置缓存键的过期时间
+   * @param {string} key - 缓存键
+   * @param {number} seconds - 过期时间（秒）
+   * @returns {Promise<Object>} - 设置结果
+   */
+  async setKeyExpiration(key, seconds) {
+    const { app } = this;
+    const redis = app.redis;
+
+    try {
+      // 检查键是否存在
+      const exists = await redis.exists(key);
+      if (!exists) {
+        return {
+          success: false,
+          message: `缓存键 ${key} 不存在`
+        };
+      }
+
+      // 设置过期时间
+      const result = await redis.expire(key, seconds);
+
+      return {
+        success: true,
+        message: `缓存键 ${key} 的过期时间已设置为 ${seconds} 秒`,
+        result
+      };
+    } catch (error) {
+      this.ctx.logger.error('设置缓存过期时间失败:', error);
+      return {
+        success: false,
+        message: '设置缓存过期时间失败',
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * 删除缓存键
+   * @param {string} key - 缓存键
+   * @returns {Promise<Object>} - 删除结果
+   */
+  async deleteKey(key) {
+    const { app } = this;
+    const redis = app.redis;
+
+    try {
+      // 删除键
+      const result = await redis.del(key);
+
+      return {
+        success: true,
+        message: `缓存键 ${key} 已删除`,
+        result
+      };
+    } catch (error) {
+      this.ctx.logger.error('删除缓存键失败:', error);
+      return {
+        success: false,
+        message: '删除缓存键失败',
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * 基于时间的自动缓存清理
+   * 清理指定数据源中超过指定时间的缓存
+   * @param {string} dataSource - 数据源名称，默认为 'tushare'
+   * @param {number} maxAgeHours - 最大缓存时间（小时），默认为24
+   * @returns {Promise<Object>} - 清理结果
+   */
+  async cleanCacheByTime(dataSource = 'tushare', maxAgeHours = 24) {
+    const { ctx, app } = this;
+
+    const result = {
+      success: false,
+      dataSource,
+      maxAgeHours,
+      clearedKeys: [],
+      error: null,
+    };
+
+    try {
+      // 检查 Redis 是否可用
+      if (!app.redis) {
+        result.error = 'Redis 客户端不可用';
+        return result;
+      }
+
+      // 获取所有与数据源相关的键
+      const keys = await app.redis.keys(`${dataSource}:*`);
+
+      if (keys.length === 0) {
+        result.success = true;
+        ctx.logger.info(`${dataSource} 数据源没有缓存项需要清理`);
+        return result;
+      }
+
+      // 当前时间
+      const now = new Date();
+
+      // 遍历所有键，检查缓存时间
+      for (const key of keys) {
+        try {
+          // 获取键的值
+          const value = await app.redis.get(key);
+
+          if (value) {
+            try {
+              // 解析值
+              const data = JSON.parse(value);
+
+              // 检查是否有缓存时间
+              if (data.cacheTime) {
+                const cacheTime = new Date(data.cacheTime);
+                const ageMs = now.getTime() - cacheTime.getTime();
+                const ageHours = ageMs / (1000 * 60 * 60);
+
+                // 如果缓存时间超过最大时间，删除键
+                if (ageHours > maxAgeHours) {
+                  await app.redis.del(key);
+                  result.clearedKeys.push(key);
+                  ctx.logger.info(`已清除过期缓存: ${key}, 缓存时间: ${ageHours.toFixed(2)}小时`);
+                }
+              }
+            } catch (parseErr) {
+              ctx.logger.warn(`解析缓存数据失败: ${key}`, parseErr);
+              // 如果解析失败，也删除键
+              await app.redis.del(key);
+              result.clearedKeys.push(key);
+            }
+          }
+        } catch (keyErr) {
+          ctx.logger.warn(`处理缓存键失败: ${key}`, keyErr);
+        }
+      }
+
+      // 记录清理时间
+      await app.redis.set(`${dataSource}:last_cleaned_time`, now.toISOString());
+
+      result.success = true;
+      ctx.logger.info(`已清除 ${dataSource} 数据源的 ${result.clearedKeys.length} 个过期缓存项`);
+    } catch (err) {
+      ctx.logger.error('基于时间的缓存清理失败:', err);
+      result.error = err.message || '未知错误';
+    }
+
+    return result;
+  }
+
+  /**
+   * 基于容量的自动缓存清理
+   * 当缓存数量超过指定容量时，清理最旧的缓存
+   * @param {string} dataSource - 数据源名称，默认为 'tushare'
+   * @param {number} maxItems - 最大缓存数量，默认为1000
+   * @returns {Promise<Object>} - 清理结果
+   */
+  async cleanCacheByCapacity(dataSource = 'tushare', maxItems = 1000) {
+    const { ctx, app } = this;
+
+    const result = {
+      success: false,
+      dataSource,
+      maxItems,
+      clearedKeys: [],
+      error: null,
+    };
+
+    try {
+      // 检查 Redis 是否可用
+      if (!app.redis) {
+        result.error = 'Redis 客户端不可用';
+        return result;
+      }
+
+      // 获取所有与数据源相关的键
+      const keys = await app.redis.keys(`${dataSource}:*`);
+
+      if (keys.length <= maxItems) {
+        result.success = true;
+        ctx.logger.info(`${dataSource} 数据源的缓存数量 ${keys.length} 未超过最大容量 ${maxItems}`);
+        return result;
+      }
+
+      // 获取所有键的缓存时间
+      const keyAges = [];
+
+      for (const key of keys) {
+        try {
+          // 获取键的值
+          const value = await app.redis.get(key);
+
+          if (value) {
+            try {
+              // 解析值
+              const data = JSON.parse(value);
+
+              // 检查是否有缓存时间
+              if (data.cacheTime) {
+                const cacheTime = new Date(data.cacheTime);
+                keyAges.push({ key, cacheTime });
+              } else {
+                // 如果没有缓存时间，使用当前时间
+                keyAges.push({ key, cacheTime: new Date() });
+              }
+            } catch (parseErr) {
+              ctx.logger.warn(`解析缓存数据失败: ${key}`, parseErr);
+              // 如果解析失败，使用当前时间
+              keyAges.push({ key, cacheTime: new Date() });
+            }
+          }
+        } catch (keyErr) {
+          ctx.logger.warn(`处理缓存键失败: ${key}`, keyErr);
+        }
+      }
+
+      // 按缓存时间排序（从旧到新）
+      keyAges.sort((a, b) => a.cacheTime.getTime() - b.cacheTime.getTime());
+
+      // 计算需要删除的数量
+      const deleteCount = keys.length - maxItems;
+
+      // 删除最旧的键
+      for (let i = 0; i < deleteCount && i < keyAges.length; i++) {
+        const { key } = keyAges[i];
+        await app.redis.del(key);
+        result.clearedKeys.push(key);
+        ctx.logger.info(`已清除超容量缓存: ${key}`);
+      }
+
+      // 记录清理时间
+      await app.redis.set(`${dataSource}:last_cleaned_capacity`, new Date().toISOString());
+
+      result.success = true;
+      ctx.logger.info(`已清除 ${dataSource} 数据源的 ${result.clearedKeys.length} 个超容量缓存项`);
+    } catch (err) {
+      ctx.logger.error('基于容量的缓存清理失败:', err);
+      result.error = err.message || '未知错误';
+    }
+
+    return result;
+  }
+
+  /**
+   * 自动缓存清理
+   * 结合基于时间和容量的清理策略
+   * @param {string} dataSource - 数据源名称，默认为 'tushare'
+   * @param {Object} options - 清理选项
+   * @param {number} options.maxAgeHours - 最大缓存时间（小时），默认为24
+   * @param {number} options.maxItems - 最大缓存数量，默认为1000
+   * @returns {Promise<Object>} - 清理结果
+   */
+  async autoCleanCache(dataSource = 'tushare', options = {}) {
+    const { ctx } = this;
+    const { maxAgeHours = 24, maxItems = 1000 } = options;
+
+    const result = {
+      success: false,
+      dataSource,
+      timeBasedCleaning: null,
+      capacityBasedCleaning: null,
+      error: null,
+    };
+
+    try {
+      // 基于时间的清理
+      const timeResult = await this.cleanCacheByTime(dataSource, maxAgeHours);
+      result.timeBasedCleaning = timeResult;
+
+      // 基于容量的清理
+      const capacityResult = await this.cleanCacheByCapacity(dataSource, maxItems);
+      result.capacityBasedCleaning = capacityResult;
+
+      result.success = true;
+      ctx.logger.info(`自动缓存清理完成: ${dataSource}`);
+    } catch (err) {
+      ctx.logger.error('自动缓存清理失败:', err);
+      result.error = err.message || '未知错误';
+    }
+
+    return result;
+  }
 }
 
 module.exports = CacheService;

@@ -1,7 +1,7 @@
 <template>
   <div class="data-source-provider">
     <slot></slot>
-    
+
     <!-- 数据源指示器 -->
     <div v-if="showIndicator" class="data-source-indicator" :class="{ 'is-expanded': isExpanded }">
       <div class="indicator-header" @click="toggleExpand">
@@ -9,11 +9,13 @@
         <span class="indicator-text">{{ currentDataSourceName }}</span>
         <span class="indicator-arrow">{{ isExpanded ? '▲' : '▼' }}</span>
       </div>
-      
+
       <div v-if="isExpanded" class="indicator-content">
-        <p>当前数据源: <strong>{{ currentDataSourceName }}</strong></p>
+        <p>
+          当前数据源: <strong>{{ currentDataSourceName }}</strong>
+        </p>
         <p class="indicator-description">{{ currentDataSourceDescription }}</p>
-        
+
         <div class="indicator-actions">
           <el-button size="small" type="primary" @click="openDataSourceSettings">
             切换数据源
@@ -22,7 +24,7 @@
             清除缓存
           </el-button>
         </div>
-        
+
         <div class="indicator-info">
           <p>
             <el-tag size="small" type="info">数据源隔离模式</el-tag>
@@ -50,8 +52,8 @@ const DataSourceContext = Symbol('DataSourceContext')
 const props = defineProps({
   showIndicator: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 // 路由
@@ -59,7 +61,12 @@ const router = useRouter()
 const { showToast } = useToast()
 
 // 数据源状态
-const currentDataSource = ref<DataSourceType>(stockService.getCurrentDataSourceType())
+// 直接从localStorage获取当前数据源，确保使用最新的值
+const storedDataSource = localStorage.getItem('preferredDataSource') as DataSourceType
+const currentDataSource = ref<DataSourceType>(
+  storedDataSource || stockService.getCurrentDataSourceType()
+)
+console.log(`DataSourceProvider: 当前数据源类型 = ${currentDataSource.value}`)
 const isExpanded = ref(false)
 
 // 计算属性
@@ -78,7 +85,7 @@ const toggleExpand = () => {
 
 // 打开数据源设置页面
 const openDataSourceSettings = () => {
-  router.push('/data-source-settings')
+  router.push({ name: 'data-source-settings' })
   isExpanded.value = false
 }
 
@@ -104,7 +111,7 @@ provide(DataSourceContext, {
   currentDataSource,
   currentDataSourceName,
   currentDataSourceDescription,
-  clearCurrentDataSourceCache
+  clearCurrentDataSourceCache,
 })
 
 onMounted(() => {

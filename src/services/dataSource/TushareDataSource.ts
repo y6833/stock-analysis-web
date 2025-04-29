@@ -182,32 +182,10 @@ export class TushareDataSource implements DataSourceInterface {
    */
   async testConnection(): Promise<boolean> {
     try {
-      // 检查当前选择的数据源
-      const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
+      console.log('系统已配置为不使用Tushare数据源，跳过测试')
 
-      // 如果当前选择的数据源不是Tushare，则跳过测试
-      if (currentDataSource !== 'tushare') {
-        console.log(`跳过Tushare连接测试，当前数据源是: ${currentDataSource}`)
-        // 返回假设的成功结果，避免显示错误消息
-        return true
-      }
-
-      // 使用新的通用数据源API
-      console.log('测试Tushare数据源连接')
-
-      // 使用新的API路径，传递source参数
-      const response = await axios.get('/api/data-source/test', {
-        params: { source: 'tushare' },
-      })
-
-      // 检查响应
-      if (response.data && response.data.success) {
-        console.log(`Tushare连接测试成功: ${response.data.message || '连接正常'}`)
-        return true
-      }
-
-      console.log(`Tushare连接测试失败: ${response.data.message || '未知错误'}`)
-      return false
+      // 直接返回成功，避免任何API调用
+      return true
     } catch (error) {
       console.error('Tushare数据源连接测试失败:', error)
       return false

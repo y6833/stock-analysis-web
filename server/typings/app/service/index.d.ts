@@ -12,6 +12,7 @@ import ExportAlert = require('../../../app/service/alert');
 import ExportCache = require('../../../app/service/cache');
 import ExportCacheStats = require('../../../app/service/cacheStats');
 import ExportData = require('../../../app/service/data');
+import ExportLogs = require('../../../app/service/logs');
 import ExportMembership = require('../../../app/service/membership');
 import ExportPortfolio = require('../../../app/service/portfolio');
 import ExportProxy = require('../../../app/service/proxy');
@@ -27,6 +28,7 @@ declare module 'egg' {
     cache: AutoInstanceType<typeof ExportCache>;
     cacheStats: AutoInstanceType<typeof ExportCacheStats>;
     data: AutoInstanceType<typeof ExportData>;
+    logs: AutoInstanceType<typeof ExportLogs>;
     membership: AutoInstanceType<typeof ExportMembership>;
     portfolio: AutoInstanceType<typeof ExportPortfolio>;
     proxy: AutoInstanceType<typeof ExportProxy>;
