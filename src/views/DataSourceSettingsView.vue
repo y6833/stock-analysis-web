@@ -2,9 +2,27 @@
   <div class="data-source-settings">
     <h1 class="title">数据源设置</h1>
 
+    <!-- 使用新的数据源选择器组件 -->
+    <DataSourceSelector
+      title="数据源设置"
+      description="选择并管理您的数据源，确保数据一致性和准确性"
+      @source-changed="handleSourceChanged"
+      @cache-cleared="handleCacheCleared"
+    />
+
     <div class="current-source">
       <h3>当前数据源: {{ currentSourceInfo.name }}</h3>
       <p>{{ currentSourceInfo.description }}</p>
+      <el-alert type="info" :closable="false" show-icon>
+        <template #title>
+          <span>数据源隔离模式已启用</span>
+        </template>
+        <div>
+          所有数据请求将仅使用
+          <strong>{{ currentSourceInfo.name }}</strong> 数据源，确保数据一致性。
+          切换数据源后，所有数据将从新数据源获取。
+        </div>
+      </el-alert>
     </div>
 
     <el-divider content-position="center">可用数据源</el-divider>
@@ -138,6 +156,7 @@ import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import { ElMessage } from 'element-plus'
 import DataSourceComparison from '@/components/settings/DataSourceComparison.vue'
 import DataSourceStatus from '@/components/settings/DataSourceStatus.vue'
+import DataSourceSelector from '@/components/common/DataSourceSelector.vue'
 
 // 当前数据源
 const currentSource = ref<DataSourceType>('tushare')
@@ -209,6 +228,14 @@ const currentSourceInfo = computed(() => {
 
 // 测试数据源连接
 const testDataSource = async (source: DataSourceType) => {
+  // 如果不是当前数据源，显示提示并测试当前数据源
+  if (source !== currentSource.value) {
+    ElMessage.info(
+      `为避免不必要的API调用，只测试当前数据源: ${getSourceInfo(currentSource.value).name}`
+    )
+    source = currentSource.value
+  }
+
   testingSource.value = source
   try {
     await stockService.testDataSource(source)
@@ -333,6 +360,18 @@ const changeDataSource = async (source: DataSourceType) => {
     // 更新切换时间
     localStorage.setItem('last_source_switch_time', Date.now().toString())
   }
+}
+
+// 处理数据源变更事件
+const handleSourceChanged = (source: DataSourceType) => {
+  currentSource.value = source
+  // 重新过滤和排序
+  filterSources()
+}
+
+// 处理缓存清除事件
+const handleCacheCleared = (source: DataSourceType) => {
+  ElMessage.success(`已清除${getSourceInfo(source).name}的缓存数据`)
 }
 
 onMounted(() => {

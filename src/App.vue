@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/userStore'
 import DataSourceIndicator from '@/components/common/DataSourceIndicator.vue'
 import DataRefreshButton from '@/components/common/DataRefreshButton.vue'
 import CacheStatusIndicator from '@/components/common/CacheStatusIndicator.vue'
+import DataSourceProvider from '@/components/DataSourceProvider.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -100,209 +101,214 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="app-container">
-    <!-- 消息提示组件 -->
-    <!-- <MessageToast /> -->
+  <DataSourceProvider>
+    <div class="app-container">
+      <!-- 消息提示组件 -->
+      <!-- <MessageToast /> -->
 
-    <header class="app-header">
-      <div class="header-content">
-        <div class="logo-section">
-          <img alt="Stock Analysis logo" class="logo" src="@/image/logo/logo1.png" />
-          <h1 class="app-title">快乐股市</h1>
-        </div>
+      <header class="app-header">
+        <div class="header-content">
+          <div class="logo-section">
+            <img alt="Stock Analysis logo" class="logo" src="@/image/logo/logo1.png" />
+            <h1 class="app-title">快乐股市</h1>
+          </div>
 
-        <nav class="main-nav">
-          <!-- 基础导航 -->
-          <RouterLink to="/" class="nav-link">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-text">首页</span>
-          </RouterLink>
-          <RouterLink to="/dashboard" class="nav-link">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">仪表盘</span>
-          </RouterLink>
+          <nav class="main-nav">
+            <!-- 基础导航 -->
+            <RouterLink to="/" class="nav-link">
+              <span class="nav-icon">🏠</span>
+              <span class="nav-text">首页</span>
+            </RouterLink>
+            <RouterLink to="/dashboard" class="nav-link">
+              <span class="nav-icon">📊</span>
+              <span class="nav-text">仪表盘</span>
+            </RouterLink>
 
-          <!-- 分析工具下拉菜单 -->
-          <div class="dropdown-container">
-            <button
-              class="nav-link dropdown-toggle"
-              :class="{ active: dropdownOpen.analysis }"
-              @click="toggleDropdown('analysis')"
-            >
-              <span class="nav-icon">📈</span>
-              <span class="nav-text">分析工具</span>
-              <span class="dropdown-arrow">▼</span>
-            </button>
-            <div class="dropdown-menu" v-show="dropdownOpen.analysis">
-              <RouterLink to="/stock" class="dropdown-item">
+            <!-- 分析工具下拉菜单 -->
+            <div class="dropdown-container">
+              <button
+                class="nav-link dropdown-toggle"
+                :class="{ active: dropdownOpen.analysis }"
+                @click="toggleDropdown('analysis')"
+              >
                 <span class="nav-icon">📈</span>
-                <span class="nav-text">股票分析</span>
-              </RouterLink>
-              <RouterLink to="/portfolio" class="dropdown-item">
-                <span class="nav-icon">💼</span>
-                <span class="nav-text">仓位管理</span>
-              </RouterLink>
-              <RouterLink to="/market-heatmap" class="dropdown-item">
-                <span class="nav-icon">🌎</span>
-                <span class="nav-text">大盘云图</span>
-              </RouterLink>
-              <RouterLink to="/market-scanner" class="dropdown-item">
-                <span class="nav-icon">🔍</span>
-                <span class="nav-text">市场扫描器</span>
-              </RouterLink>
-              <RouterLink to="/export" class="dropdown-item">
-                <span class="nav-icon">📋</span>
-                <span class="nav-text">导出报告</span>
-              </RouterLink>
+                <span class="nav-text">分析工具</span>
+                <span class="dropdown-arrow">▼</span>
+              </button>
+              <div class="dropdown-menu" v-show="dropdownOpen.analysis">
+                <RouterLink to="/stock" class="dropdown-item">
+                  <span class="nav-icon">📈</span>
+                  <span class="nav-text">股票分析</span>
+                </RouterLink>
+                <RouterLink to="/portfolio" class="dropdown-item">
+                  <span class="nav-icon">💼</span>
+                  <span class="nav-text">仓位管理</span>
+                </RouterLink>
+                <RouterLink to="/market-heatmap" class="dropdown-item">
+                  <span class="nav-icon">🌎</span>
+                  <span class="nav-text">大盘云图</span>
+                </RouterLink>
+                <RouterLink to="/market-scanner" class="dropdown-item">
+                  <span class="nav-icon">🔍</span>
+                  <span class="nav-text">市场扫描器</span>
+                </RouterLink>
+                <RouterLink to="/export" class="dropdown-item">
+                  <span class="nav-icon">📋</span>
+                  <span class="nav-text">导出报告</span>
+                </RouterLink>
+              </div>
             </div>
-          </div>
 
-          <!-- 策略工具下拉菜单 -->
-          <div class="dropdown-container">
-            <button
-              class="nav-link dropdown-toggle"
-              :class="{ active: dropdownOpen.strategy }"
-              @click="toggleDropdown('strategy')"
-            >
-              <span class="nav-icon">🔄</span>
-              <span class="nav-text">策略工具</span>
-              <span class="dropdown-arrow">▼</span>
-            </button>
-            <div class="dropdown-menu" v-show="dropdownOpen.strategy">
-              <RouterLink to="/backtest" class="dropdown-item">
+            <!-- 策略工具下拉菜单 -->
+            <div class="dropdown-container">
+              <button
+                class="nav-link dropdown-toggle"
+                :class="{ active: dropdownOpen.strategy }"
+                @click="toggleDropdown('strategy')"
+              >
                 <span class="nav-icon">🔄</span>
-                <span class="nav-text">策略回测</span>
-              </RouterLink>
-              <RouterLink to="/alerts" class="dropdown-item">
-                <span class="nav-icon">🔔</span>
-                <span class="nav-text">条件提醒</span>
-              </RouterLink>
-              <RouterLink to="/simulation" class="dropdown-item">
-                <span class="nav-icon">🎮</span>
-                <span class="nav-text">模拟交易</span>
-              </RouterLink>
+                <span class="nav-text">策略工具</span>
+                <span class="dropdown-arrow">▼</span>
+              </button>
+              <div class="dropdown-menu" v-show="dropdownOpen.strategy">
+                <RouterLink to="/backtest" class="dropdown-item">
+                  <span class="nav-icon">🔄</span>
+                  <span class="nav-text">策略回测</span>
+                </RouterLink>
+                <RouterLink to="/alerts" class="dropdown-item">
+                  <span class="nav-icon">🔔</span>
+                  <span class="nav-text">条件提醒</span>
+                </RouterLink>
+                <RouterLink to="/simulation" class="dropdown-item">
+                  <span class="nav-icon">🎮</span>
+                  <span class="nav-text">模拟交易</span>
+                </RouterLink>
+              </div>
             </div>
-          </div>
 
-          <!-- 其他链接 -->
-          <RouterLink v-if="userStore.userRole === 'admin'" to="/admin" class="nav-link">
-            <span class="nav-icon">👑</span>
-            <span class="nav-text">管理后台</span>
-          </RouterLink>
-          <RouterLink v-if="userStore.userRole === 'admin'" to="/tushare-test" class="nav-link">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">API测试</span>
-          </RouterLink>
-          <RouterLink to="/test-dashboard" class="nav-link">
-            <span class="nav-icon">🧪</span>
-            <span class="nav-text">功能测试</span>
-          </RouterLink>
-          <RouterLink to="/about" class="nav-link">
-            <span class="nav-icon">ℹ️</span>
-            <span class="nav-text">关于</span>
-          </RouterLink>
-        </nav>
+            <!-- 其他链接 -->
+            <RouterLink v-if="userStore.userRole === 'admin'" to="/admin" class="nav-link">
+              <span class="nav-icon">👑</span>
+              <span class="nav-text">管理后台</span>
+            </RouterLink>
+            <RouterLink v-if="userStore.userRole === 'admin'" to="/tushare-test" class="nav-link">
+              <span class="nav-icon">📊</span>
+              <span class="nav-text">API测试</span>
+            </RouterLink>
+            <RouterLink to="/test-dashboard" class="nav-link">
+              <span class="nav-icon">🧪</span>
+              <span class="nav-text">功能测试</span>
+            </RouterLink>
+            <RouterLink to="/about" class="nav-link">
+              <span class="nav-icon">ℹ️</span>
+              <span class="nav-text">关于</span>
+            </RouterLink>
+          </nav>
 
-        <div class="user-section">
-          <!-- 数据源状态指示器 -->
-          <DataSourceIndicator v-if="isLoggedIn" />
+          <div class="user-section">
+            <!-- 数据源状态指示器 -->
+            <DataSourceIndicator v-if="isLoggedIn" />
 
-          <!-- 数据刷新按钮 -->
-          <DataRefreshButton
-            v-if="isLoggedIn"
-            :showText="false"
-            @refresh-success="handleRefreshSuccess"
-            @refresh-error="handleRefreshError"
-          />
+            <!-- 数据刷新按钮 -->
+            <DataRefreshButton
+              v-if="isLoggedIn"
+              :showText="false"
+              @refresh-success="handleRefreshSuccess"
+              @refresh-error="handleRefreshError"
+            />
 
-          <!-- 缓存状态指示器 -->
-          <div class="cache-indicator-wrapper" v-if="isLoggedIn && userStore.userRole === 'admin'">
-            <CacheStatusIndicator />
-          </div>
-
-          <!-- 搜索按钮 -->
-          <button class="btn btn-outline">
-            <span class="icon">🔍</span>
-          </button>
-
-          <!-- 通知按钮 -->
-          <button class="btn btn-outline">
-            <span class="icon">🔔</span>
-          </button>
-
-          <!-- 未登录状态 -->
-          <template v-if="!isLoggedIn">
-            <button @click="login" class="btn btn-outline login-btn">登录</button>
-            <button @click="register" class="btn btn-primary register-btn">注册</button>
-          </template>
-
-          <!-- 已登录状态 - 用户菜单 -->
-          <div v-else class="dropdown-container user-dropdown">
-            <button
-              class="user-avatar-btn"
-              :class="{ active: dropdownOpen.user }"
-              @click="toggleDropdown('user')"
+            <!-- 缓存状态指示器 -->
+            <div
+              class="cache-indicator-wrapper"
+              v-if="isLoggedIn && userStore.userRole === 'admin'"
             >
-              <img :src="userAvatar" :alt="username" class="user-avatar" />
-              <span class="username">{{ username }}</span>
-              <span class="dropdown-arrow">▼</span>
+              <CacheStatusIndicator />
+            </div>
+
+            <!-- 搜索按钮 -->
+            <button class="btn btn-outline">
+              <span class="icon">🔍</span>
             </button>
 
-            <div class="dropdown-menu user-menu" v-show="dropdownOpen.user">
-              <div class="user-menu-header">
-                <img :src="userAvatar" :alt="username" class="user-menu-avatar" />
-                <div class="user-menu-info">
-                  <div class="user-menu-name">{{ username }}</div>
-                  <div class="user-menu-role">
-                    <span
-                      class="membership-badge"
-                      :class="`membership-${userStore.membershipLevel}`"
-                    >
-                      {{ userStore.membershipLevel.toUpperCase() }}
-                    </span>
+            <!-- 通知按钮 -->
+            <button class="btn btn-outline">
+              <span class="icon">🔔</span>
+            </button>
+
+            <!-- 未登录状态 -->
+            <template v-if="!isLoggedIn">
+              <button @click="login" class="btn btn-outline login-btn">登录</button>
+              <button @click="register" class="btn btn-primary register-btn">注册</button>
+            </template>
+
+            <!-- 已登录状态 - 用户菜单 -->
+            <div v-else class="dropdown-container user-dropdown">
+              <button
+                class="user-avatar-btn"
+                :class="{ active: dropdownOpen.user }"
+                @click="toggleDropdown('user')"
+              >
+                <img :src="userAvatar" :alt="username" class="user-avatar" />
+                <span class="username">{{ username }}</span>
+                <span class="dropdown-arrow">▼</span>
+              </button>
+
+              <div class="dropdown-menu user-menu" v-show="dropdownOpen.user">
+                <div class="user-menu-header">
+                  <img :src="userAvatar" :alt="username" class="user-menu-avatar" />
+                  <div class="user-menu-info">
+                    <div class="user-menu-name">{{ username }}</div>
+                    <div class="user-menu-role">
+                      <span
+                        class="membership-badge"
+                        :class="`membership-${userStore.membershipLevel}`"
+                      >
+                        {{ userStore.membershipLevel.toUpperCase() }}
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                <div class="user-menu-divider"></div>
+
+                <RouterLink to="/profile" class="dropdown-item">
+                  <span class="item-icon">👤</span>
+                  <span>个人资料</span>
+                </RouterLink>
+
+                <RouterLink to="/membership" class="dropdown-item">
+                  <span class="item-icon">⭐</span>
+                  <span>会员中心</span>
+                </RouterLink>
+
+                <RouterLink to="/settings" class="dropdown-item">
+                  <span class="item-icon">⚙️</span>
+                  <span>账户设置</span>
+                </RouterLink>
+
+                <div class="user-menu-divider"></div>
+
+                <button @click="logout" class="dropdown-item logout-item">
+                  <span class="item-icon">🚪</span>
+                  <span>退出登录</span>
+                </button>
               </div>
-
-              <div class="user-menu-divider"></div>
-
-              <RouterLink to="/profile" class="dropdown-item">
-                <span class="item-icon">👤</span>
-                <span>个人资料</span>
-              </RouterLink>
-
-              <RouterLink to="/membership" class="dropdown-item">
-                <span class="item-icon">⭐</span>
-                <span>会员中心</span>
-              </RouterLink>
-
-              <RouterLink to="/settings" class="dropdown-item">
-                <span class="item-icon">⚙️</span>
-                <span>账户设置</span>
-              </RouterLink>
-
-              <div class="user-menu-divider"></div>
-
-              <button @click="logout" class="dropdown-item logout-item">
-                <span class="item-icon">🚪</span>
-                <span>退出登录</span>
-              </button>
             </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
 
-    <main class="app-main">
-      <RouterView />
-    </main>
+      <main class="app-main">
+        <RouterView />
+      </main>
 
-    <footer class="app-footer">
-      <div class="footer-content">
-        <p>&copy; 2025 快乐股市 | 专业股票分析工具</p>
-      </div>
-    </footer>
-  </div>
+      <footer class="app-footer">
+        <div class="footer-content">
+          <p>&copy; 2025 快乐股市 | 专业股票分析工具</p>
+        </div>
+      </footer>
+    </div>
+  </DataSourceProvider>
 </template>
 
 <style scoped>

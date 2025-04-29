@@ -1,6 +1,7 @@
 import type DataSourceInterface from './DataSourceInterface'
 import axios from 'axios'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
+import type { DataSourceType } from './DataSourceFactory'
 
 /**
  * 新浪财经数据源实现
@@ -422,15 +423,36 @@ export class SinaDataSource implements DataSourceInterface {
   }
 
   /**
+   * 获取数据源类型
+   */
+  getType(): DataSourceType {
+    return 'sina'
+  }
+
+  /**
    * 测试数据源连接
    */
   async testConnection(): Promise<boolean> {
     try {
-      // 尝试通过后端代理测试连接
-      const response = await axios.get(`${this.SINA_API_URL}/test`)
+      // 使用新的通用数据源API
+      console.log('测试新浪财经数据源连接')
+
+      // 使用新的API路径，传递source参数
+      const response = await axios.get('/api/data-source/test', {
+        params: { source: 'sina' },
+      })
 
       // 检查响应
       if (response.data && response.data.success) {
+        console.log(`新浪财经连接测试成功: ${response.data.message || '连接正常'}`)
+        return true
+      }
+
+      // 如果新API未实现，尝试通过后端代理测试连接
+      const fallbackResponse = await axios.get(`${this.SINA_API_URL}/test`)
+
+      // 检查响应
+      if (fallbackResponse.data && fallbackResponse.data.success) {
         return true
       }
 

@@ -101,7 +101,12 @@ export function updateCurrentPath(path: string): void {
 }
 
 // Tushare API 请求函数
-async function tushareRequest(api_name: string, params: any = {}, retryCount = 0): Promise<any> {
+async function tushareRequest(
+  api_name: string,
+  params: any = {},
+  retryCount = 0,
+  dataSource: string = 'tushare'
+): Promise<any> {
   try {
     // 检查是否允许API调用
     if (!checkApiCallAllowed()) {
@@ -114,13 +119,23 @@ async function tushareRequest(api_name: string, params: any = {}, retryCount = 0
     // 检查请求频率限制
     await checkRateLimit(api_name)
 
-    log(`正在请求 Tushare API: ${api_name}，参数:`, params)
+    // 获取当前数据源类型（如果未指定）
+    if (dataSource === 'tushare') {
+      // 从本地存储获取当前数据源类型
+      const savedSource = localStorage.getItem('preferredDataSource')
+      if (savedSource) {
+        dataSource = savedSource
+      }
+    }
+
+    log(`正在请求 ${dataSource.toUpperCase()} API: ${api_name}，参数:`, params)
     log(`请求URL: ${TUSHARE_API_URL}`)
 
     const requestData = {
       api_name,
       token: TOKEN,
       params,
+      data_source: dataSource, // 添加数据源参数
     }
 
     log('请求数据:', JSON.stringify(requestData))
@@ -357,16 +372,21 @@ export const tushareService = {
   // 获取股票列表
   async getStocks(): Promise<Stock[]> {
     try {
+      // 获取当前数据源类型
+      const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
+
       // 尝试从缓存获取
       const cachedData = getCachedStockBasic()
       if (cachedData) {
-        log('从缓存获取股票基础数据')
+        log(`从缓存获取股票基础数据 (数据源: ${currentDataSource})`)
         return cachedData
       }
 
       // 使用新的后端接口获取股票基本信息
-      log('从后端获取股票基本信息')
-      const response = await axios.get(`${TUSHARE_API_URL}/stock-basic`)
+      log(`从后端获取股票基本信息 (数据源: ${currentDataSource})`)
+      const response = await axios.get(`${TUSHARE_API_URL}/stock-basic`, {
+        params: { data_source: currentDataSource },
+      })
 
       if (response.data && response.data.success && Array.isArray(response.data.data)) {
         const stocks = response.data.data.map((item: any) => ({
@@ -388,11 +408,19 @@ export const tushareService = {
       // 如果后端接口失败，尝试使用原来的方法
       try {
         log('后端接口失败，尝试使用原来的方法获取股票列表')
-        const data = await tushareRequest('stock_basic', {
-          exchange: '',
-          list_status: 'L',
-          fields: 'ts_code,name,industry,market,list_date',
-        })
+        // 获取当前数据源类型
+        const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
+
+        const data = await tushareRequest(
+          'stock_basic',
+          {
+            exchange: '',
+            list_status: 'L',
+            fields: 'ts_code,name,industry,market,list_date',
+          },
+          0,
+          currentDataSource
+        )
         const stocks = convertStockList(data)
         cacheStockBasic(stocks)
         return stocks
@@ -437,11 +465,19 @@ export const tushareService = {
 
       log(`请求股票数据: ${symbol}, 时间范围: ${formatDate(startDate)} 至 ${formatDate(endDate)}`)
 
-      const data = await tushareRequest('daily', {
-        ts_code: symbol,
-        start_date: formatDate(startDate),
-        end_date: formatDate(endDate),
-      })
+      // 获取当前数据源类型
+      const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
+
+      const data = await tushareRequest(
+        'daily',
+        {
+          ts_code: symbol,
+          start_date: formatDate(startDate),
+          end_date: formatDate(endDate),
+        },
+        0,
+        currentDataSource
+      )
 
       if (!data || !data.items || data.items.length === 0) {
         throw new Error('未获取到有效数据，请检查时间范围或股票代码')
@@ -495,12 +531,20 @@ export const tushareService = {
         return date.toISOString().split('T')[0].replace(/-/g, '')
       }
 
+      // 获取当前数据源类型
+      const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
+
       // 获取最近交易日数据
-      const data = await tushareRequest('daily', {
-        ts_code: symbol,
-        start_date: formatDate(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)), // 7天前
-        end_date: formatDate(today),
-      })
+      const data = await tushareRequest(
+        'daily',
+        {
+          ts_code: symbol,
+          start_date: formatDate(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)), // 7天前
+          end_date: formatDate(today),
+        },
+        0,
+        currentDataSource
+      )
 
       if (!data || !data.items || data.items.length === 0) {
         throw new Error('未获取到有效行情数据')

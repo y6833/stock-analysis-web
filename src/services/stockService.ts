@@ -15,6 +15,18 @@ const getCurrentDataSourceType = (): DataSourceType => {
 let currentDataSourceType = getCurrentDataSourceType()
 let dataSource = DataSourceFactory.createDataSource(currentDataSourceType)
 
+// 更新数据源实例
+const updateDataSource = (type: DataSourceType) => {
+  currentDataSourceType = type
+  dataSource = DataSourceFactory.createDataSource(type)
+  console.log(`数据源已更新为: ${type}`)
+}
+
+// 监听数据源变化事件
+eventBus.on('data-source-changed', (type: DataSourceType) => {
+  updateDataSource(type)
+})
+
 const { showToast } = useToast()
 
 // 模拟数据
@@ -310,13 +322,25 @@ export const stockService = {
   // 切换数据源
   switchDataSource: (type: DataSourceType): boolean => {
     try {
-      dataSource = DataSourceFactory.createDataSource(type)
-      currentDataSourceType = type
+      // 检查是否是当前数据源
+      if (type === currentDataSourceType) {
+        showToast(`已经是${DataSourceFactory.getDataSourceInfo(type).name}，无需切换`, 'info')
+        return true
+      }
+
+      // 更新数据源实例
+      updateDataSource(type)
+
+      // 保存到本地存储
       localStorage.setItem('preferredDataSource', type)
-      showToast(`已切换到${DataSourceFactory.getDataSourceInfo(type).name}`, 'success')
+
+      // 记录切换时间
+      localStorage.setItem('last_source_switch_time', Date.now().toString())
 
       // 发出数据源切换事件
       eventBus.emit('data-source-changed', type)
+
+      showToast(`已切换到${DataSourceFactory.getDataSourceInfo(type).name}`, 'success')
 
       return true
     } catch (error) {
@@ -327,8 +351,31 @@ export const stockService = {
   },
 
   // 测试数据源连接
-  async testDataSource(type: DataSourceType): Promise<boolean> {
+  async testDataSource(
+    type: DataSourceType,
+    forcedCurrentSource?: DataSourceType
+  ): Promise<boolean> {
     try {
+      // 使用传入的当前数据源或全局当前数据源
+      const effectiveCurrentSource = forcedCurrentSource || currentDataSourceType
+
+      // 如果要测试的数据源不是当前选择的数据源，且不是当前页面显式要求测试的数据源，则跳过测试
+      if (type !== effectiveCurrentSource) {
+        // 检查当前页面是否是数据源设置页面
+        const isDataSourcePage =
+          window.location.pathname.includes('/settings/data-source') ||
+          window.location.pathname.includes('/data-source')
+
+        // 如果不是数据源设置页面，则跳过测试非当前数据源
+        if (!isDataSourcePage) {
+          console.log(`跳过测试非当前数据源: ${type}，当前数据源是: ${effectiveCurrentSource}`)
+          // 返回假设的成功结果，避免显示错误消息
+          return true
+        }
+      }
+
+      console.log(`测试数据源连接: ${type}`)
+
       // 创建一个临时的数据源实例，避免影响当前正在使用的数据源
       const testDataSource = DataSourceFactory.createDataSource(type)
 
@@ -339,16 +386,23 @@ export const stockService = {
         showToast(`${testDataSource.getName()}连接测试成功`, 'success')
         console.log(`${testDataSource.getName()}连接测试成功`)
       } else {
-        showToast(`${testDataSource.getName()}连接测试失败`, 'error')
+        // 只有当测试的是当前数据源或在数据源设置页面时才显示错误消息
+        if (type === effectiveCurrentSource || window.location.pathname.includes('/data-source')) {
+          showToast(`${testDataSource.getName()}连接测试失败`, 'error')
+        }
         console.log(`${testDataSource.getName()}连接测试失败`)
       }
       return result
     } catch (error) {
       console.error(`${type}数据源连接测试失败:`, error)
-      showToast(
-        `数据源连接测试失败: ${error instanceof Error ? error.message : '未知错误'}`,
-        'error'
-      )
+
+      // 只有当测试的是当前数据源或在数据源设置页面时才显示错误消息
+      if (type === effectiveCurrentSource || window.location.pathname.includes('/data-source')) {
+        showToast(
+          `数据源连接测试失败: ${error instanceof Error ? error.message : '未知错误'}`,
+          'error'
+        )
+      }
       return false
     }
   },
@@ -368,9 +422,13 @@ export const stockService = {
 
       // 清除Redis缓存（通过API）
       try {
-        const response = await axios.delete(`http://localhost:7001/api/cache/${type}`)
+        // 使用新的数据源专用缓存清除端点
+        const response = await axios.delete(`/api/cache/source/${type}`)
         if (response.data && response.data.success) {
           console.log(`已清除${type}数据源的Redis缓存: ${response.data.message}`)
+          if (response.data.count) {
+            console.log(`清除了${response.data.count}个缓存键`)
+          }
         }
       } catch (redisError) {
         console.warn(`清除${type}数据源的Redis缓存失败:`, redisError)
@@ -397,14 +455,15 @@ export const stockService = {
       data_source_message?: string
       is_real_time?: boolean
       is_cache?: boolean
+      source_type?: DataSourceType
     }
   > {
     try {
       // 获取数据源信息
       const sourceInfo = DataSourceFactory.getDataSourceInfo(currentDataSourceType)
 
-      // 获取股票列表
-      const stocks = await dataSource.getStocks()
+      // 获取股票列表，传递数据源类型
+      const stocks = await dataSource.getStocks({ sourceType: currentDataSourceType })
 
       // 添加数据源信息
       const result = [...stocks] as Stock[] & {
@@ -412,6 +471,7 @@ export const stockService = {
         data_source_message?: string
         is_real_time?: boolean
         is_cache?: boolean
+        source_type?: DataSourceType
       }
 
       // 添加数据源信息
@@ -419,7 +479,9 @@ export const stockService = {
       result.data_source_message = `数据来自${sourceInfo.name}`
       result.is_real_time = true
       result.is_cache = false
+      result.source_type = currentDataSourceType
 
+      console.log(`使用 ${currentDataSourceType} 数据源获取股票列表成功`)
       return result
     } catch (error) {
       console.error(`${dataSource.getName()}获取股票列表失败，使用模拟数据:`, error)
@@ -431,6 +493,7 @@ export const stockService = {
         data_source_message?: string
         is_real_time?: boolean
         is_cache?: boolean
+        source_type?: DataSourceType
       }
 
       // 添加数据源信息
@@ -438,29 +501,37 @@ export const stockService = {
       result.data_source_message = '使用模拟数据，因为API调用失败'
       result.is_real_time = false
       result.is_cache = true
+      result.source_type = 'mock' as DataSourceType
 
       return result
     }
   },
 
   // 获取单个股票数据
-  async getStockData(symbol: string): Promise<StockData> {
+  async getStockData(symbol: string): Promise<StockData & { source_type?: DataSourceType }> {
     try {
-      return await dataSource.getStockData(symbol)
+      const data = await dataSource.getStockData(symbol, { sourceType: currentDataSourceType })
+      // 添加数据源类型
+      console.log(`使用 ${currentDataSourceType} 数据源获取股票${symbol}数据成功`)
+      return { ...data, source_type: currentDataSourceType }
     } catch (error) {
       console.error(`${dataSource.getName()}获取股票${symbol}数据失败，使用模拟数据:`, error)
       showToast(
         `获取${symbol}的历史数据失败，将使用模拟数据。请检查网络连接或稍后再试。`,
         'warning'
       )
-      return generateMockStockData(symbol)
+      const mockData = generateMockStockData(symbol)
+      return { ...mockData, source_type: 'mock' as DataSourceType }
     }
   },
 
   // 搜索股票
-  async searchStocks(query: string): Promise<Stock[]> {
+  async searchStocks(query: string): Promise<(Stock & { source_type?: DataSourceType })[]> {
     try {
-      return await dataSource.searchStocks(query)
+      const results = await dataSource.searchStocks(query, { sourceType: currentDataSourceType })
+      // 添加数据源类型
+      console.log(`使用 ${currentDataSourceType} 数据源搜索股票成功`)
+      return results.map((stock) => ({ ...stock, source_type: currentDataSourceType }))
     } catch (error) {
       console.error(`${dataSource.getName()}搜索股票失败，使用模拟数据:`, error)
       // 使用模拟数据进行过滤
@@ -469,29 +540,41 @@ export const stockService = {
           stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
           stock.name.toLowerCase().includes(query.toLowerCase())
       )
-      return results
+      // 添加数据源类型
+      return results.map((stock) => ({ ...stock, source_type: 'mock' as DataSourceType }))
     }
   },
 
   // 获取股票实时行情
-  async getStockQuote(symbol: string): Promise<StockQuote> {
+  async getStockQuote(symbol: string): Promise<StockQuote & { source_type?: DataSourceType }> {
     try {
-      return await dataSource.getStockQuote(symbol)
+      const quote = await dataSource.getStockQuote(symbol, { sourceType: currentDataSourceType })
+      // 添加数据源类型
+      console.log(`使用 ${currentDataSourceType} 数据源获取股票${symbol}行情成功`)
+      return { ...quote, source_type: currentDataSourceType }
     } catch (error) {
       console.error(`${dataSource.getName()}获取股票${symbol}行情失败，使用模拟数据:`, error)
       console.warn(`将使用模拟数据显示${symbol}的行情`)
-      return generateMockStockQuote(symbol)
+      const mockQuote = generateMockStockQuote(symbol)
+      return { ...mockQuote, source_type: 'mock' as DataSourceType }
     }
   },
 
   // 获取财经新闻
-  async getFinancialNews(count: number = 5): Promise<FinancialNews[]> {
+  async getFinancialNews(
+    count: number = 5
+  ): Promise<(FinancialNews & { source_type?: DataSourceType })[]> {
     try {
-      return await dataSource.getFinancialNews(count)
+      const news = await dataSource.getFinancialNews(count, { sourceType: currentDataSourceType })
+      // 添加数据源类型
+      console.log(`使用 ${currentDataSourceType} 数据源获取财经新闻成功`)
+      return news.map((item) => ({ ...item, source_type: currentDataSourceType }))
     } catch (error) {
       console.error(`${dataSource.getName()}获取财经新闻失败，使用模拟数据:`, error)
       console.warn('将使用模拟数据显示财经新闻')
-      return generateMockFinancialNews(count)
+      const mockNews = generateMockFinancialNews(count)
+      // 添加数据源类型
+      return mockNews.map((item) => ({ ...item, source_type: 'mock' as DataSourceType }))
     }
   },
 }

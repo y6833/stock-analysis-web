@@ -38,10 +38,12 @@
             <el-button
               type="primary"
               size="small"
-              @click="checkStatus(source)"
+              @click="
+                source === currentSource ? checkStatus(source) : checkCurrentSourceOnly(source)
+              "
               :loading="checkingSource === source"
             >
-              检查连接
+              {{ source === currentSource ? '检查连接' : '检查当前数据源' }}
             </el-button>
             <el-button v-if="source === currentSource" type="success" size="small" disabled>
               当前使用中
@@ -142,7 +144,8 @@ const checkStatus = async (source: DataSourceType) => {
 
   try {
     const startTime = Date.now()
-    const isOnline = await stockService.testDataSource(source)
+    // 传递当前数据源，确保只测试当前数据源
+    const isOnline = await stockService.testDataSource(source, props.currentSource)
     const endTime = Date.now()
 
     // 更新状态
@@ -182,6 +185,16 @@ const switchSource = (source: DataSourceType) => {
   emit('switch-source', source)
 }
 
+// 只检查当前数据源（忽略传入的源）
+const checkCurrentSourceOnly = (source: DataSourceType) => {
+  // 显示提示消息
+  ElMessage.info(
+    `为避免不必要的API调用，只检查当前数据源: ${getSourceInfo(props.currentSource).name}`
+  )
+  // 检查当前数据源
+  checkStatus(props.currentSource)
+}
+
 // 初始化所有数据源状态
 const initializeSourceStatus = () => {
   availableSources.value.forEach((source) => {
@@ -211,13 +224,25 @@ onMounted(async () => {
   // 获取所有可用数据源
   availableSources.value = DataSourceFactory.getAvailableDataSources()
 
-  // 初始化数据源状态
+  // 初始化数据源状态 - 所有数据源初始化为未知状态
   initializeSourceStatus()
 
-  // 检查当前数据源状态
+  // 只检查当前数据源状态，不检查其他数据源
+  console.log(`只检查当前数据源: ${props.currentSource}，跳过其他数据源`)
   await checkStatus(props.currentSource)
 
-  // 开始定期检查
+  // 确保其他数据源保持未知状态，避免自动测试
+  availableSources.value.forEach((source) => {
+    if (source !== props.currentSource) {
+      sourceStatus.value[source] = 'unknown'
+      // 设置一个占位符，避免自动测试
+      responseTime.value[source] = '未测试'
+      lastChecked.value[source] = '未测试'
+      availability.value[source] = '未知'
+    }
+  })
+
+  // 开始定期检查 - 只检查当前数据源
   startStatusCheck()
 })
 

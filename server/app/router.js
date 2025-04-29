@@ -112,6 +112,10 @@ module.exports = app => {
   router.post('/api/tushare/update-stock-basic', controller.tushare.updateStockBasic);
   router.post('/api/tushare', controller.tushare.proxy);
 
+  // 通用数据源API路由 - 新的RESTful API
+  router.get('/api/data-source/test', controller.dataSource.test);
+  router.get('/api/data-source/stocks', controller.dataSource.getStockList);
+
   // 提醒相关路由（需要认证）
   router.get('/api/alerts', auth, controller.alert.getAlerts);
   router.post('/api/alerts', auth, controller.alert.createAlert);
@@ -129,6 +133,7 @@ module.exports = app => {
   router.get('/api/cache/status', auth, controller.cache.getStatus);
   router.post('/api/cache/refresh', auth, controller.cache.refreshCache);
   router.delete('/api/cache/:dataSource', auth, controller.cache.clearCache);
+  router.delete('/api/cache/source/:dataSource', auth, controller.cache.clearDataSourceCache);
   router.get('/api/cache/refresh-limit', auth, controller.cache.checkRefreshLimit);
 
   // 缓存统计相关路由（需要认证）

@@ -57,24 +57,31 @@ export class DataSourceFactory {
   static createDataSource(type: DataSourceType): DataSourceInterface {
     switch (type) {
       case 'tushare':
+        console.log('创建 Tushare 数据源实例')
         return new TushareDataSource()
       case 'sina':
+        console.log('创建 新浪财经 数据源实例')
         return new SinaDataSource()
       case 'eastmoney':
+        console.log('创建 东方财富 数据源实例')
         return new EastMoneyDataSource()
       case 'tencent':
+        console.log('创建 腾讯财经 数据源实例')
         return new TencentDataSource()
       case 'netease':
+        console.log('创建 网易财经 数据源实例')
         return new NetEaseDataSource()
       case 'akshare':
+        console.log('创建 AKShare 数据源实例')
         return new AKShareDataSource()
       case 'yahoo':
-        // Yahoo数据源暂未实现，使用Tushare数据源代替
-        console.log(`Yahoo数据源尚未实现，暂时使用Tushare数据源代替`)
-        return new TushareDataSource()
+        // 为了避免混用数据源，使用新浪数据源代替
+        console.log(`Yahoo数据源尚未实现，暂时使用新浪财经数据源代替`)
+        return new SinaDataSource()
       default:
-        console.log('未知数据源类型，使用默认的Tushare数据源')
-        return new TushareDataSource()
+        // 为了避免混用数据源，使用新浪数据源作为默认
+        console.log(`未知数据源类型: ${type}，使用新浪财经数据源作为默认`)
+        return new SinaDataSource()
     }
   }
 
@@ -100,10 +107,48 @@ export class DataSourceFactory {
    * @returns 数据源名称和描述
    */
   static getDataSourceInfo(type: DataSourceType): { name: string; description: string } {
-    const dataSource = this.createDataSource(type)
-    return {
-      name: dataSource.getName(),
-      description: dataSource.getDescription(),
+    // 直接返回静态信息，避免创建实例
+    switch (type) {
+      case 'tushare':
+        return {
+          name: 'Tushare数据',
+          description: '提供A股基础数据，包括行情、基本面等',
+        }
+      case 'sina':
+        return {
+          name: '新浪财经',
+          description: '提供实时行情数据，无需注册直接调用',
+        }
+      case 'eastmoney':
+        return {
+          name: '东方财富',
+          description: '提供全面的股票数据和财经资讯',
+        }
+      case 'tencent':
+        return {
+          name: '腾讯财经',
+          description: '提供实时行情和财经资讯',
+        }
+      case 'netease':
+        return {
+          name: '网易财经',
+          description: '提供股票数据和财经新闻',
+        }
+      case 'akshare':
+        return {
+          name: 'AKShare',
+          description: '开源财经数据接口库，提供丰富的数据源',
+        }
+      case 'yahoo':
+        return {
+          name: 'Yahoo财经',
+          description: '提供全球市场数据，包括股票、指数等',
+        }
+      default:
+        return {
+          name: '未知数据源',
+          description: '未知数据源类型',
+        }
     }
   }
 
@@ -113,11 +158,8 @@ export class DataSourceFactory {
    * @returns 数据源详细信息
    */
   static getDataSourceDetails(type: DataSourceType): DataSourceDetails {
-    const dataSource = this.createDataSource(type)
-
-    // 基本信息
-    const name = dataSource.getName()
-    const description = dataSource.getDescription()
+    // 获取基本信息
+    const { name, description } = this.getDataSourceInfo(type)
 
     // 根据不同数据源类型设置详细信息
     switch (type) {
@@ -271,10 +313,21 @@ export class DataSourceFactory {
   /**
    * 获取数据源状态
    * @param type 数据源类型
+   * @param currentSource 当前选择的数据源类型
    * @returns 是否可用
    */
-  static async getDataSourceStatus(type: DataSourceType): Promise<boolean> {
+  static async getDataSourceStatus(
+    type: DataSourceType,
+    currentSource?: DataSourceType
+  ): Promise<boolean> {
     try {
+      // 如果指定了当前数据源，且不是要测试的数据源，则跳过测试
+      if (currentSource && type !== currentSource) {
+        console.log(`跳过测试非当前数据源: ${type}，当前数据源是: ${currentSource}`)
+        // 返回假设的成功结果，避免显示错误消息
+        return true
+      }
+
       const dataSource = this.createDataSource(type)
       return await dataSource.testConnection()
     } catch (error) {

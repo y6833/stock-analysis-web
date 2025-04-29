@@ -6,19 +6,13 @@
       <div class="test-section">
         <h2>本地存储提醒数据</h2>
         <div class="actions">
-          <button class="btn btn-primary" @click="createLocalAlerts">
-            创建测试提醒数据
-          </button>
-          <button class="btn btn-danger" @click="clearLocalAlerts">
-            清除本地提醒数据
-          </button>
+          <button class="btn btn-primary" @click="createLocalAlerts">创建测试提醒数据</button>
+          <button class="btn btn-danger" @click="clearLocalAlerts">清除本地提醒数据</button>
         </div>
 
         <div class="local-alerts">
           <h3>当前本地提醒 ({{ localAlerts.length }})</h3>
-          <div v-if="localAlerts.length === 0" class="empty-state">
-            没有本地提醒数据
-          </div>
+          <div v-if="localAlerts.length === 0" class="empty-state">没有本地提醒数据</div>
           <div v-else class="alerts-list">
             <div v-for="alert in localAlerts" :key="alert.id" class="alert-item">
               <div class="alert-header">
@@ -26,7 +20,7 @@
                   <span class="stock-code">{{ alert.symbol }}</span>
                   <span class="stock-name">{{ alert.name }}</span>
                 </div>
-                <div class="alert-badge" :class="{ 'active': alert.active }">
+                <div class="alert-badge" :class="{ active: alert.active }">
                   {{ alert.active ? '已启用' : '已禁用' }}
                 </div>
               </div>
@@ -34,12 +28,8 @@
                 <div class="alert-condition">
                   条件: {{ formatCondition(alert.condition) }} {{ alert.value }}
                 </div>
-                <div class="alert-message" v-if="alert.message">
-                  消息: {{ alert.message }}
-                </div>
-                <div class="alert-date">
-                  创建时间: {{ formatDate(alert.createdAt) }}
-                </div>
+                <div class="alert-message" v-if="alert.message">消息: {{ alert.message }}</div>
+                <div class="alert-date">创建时间: {{ formatDate(alert.createdAt) }}</div>
               </div>
             </div>
           </div>
@@ -61,12 +51,8 @@
 
         <div class="database-alerts">
           <h3>当前数据库提醒 ({{ databaseAlerts.length }})</h3>
-          <div v-if="isLoading" class="loading-state">
-            加载中...
-          </div>
-          <div v-else-if="databaseAlerts.length === 0" class="empty-state">
-            没有数据库提醒数据
-          </div>
+          <div v-if="isLoading" class="loading-state">加载中...</div>
+          <div v-else-if="databaseAlerts.length === 0" class="empty-state">没有数据库提醒数据</div>
           <div v-else class="alerts-list">
             <div v-for="alert in databaseAlerts" :key="alert.id" class="alert-item">
               <div class="alert-header">
@@ -74,7 +60,7 @@
                   <span class="stock-code">{{ alert.stockCode }}</span>
                   <span class="stock-name">{{ alert.stockName }}</span>
                 </div>
-                <div class="alert-badge" :class="{ 'active': alert.active }">
+                <div class="alert-badge" :class="{ active: alert.active }">
                   {{ alert.active ? '已启用' : '已禁用' }}
                 </div>
               </div>
@@ -82,12 +68,8 @@
                 <div class="alert-condition">
                   条件: {{ formatCondition(alert.condition) }} {{ alert.value }}
                 </div>
-                <div class="alert-message" v-if="alert.message">
-                  消息: {{ alert.message }}
-                </div>
-                <div class="alert-date">
-                  创建时间: {{ formatDate(alert.createdAt) }}
-                </div>
+                <div class="alert-message" v-if="alert.message">消息: {{ alert.message }}</div>
+                <div class="alert-date">创建时间: {{ formatDate(alert.createdAt) }}</div>
               </div>
             </div>
           </div>
@@ -106,16 +88,14 @@
             <p><strong>失败:</strong> {{ migrationResult.failed }}</p>
           </div>
         </div>
-        <div v-else class="empty-state">
-          尚未执行迁移
-        </div>
+        <div v-else class="empty-state">尚未执行迁移</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { alertService, type Alert } from '@/services/alertService'
 import { alertMigrationService } from '@/services/alertMigrationService'
 import { useToast } from '@/composables/useToast'
@@ -135,16 +115,10 @@ const testStocks = [
   { symbol: '600036', name: '招商银行' },
   { symbol: '601318', name: '中国平安' },
   { symbol: '000651', name: '格力电器' },
-  { symbol: '600519', name: '贵州茅台' }
+  { symbol: '600519', name: '贵州茅台' },
 ]
 
-const testConditions = [
-  'above',
-  'below',
-  'volume_above',
-  'change_above',
-  'change_below'
-]
+const testConditions = ['above', 'below', 'volume_above', 'change_above', 'change_below']
 
 // 获取本地提醒数据
 const getLocalAlerts = () => {
@@ -153,7 +127,7 @@ const getLocalAlerts = () => {
     localAlerts.value = []
     return
   }
-  
+
   try {
     localAlerts.value = JSON.parse(alertsJson)
   } catch (error) {
@@ -167,24 +141,26 @@ const createLocalAlerts = () => {
   // 生成3-5个随机提醒
   const count = Math.floor(Math.random() * 3) + 3
   const alerts = []
-  
+
   for (let i = 0; i < count; i++) {
     const stock = testStocks[Math.floor(Math.random() * testStocks.length)]
     const condition = testConditions[Math.floor(Math.random() * testConditions.length)]
     const value = Math.floor(Math.random() * 100) + 1
-    
+
     alerts.push({
       id: uuidv4(),
       symbol: stock.symbol,
       name: stock.name,
       condition,
       value,
-      message: `${stock.name}${condition === 'above' ? '上涨' : condition === 'below' ? '下跌' : '变动'}提醒`,
+      message: `${stock.name}${
+        condition === 'above' ? '上涨' : condition === 'below' ? '下跌' : '变动'
+      }提醒`,
       active: Math.random() > 0.3, // 70%概率为激活状态
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     })
   }
-  
+
   localStorage.setItem('stock_alerts', JSON.stringify(alerts))
   getLocalAlerts()
   showToast(`已创建 ${alerts.length} 个测试提醒`, 'success')
@@ -200,7 +176,7 @@ const clearLocalAlerts = () => {
 // 获取数据库提醒数据
 const fetchDatabaseAlerts = async () => {
   isLoading.value = true
-  
+
   try {
     databaseAlerts.value = await alertService.getAlerts()
   } catch (error) {
@@ -217,20 +193,20 @@ const migrateAlerts = async () => {
     showToast('没有本地提醒数据可迁移', 'warning')
     return
   }
-  
+
   isLoading.value = true
-  
+
   try {
     migrationResult.value = await alertMigrationService.migrateAlertsToDatabase()
-    
+
     if (migrationResult.value.success > 0) {
       showToast(`成功迁移 ${migrationResult.value.success} 个提醒到数据库`, 'success')
     }
-    
+
     if (migrationResult.value.failed > 0) {
       showToast(`${migrationResult.value.failed} 个提醒迁移失败`, 'warning')
     }
-    
+
     // 刷新数据
     getLocalAlerts()
     await fetchDatabaseAlerts()
@@ -245,50 +221,50 @@ const migrateAlerts = async () => {
 // 格式化条件
 const formatCondition = (condition: string) => {
   const conditionMap: Record<string, string> = {
-    'above': '价格高于',
-    'below': '价格低于',
-    'volume_above': '成交量高于',
-    'change_above': '涨幅高于',
-    'change_below': '跌幅高于',
-    'price_above': '价格高于',
-    'price_below': '价格低于'
+    above: '价格高于',
+    below: '价格低于',
+    volume_above: '成交量高于',
+    change_above: '涨幅高于',
+    change_below: '跌幅高于',
+    price_above: '价格高于',
+    price_below: '价格低于',
   }
-  
+
   return conditionMap[condition] || condition
 }
 
 // 格式化日期
 const formatDate = (dateString: string) => {
   if (!dateString) return '未知'
-  
+
   const date = new Date(dateString)
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
 // 计算属性
 const getResultClass = computed(() => {
   if (!migrationResult.value) return ''
-  
+
   if (migrationResult.value.failed > 0) {
     return 'result-warning'
   }
-  
+
   return migrationResult.value.success > 0 ? 'result-success' : 'result-error'
 })
 
 const getResultTitle = computed(() => {
   if (!migrationResult.value) return ''
-  
+
   if (migrationResult.value.failed > 0 && migrationResult.value.success > 0) {
     return '部分迁移成功'
   }
-  
+
   return migrationResult.value.success > 0 ? '迁移成功' : '迁移失败'
 })
 

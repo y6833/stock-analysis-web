@@ -1268,6 +1268,32 @@
       "GET"
     ],
     "paramNames": [],
+    "path": "/api/data-source/test",
+    "regexp": "/^\\/api\\/data-source\\/test(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/data-source/stocks",
+    "regexp": "/^\\/api\\/data-source\\/stocks(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
     "path": "/api/alerts",
     "regexp": "/^\\/api\\/alerts(?:\\/(?=$))?$/",
     "stack": [
@@ -1492,6 +1518,30 @@
     ],
     "path": "/api/cache/:dataSource",
     "regexp": "/^\\/api\\/cache\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "dataSource",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/cache/source/:dataSource",
+    "regexp": "/^\\/api\\/cache\\/source\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
       "auth",
       "wrappedController"

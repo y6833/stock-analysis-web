@@ -9,6 +9,7 @@ import ExportAlert = require('../../../app/controller/alert');
 import ExportCache = require('../../../app/controller/cache');
 import ExportCacheStats = require('../../../app/controller/cacheStats');
 import ExportData = require('../../../app/controller/data');
+import ExportDataSource = require('../../../app/controller/dataSource');
 import ExportEastmoney = require('../../../app/controller/eastmoney');
 import ExportEnv = require('../../../app/controller/env');
 import ExportFundamental = require('../../../app/controller/fundamental');
@@ -32,6 +33,7 @@ declare module 'egg' {
     cache: ExportCache;
     cacheStats: ExportCacheStats;
     data: ExportData;
+    dataSource: ExportDataSource;
     eastmoney: ExportEastmoney;
     env: ExportEnv;
     fundamental: ExportFundamental;

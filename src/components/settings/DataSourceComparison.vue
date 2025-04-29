@@ -1,7 +1,7 @@
 <template>
   <div class="data-source-comparison">
     <h3 class="comparison-title">数据源比较</h3>
-    
+
     <div class="comparison-table-container">
       <table class="comparison-table">
         <thead>
@@ -19,7 +19,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="source in availableSources" :key="source" :class="{ 'current-source': source === currentSource }">
+          <tr
+            v-for="source in availableSources"
+            :key="source"
+            :class="{ 'current-source': source === currentSource }"
+          >
             <td class="source-name">
               <div class="source-name-container">
                 <span>{{ getSourceDetails(source).name }}</span>
@@ -61,7 +65,7 @@
               </div>
             </td>
             <td>
-              <el-tag 
+              <el-tag
                 :type="getSourceDetails(source).features.realtime ? 'success' : 'info'"
                 effect="plain"
               >
@@ -69,7 +73,7 @@
               </el-tag>
             </td>
             <td>
-              <el-tag 
+              <el-tag
                 :type="getSourceDetails(source).features.history ? 'success' : 'info'"
                 effect="plain"
               >
@@ -77,7 +81,7 @@
               </el-tag>
             </td>
             <td>
-              <el-tag 
+              <el-tag
                 :type="getSourceDetails(source).features.fundamental ? 'success' : 'info'"
                 effect="plain"
               >
@@ -85,7 +89,7 @@
               </el-tag>
             </td>
             <td>
-              <el-tag 
+              <el-tag
                 :type="getSourceDetails(source).features.news ? 'success' : 'info'"
                 effect="plain"
               >
@@ -93,7 +97,7 @@
               </el-tag>
             </td>
             <td>
-              <el-tag 
+              <el-tag
                 :type="getSourceDetails(source).features.global ? 'success' : 'info'"
                 effect="plain"
               >
@@ -105,13 +109,13 @@
         </tbody>
       </table>
     </div>
-    
+
     <div class="recommendation-section">
       <h4>推荐数据源</h4>
       <div class="recommendation-cards">
-        <el-card 
-          v-for="source in recommendedSources" 
-          :key="source" 
+        <el-card
+          v-for="source in recommendedSources"
+          :key="source"
           class="recommendation-card"
           :class="{ 'current-source': source === currentSource }"
           shadow="hover"
@@ -120,22 +124,15 @@
             <div class="card-header">
               <h5>{{ getSourceDetails(source).name }}</h5>
               <div class="card-actions">
-                <el-button 
-                  v-if="source !== currentSource" 
-                  type="primary" 
+                <el-button
+                  v-if="source !== currentSource"
+                  type="primary"
                   size="small"
                   @click="switchSource(source)"
                 >
                   切换
                 </el-button>
-                <el-button 
-                  v-else 
-                  type="success" 
-                  size="small" 
-                  disabled
-                >
-                  当前使用中
-                </el-button>
+                <el-button v-else type="success" size="small" disabled> 当前使用中 </el-button>
               </div>
             </div>
           </template>
@@ -168,15 +165,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { stockService } from '@/services/stockService'
-import { DataSourceFactory, type DataSourceType, type DataSourceDetails } from '@/services/dataSource/DataSourceFactory'
+import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
+import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'
+import type { DataSourceDetails } from '@/types/dataSource'
 import { ElMessage } from 'element-plus'
 
 // 属性
 const props = defineProps({
   currentSource: {
     type: String as () => DataSourceType,
-    required: true
-  }
+    required: true,
+  },
 })
 
 // 事件
@@ -185,7 +184,9 @@ const emit = defineEmits(['switch-source'])
 // 状态
 const availableSources = ref<DataSourceType[]>([])
 const recommendedSources = ref<DataSourceType[]>([])
-const sourceDetails = ref<Record<DataSourceType, DataSourceDetails>>({} as Record<DataSourceType, DataSourceDetails>)
+const sourceDetails = ref<Record<DataSourceType, DataSourceDetails>>(
+  {} as Record<DataSourceType, DataSourceDetails>
+)
 
 // 获取数据源详细信息
 const getSourceDetails = (source: DataSourceType): DataSourceDetails => {
@@ -209,14 +210,17 @@ const switchSource = (source: DataSourceType) => {
 onMounted(() => {
   // 获取所有可用数据源
   availableSources.value = DataSourceFactory.getAvailableDataSources()
-  
+
   // 获取推荐数据源
   recommendedSources.value = DataSourceFactory.getRecommendedDataSources()
-  
-  // 预加载所有数据源详情
-  availableSources.value.forEach(source => {
+
+  // 预加载所有数据源详情 - 使用静态信息，避免创建实例
+  availableSources.value.forEach((source) => {
+    // 使用静态信息，避免创建实例和测试连接
     sourceDetails.value[source] = DataSourceFactory.getDataSourceDetails(source)
   })
+
+  console.log('数据源比较组件已初始化，使用静态信息，避免自动测试连接')
 })
 </script>
 
