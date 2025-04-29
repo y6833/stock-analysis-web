@@ -49,10 +49,14 @@ export const cacheService = {
    * 获取缓存状态
    * @param dataSource 数据源名称
    */
-  async getCacheStatus(dataSource: string = 'tushare'): Promise<CacheStatus> {
+  async getCacheStatus(dataSource?: string): Promise<CacheStatus> {
     try {
+      // 如果没有提供数据源，使用当前数据源
+      const currentDataSource =
+        dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
+
       const response = await axios.get(
-        `${API_URL}/cache/status?dataSource=${dataSource}`,
+        `${API_URL}/cache/status?dataSource=${currentDataSource}`,
         getAuthHeaders()
       )
       return response.data
@@ -86,10 +90,7 @@ export const cacheService = {
    */
   async clearCache(dataSource: string = 'tushare'): Promise<any> {
     try {
-      const response = await axios.delete(
-        `${API_URL}/cache/${dataSource}`,
-        getAuthHeaders()
-      )
+      const response = await axios.delete(`${API_URL}/cache/${dataSource}`, getAuthHeaders())
       return response.data
     } catch (error: any) {
       console.error('清除缓存失败:', error)
@@ -101,10 +102,14 @@ export const cacheService = {
    * 检查是否可以刷新缓存
    * @param dataSource 数据源名称
    */
-  async checkRefreshLimit(dataSource: string = 'tushare'): Promise<RefreshLimit> {
+  async checkRefreshLimit(dataSource?: string): Promise<RefreshLimit> {
     try {
+      // 如果没有提供数据源，使用当前数据源
+      const currentDataSource =
+        dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
+
       const response = await axios.get(
-        `${API_URL}/cache/refresh-limit?dataSource=${dataSource}`,
+        `${API_URL}/cache/refresh-limit?dataSource=${currentDataSource}`,
         getAuthHeaders()
       )
       return response.data
@@ -128,5 +133,5 @@ export const cacheService = {
       return `${minutes}分钟${seconds > 0 ? seconds + '秒' : ''}`
     }
     return `${seconds}秒`
-  }
+  },
 }

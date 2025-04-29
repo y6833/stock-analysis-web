@@ -60,7 +60,7 @@ import { useToast } from '@/composables/useToast'
 const props = defineProps({
   dataSource: {
     type: String,
-    default: 'tushare',
+    default: '', // 默认为空，将使用当前选择的数据源
   },
   showText: {
     type: Boolean,

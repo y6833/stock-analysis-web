@@ -105,7 +105,9 @@ class AKShareController extends Controller {
       ctx.status = 400;
       ctx.body = {
         success: false,
-        message: '缺少股票代码参数'
+        message: '缺少股票代码参数',
+        data_source: 'error',
+        data_source_message: '参数错误'
       };
       return;
     }
@@ -115,6 +117,11 @@ class AKShareController extends Controller {
       const result = await this.execPythonScript('quote', symbol);
 
       if (result.success) {
+        // 设置响应头中的数据来源
+        if (result.data && result.data.data_source) {
+          ctx.set('X-Data-Source', result.data.data_source);
+        }
+
         ctx.body = result;
       } else {
         // 如果 Python 脚本执行失败，返回模拟数据
@@ -125,9 +132,18 @@ class AKShareController extends Controller {
 
         ctx.body = {
           success: true,
-          data: mockData,
-          message: '使用模拟数据，原因: ' + result.message
+          data: {
+            ...mockData,
+            data_source: 'mock_data',
+            data_source_message: '模拟数据（API调用失败）'
+          },
+          message: '使用模拟数据，原因: ' + result.message,
+          data_source: 'mock_data',
+          data_source_message: '模拟数据（API调用失败）'
         };
+
+        // 设置响应头中的数据来源
+        ctx.set('X-Data-Source', 'mock_data');
       }
     } catch (error) {
       console.error(`获取股票${symbol}行情失败:`, error);
@@ -137,9 +153,18 @@ class AKShareController extends Controller {
 
       ctx.body = {
         success: true,
-        data: mockData,
-        message: '使用模拟数据，原因: ' + error.message
+        data: {
+          ...mockData,
+          data_source: 'mock_data',
+          data_source_message: '模拟数据（API调用失败）'
+        },
+        message: '使用模拟数据，原因: ' + error.message,
+        data_source: 'mock_data',
+        data_source_message: '模拟数据（API调用失败）'
       };
+
+      // 设置响应头中的数据来源
+      ctx.set('X-Data-Source', 'mock_data');
     }
   }
 
@@ -210,17 +235,19 @@ class AKShareController extends Controller {
 
     return {
       name: stockName,
-      price,
-      open,
-      high,
-      low,
-      pre_close: preClose,
+      price: parseFloat(price.toFixed(2)),
+      open: parseFloat(open.toFixed(2)),
+      high: parseFloat(high.toFixed(2)),
+      low: parseFloat(low.toFixed(2)),
+      pre_close: parseFloat(preClose.toFixed(2)),
       volume,
-      amount,
-      change,
-      pct_chg: pctChg,
+      amount: parseFloat(amount.toFixed(2)),
+      change: parseFloat(change.toFixed(2)),
+      pct_chg: parseFloat(pctChg.toFixed(2)),
       date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().split(' ')[0]
+      time: new Date().toTimeString().split(' ')[0],
+      data_source: 'mock_data',
+      data_source_message: '模拟数据（API调用失败）'
     };
   }
 
@@ -489,7 +516,7 @@ class AKShareController extends Controller {
 
       // 设置手动超时处理
       let timeoutId = null;
-      const MANUAL_TIMEOUT = 120000; // 2分钟
+      const MANUAL_TIMEOUT = 60000; // 1分钟，减少超时时间
 
       // 执行命令
       const childProcess = exec(command, {
@@ -500,7 +527,7 @@ class AKShareController extends Controller {
           PYTHONIOENCODING: 'utf-8',
           TQDM_DISABLE: '1'  // 禁用 tqdm 进度条
         },  // 设置 Python 环境变量
-        timeout: 180000  // 设置超时时间为 180 秒 (3分钟)
+        timeout: 90000  // 设置超时时间为 90 秒 (1.5分钟)，减少超时时间
       }, (error, stdout, stderr) => {
         // 清除超时定时器
         if (timeoutId) {
@@ -515,11 +542,23 @@ class AKShareController extends Controller {
 
           // 如果是超时错误，返回友好的错误信息
           if (error.code === 'ETIMEDOUT') {
-            reject(new Error('Python 脚本执行超时，请稍后再试'));
+            // 返回带有数据来源信息的错误
+            resolve({
+              success: false,
+              message: 'Python 脚本执行超时，请稍后再试',
+              data_source: 'error',
+              data_source_message: '执行超时'
+            });
             return;
           }
 
-          reject(error);
+          // 返回带有数据来源信息的错误
+          resolve({
+            success: false,
+            message: error.message,
+            data_source: 'error',
+            data_source_message: `执行失败: ${error.message}`
+          });
           return;
         }
 
@@ -537,12 +576,46 @@ class AKShareController extends Controller {
             // 使用最后一个 JSON 对象，这通常是最终结果
             const lastJson = jsonObjects[jsonObjects.length - 1];
             const result = JSON.parse(lastJson);
+
+            // 确保结果包含数据来源信息
+            if (result.success && result.data && !result.data.data_source) {
+              if (action === 'quote') {
+                result.data.data_source = 'external_api';
+                result.data.data_source_message = '数据来自AKShare API';
+              }
+            }
+
+            // 添加顶层数据来源信息
+            if (!result.data_source) {
+              result.data_source = result.success ? 'external_api' : 'error';
+              result.data_source_message = result.success ?
+                '数据来自AKShare API' :
+                `获取数据失败: ${result.message || '未知错误'}`;
+            }
+
             resolve(result);
             return;
           }
 
           // 如果没有找到 JSON 对象，尝试直接解析
           const result = JSON.parse(cleanedOutput);
+
+          // 确保结果包含数据来源信息
+          if (result.success && result.data && !result.data.data_source) {
+            if (action === 'quote') {
+              result.data.data_source = 'external_api';
+              result.data.data_source_message = '数据来自AKShare API';
+            }
+          }
+
+          // 添加顶层数据来源信息
+          if (!result.data_source) {
+            result.data_source = result.success ? 'external_api' : 'error';
+            result.data_source_message = result.success ?
+              '数据来自AKShare API' :
+              `获取数据失败: ${result.message || '未知错误'}`;
+          }
+
           resolve(result);
         } catch (e) {
           this.ctx.logger.error(`解析 Python 脚本输出失败: ${e.message}`);
@@ -555,6 +628,23 @@ class AKShareController extends Controller {
               // 使用最后一个 JSON 对象，这通常是最终结果
               const lastJson = jsonObjects[jsonObjects.length - 1];
               const result = JSON.parse(lastJson);
+
+              // 确保结果包含数据来源信息
+              if (result.success && result.data && !result.data.data_source) {
+                if (action === 'quote') {
+                  result.data.data_source = 'external_api';
+                  result.data.data_source_message = '数据来自AKShare API';
+                }
+              }
+
+              // 添加顶层数据来源信息
+              if (!result.data_source) {
+                result.data_source = result.success ? 'external_api' : 'error';
+                result.data_source_message = result.success ?
+                  '数据来自AKShare API' :
+                  `获取数据失败: ${result.message || '未知错误'}`;
+              }
+
               resolve(result);
               return;
             }
@@ -564,6 +654,23 @@ class AKShareController extends Controller {
             if (jsonMatch) {
               const extractedJson = jsonMatch[0];
               const result = JSON.parse(extractedJson);
+
+              // 确保结果包含数据来源信息
+              if (result.success && result.data && !result.data.data_source) {
+                if (action === 'quote') {
+                  result.data.data_source = 'external_api';
+                  result.data.data_source_message = '数据来自AKShare API';
+                }
+              }
+
+              // 添加顶层数据来源信息
+              if (!result.data_source) {
+                result.data_source = result.success ? 'external_api' : 'error';
+                result.data_source_message = result.success ?
+                  '数据来自AKShare API' :
+                  `获取数据失败: ${result.message || '未知错误'}`;
+              }
+
               resolve(result);
               return;
             }
@@ -571,14 +678,21 @@ class AKShareController extends Controller {
             this.ctx.logger.error(`尝试提取 JSON 失败: ${extractError.message}`);
           }
 
-          // 如果无法解析 JSON，返回模拟数据
+          // 如果无法解析 JSON，返回带有数据来源信息的错误
           if (action === 'test') {
             resolve({
               success: false,
-              message: 'AKShare API 连接失败，请检查 Python 环境和 AKShare 库是否正确安装'
+              message: 'AKShare API 连接失败，请检查 Python 环境和 AKShare 库是否正确安装',
+              data_source: 'error',
+              data_source_message: 'AKShare API 连接失败'
             });
           } else {
-            reject(new Error(`无法解析 Python 脚本输出: ${e.message}`));
+            resolve({
+              success: false,
+              message: `无法解析 Python 脚本输出: ${e.message}`,
+              data_source: 'error',
+              data_source_message: `解析失败: ${e.message}`
+            });
           }
         }
       });
@@ -604,10 +718,23 @@ class AKShareController extends Controller {
             }, 2000);
           }
 
-          reject(new Error('Python 脚本执行超时（手动终止），请稍后再试'));
+          // 返回带有数据来源信息的超时错误
+          resolve({
+            success: false,
+            message: 'Python 脚本执行超时（手动终止），请稍后再试',
+            data_source: 'error',
+            data_source_message: '执行超时'
+          });
         } catch (timeoutError) {
           this.ctx.logger.error(`终止超时进程失败: ${timeoutError.message}`);
-          reject(new Error('Python 脚本执行超时，无法终止进程，请稍后再试'));
+
+          // 返回带有数据来源信息的超时错误
+          resolve({
+            success: false,
+            message: 'Python 脚本执行超时，无法终止进程，请稍后再试',
+            data_source: 'error',
+            data_source_message: '执行超时且无法终止进程'
+          });
         }
       }, MANUAL_TIMEOUT);
     });

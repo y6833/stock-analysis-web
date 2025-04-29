@@ -63,7 +63,7 @@ import type { CacheStatus, RefreshLimit } from '@/services/cacheService'
 const props = defineProps({
   dataSource: {
     type: String,
-    default: 'tushare',
+    default: '', // 默认为空，将使用当前选择的数据源
   },
   showText: {
     type: Boolean,
@@ -103,7 +103,11 @@ const buttonTitle = computed(() => {
 // 方法
 const fetchStatus = async () => {
   try {
-    status.value = await cacheService.getCacheStatus(props.dataSource)
+    // 如果没有提供数据源，使用当前数据源
+    const currentDataSource =
+      props.dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
+
+    status.value = await cacheService.getCacheStatus(currentDataSource)
   } catch (error) {
     console.error('获取缓存状态失败:', error)
   }
@@ -111,7 +115,11 @@ const fetchStatus = async () => {
 
 const checkRefreshLimit = async () => {
   try {
-    refreshLimit.value = await cacheService.checkRefreshLimit(props.dataSource)
+    // 如果没有提供数据源，使用当前数据源
+    const currentDataSource =
+      props.dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
+
+    refreshLimit.value = await cacheService.checkRefreshLimit(currentDataSource)
     canRefresh.value = refreshLimit.value.canRefresh
 
     if (!canRefresh.value && refreshLimit.value.timeRemaining) {
@@ -168,8 +176,12 @@ const handleRefresh = async () => {
   }, 30000) // 30秒后自动恢复限制
 
   try {
+    // 如果没有提供数据源，使用当前数据源
+    const currentDataSource =
+      props.dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
+
     // 使用新的数据刷新服务
-    const result = await dataRefreshService.refreshAllData(true) // 强制刷新，忽略冷却时间
+    const result = await dataRefreshService.refreshAllData(true, currentDataSource) // 强制刷新，忽略冷却时间
 
     if (result.success) {
       // 刷新成功

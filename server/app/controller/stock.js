@@ -12,31 +12,35 @@ class StockController extends Controller {
       // 直接从 API 获取，如果 API 失败会自动尝试从缓存获取
       const quote = await service.stock.getStockQuote(stockCode);
 
-      // 如果数据来自缓存，添加提示信息
-      if (quote.fromCache) {
+      // 设置响应头中的数据来源
+      if (quote.data_source) {
+        ctx.set('X-Data-Source', quote.data_source);
+      } else if (quote.fromCache) {
         ctx.set('X-Data-Source', 'cache');
-        ctx.body = {
-          ...quote,
-          message: '数据来自缓存，可能不是最新的'
-        };
       } else {
         ctx.set('X-Data-Source', 'api');
-        ctx.body = quote;
       }
+
+      // 返回数据，保留原有的数据来源信息
+      ctx.body = quote;
     } catch (err) {
       if (err.message === '未找到股票行情数据') {
         ctx.status = 404;
         ctx.body = {
           error: true,
           message: '未找到股票行情数据',
-          code: 'STOCK_NOT_FOUND'
+          code: 'STOCK_NOT_FOUND',
+          data_source: 'error',
+          data_source_message: '未找到股票行情数据'
         };
       } else {
         ctx.status = 500;
         ctx.body = {
           error: true,
           message: err.message || '获取股票行情失败',
-          code: 'API_ERROR'
+          code: 'API_ERROR',
+          data_source: 'error',
+          data_source_message: `获取数据失败: ${err.message}`
         };
       }
       ctx.logger.error(err);
@@ -55,10 +59,21 @@ class StockController extends Controller {
         start_date || service.stock.getDateString(-30), // 默认30天前
         end_date || service.stock.getDateString(0)      // 默认今天
       );
+
+      // 设置响应头中的数据来源
+      if (history.data_source) {
+        ctx.set('X-Data-Source', history.data_source);
+      }
+
+      // 返回数据，保留原有的数据来源信息
       ctx.body = history;
     } catch (err) {
       ctx.status = 500;
-      ctx.body = { message: '获取股票历史数据失败' };
+      ctx.body = {
+        message: '获取股票历史数据失败',
+        data_source: 'error',
+        data_source_message: `获取数据失败: ${err.message}`
+      };
       ctx.logger.error(err);
     }
   }
@@ -68,17 +83,35 @@ class StockController extends Controller {
     const { ctx, service } = this;
 
     try {
-      const stocks = await service.stock.getStockList();
+      const result = await service.stock.getStockList();
 
-      if (stocks && stocks.length > 0) {
-        ctx.body = stocks;
+      // 设置响应头中的数据来源
+      if (result.data_source) {
+        ctx.set('X-Data-Source', result.data_source);
+      }
+
+      // 检查是否有数据
+      if (result.data && result.data.length > 0) {
+        // 返回数据，保留原有的数据来源信息
+        ctx.body = result;
+      } else if (result.count && result.count > 0) {
+        // 兼容旧格式
+        ctx.body = result;
       } else {
         ctx.status = 404;
-        ctx.body = { message: '未找到股票列表数据' };
+        ctx.body = {
+          message: '未找到股票列表数据',
+          data_source: 'error',
+          data_source_message: '未找到股票列表数据'
+        };
       }
     } catch (err) {
       ctx.status = 500;
-      ctx.body = { message: '获取股票列表失败' };
+      ctx.body = {
+        message: '获取股票列表失败',
+        data_source: 'error',
+        data_source_message: `获取数据失败: ${err.message}`
+      };
       ctx.logger.error(err);
     }
   }
@@ -89,13 +122,21 @@ class StockController extends Controller {
 
     try {
       const result = await service.stock.testRedisStorage();
+
+      // 设置响应头中的数据来源
+      if (result.data_source) {
+        ctx.set('X-Data-Source', result.data_source);
+      }
+
       ctx.body = result;
     } catch (err) {
       ctx.status = 500;
       ctx.body = {
         success: false,
         message: '测试 Redis 失败',
-        error: err.message || '未知错误'
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `测试Redis失败: ${err.message}`
       };
       ctx.logger.error(err);
     }
@@ -111,20 +152,30 @@ class StockController extends Controller {
       ctx.body = {
         success: false,
         message: '缺少股票代码参数',
-        error: '请提供股票代码，例如：?code=000001.SZ'
+        error: '请提供股票代码，例如：?code=000001.SZ',
+        data_source: 'error',
+        data_source_message: '参数错误'
       };
       return;
     }
 
     try {
       const result = await service.stock.storeStockDataToRedis(code);
+
+      // 设置响应头中的数据来源
+      if (result.data_source) {
+        ctx.set('X-Data-Source', result.data_source);
+      }
+
       ctx.body = result;
     } catch (err) {
       ctx.status = 500;
       ctx.body = {
         success: false,
         message: '存储股票数据到 Redis 失败',
-        error: err.message || '未知错误'
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `存储数据失败: ${err.message}`
       };
       ctx.logger.error(err);
     }
@@ -172,7 +223,9 @@ class StockController extends Controller {
         ctx.body = {
           success: false,
           message: '没有可处理的股票代码',
-          error: '请提供股票代码，或者系统无法获取股票列表'
+          error: '请提供股票代码，或者系统无法获取股票列表',
+          data_source: 'error',
+          data_source_message: '参数错误'
         };
         return;
       }
@@ -188,13 +241,21 @@ class StockController extends Controller {
 
       // 开始批量处理
       const result = await service.stock.storeAllStocksToRedis(stockCodes);
+
+      // 设置响应头中的数据来源
+      if (result.data_source) {
+        ctx.set('X-Data-Source', result.data_source);
+      }
+
       ctx.body = result;
     } catch (err) {
       ctx.status = 500;
       ctx.body = {
         success: false,
         message: '批量存储股票数据到 Redis 失败',
-        error: err.message || '未知错误'
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `批量存储数据失败: ${err.message}`
       };
       ctx.logger.error(err);
     }

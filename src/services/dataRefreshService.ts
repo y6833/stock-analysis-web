@@ -49,9 +49,13 @@ export const dataRefreshService = {
    * 执行全局数据刷新
    * 刷新所有关键数据，包括股票列表、市场数据等
    * @param forceRefresh 是否强制刷新（忽略冷却时间）
+   * @param dataSource 数据源名称
    * @returns 刷新结果
    */
-  async refreshAllData(forceRefresh = false): Promise<{ success: boolean; message: string }> {
+  async refreshAllData(
+    forceRefresh = false,
+    dataSource?: string
+  ): Promise<{ success: boolean; message: string }> {
     const { showToast } = useToast()
 
     // 检查冷却时间
@@ -62,10 +66,14 @@ export const dataRefreshService = {
       return { success: false, message }
     }
 
+    // 如果没有提供数据源，使用当前数据源
+    const currentDataSource = dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
+
     try {
       // 调用后端刷新接口
       const response = await axios.post('/api/refresh-data', {
-        force_api: true // 强制使用API获取最新数据
+        force_api: true, // 强制使用API获取最新数据
+        dataSource: currentDataSource, // 指定数据源
       })
 
       // 更新上次刷新时间
@@ -76,16 +84,16 @@ export const dataRefreshService = {
 
       return {
         success: true,
-        message: response.data?.message || '数据刷新成功'
+        message: response.data?.message || '数据刷新成功',
       }
     } catch (error: any) {
       console.error('刷新数据失败:', error)
       return {
         success: false,
-        message: error.response?.data?.message || error.message || '刷新数据失败'
+        message: error.response?.data?.message || error.message || '刷新数据失败',
       }
     }
-  }
+  },
 }
 
 export default dataRefreshService

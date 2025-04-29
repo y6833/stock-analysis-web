@@ -12,9 +12,9 @@
         <div class="health-status">{{ healthStatus }}</div>
       </div>
       <div class="health-actions">
-        <button 
-          class="health-btn" 
-          :class="{ 'disabled': isLoading }"
+        <button
+          class="health-btn"
+          :class="{ disabled: isLoading }"
           @click="fetchStats"
           title="刷新健康状态"
         >
@@ -23,7 +23,7 @@
         </button>
       </div>
     </div>
-    
+
     <div class="health-details" v-if="stats">
       <div class="health-metrics">
         <div class="metric-item">
@@ -39,23 +39,23 @@
           <div class="metric-label">API调用</div>
         </div>
         <div class="metric-item">
-          <div class="metric-value" :class="{ 'error': stats.errors > 0 }">{{ stats.errors }}</div>
+          <div class="metric-value" :class="{ error: stats.errors > 0 }">{{ stats.errors }}</div>
           <div class="metric-label">错误数</div>
         </div>
       </div>
-      
+
       <div class="health-chart">
         <div class="chart-title">缓存命中情况</div>
         <div class="chart-container">
           <div class="chart-bar">
-            <div 
-              class="chart-hit" 
-              :style="{ width: `${hitPercentage}%` }" 
+            <div
+              class="chart-hit"
+              :style="{ width: `${hitPercentage}%` }"
               :title="`命中: ${stats.hits} (${hitPercentage}%)`"
             ></div>
-            <div 
-              class="chart-miss" 
-              :style="{ width: `${missPercentage}%` }" 
+            <div
+              class="chart-miss"
+              :style="{ width: `${missPercentage}%` }"
               :title="`未命中: ${stats.misses} (${missPercentage}%)`"
             ></div>
           </div>
@@ -71,20 +71,12 @@
           </div>
         </div>
       </div>
-      
+
       <div class="health-actions-full">
-        <button 
-          class="action-btn refresh" 
-          :class="{ 'disabled': isLoading }"
-          @click="fetchStats"
-        >
+        <button class="action-btn refresh" :class="{ disabled: isLoading }" @click="fetchStats">
           刷新统计
         </button>
-        <button 
-          class="action-btn reset" 
-          :class="{ 'disabled': isLoading }"
-          @click="resetStats"
-        >
+        <button class="action-btn reset" :class="{ disabled: isLoading }" @click="resetStats">
           重置统计
         </button>
       </div>
@@ -102,7 +94,7 @@ import { useToast } from '@/composables/useToast'
 const props = defineProps({
   dataSource: {
     type: String,
-    default: 'tushare',
+    default: '', // 默认为空，将使用当前选择的数据源
   },
   autoRefresh: {
     type: Boolean,
@@ -123,29 +115,25 @@ const refreshTimer = ref<number | null>(null)
 // 计算属性
 const isHealthy = computed(() => {
   if (!stats.value) return false
-  
+
   // 检查命中率是否大于70%
   const hitRate = parseFloat(stats.value.hitRate.replace('%', ''))
-  
+
   // 检查错误率是否小于5%
-  const errorRate = stats.value.requests > 0
-    ? (stats.value.errors / stats.value.requests) * 100
-    : 0
-  
+  const errorRate = stats.value.requests > 0 ? (stats.value.errors / stats.value.requests) * 100 : 0
+
   return hitRate >= 70 && errorRate < 5
 })
 
 const isWarning = computed(() => {
   if (!stats.value) return false
-  
+
   // 检查命中率是否大于30%
   const hitRate = parseFloat(stats.value.hitRate.replace('%', ''))
-  
+
   // 检查错误率是否小于10%
-  const errorRate = stats.value.requests > 0
-    ? (stats.value.errors / stats.value.requests) * 100
-    : 0
-  
+  const errorRate = stats.value.requests > 0 ? (stats.value.errors / stats.value.requests) * 100 : 0
+
   return (hitRate >= 30 && hitRate < 70) || (errorRate >= 5 && errorRate < 10)
 })
 
@@ -182,9 +170,9 @@ const missPercentage = computed(() => {
 // 方法
 const fetchStats = async () => {
   if (isLoading.value) return
-  
+
   isLoading.value = true
-  
+
   try {
     stats.value = await cacheStatsService.getStats(props.dataSource)
   } catch (error: any) {
@@ -197,12 +185,12 @@ const fetchStats = async () => {
 
 const resetStats = async () => {
   if (isLoading.value) return
-  
+
   isLoading.value = true
-  
+
   try {
     const result = await cacheStatsService.resetStats(props.dataSource)
-    
+
     if (result.success) {
       showToast(result.message || '缓存统计已重置', 'success')
       await fetchStats()
@@ -221,7 +209,7 @@ const resetStats = async () => {
 onMounted(async () => {
   // 获取初始统计信息
   await fetchStats()
-  
+
   // 设置定时刷新
   if (props.autoRefresh && props.refreshInterval > 0) {
     refreshTimer.value = window.setInterval(fetchStats, props.refreshInterval)
@@ -328,8 +316,12 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .health-details {

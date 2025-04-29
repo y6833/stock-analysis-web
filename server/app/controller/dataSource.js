@@ -229,12 +229,25 @@ class DataSourceController extends Controller {
       case 'tencent':
         // 这里可以实现其他数据源的股票列表获取逻辑
         // 暂时重定向到tushare
-        return await ctx.service.proxy.callController('tushare', 'getStockBasic');
+        const result = await ctx.service.proxy.callController('tushare', 'getStockBasic');
+
+        // 如果结果中没有明确的数据来源信息，添加数据来源信息
+        if (result && result.body) {
+          if (!result.body.data_source) {
+            result.body.data_source = dataSource;
+          }
+          if (!result.body.data_source_message) {
+            result.body.data_source_message = `数据来自${dataSource.toUpperCase()}数据源`;
+          }
+        }
+
+        return result;
       default:
         ctx.body = {
           success: false,
           message: `未知数据源类型: ${dataSource}`,
-          data_source: dataSource
+          data_source: dataSource,
+          data_source_message: `未知数据源: ${dataSource}`
         };
     }
   }
@@ -320,7 +333,9 @@ class DataSourceController extends Controller {
             success: false,
             message: '解析 Python 脚本输出失败',
             error: e.message,
-            type: 'warning'
+            type: 'warning',
+            data_source: 'error',
+            data_source_message: `解析Python脚本输出失败: ${e.message}`
           });
         }
       });

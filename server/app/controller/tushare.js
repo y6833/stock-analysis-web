@@ -90,22 +90,42 @@ class TushareController extends Controller {
           success: false,
           message: result.message,
           warning: result.error, // 使用 warning 字段而不是 error
-          type: 'warning'
+          type: 'warning',
+          data_source: 'database',
+          data_source_message: '数据库操作警告'
         };
       } else if (result.success) {
         // 成功情况
+        const dataSource = result.source || 'database';
+        let dataSourceMessage = '';
+
+        // 根据数据来源设置消息
+        if (dataSource === 'database') {
+          dataSourceMessage = '数据来自数据库';
+        } else if (dataSource === 'api') {
+          dataSourceMessage = '数据来自Tushare API';
+        } else if (dataSource === 'cache') {
+          dataSourceMessage = '数据来自缓存';
+        } else {
+          dataSourceMessage = `数据来自${dataSource}`;
+        }
+
         ctx.body = {
           success: true,
           message: result.message,
           data: result.data,
-          source: result.source
+          source: result.source,
+          data_source: dataSource,
+          data_source_message: dataSourceMessage
         };
       } else {
         // 失败但不是错误的情况（例如数据库中没有数据）
         ctx.body = {
           success: false,
           message: result.message,
-          type: 'info' // 使用 info 类型表示这是一个信息性消息
+          type: 'info', // 使用 info 类型表示这是一个信息性消息
+          data_source: 'unknown',
+          data_source_message: '未能确定数据来源'
         };
       }
     } catch (error) {
@@ -115,7 +135,9 @@ class TushareController extends Controller {
         success: false,
         message: '获取股票基本信息失败',
         error: error.message,
-        type: 'error' // 明确标记为错误
+        type: 'error', // 明确标记为错误
+        data_source: 'error',
+        data_source_message: `获取数据失败: ${error.message}`
       };
     }
   }

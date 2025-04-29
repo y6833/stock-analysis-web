@@ -9,7 +9,7 @@ class DataController extends Controller {
    */
   async refreshData() {
     const { ctx, service } = this;
-    const { force_api = false } = ctx.request.body;
+    const { force_api = false, dataSource = 'tushare' } = ctx.request.body;
 
     try {
       // 检查用户权限
@@ -19,6 +19,8 @@ class DataController extends Controller {
         ctx.body = {
           success: false,
           message: '请先登录',
+          data_source: 'error',
+          data_source_message: '未授权访问'
         };
         return;
       }
@@ -30,6 +32,8 @@ class DataController extends Controller {
         ctx.body = {
           success: false,
           message: '刷新操作过于频繁，请稍后再试',
+          data_source: 'error',
+          data_source_message: '刷新频率限制'
         };
         return;
       }
@@ -38,6 +42,7 @@ class DataController extends Controller {
       const result = await service.data.refreshAllData({
         userId,
         forceApi: force_api,
+        dataSource,
       });
 
       // 更新用户最后刷新时间
@@ -48,6 +53,8 @@ class DataController extends Controller {
         message: '数据刷新成功',
         refreshed: result.refreshed,
         timestamp: new Date().toISOString(),
+        data_source: dataSource,
+        data_source_message: `数据来自${dataSource.toUpperCase()}数据源`
       };
     } catch (error) {
       ctx.logger.error('刷新数据失败:', error);
@@ -55,6 +62,8 @@ class DataController extends Controller {
       ctx.body = {
         success: false,
         message: `刷新数据失败: ${error.message}`,
+        data_source: 'error',
+        data_source_message: `刷新数据失败: ${error.message}`
       };
     }
   }

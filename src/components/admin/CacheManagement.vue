@@ -2,7 +2,7 @@
   <div class="cache-management">
     <h2 class="section-title">缓存管理</h2>
     <p class="section-description">管理和监控数据缓存，优化应用性能</p>
-    
+
     <div class="dashboard-grid">
       <!-- 缓存健康状态 -->
       <div class="dashboard-card">
@@ -16,7 +16,7 @@
           <CacheHealthStatus :dataSource="currentDataSource" />
         </div>
       </div>
-      
+
       <!-- 缓存操作 -->
       <div class="dashboard-card">
         <div class="card-header">
@@ -24,17 +24,14 @@
         </div>
         <div class="card-body">
           <div class="action-buttons">
-            <CacheRefreshButton 
-              :dataSource="currentDataSource" 
+            <CacheRefreshButton
+              :dataSource="currentDataSource"
               @refresh-success="handleRefreshSuccess"
             />
-            <CachePrewarmButton 
-              :count="20" 
-              @prewarm-success="handlePrewarmSuccess"
-            />
-            <button 
-              class="action-btn clear" 
-              :class="{ 'disabled': isLoading }"
+            <CachePrewarmButton :count="20" @prewarm-success="handlePrewarmSuccess" />
+            <button
+              class="action-btn clear"
+              :class="{ disabled: isLoading }"
               :disabled="isLoading"
               @click="clearCache"
             >
@@ -44,7 +41,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 缓存统计 -->
       <div class="dashboard-card">
         <div class="card-header">
@@ -99,7 +96,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 缓存详情 -->
       <div class="dashboard-card full-width">
         <div class="card-header">
@@ -131,7 +128,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="detail-section">
               <h4>缓存数量</h4>
               <div class="detail-grid">
@@ -153,7 +150,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="detail-section">
               <h4>缓存键列表</h4>
               <div class="cache-keys">
@@ -194,7 +191,8 @@ const error = ref('')
 const statusError = ref('')
 const cacheStats = ref<CacheStats | null>(null)
 const cacheStatus = ref<CacheStatus | null>(null)
-const currentDataSource = ref('tushare')
+// 从本地存储获取当前数据源，如果没有则使用默认值
+const currentDataSource = ref(localStorage.getItem('preferredDataSource') || 'tushare')
 
 // 数据源列表
 const dataSources = [
@@ -214,10 +212,7 @@ const hitRateClass = computed(() => {
 
 // 生命周期钩子
 onMounted(async () => {
-  await Promise.all([
-    fetchCacheStats(),
-    fetchCacheStatus(),
-  ])
+  await Promise.all([fetchCacheStats(), fetchCacheStatus()])
 })
 
 // 获取缓存统计信息
@@ -254,10 +249,11 @@ const fetchCacheStatus = async () => {
 
 // 切换数据源
 const handleDataSourceChange = async () => {
-  await Promise.all([
-    fetchCacheStats(),
-    fetchCacheStatus(),
-  ])
+  // 保存当前选择的数据源到本地存储
+  localStorage.setItem('preferredDataSource', currentDataSource.value)
+
+  // 刷新缓存统计和状态
+  await Promise.all([fetchCacheStats(), fetchCacheStatus()])
 }
 
 // 清除缓存
@@ -265,12 +261,9 @@ const clearCache = async () => {
   try {
     const result = await cacheService.clearCache(currentDataSource.value)
     showToast(`缓存已清除: ${result.clearedKeys?.length || 0} 个键`, 'success')
-    
+
     // 刷新缓存状态
-    await Promise.all([
-      fetchCacheStats(),
-      fetchCacheStatus(),
-    ])
+    await Promise.all([fetchCacheStats(), fetchCacheStatus()])
   } catch (err: any) {
     console.error('清除缓存失败:', err)
     showToast(err.message || '清除缓存失败', 'error')
@@ -280,19 +273,13 @@ const clearCache = async () => {
 // 处理刷新成功
 const handleRefreshSuccess = async () => {
   // 刷新缓存状态
-  await Promise.all([
-    fetchCacheStats(),
-    fetchCacheStatus(),
-  ])
+  await Promise.all([fetchCacheStats(), fetchCacheStatus()])
 }
 
 // 处理预热成功
 const handlePrewarmSuccess = async () => {
   // 刷新缓存状态
-  await Promise.all([
-    fetchCacheStats(),
-    fetchCacheStatus(),
-  ])
+  await Promise.all([fetchCacheStats(), fetchCacheStatus()])
 }
 
 // 格式化日期

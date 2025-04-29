@@ -28,26 +28,32 @@ export interface CacheStats {
     errors: number
     hitRate: string
   }
-  apiStats?: Record<string, {
-    hits: number
-    misses: number
-    requests: number
-    apiCalls: number
-    errors: number
-    hitRate: string
-    lastAccess: string
-    lastError?: {
-      message: string
-      time: string
+  apiStats?: Record<
+    string,
+    {
+      hits: number
+      misses: number
+      requests: number
+      apiCalls: number
+      errors: number
+      hitRate: string
+      lastAccess: string
+      lastError?: {
+        message: string
+        time: string
+      }
     }
-  }>
-  dataSourceStats?: Record<string, {
-    hits: number
-    misses: number
-    requests: number
-    apiCalls: number
-    errors: number
-  }>
+  >
+  dataSourceStats?: Record<
+    string,
+    {
+      hits: number
+      misses: number
+      requests: number
+      apiCalls: number
+      errors: number
+    }
+  >
   error?: string
 }
 
@@ -68,10 +74,12 @@ export const cacheStatsService = {
    */
   async getStats(dataSource?: string): Promise<CacheStats> {
     try {
-      const url = dataSource 
-        ? `${API_URL}/cache-stats?dataSource=${dataSource}`
-        : `${API_URL}/cache-stats`
-      
+      // 如果没有提供数据源，使用当前数据源
+      const currentDataSource =
+        dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
+
+      const url = `${API_URL}/cache-stats?dataSource=${currentDataSource}`
+
       const response = await axios.get(url, getAuthHeaders())
       return response.data
     } catch (error: any) {
@@ -86,9 +94,13 @@ export const cacheStatsService = {
    */
   async resetStats(dataSource?: string): Promise<ResetResult> {
     try {
+      // 如果没有提供数据源，使用当前数据源
+      const currentDataSource =
+        dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
+
       const response = await axios.post(
         `${API_URL}/cache-stats/reset`,
-        { dataSource },
+        { dataSource: currentDataSource },
         getAuthHeaders()
       )
       return response.data
@@ -105,7 +117,7 @@ export const cacheStatsService = {
   formatHitRate(hitRate: string): string {
     // 移除百分号并转换为数字
     const rate = parseFloat(hitRate.replace('%', ''))
-    
+
     // 根据命中率返回不同的颜色类名
     if (rate >= 90) return 'excellent'
     if (rate >= 70) return 'good'
@@ -147,48 +159,48 @@ export const cacheStatsService = {
       const date = new Date(dateString)
       const now = new Date()
       const diffMs = now.getTime() - date.getTime()
-      
+
       // 转换为秒
       const diffSec = Math.floor(diffMs / 1000)
-      
+
       if (diffSec < 60) {
         return `${diffSec}秒前`
       }
-      
+
       // 转换为分钟
       const diffMin = Math.floor(diffSec / 60)
-      
+
       if (diffMin < 60) {
         return `${diffMin}分钟前`
       }
-      
+
       // 转换为小时
       const diffHour = Math.floor(diffMin / 60)
-      
+
       if (diffHour < 24) {
         return `${diffHour}小时前`
       }
-      
+
       // 转换为天
       const diffDay = Math.floor(diffHour / 24)
-      
+
       if (diffDay < 30) {
         return `${diffDay}天前`
       }
-      
+
       // 转换为月
       const diffMonth = Math.floor(diffDay / 30)
-      
+
       if (diffMonth < 12) {
         return `${diffMonth}个月前`
       }
-      
+
       // 转换为年
       const diffYear = Math.floor(diffMonth / 12)
-      
+
       return `${diffYear}年前`
     } catch (e) {
       return '未知'
     }
-  }
+  },
 }

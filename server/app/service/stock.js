@@ -25,7 +25,9 @@ class StockService extends Service {
 
             return {
               ...parsedData,
-              fromCache: true
+              fromCache: true,
+              data_source: 'redis_cache',
+              data_source_message: '数据来自Redis缓存'
             };
           } catch (parseErr) {
             ctx.logger.warn(`解析 Redis 缓存数据失败:`, parseErr);
@@ -48,7 +50,9 @@ class StockService extends Service {
 
           return {
             ...cacheData,
-            fromCache: true
+            fromCache: true,
+            data_source: 'local_cache',
+            data_source_message: '数据来自本地内存缓存'
           };
         }
       }
@@ -65,10 +69,12 @@ class StockService extends Service {
       // 调用传入的函数获取数据
       const data = await fetchDataFn();
 
-      // 添加缓存时间
+      // 添加缓存时间和数据来源
       const dataToCache = {
         ...data,
-        cacheTime: new Date().toISOString()
+        cacheTime: new Date().toISOString(),
+        data_source: 'external_api',
+        data_source_message: `数据来自${dataSource.toUpperCase()}外部API`
       };
 
       // 保存到 Redis 缓存
@@ -88,7 +94,7 @@ class StockService extends Service {
         // 继续返回数据，不影响主流程
       }
 
-      return data;
+      return dataToCache;
     } catch (err) {
       ctx.logger.error(`获取数据失败: ${cacheKey}`, err);
 
@@ -105,7 +111,9 @@ class StockService extends Service {
 
             return {
               ...parsedData,
-              fromCache: true
+              fromCache: true,
+              data_source: 'redis_cache',
+              data_source_message: '数据来自Redis缓存（API调用失败）'
             };
           }
         } else if (global.stockCache && global.stockCache[cacheKey]) {
@@ -116,7 +124,9 @@ class StockService extends Service {
 
           return {
             ...global.stockCache[cacheKey],
-            fromCache: true
+            fromCache: true,
+            data_source: 'local_cache',
+            data_source_message: '数据来自本地内存缓存（API调用失败）'
           };
         }
 
@@ -196,6 +206,8 @@ class StockService extends Service {
           pe: latestData[3],     // 市盈率
           pb: latestData[5],     // 市净率
           total_mv: latestData[12], // 总市值
+          data_source: 'external_api',
+          data_source_message: `数据来自Tushare API (${apiType})`
         };
       } else {
         // daily 接口返回的数据结构
@@ -210,6 +222,8 @@ class StockService extends Service {
           amount: latestData[10], // 成交额
           change: latestData[8], // 涨跌幅
           date: latestData[1],   // 日期
+          data_source: 'external_api',
+          data_source_message: `数据来自Tushare API (${apiType})`
         };
       }
 
@@ -234,7 +248,11 @@ class StockService extends Service {
           try {
             const parsedData = JSON.parse(cachedData);
             ctx.logger.info(`从 Redis 缓存获取股票 ${stockCode} 行情数据成功`);
-            return parsedData;
+            return {
+              ...parsedData,
+              data_source: 'redis_cache',
+              data_source_message: '数据来自Redis缓存'
+            };
           } catch (parseErr) {
             ctx.logger.warn(`解析 Redis 缓存数据失败:`, parseErr);
             // Redis 数据解析失败，继续尝试内存缓存
@@ -257,7 +275,11 @@ class StockService extends Service {
         const cacheData = this.getLocalCache(stockCode);
         if (cacheData) {
           ctx.logger.info(`从内存缓存获取股票 ${stockCode} 行情数据成功`);
-          return cacheData;
+          return {
+            ...cacheData,
+            data_source: 'local_cache',
+            data_source_message: '数据来自本地内存缓存'
+          };
         }
       } catch (memErr) {
         ctx.logger.warn(`内存缓存获取失败:`, memErr);
@@ -298,10 +320,16 @@ class StockService extends Service {
     const cacheKey = `stock:quote:${stockCode}`;
 
     try {
-      // 添加缓存时间
+      // 确定数据来源
+      const dataSource = quoteData.data_source || 'external_api';
+      const dataSourceMessage = quoteData.data_source_message || '数据来自外部API';
+
+      // 添加缓存时间和数据来源
       const dataToCache = {
         ...quoteData,
-        cacheTime: new Date().toISOString()
+        cacheTime: new Date().toISOString(),
+        data_source: dataSource,
+        data_source_message: dataSourceMessage
       };
 
       // 保存到 Redis 缓存
@@ -324,9 +352,16 @@ class StockService extends Service {
         if (!global.stockCache) {
           global.stockCache = {};
         }
+
+        // 确定数据来源
+        const dataSource = quoteData.data_source || 'external_api';
+        const dataSourceMessage = quoteData.data_source_message || '数据来自外部API';
+
         global.stockCache[stockCode] = {
           ...quoteData,
-          cacheTime: new Date().toISOString()
+          cacheTime: new Date().toISOString(),
+          data_source: dataSource,
+          data_source_message: dataSourceMessage
         };
         ctx.logger.info(`股票 ${stockCode} 行情数据已保存到内存缓存（Redis 失败）`);
       } catch (e) {
@@ -365,13 +400,26 @@ class StockService extends Service {
           change: item[8],
         }));
 
-        return historyData;
+        // 添加数据来源信息
+        return {
+          data: historyData,
+          data_source: 'external_api',
+          data_source_message: '数据来自Tushare API (daily)'
+        };
       }
 
-      return [];
+      return {
+        data: [],
+        data_source: 'external_api',
+        data_source_message: '数据来自Tushare API (daily)，但未获取到数据'
+      };
     }).catch(err => {
       ctx.logger.error('获取股票历史数据失败:', err);
-      return []; // 返回空数组而不是抛出错误
+      return {
+        data: [],
+        data_source: 'error',
+        data_source_message: `获取数据失败: ${err.message}`
+      };
     });
   }
 
@@ -392,13 +440,26 @@ class StockService extends Service {
       });
 
       if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
-        return response.data.data.items[0][2]; // 股票名称
+        const stockName = response.data.data.items[0][2]; // 股票名称
+        return {
+          name: stockName,
+          data_source: 'external_api',
+          data_source_message: '数据来自Tushare API (stock_basic)'
+        };
       }
 
-      return stockCode;
+      return {
+        name: stockCode,
+        data_source: 'external_api',
+        data_source_message: '数据来自Tushare API (stock_basic)，但未获取到数据'
+      };
     }).catch(err => {
       ctx.logger.error('获取股票名称失败:', err);
-      return stockCode; // 返回股票代码作为名称
+      return {
+        name: stockCode,
+        data_source: 'error',
+        data_source_message: `获取数据失败: ${err.message}`
+      };
     });
   }
 
@@ -487,7 +548,14 @@ class StockService extends Service {
         }));
 
         ctx.logger.info(`股票列表处理完成，共 ${stocks.length} 条数据`);
-        return stocks;
+
+        // 添加数据来源信息
+        return {
+          data: stocks,
+          count: stocks.length,
+          data_source: 'external_api',
+          data_source_message: '数据来自Tushare API (stock_basic)'
+        };
       } catch (error) {
         ctx.logger.error('获取股票列表过程中发生错误:', error);
 
@@ -502,7 +570,13 @@ class StockService extends Service {
       }
     }).catch(err => {
       ctx.logger.error('获取股票列表失败:', err);
-      return []; // 返回空数组而不是抛出错误
+      // 返回空数组而不是抛出错误，但添加数据来源信息
+      return {
+        data: [],
+        count: 0,
+        data_source: 'error',
+        data_source_message: `获取数据失败: ${err.message}`
+      };
     });
   }
 
@@ -513,13 +587,16 @@ class StockService extends Service {
       success: false,
       redisAvailable: false,
       testData: null,
-      error: null
+      error: null,
+      data_source: 'redis_cache',
+      data_source_message: 'Redis缓存测试'
     };
 
     try {
       // 检查 Redis 是否可用
       if (!app.redis) {
         result.error = 'Redis 客户端不可用';
+        result.data_source_message = 'Redis缓存不可用';
         return result;
       }
 
@@ -529,6 +606,7 @@ class StockService extends Service {
         result.redisAvailable = true;
       } catch (pingErr) {
         result.error = `Redis 连接测试失败: ${pingErr.message}`;
+        result.data_source_message = 'Redis缓存连接失败';
         return result;
       }
 
@@ -549,8 +627,10 @@ class StockService extends Service {
       if (storedData) {
         result.testData = JSON.parse(storedData);
         result.success = true;
+        result.data_source_message = 'Redis缓存测试成功';
       } else {
         result.error = '无法从 Redis 读取测试数据';
+        result.data_source_message = 'Redis缓存读取失败';
       }
 
       // 获取所有与股票相关的键
@@ -561,6 +641,7 @@ class StockService extends Service {
     } catch (err) {
       ctx.logger.error('Redis 测试失败:', err);
       result.error = err.message || '未知错误';
+      result.data_source_message = `Redis缓存测试失败: ${err.message}`;
       return result;
     }
   }
@@ -572,13 +653,16 @@ class StockService extends Service {
       success: false,
       stockCode,
       data: null,
-      error: null
+      error: null,
+      data_source: 'redis_cache',
+      data_source_message: '手动存储数据到Redis缓存'
     };
 
     try {
       // 检查 Redis 是否可用
       if (!app.redis) {
         result.error = 'Redis 客户端不可用';
+        result.data_source_message = 'Redis缓存不可用';
         return result;
       }
 
@@ -587,6 +671,7 @@ class StockService extends Service {
         await app.redis.ping();
       } catch (pingErr) {
         result.error = `Redis 连接测试失败: ${pingErr.message}`;
+        result.data_source_message = 'Redis缓存连接失败';
         return result;
       }
 
@@ -599,7 +684,9 @@ class StockService extends Service {
           const quoteKey = `stock:quote:${stockCode}`;
           const dataToCache = {
             ...quoteData,
-            cacheTime: new Date().toISOString()
+            cacheTime: new Date().toISOString(),
+            data_source: quoteData.data_source || 'external_api',
+            data_source_message: quoteData.data_source_message || '数据来自外部API'
           };
 
           await app.redis.set(quoteKey, JSON.stringify(dataToCache), 'EX', 3600); // 1小时过期
@@ -612,17 +699,21 @@ class StockService extends Service {
             this.getDateString(0)    // 今天
           );
 
-          if (historyData && historyData.length > 0) {
+          let historyCount = 0;
+          if (historyData && historyData.data && historyData.data.length > 0) {
             const historyKey = `stock:history:${stockCode}:${this.getDateString(-30)}:${this.getDateString(0)}`;
             await app.redis.set(historyKey, JSON.stringify(historyData), 'EX', 3600); // 1小时过期
             ctx.logger.info(`股票 ${stockCode} 历史数据已手动保存到 Redis 缓存`);
+            historyCount = historyData.data.length;
           }
 
           // 获取股票名称
-          const stockName = await this.getStockName(stockCode);
+          const stockNameResult = await this.getStockName(stockCode);
+          const stockName = stockNameResult && stockNameResult.name ? stockNameResult.name : stockCode;
+
           if (stockName) {
             const nameKey = `stock:name:${stockCode}`;
-            await app.redis.set(nameKey, stockName, 'EX', 86400); // 24小时过期
+            await app.redis.set(nameKey, JSON.stringify(stockNameResult), 'EX', 86400); // 24小时过期
             ctx.logger.info(`股票 ${stockCode} 名称已手动保存到 Redis 缓存`);
           }
 
@@ -632,15 +723,18 @@ class StockService extends Service {
           result.success = true;
           result.data = {
             quote: quoteData,
-            history: historyData ? historyData.length : 0,
+            history: historyCount,
             name: stockName,
             keys: stockKeys
           };
+          result.data_source_message = '数据已成功存储到Redis缓存';
         } else {
           result.error = `无法获取股票 ${stockCode} 的数据`;
+          result.data_source_message = '获取股票数据失败，无法存储到缓存';
         }
       } catch (dataErr) {
         result.error = `获取股票数据失败: ${dataErr.message}`;
+        result.data_source_message = `获取股票数据失败: ${dataErr.message}`;
         ctx.logger.error('获取股票数据失败:', dataErr);
       }
 
@@ -648,6 +742,7 @@ class StockService extends Service {
     } catch (err) {
       ctx.logger.error('存储股票数据到 Redis 失败:', err);
       result.error = err.message || '未知错误';
+      result.data_source_message = `存储数据到Redis缓存失败: ${err.message}`;
       return result;
     }
   }
@@ -661,13 +756,16 @@ class StockService extends Service {
       successCount: 0,
       failedCount: 0,
       processedStocks: [],
-      error: null
+      error: null,
+      data_source: 'redis_cache',
+      data_source_message: '批量存储数据到Redis缓存'
     };
 
     try {
       // 检查 Redis 是否可用
       if (!app.redis) {
         result.error = 'Redis 客户端不可用';
+        result.data_source_message = 'Redis缓存不可用';
         return result;
       }
 
@@ -676,6 +774,7 @@ class StockService extends Service {
         await app.redis.ping();
       } catch (pingErr) {
         result.error = `Redis 连接测试失败: ${pingErr.message}`;
+        result.data_source_message = 'Redis缓存连接失败';
         return result;
       }
 
@@ -703,6 +802,8 @@ class StockService extends Service {
               stockCode,
               success: stockResult.success,
               error: stockResult.error,
+              data_source: stockResult.data_source || 'redis_cache',
+              data_source_message: stockResult.data_source_message || '数据已存储到Redis缓存',
               data: stockResult.success ? {
                 name: stockResult.data.name,
                 historyCount: stockResult.data.history
@@ -714,6 +815,8 @@ class StockService extends Service {
               stockCode,
               success: false,
               error: err.message || '未知错误',
+              data_source: 'error',
+              data_source_message: `处理失败: ${err.message}`,
               data: null
             };
           }
@@ -744,11 +847,13 @@ class StockService extends Service {
       result.success = true;
       result.totalTime = totalTime;
       result.averageTimePerStock = totalTime / stockCodes.length;
+      result.data_source_message = `成功存储${result.successCount}/${result.totalStocks}只股票数据到Redis缓存`;
 
       return result;
     } catch (err) {
       ctx.logger.error('批量存储股票数据到 Redis 失败:', err);
       result.error = err.message || '未知错误';
+      result.data_source_message = `批量存储数据到Redis缓存失败: ${err.message}`;
       return result;
     }
   }

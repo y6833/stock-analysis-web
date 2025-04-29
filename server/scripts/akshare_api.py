@@ -9,6 +9,8 @@ import os
 import pandas as pd
 import time
 import random
+import threading
+import functools
 
 # 禁用进度条显示
 os.environ['TQDM_DISABLE'] = '1'
@@ -16,6 +18,34 @@ os.environ['TQDM_DISABLE'] = '1'
 # 设置标准输出编码为 UTF-8
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+# 跨平台的超时装饰器
+def timeout(seconds):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            result = [TimeoutError("操作超时")]
+
+            def target():
+                try:
+                    result[0] = func(*args, **kwargs)
+                except Exception as e:
+                    result[0] = e
+
+            thread = threading.Thread(target=target)
+            thread.daemon = True
+            thread.start()
+            thread.join(seconds)
+
+            if thread.is_alive():
+                raise TimeoutError("操作超时")
+
+            if isinstance(result[0], Exception):
+                raise result[0]
+
+            return result[0]
+        return wrapper
+    return decorator
 
 # 导入 akshare
 try:
@@ -27,6 +57,7 @@ except ImportError:
     }, ensure_ascii=False))
     sys.exit(1)
 
+@timeout(30)  # 设置30秒超时
 def test_connection():
     """测试与 AKShare 的连接"""
     try:
@@ -63,8 +94,20 @@ def test_connection():
         # 如果执行到这里，说明没有成功获取数据
         return {'success': False, 'message': 'AKShare API返回空数据'}
     except Exception as e:
-        return {'success': False, 'message': f"测试连接失败: {str(e)}", 'traceback': traceback.format_exc()}
+        error_message = str(e)
+        if isinstance(e, TimeoutError):
+            error_message = "测试连接超时，请稍后再试"
 
+        print(json.dumps({'status': 'error', 'message': error_message}, ensure_ascii=False), flush=True)
+        return {
+            'success': False,
+            'message': f"测试连接失败: {error_message}",
+            'traceback': traceback.format_exc(),
+            'data_source': 'error',
+            'data_source_message': f'连接测试失败: {error_message}'
+        }
+
+@timeout(30)  # 设置30秒超时
 def get_stock_list():
     """获取股票列表"""
     try:
@@ -191,43 +234,196 @@ def get_stock_list():
 
                 return {'success': True, 'data': mainStocks, 'message': '使用预定义股票列表，因为API调用失败'}
     except Exception as e:
-        return {'success': False, 'message': f"获取股票列表失败: {str(e)}", 'traceback': traceback.format_exc()}
+        error_message = str(e)
+        if isinstance(e, TimeoutError):
+            error_message = "获取股票列表超时，请稍后再试"
 
+        print(json.dumps({'status': 'error', 'message': error_message}, ensure_ascii=False), flush=True)
+        return {
+            'success': False,
+            'message': f"获取股票列表失败: {error_message}",
+            'traceback': traceback.format_exc(),
+            'data_source': 'error',
+            'data_source_message': f'获取数据失败: {error_message}'
+        }
+
+@timeout(30)  # 设置30秒超时
 def get_stock_quote(symbol):
     """获取股票实时行情"""
     try:
         # 转换股票代码格式
         code = format_symbol(symbol)
 
-        # 获取股票实时行情
-        stock_df = ak.stock_zh_a_spot_em()
-        stock_info = stock_df[stock_df['代码'] == code].to_dict('records')
+        # 尝试使用东方财富网的数据接口获取实时行情
+        try:
+            print(json.dumps({'status': 'progress', 'message': f'正在获取{symbol}的实时行情...'}, ensure_ascii=False), flush=True)
 
-        if stock_info:
-            result = {
-                'success': True,
-                'data': {
-                    'name': stock_info[0]['名称'],
-                    'price': float(stock_info[0]['最新价']),
-                    'open': float(stock_info[0]['开盘价']),
-                    'high': float(stock_info[0]['最高价']),
-                    'low': float(stock_info[0]['最低价']),
-                    'pre_close': float(stock_info[0]['昨收']),
-                    'volume': int(stock_info[0]['成交量']),
-                    'amount': float(stock_info[0]['成交额']),
-                    'change': float(stock_info[0]['涨跌额']),
-                    'pct_chg': float(stock_info[0]['涨跌幅']),
-                    'date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                    'time': datetime.datetime.now().strftime('%H:%M:%S')
+            # 获取股票实时行情
+            stock_df = ak.stock_zh_a_spot_em()
+            stock_info = stock_df[stock_df['代码'] == code].to_dict('records')
+
+            if stock_info:
+                result = {
+                    'success': True,
+                    'data': {
+                        'name': stock_info[0]['名称'],
+                        'price': float(stock_info[0]['最新价']),
+                        'open': float(stock_info[0]['开盘价']),
+                        'high': float(stock_info[0]['最高价']),
+                        'low': float(stock_info[0]['最低价']),
+                        'pre_close': float(stock_info[0]['昨收']),
+                        'volume': int(stock_info[0]['成交量']),
+                        'amount': float(stock_info[0]['成交额']),
+                        'change': float(stock_info[0]['涨跌额']),
+                        'pct_chg': float(stock_info[0]['涨跌幅']),
+                        'date': datetime.datetime.now().strftime('%Y-%m-%d'),
+                        'time': datetime.datetime.now().strftime('%H:%M:%S'),
+                        'data_source': 'external_api',
+                        'data_source_message': '数据来自AKShare API (东方财富)'
+                    }
                 }
-            }
-        else:
-            result = {'success': False, 'message': '未找到股票数据'}
+                return result
+            else:
+                raise Exception('未找到股票数据')
+        except Exception as e1:
+            print(json.dumps({'status': 'progress', 'message': f'使用东方财富接口获取实时行情失败，尝试其他接口: {str(e1)}'}, ensure_ascii=False), flush=True)
+
+            # 尝试使用新浪财经的数据接口
+            try:
+                # 转换为新浪代码格式
+                if code.endswith('.SH'):
+                    sina_code = 'sh' + code[:-3]
+                elif code.endswith('.SZ'):
+                    sina_code = 'sz' + code[:-3]
+                else:
+                    sina_code = code
+
+                # 获取股票实时行情
+                stock_df = ak.stock_zh_a_daily(symbol=sina_code, adjust="")
+
+                if not stock_df.empty:
+                    # 获取最新一天的数据
+                    latest_data = stock_df.iloc[0]
+
+                    result = {
+                        'success': True,
+                        'data': {
+                            'name': symbol,  # 新浪接口不返回股票名称，使用代码代替
+                            'price': float(latest_data['close']),
+                            'open': float(latest_data['open']),
+                            'high': float(latest_data['high']),
+                            'low': float(latest_data['low']),
+                            'pre_close': float(latest_data['close']) / (1 + float(latest_data['pct_chg'])/100) if 'pct_chg' in latest_data else 0,
+                            'volume': int(latest_data['volume']),
+                            'amount': float(latest_data['amount']) if 'amount' in latest_data else 0,
+                            'change': float(latest_data['close']) - (float(latest_data['close']) / (1 + float(latest_data['pct_chg'])/100)) if 'pct_chg' in latest_data else 0,
+                            'pct_chg': float(latest_data['pct_chg']) if 'pct_chg' in latest_data else 0,
+                            'date': latest_data['date'] if 'date' in latest_data else datetime.datetime.now().strftime('%Y-%m-%d'),
+                            'time': datetime.datetime.now().strftime('%H:%M:%S'),
+                            'data_source': 'external_api',
+                            'data_source_message': '数据来自AKShare API (新浪财经)'
+                        }
+                    }
+                    return result
+                else:
+                    raise Exception('未找到股票数据')
+            except Exception as e2:
+                print(json.dumps({'status': 'progress', 'message': f'使用新浪接口获取实时行情失败，使用模拟数据: {str(e2)}'}, ensure_ascii=False), flush=True)
+
+                # 生成模拟数据
+                # 获取基础价格
+                basePrice = 0
+                stockName = ''
+
+                # 根据股票代码设置基础价格和名称
+                if symbol == '000001.SH':
+                    basePrice = 3000
+                    stockName = '上证指数'
+                elif symbol == '399001.SZ':
+                    basePrice = 10000
+                    stockName = '深证成指'
+                elif symbol == '600519.SH':
+                    basePrice = 1800
+                    stockName = '贵州茅台'
+                elif symbol == '601318.SH':
+                    basePrice = 60
+                    stockName = '中国平安'
+                elif symbol == '600036.SH':
+                    basePrice = 40
+                    stockName = '招商银行'
+                elif symbol == '000858.SZ':
+                    basePrice = 150
+                    stockName = '五粮液'
+                elif symbol == '000333.SZ':
+                    basePrice = 80
+                    stockName = '美的集团'
+                elif symbol == '601166.SH':
+                    basePrice = 20
+                    stockName = '兴业银行'
+                elif symbol == '002415.SZ':
+                    basePrice = 35
+                    stockName = '海康威视'
+                elif symbol == '600276.SH':
+                    basePrice = 50
+                    stockName = '恒瑞医药'
+                else:
+                    basePrice = 100
+                    stockName = symbol
+
+                # 生成当前价格（基于随机波动）
+                price = basePrice * (1 + (random.random() * 0.1 - 0.05))  # -5% 到 +5% 的随机波动
+                preClose = basePrice * (1 + (random.random() * 0.05 - 0.025))  # 昨收价
+                open_price = preClose * (1 + (random.random() * 0.03 - 0.015))  # 开盘价
+                high = max(price, open_price) * (1 + random.random() * 0.02)  # 最高价
+                low = min(price, open_price) * (1 - random.random() * 0.02)  # 最低价
+                volume = int(random.random() * 10000000) + 1000000  # 成交量
+                amount = price * volume  # 成交额
+
+                # 计算涨跌幅
+                change = price - preClose
+                pctChg = (change / preClose) * 100
+
+                result = {
+                    'success': True,
+                    'data': {
+                        'name': stockName,
+                        'price': round(price, 2),
+                        'open': round(open_price, 2),
+                        'high': round(high, 2),
+                        'low': round(low, 2),
+                        'pre_close': round(preClose, 2),
+                        'volume': volume,
+                        'amount': round(amount, 2),
+                        'change': round(change, 2),
+                        'pct_chg': round(pctChg, 2),
+                        'date': datetime.datetime.now().strftime('%Y-%m-%d'),
+                        'time': datetime.datetime.now().strftime('%H:%M:%S'),
+                        'data_source': 'mock_data',
+                        'data_source_message': '模拟数据（API调用失败）'
+                    },
+                    'message': '使用模拟数据，原因: API调用失败'
+                }
+                return result
     except Exception as e:
-        result = {'success': False, 'message': str(e), 'traceback': traceback.format_exc()}
+        # 捕获所有异常，包括超时异常
+        error_message = str(e)
+        if isinstance(e, TimeoutError):
+            error_message = "获取股票行情超时，请稍后再试"
 
-    return result
+        print(json.dumps({'status': 'error', 'message': error_message}, ensure_ascii=False), flush=True)
 
+        # 返回模拟数据，但标记为失败
+        result = {
+            'success': False,
+            'message': error_message,
+            'traceback': traceback.format_exc(),
+            'data_source': 'error',
+            'data_source_message': f'获取数据失败: {error_message}'
+        }
+
+        return result
+
+@timeout(30)  # 设置30秒超时
 def get_stock_history(symbol, period='daily', count=180):
     """获取股票历史数据"""
     try:
@@ -400,8 +596,20 @@ def get_stock_history(symbol, period='daily', count=180):
 
                 return {'success': True, 'data': history_data, 'message': '使用模拟数据，因为API调用失败'}
     except Exception as e:
-        return {'success': False, 'message': str(e), 'traceback': traceback.format_exc()}
+        error_message = str(e)
+        if isinstance(e, TimeoutError):
+            error_message = "获取股票历史数据超时，请稍后再试"
 
+        print(json.dumps({'status': 'error', 'message': error_message}, ensure_ascii=False), flush=True)
+        return {
+            'success': False,
+            'message': error_message,
+            'traceback': traceback.format_exc(),
+            'data_source': 'error',
+            'data_source_message': f'获取数据失败: {error_message}'
+        }
+
+@timeout(30)  # 设置30秒超时
 def search_stocks(keyword):
     """搜索股票"""
     try:
@@ -525,8 +733,20 @@ def search_stocks(keyword):
 
                 return {'success': True, 'data': filtered_stocks, 'message': '使用预定义股票列表搜索，因为API调用失败'}
     except Exception as e:
-        return {'success': False, 'message': str(e), 'traceback': traceback.format_exc()}
+        error_message = str(e)
+        if isinstance(e, TimeoutError):
+            error_message = "搜索股票超时，请稍后再试"
 
+        print(json.dumps({'status': 'error', 'message': error_message}, ensure_ascii=False), flush=True)
+        return {
+            'success': False,
+            'message': error_message,
+            'traceback': traceback.format_exc(),
+            'data_source': 'error',
+            'data_source_message': f'获取数据失败: {error_message}'
+        }
+
+@timeout(30)  # 设置30秒超时
 def get_financial_news(count=5):
     """获取财经新闻"""
     try:
@@ -668,7 +888,18 @@ def get_financial_news(count=5):
                 # 返回指定数量的新闻
                 return {'success': True, 'data': mockNews[:int(count)], 'message': '使用模拟数据，因为API调用失败'}
     except Exception as e:
-        return {'success': False, 'message': str(e), 'traceback': traceback.format_exc()}
+        error_message = str(e)
+        if isinstance(e, TimeoutError):
+            error_message = "获取财经新闻超时，请稍后再试"
+
+        print(json.dumps({'status': 'error', 'message': error_message}, ensure_ascii=False), flush=True)
+        return {
+            'success': False,
+            'message': error_message,
+            'traceback': traceback.format_exc(),
+            'data_source': 'error',
+            'data_source_message': f'获取数据失败: {error_message}'
+        }
 
 def format_symbol(symbol):
     """格式化股票代码"""
