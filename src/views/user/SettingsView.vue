@@ -417,6 +417,12 @@ const updatePassword = async () => {
             <p class="section-description">管理和监控数据缓存，优化应用性能，提高数据访问速度。</p>
             <router-link to="/settings/cache" class="btn btn-outline"> 缓存管理 </router-link>
           </div>
+
+          <div class="security-section" v-if="userStore.userRole === 'admin'">
+            <h3 class="section-title">管理员后台</h3>
+            <p class="section-description">访问管理员后台，管理用户、会员和系统数据。</p>
+            <router-link to="/admin" class="btn btn-outline"> 管理员后台 </router-link>
+          </div>
         </div>
 
         <!-- 通知设置 -->

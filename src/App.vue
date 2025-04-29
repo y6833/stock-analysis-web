@@ -185,6 +185,10 @@ onUnmounted(() => {
           </div>
 
           <!-- 其他链接 -->
+          <RouterLink v-if="userStore.userRole === 'admin'" to="/admin" class="nav-link">
+            <span class="nav-icon">👑</span>
+            <span class="nav-text">管理后台</span>
+          </RouterLink>
           <RouterLink v-if="userStore.userRole === 'admin'" to="/tushare-test" class="nav-link">
             <span class="nav-icon">📊</span>
             <span class="nav-text">API测试</span>

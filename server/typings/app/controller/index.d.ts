@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 import 'egg';
+import ExportAdmin = require('../../../app/controller/admin');
 import ExportAkshare = require('../../../app/controller/akshare');
 import ExportAlert = require('../../../app/controller/alert');
 import ExportCache = require('../../../app/controller/cache');
@@ -25,6 +26,7 @@ import ExportWatchlist = require('../../../app/controller/watchlist');
 
 declare module 'egg' {
   interface IController {
+    admin: ExportAdmin;
     akshare: ExportAkshare;
     alert: ExportAlert;
     cache: ExportCache;

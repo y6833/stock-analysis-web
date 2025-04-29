@@ -144,4 +144,11 @@ module.exports = app => {
   router.get('/api/membership/levels', controller.membership.getMembershipLevels);
   router.get('/api/membership/check-access', auth, controller.membership.checkFeatureAccess);
   router.post('/api/membership/update', auth, controller.membership.updateMembership);
+
+  // 管理员相关路由（需要管理员权限）
+  router.get('/api/admin/users', auth, controller.admin.getAllUsers);
+  router.get('/api/admin/users/:userId', auth, controller.admin.getUserDetail);
+  router.put('/api/admin/users/:userId', auth, controller.admin.updateUser);
+  router.patch('/api/admin/users/:userId/status', auth, controller.admin.updateUserStatus);
+  router.get('/api/admin/stats', auth, controller.admin.getSystemStats);
 };

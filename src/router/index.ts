@@ -175,6 +175,14 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
 
+    // 管理员路由
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/admin/AdminView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+
     // 404 路由
     {
       path: '/:pathMatch(.*)*',

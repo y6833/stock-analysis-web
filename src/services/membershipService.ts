@@ -30,13 +30,16 @@ export const membershipService = {
    */
   async getUserMembership(): Promise<UserMembership> {
     try {
-      const response = await axios.get('/api/membership')
+      // 导入授权头工具函数
+      const { getAuthHeaders } = await import('@/utils/auth')
+
+      const response = await axios.get('/api/membership', getAuthHeaders())
       return response.data.data
     } catch (error: any) {
       console.error('获取用户会员信息失败:', error)
       const { showToast } = useToast()
       showToast(`获取会员信息失败: ${error.response?.data?.message || error.message}`, 'error')
-      
+
       // 返回默认的免费会员信息
       return {
         level: 'free',
@@ -50,16 +53,16 @@ export const membershipService = {
           '基础技术指标',
           '有限的历史数据',
           '每日刷新次数限制',
-          '单一数据源'
+          '单一数据源',
         ],
         dataRefreshInterval: 60 * 60 * 1000, // 1小时
         maxWatchlistItems: 10,
         maxAlerts: 5,
-        dataSourceLimit: 1
+        dataSourceLimit: 1,
       }
     }
   },
-  
+
   /**
    * 获取会员等级列表
    * @returns 会员等级列表
@@ -75,7 +78,7 @@ export const membershipService = {
       return []
     }
   },
-  
+
   /**
    * 检查功能访问权限
    * @param feature 功能名称
@@ -83,7 +86,13 @@ export const membershipService = {
    */
   async checkFeatureAccess(feature: string): Promise<boolean> {
     try {
-      const response = await axios.get(`/api/membership/check-access?feature=${feature}`)
+      // 导入授权头工具函数
+      const { getAuthHeaders } = await import('@/utils/auth')
+
+      const response = await axios.get(
+        `/api/membership/check-access?feature=${feature}`,
+        getAuthHeaders()
+      )
       return response.data.hasAccess
     } catch (error: any) {
       console.error(`检查功能 ${feature} 访问权限失败:`, error)
@@ -91,7 +100,7 @@ export const membershipService = {
       return false
     }
   },
-  
+
   /**
    * 获取会员等级名称
    * @param level 会员等级代码
@@ -102,12 +111,12 @@ export const membershipService = {
       free: '免费用户',
       basic: '基础会员',
       premium: '高级会员',
-      enterprise: '企业版'
+      enterprise: '企业版',
     }
-    
+
     return levelNames[level] || '未知等级'
   },
-  
+
   /**
    * 格式化过期时间
    * @param expiresAt 过期时间字符串
@@ -115,14 +124,39 @@ export const membershipService = {
    */
   formatExpiryDate(expiresAt: string | null): string {
     if (!expiresAt) return '永久有效'
-    
+
     const date = new Date(expiresAt)
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     })
-  }
+  },
+
+  /**
+   * 更新用户会员等级（仅管理员）
+   * @param data 更新数据
+   * @returns 更新结果
+   */
+  async updateMembership(data: {
+    userId: number | string
+    level: string
+    expiresAt: string | null
+  }): Promise<any> {
+    try {
+      // 导入授权头工具函数
+      const { getAuthHeaders } = await import('@/utils/auth')
+
+      // 发送请求时添加授权头
+      const response = await axios.post('/api/membership/update', data, getAuthHeaders())
+      return response.data
+    } catch (error: any) {
+      console.error('更新会员信息失败:', error)
+      const { showToast } = useToast()
+      showToast(`更新会员信息失败: ${error.response?.data?.message || error.message}`, 'error')
+      throw error
+    }
+  },
 }
 
 export default membershipService
