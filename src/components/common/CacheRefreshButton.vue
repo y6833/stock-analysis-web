@@ -1,5 +1,9 @@
 <template>
-  <div class="cache-refresh-button">
+  <div
+    class="cache-refresh-button"
+    @mouseenter="showTooltip = true"
+    @mouseleave="showTooltip = false"
+  >
     <button
       class="refresh-btn"
       :class="{ loading: isLoading, disabled: isLoading || !canRefresh }"
@@ -12,9 +16,12 @@
       <span class="btn-text" v-if="showText">{{ buttonText }}</span>
     </button>
 
-    <div v-if="showStatus && status" class="status-tooltip">
+    <div v-if="showStatus && status && showTooltip" class="status-tooltip">
       <div class="tooltip-content">
-        <div class="tooltip-header">缓存刷新状态</div>
+        <div class="tooltip-header">
+          <span>缓存刷新状态</span>
+          <button class="close-btn" @click.stop="showTooltip = false" title="关闭">×</button>
+        </div>
         <div class="tooltip-body">
           <div class="status-item">
             <span class="label">数据源:</span>
@@ -81,6 +88,7 @@ const canRefresh = ref(true)
 const timeRemaining = ref('')
 const refreshTimer = ref<number | null>(null)
 const checkTimer = ref<number | null>(null)
+const showTooltip = ref(false)
 
 // 计算属性
 const buttonText = computed(() => {
@@ -297,10 +305,10 @@ onUnmounted(() => {
 
 .status-tooltip {
   position: absolute;
-  bottom: 100%;
-  right: 0;
-  margin-bottom: 8px;
-  z-index: 100;
+  top: 100%; /* 改为显示在按钮下方 */
+  left: 0;
+  margin-top: 8px; /* 与按钮的间距 */
+  z-index: 9999; /* 增加 z-index 确保在最上层 */
 }
 
 .tooltip-content {
@@ -318,6 +326,31 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--border-color);
   font-weight: 600;
   color: var(--text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--error-color);
 }
 
 .tooltip-body {
