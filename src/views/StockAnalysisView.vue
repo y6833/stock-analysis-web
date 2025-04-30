@@ -202,92 +202,114 @@ const searchStocks = async () => {
 // 显示用户关注的股票
 const showWatchlistStocks = async () => {
   try {
-    // 获取仪表盘设置
-    const settings = dashboardService.getDashboardSettings()
+    isLoading.value = true
 
-    // 获取活动的关注列表
-    const watchlist = settings.watchlists.find(
-      (w: Watchlist) => w.id === settings.activeWatchlistId
-    )
+    // 导入关注列表服务
+    const { getUserWatchlists, getWatchlistItems } = await import('@/services/watchlistService')
 
-    if (!watchlist || watchlist.items.length === 0) {
+    // 获取用户的所有关注分组
+    const watchlists = await getUserWatchlists()
+
+    if (!watchlists || watchlists.length === 0) {
+      showToast('您还没有创建关注列表，请先创建关注列表', 'info')
+      isLoading.value = false
+      return
+    }
+
+    // 获取第一个关注分组的股票
+    const watchlistItems = await getWatchlistItems(watchlists[0].id)
+
+    if (!watchlistItems || watchlistItems.length === 0) {
       showToast('您的关注列表为空，请先添加股票到关注列表', 'info')
+      isLoading.value = false
       return
     }
 
     // 显示关注列表中的股票
-    searchResults.value = watchlist.items.map((item: WatchlistItem) => ({
-      symbol: item.symbol,
-      name: item.name,
-      market: item.symbol.endsWith('.SH') ? '上海' : item.symbol.endsWith('.SZ') ? '深圳' : '未知',
+    searchResults.value = watchlistItems.map((item) => ({
+      symbol: item.stockCode,
+      name: item.stockName,
+      market: item.stockCode.endsWith('.SH')
+        ? '上海'
+        : item.stockCode.endsWith('.SZ')
+        ? '深圳'
+        : '未知',
       industry: '关注列表',
+      notes: item.notes,
     }))
 
     // 显示搜索结果
     showSearchResults.value = true
 
     showToast(`已显示您关注的 ${searchResults.value.length} 只股票`, 'success')
+    console.log('从数据库获取的关注列表数据:', searchResults.value)
   } catch (error) {
     console.error('获取关注列表失败:', error)
     showToast('获取关注列表失败', 'error')
+  } finally {
+    isLoading.value = false
   }
 }
 
 // 显示用户持仓的股票
 const showPortfolioStocks = async () => {
   try {
-    // 获取用户持仓
-    // 注意：这里需要实现获取用户持仓的逻辑，目前使用模拟数据
-    const portfolioStocks = [
-      {
-        symbol: '600519.SH',
-        name: '贵州茅台',
-        market: '上海',
-        industry: '白酒',
-        shares: 100,
-        cost: 1800,
-      },
-      {
-        symbol: '000858.SZ',
-        name: '五粮液',
-        market: '深圳',
-        industry: '白酒',
-        shares: 200,
-        cost: 150,
-      },
-      {
-        symbol: '601318.SH',
-        name: '中国平安',
-        market: '上海',
-        industry: '保险',
-        shares: 500,
-        cost: 60,
-      },
-      {
-        symbol: '600036.SH',
-        name: '招商银行',
-        market: '上海',
-        industry: '银行',
-        shares: 1000,
-        cost: 40,
-      },
-    ]
+    isLoading.value = true
 
-    if (portfolioStocks.length === 0) {
+    // 导入投资组合服务
+    const { usePortfolioStore } = await import('@/stores/portfolioStore')
+    const portfolioStore = usePortfolioStore()
+
+    // 获取用户的所有投资组合
+    await portfolioStore.fetchPortfolios()
+
+    if (!portfolioStore.portfolios || portfolioStore.portfolios.length === 0) {
+      showToast('您还没有创建投资组合，请先创建投资组合', 'info')
+      isLoading.value = false
+      return
+    }
+
+    // 获取当前投资组合的持仓
+    if (!portfolioStore.currentPortfolioId) {
+      // 如果没有当前选中的投资组合，选择第一个
+      await portfolioStore.switchPortfolio(portfolioStore.portfolios[0].id)
+    }
+
+    // 获取持仓数据
+    await portfolioStore.fetchHoldings(portfolioStore.currentPortfolioId as number)
+
+    if (!portfolioStore.holdings || portfolioStore.holdings.length === 0) {
       showToast('您的持仓为空，请先添加股票到持仓', 'info')
+      isLoading.value = false
       return
     }
 
     // 显示持仓中的股票
-    searchResults.value = portfolioStocks
+    searchResults.value = portfolioStore.holdings.map((holding) => ({
+      symbol: holding.stockCode,
+      name: holding.stockName,
+      market: holding.stockCode.endsWith('.SH')
+        ? '上海'
+        : holding.stockCode.endsWith('.SZ')
+        ? '深圳'
+        : '未知',
+      industry: '持仓',
+      shares: holding.quantity,
+      cost: holding.averageCost,
+      currentPrice: holding.currentPrice,
+      notes: holding.notes,
+    }))
 
     // 显示搜索结果
     showSearchResults.value = true
 
     showToast(`已显示您持仓的 ${searchResults.value.length} 只股票`, 'success')
+    console.log('从数据库获取的持仓数据:', searchResults.value)
   } catch (error) {
     console.error('获取持仓失败:', error)
     showToast('获取持仓失败', 'error')
+  } finally {
+    isLoading.value = false
   }
 }
 

@@ -24,13 +24,99 @@ const DASHBOARD_SETTINGS_KEY = 'dashboard_settings'
  * 获取仪表盘设置
  * @returns 仪表盘设置
  */
-export function getDashboardSettings(): DashboardSettings {
+export async function getDashboardSettings(): Promise<DashboardSettings> {
   try {
+    // 从localStorage获取基本设置
     const settingsJson = localStorage.getItem(DASHBOARD_SETTINGS_KEY)
+    let settings: DashboardSettings
+
     if (settingsJson) {
-      return JSON.parse(settingsJson)
+      settings = JSON.parse(settingsJson)
+    } else {
+      settings = createDefaultDashboardSettings()
     }
-    return createDefaultDashboardSettings()
+
+    try {
+      // 从后端API获取真实的关注列表数据
+      const { getUserWatchlists } = await import('@/services/watchlistService')
+      const watchlists = await getUserWatchlists()
+
+      if (watchlists && watchlists.length > 0) {
+        // 转换后端API返回的关注列表格式为前端格式
+        const convertedWatchlists: Watchlist[] = await Promise.all(
+          watchlists.map(async (watchlist) => {
+            // 获取该关注列表中的股票
+            const { getWatchlistItems } = await import('@/services/watchlistService')
+            const items = await getWatchlistItems(watchlist.id)
+
+            // 转换为前端格式的WatchlistItem
+            const convertedItems: WatchlistItem[] = await Promise.all(
+              (items || []).map(async (item) => {
+                // 获取股票最新行情
+                const { stockService } = await import('@/services/stockService')
+                let price = 0
+                let change = 0
+                let changePercent = 0
+                let volume = 0
+                let turnover = 0
+
+                try {
+                  const quote = await stockService.getStockQuote(item.stockCode)
+                  if (quote) {
+                    price = quote.price || 0
+                    const prevPrice = quote.pre_close || price
+                    change = price - prevPrice
+                    changePercent = prevPrice ? (change / prevPrice) * 100 : 0
+                    volume = quote.vol || 0
+                    turnover = quote.amount || 0
+                  }
+                } catch (error) {
+                  console.error(`获取股票 ${item.stockCode} 行情失败:`, error)
+                }
+
+                return {
+                  symbol: item.stockCode,
+                  name: item.stockName,
+                  price,
+                  change,
+                  changePercent,
+                  volume,
+                  turnover,
+                  notes: item.notes,
+                  addedAt: item.createdAt,
+                  tags: [],
+                }
+              })
+            )
+
+            return {
+              id: watchlist.id.toString(),
+              name: watchlist.name,
+              items: convertedItems,
+              sortBy: 'addedAt',
+              sortDirection: 'desc',
+              columns: ['symbol', 'name', 'price', 'change', 'changePercent'],
+            }
+          })
+        )
+
+        // 更新设置中的关注列表
+        if (convertedWatchlists.length > 0) {
+          settings.watchlists = convertedWatchlists
+          settings.activeWatchlistId = convertedWatchlists[0].id
+
+          // 保存更新后的设置到localStorage
+          saveDashboardSettings(settings)
+
+          console.log('已从数据库加载关注列表数据', convertedWatchlists)
+        }
+      }
+    } catch (apiError) {
+      console.error('从API获取关注列表失败，使用本地数据:', apiError)
+      // 如果API调用失败，继续使用localStorage中的数据
+    }
+
+    return settings
   } catch (error) {
     console.error('获取仪表盘设置失败:', error)
     return createDefaultDashboardSettings()
@@ -264,33 +350,68 @@ export function createNewWidget(
  * @param watchlistId 关注列表ID
  * @param stock 股票信息
  */
-export function addStockToWatchlist(
+export async function addStockToWatchlist(
   watchlistId: string,
   stock: { symbol: string; name: string }
-): void {
-  const settings = getDashboardSettings()
-  const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+): Promise<boolean> {
+  try {
+    // 从字符串ID转换为数字ID
+    const numericWatchlistId = parseInt(watchlistId)
 
-  if (watchlist) {
-    // 检查是否已存在
-    const exists = watchlist.items.some((item) => item.symbol === stock.symbol)
-
-    if (!exists) {
-      // 创建新的关注项
-      const newItem: WatchlistItem = {
-        symbol: stock.symbol,
-        name: stock.name,
-        price: 0,
-        change: 0,
-        changePercent: 0,
-        volume: 0,
-        turnover: 0,
-        addedAt: new Date().toISOString(),
-      }
-
-      watchlist.items.push(newItem)
-      saveDashboardSettings(settings)
+    if (isNaN(numericWatchlistId)) {
+      console.error('无效的关注列表ID:', watchlistId)
+      return false
     }
+
+    // 从股票代码中提取实际的代码（去掉可能的后缀）
+    const stockCode = stock.symbol
+
+    // 调用后端API添加股票到关注列表
+    const { addStockToWatchlist: apiAddStock } = await import('@/services/watchlistService')
+    await apiAddStock(numericWatchlistId, {
+      stockCode,
+      stockName: stock.name,
+    })
+
+    // 刷新仪表盘设置以获取最新数据
+    await getDashboardSettings()
+
+    return true
+  } catch (error) {
+    console.error('添加股票到关注列表失败:', error)
+
+    // 如果API调用失败，尝试使用本地存储作为备份
+    try {
+      const settings = await getDashboardSettings()
+      const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+
+      if (watchlist) {
+        // 检查是否已存在
+        const exists = watchlist.items.some((item) => item.symbol === stock.symbol)
+
+        if (!exists) {
+          // 创建新的关注项
+          const newItem: WatchlistItem = {
+            symbol: stock.symbol,
+            name: stock.name,
+            price: 0,
+            change: 0,
+            changePercent: 0,
+            volume: 0,
+            turnover: 0,
+            addedAt: new Date().toISOString(),
+          }
+
+          watchlist.items.push(newItem)
+          saveDashboardSettings(settings)
+          return true
+        }
+      }
+    } catch (backupError) {
+      console.error('本地备份添加股票失败:', backupError)
+    }
+
+    return false
   }
 }
 
@@ -299,13 +420,63 @@ export function addStockToWatchlist(
  * @param watchlistId 关注列表ID
  * @param symbol 股票代码
  */
-export function removeStockFromWatchlist(watchlistId: string, symbol: string): void {
-  const settings = getDashboardSettings()
-  const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+export async function removeStockFromWatchlist(
+  watchlistId: string,
+  symbol: string
+): Promise<boolean> {
+  try {
+    // 从字符串ID转换为数字ID
+    const numericWatchlistId = parseInt(watchlistId)
 
-  if (watchlist) {
-    watchlist.items = watchlist.items.filter((item) => item.symbol !== symbol)
-    saveDashboardSettings(settings)
+    if (isNaN(numericWatchlistId)) {
+      console.error('无效的关注列表ID:', watchlistId)
+      return false
+    }
+
+    // 获取关注列表中的股票
+    const { getWatchlistItems, removeStockFromWatchlist: apiRemoveStock } = await import(
+      '@/services/watchlistService'
+    )
+    const items = await getWatchlistItems(numericWatchlistId)
+
+    // 查找要删除的股票项
+    const itemToRemove = items.find((item) => item.stockCode === symbol)
+
+    if (itemToRemove) {
+      // 调用后端API从关注列表中删除股票
+      await apiRemoveStock(numericWatchlistId, itemToRemove.id)
+
+      // 刷新仪表盘设置以获取最新数据
+      await getDashboardSettings()
+
+      return true
+    } else {
+      console.warn(`未找到要删除的股票: ${symbol}`)
+      return false
+    }
+  } catch (error) {
+    console.error('从关注列表中移除股票失败:', error)
+
+    // 如果API调用失败，尝试使用本地存储作为备份
+    try {
+      const settings = await getDashboardSettings()
+      const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
+
+      if (watchlist) {
+        // 移除股票
+        const originalLength = watchlist.items.length
+        watchlist.items = watchlist.items.filter((item) => item.symbol !== symbol)
+
+        if (originalLength !== watchlist.items.length) {
+          saveDashboardSettings(settings)
+          return true
+        }
+      }
+    } catch (backupError) {
+      console.error('本地备份移除股票失败:', backupError)
+    }
+
+    return false
   }
 }
 

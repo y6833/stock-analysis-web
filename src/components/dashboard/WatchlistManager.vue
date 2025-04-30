@@ -31,7 +31,7 @@ const isSearching = ref(false)
 
 // 当前选中的关注列表
 const activeWatchlist = computed(() => {
-  return localWatchlists.value.find(w => w.id === localActiveWatchlistId.value) || null
+  return localWatchlists.value.find((w) => w.id === localActiveWatchlistId.value) || null
 })
 
 // 初始化
@@ -42,34 +42,83 @@ onMounted(() => {
 })
 
 // 创建新的关注列表
-const createWatchlist = () => {
+const createWatchlist = async () => {
   if (!newWatchlistName.value.trim()) return
 
-  const newWatchlist: Watchlist = {
-    id: uuidv4(),
-    name: newWatchlistName.value.trim(),
-    items: [],
-    sortBy: 'addedAt',
-    sortDirection: 'desc',
-    columns: ['symbol', 'name', 'price', 'change', 'changePercent']
-  }
+  try {
+    // 导入watchlistService
+    const { createWatchlist: apiCreateWatchlist } = await import('@/services/watchlistService')
 
-  localWatchlists.value.push(newWatchlist)
-  localActiveWatchlistId.value = newWatchlist.id
-  newWatchlistName.value = ''
-  isCreatingWatchlist.value = false
+    // 调用API创建关注列表
+    const newWatchlist = await apiCreateWatchlist({
+      name: newWatchlistName.value.trim(),
+      description: '通过关注列表管理器创建',
+    })
+
+    // 转换为前端格式
+    const convertedWatchlist: Watchlist = {
+      id: newWatchlist.id.toString(),
+      name: newWatchlist.name,
+      items: [],
+      sortBy: 'addedAt',
+      sortDirection: 'desc',
+      columns: ['symbol', 'name', 'price', 'change', 'changePercent'],
+    }
+
+    // 添加到本地列表
+    localWatchlists.value.push(convertedWatchlist)
+    localActiveWatchlistId.value = convertedWatchlist.id
+    newWatchlistName.value = ''
+    isCreatingWatchlist.value = false
+  } catch (error) {
+    console.error('创建关注列表失败:', error)
+
+    // 如果API调用失败，使用本地创建作为备份
+    const newWatchlist: Watchlist = {
+      id: uuidv4(),
+      name: newWatchlistName.value.trim(),
+      items: [],
+      sortBy: 'addedAt',
+      sortDirection: 'desc',
+      columns: ['symbol', 'name', 'price', 'change', 'changePercent'],
+    }
+
+    localWatchlists.value.push(newWatchlist)
+    localActiveWatchlistId.value = newWatchlist.id
+    newWatchlistName.value = ''
+    isCreatingWatchlist.value = false
+  }
 }
 
 // 删除关注列表
-const deleteWatchlist = (watchlistId: string) => {
+const deleteWatchlist = async (watchlistId: string) => {
   // 不允许删除最后一个关注列表
   if (localWatchlists.value.length <= 1) return
 
-  localWatchlists.value = localWatchlists.value.filter(w => w.id !== watchlistId)
+  try {
+    // 导入watchlistService
+    const { deleteWatchlist: apiDeleteWatchlist } = await import('@/services/watchlistService')
 
-  // 如果删除的是当前选中的关注列表，则选中第一个关注列表
-  if (localActiveWatchlistId.value === watchlistId) {
-    localActiveWatchlistId.value = localWatchlists.value[0].id
+    // 调用API删除关注列表
+    await apiDeleteWatchlist(parseInt(watchlistId))
+
+    // 从本地列表中移除
+    localWatchlists.value = localWatchlists.value.filter((w) => w.id !== watchlistId)
+
+    // 如果删除的是当前选中的关注列表，则选中第一个关注列表
+    if (localActiveWatchlistId.value === watchlistId) {
+      localActiveWatchlistId.value = localWatchlists.value[0].id
+    }
+  } catch (error) {
+    console.error('删除关注列表失败:', error)
+
+    // 如果API调用失败，仍然从本地列表中移除
+    localWatchlists.value = localWatchlists.value.filter((w) => w.id !== watchlistId)
+
+    // 如果删除的是当前选中的关注列表，则选中第一个关注列表
+    if (localActiveWatchlistId.value === watchlistId) {
+      localActiveWatchlistId.value = localWatchlists.value[0].id
+    }
   }
 }
 
@@ -84,10 +133,13 @@ const searchStocks = async () => {
 
   try {
     const stocks = await stockService.getStocks()
-    searchResults.value = stocks.filter((stock: Stock) =>
-      stock.symbol.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      stock.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    ).slice(0, 10) // 限制结果数量
+    searchResults.value = stocks
+      .filter(
+        (stock: Stock) =>
+          stock.symbol.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+          stock.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+      )
+      .slice(0, 10) // 限制结果数量
   } catch (error) {
     console.error('搜索股票失败:', error)
     searchResults.value = []
@@ -97,13 +149,32 @@ const searchStocks = async () => {
 }
 
 // 添加股票到关注列表
-const addStockToWatchlist = (stock: Stock) => {
+const addStockToWatchlist = async (stock: Stock) => {
   if (!activeWatchlist.value) return
 
   // 检查是否已存在
-  const exists = activeWatchlist.value.items.some((item: WatchlistItem) => item.symbol === stock.symbol)
+  const exists = activeWatchlist.value.items.some(
+    (item: WatchlistItem) => item.symbol === stock.symbol
+  )
 
-  if (!exists) {
+  if (exists) {
+    // 清空搜索
+    searchQuery.value = ''
+    searchResults.value = []
+    return
+  }
+
+  try {
+    // 导入watchlistService
+    const { addStockToWatchlist: apiAddStock } = await import('@/services/watchlistService')
+
+    // 调用API添加股票到关注列表
+    await apiAddStock(parseInt(activeWatchlist.value.id), {
+      stockCode: stock.symbol,
+      stockName: stock.name,
+    })
+
+    // 创建新的关注项（本地显示用）
     const newItem: WatchlistItem = {
       symbol: stock.symbol,
       name: stock.name,
@@ -112,7 +183,24 @@ const addStockToWatchlist = (stock: Stock) => {
       changePercent: 0,
       volume: 0,
       turnover: 0,
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+    }
+
+    // 添加到本地列表
+    activeWatchlist.value.items.push(newItem)
+  } catch (error) {
+    console.error('添加股票到关注列表失败:', error)
+
+    // 如果API调用失败，仍然添加到本地列表
+    const newItem: WatchlistItem = {
+      symbol: stock.symbol,
+      name: stock.name,
+      price: 0,
+      change: 0,
+      changePercent: 0,
+      volume: 0,
+      turnover: 0,
+      addedAt: new Date().toISOString(),
     }
 
     activeWatchlist.value.items.push(newItem)
@@ -124,10 +212,40 @@ const addStockToWatchlist = (stock: Stock) => {
 }
 
 // 从关注列表中移除股票
-const removeStockFromWatchlist = (symbol: string) => {
+const removeStockFromWatchlist = async (symbol: string) => {
   if (!activeWatchlist.value) return
 
-  activeWatchlist.value.items = activeWatchlist.value.items.filter((item: WatchlistItem) => item.symbol !== symbol)
+  try {
+    // 导入watchlistService
+    const { getWatchlistItems, removeStockFromWatchlist: apiRemoveStock } = await import(
+      '@/services/watchlistService'
+    )
+
+    // 获取关注列表中的股票
+    const items = await getWatchlistItems(parseInt(activeWatchlist.value.id))
+
+    // 查找要删除的股票项
+    const itemToRemove = items.find((item) => item.stockCode === symbol)
+
+    if (itemToRemove) {
+      // 调用API从关注列表中删除股票
+      await apiRemoveStock(parseInt(activeWatchlist.value.id), itemToRemove.id)
+
+      // 从本地列表中移除
+      activeWatchlist.value.items = activeWatchlist.value.items.filter(
+        (item: WatchlistItem) => item.symbol !== symbol
+      )
+    } else {
+      console.warn(`未找到要删除的股票: ${symbol}`)
+    }
+  } catch (error) {
+    console.error('从关注列表中移除股票失败:', error)
+
+    // 如果API调用失败，仍然从本地列表中移除
+    activeWatchlist.value.items = activeWatchlist.value.items.filter(
+      (item: WatchlistItem) => item.symbol !== symbol
+    )
+  }
 }
 
 // 保存关注列表
@@ -191,7 +309,9 @@ const closeManager = () => {
             />
             <div class="form-actions">
               <button class="btn btn-primary btn-sm" @click="createWatchlist">创建</button>
-              <button class="btn btn-outline btn-sm" @click="isCreatingWatchlist = false">取消</button>
+              <button class="btn btn-outline btn-sm" @click="isCreatingWatchlist = false">
+                取消
+              </button>
             </div>
           </div>
         </div>
@@ -425,8 +545,12 @@ const closeManager = () => {
 }
 
 @keyframes spin {
-  0% { transform: translateY(-50%) rotate(0deg); }
-  100% { transform: translateY(-50%) rotate(360deg); }
+  0% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-50%) rotate(360deg);
+  }
 }
 
 .search-results {

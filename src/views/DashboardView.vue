@@ -7,6 +7,7 @@ import type { Stock } from '@/types/stock'
 import type { DashboardSettings, Watchlist, WatchlistItem, MarketOverview } from '@/types/dashboard'
 import * as echarts from 'echarts'
 import WatchlistManager from '@/components/dashboard/WatchlistManager.vue'
+import AddStockDialog from '@/components/dashboard/AddStockDialog.vue'
 import eventBus from '@/utils/eventBus'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 
@@ -41,14 +42,16 @@ const dashboardSettings = ref<DashboardSettings | null>(null)
 const activeWatchlist = ref<Watchlist | null>(null)
 // 是否显示关注列表管理器
 const showWatchlistManager = ref(false)
+// 是否显示添加股票对话框
+const showAddStockDialog = ref(false)
 // 数据刷新定时器
 let refreshTimer: number | null = null
 
 // 获取市场数据
 onMounted(async () => {
   try {
-    // 加载仪表盘设置
-    loadDashboardSettings()
+    // 加载仪表盘设置（包括从数据库获取的关注列表）
+    await loadDashboardSettings()
 
     // 获取所有股票并取前10个作为热门股票
     const stocks = await stockService.getStocks()
@@ -82,15 +85,23 @@ onMounted(async () => {
     })
   } catch (error) {
     console.error('获取数据失败:', error)
+
+    // 显示错误提示
+    if (window.$message) {
+      window.$message.error(
+        '加载仪表盘数据失败: ' + (error instanceof Error ? error.message : String(error))
+      )
+    }
   } finally {
     isLoading.value = false
   }
 })
 
 // 加载仪表盘设置
-const loadDashboardSettings = () => {
+const loadDashboardSettings = async () => {
   try {
-    const settings = dashboardService.getDashboardSettings()
+    // 获取仪表盘设置（包括从数据库获取的关注列表）
+    const settings = await dashboardService.getDashboardSettings()
     dashboardSettings.value = settings
 
     // 获取活动的关注列表
@@ -101,12 +112,22 @@ const loadDashboardSettings = () => {
       activeWatchlist.value = watchlist
       watchlistStocks.value = watchlist.items
     }
+
+    // 显示数据来源提示
+    if (window.$message && watchlist && watchlist.items.length > 0) {
+      window.$message.success('已从数据库加载关注列表数据')
+    }
   } catch (error) {
     console.error('加载仪表盘设置失败:', error)
     // 使用默认设置
     dashboardSettings.value = dashboardService.createDefaultDashboardSettings()
     activeWatchlist.value = dashboardSettings.value.watchlists[0]
     watchlistStocks.value = activeWatchlist.value.items
+
+    // 显示错误提示
+    if (window.$message) {
+      window.$message.error('加载关注列表数据失败，使用默认数据')
+    }
   }
 }
 
@@ -505,7 +526,7 @@ const openNewsDetail = (news: any) => {
 }
 
 // 添加到关注列表
-const addToWatchlist = (stock: Stock) => {
+const addToWatchlist = async (stock: Stock) => {
   if (!activeWatchlist.value) {
     // 添加错误提示
     if (window.$message) {
@@ -527,27 +548,33 @@ const addToWatchlist = (stock: Stock) => {
     return
   }
 
-  const newItem: WatchlistItem = {
-    symbol: stock.symbol,
-    name: stock.name,
-    price: 0,
-    change: 0,
-    changePercent: 0,
-    volume: 0,
-    turnover: 0,
-    addedAt: new Date().toISOString(),
-  }
+  try {
+    // 调用API添加股票到关注列表
+    const success = await dashboardService.addStockToWatchlist(activeWatchlist.value.id, {
+      symbol: stock.symbol,
+      name: stock.name,
+    })
 
-  activeWatchlist.value.items.push(newItem)
-  watchlistStocks.value = activeWatchlist.value.items
+    if (success) {
+      // 重新加载仪表盘设置以获取最新数据
+      await loadDashboardSettings()
 
-  // 保存设置
-  if (dashboardSettings.value) {
-    dashboardService.saveDashboardSettings(dashboardSettings.value)
+      // 添加成功提示
+      if (window.$message) {
+        window.$message.success(`已将 ${stock.name}(${stock.symbol}) 添加到关注列表`)
+      }
+    } else {
+      // 添加失败提示
+      if (window.$message) {
+        window.$message.error(`添加 ${stock.name}(${stock.symbol}) 到关注列表失败`)
+      }
+    }
+  } catch (error) {
+    console.error('添加到关注列表失败:', error)
 
-    // 添加成功提示
+    // 添加失败提示
     if (window.$message) {
-      window.$message.success(`已将 ${stock.name}(${stock.symbol}) 添加到关注列表`)
+      window.$message.error(`添加 ${stock.name}(${stock.symbol}) 到关注列表失败: ${error}`)
     }
   }
 }
@@ -557,14 +584,17 @@ const openWatchlistManager = () => {
   showWatchlistManager.value = true
 }
 
-// 显示添加股票对话框
-const showAddStockDialog = () => {
-  // 目前简单实现，使用提示消息
-  if (window.$message) {
-    window.$message.info('添加股票功能即将上线')
-  }
+// 打开添加股票对话框
+const openAddStockDialog = () => {
+  showAddStockDialog.value = true
+}
 
-  // 后续可以实现一个弹窗，让用户搜索并添加股票
+// 处理股票添加完成事件
+const handleStockAdded = async (success: boolean) => {
+  if (success) {
+    // 重新加载仪表盘设置以获取最新数据
+    await loadDashboardSettings()
+  }
 }
 
 // 显示新闻页面
@@ -619,21 +649,40 @@ const showMobileApp = () => {
 }
 
 // 保存关注列表
-const saveWatchlists = (watchlists: Watchlist[], activeWatchlistId: string) => {
+const saveWatchlists = async (watchlists: Watchlist[], activeWatchlistId: string) => {
   if (!dashboardSettings.value) return
 
-  // 更新设置
-  dashboardSettings.value.watchlists = watchlists
-  dashboardSettings.value.activeWatchlistId = activeWatchlistId
+  try {
+    // 更新设置
+    dashboardSettings.value.watchlists = watchlists
+    dashboardSettings.value.activeWatchlistId = activeWatchlistId
 
-  // 保存设置
-  dashboardService.saveDashboardSettings(dashboardSettings.value)
+    // 保存设置
+    await dashboardService.saveDashboardSettings(dashboardSettings.value)
 
-  // 更新活动的关注列表
-  const watchlist = watchlists.find((w) => w.id === activeWatchlistId)
-  if (watchlist) {
-    activeWatchlist.value = watchlist
-    watchlistStocks.value = watchlist.items
+    // 重新加载仪表盘设置以获取最新数据
+    await loadDashboardSettings()
+
+    // 显示成功提示
+    if (window.$message) {
+      window.$message.success('关注列表已保存')
+    }
+  } catch (error) {
+    console.error('保存关注列表失败:', error)
+
+    // 显示错误提示
+    if (window.$message) {
+      window.$message.error(
+        '保存关注列表失败: ' + (error instanceof Error ? error.message : String(error))
+      )
+    }
+
+    // 更新活动的关注列表（使用本地数据）
+    const watchlist = watchlists.find((w) => w.id === activeWatchlistId)
+    if (watchlist) {
+      activeWatchlist.value = watchlist
+      watchlistStocks.value = watchlist.items
+    }
   }
 }
 
@@ -775,7 +824,7 @@ onUnmounted(() => {
         <div class="card-header">
           <h2>我的关注</h2>
           <div class="card-actions">
-            <button class="btn-icon-only" @click="showAddStockDialog" title="添加股票">
+            <button class="btn-icon-only" @click="openAddStockDialog" title="添加股票">
               <span>➕</span>
             </button>
             <button class="btn-icon-only" @click="openWatchlistManager" title="管理关注列表">
@@ -942,6 +991,16 @@ onUnmounted(() => {
     :activeWatchlistId="dashboardSettings.activeWatchlistId"
     @close="showWatchlistManager = false"
     @save="saveWatchlists"
+  />
+
+  <!-- 添加股票对话框 -->
+  <AddStockDialog
+    v-if="dashboardSettings"
+    v-model:visible="showAddStockDialog"
+    :watchlists="dashboardSettings.watchlists"
+    :activeWatchlistId="dashboardSettings.activeWatchlistId"
+    @close="showAddStockDialog = false"
+    @added="handleStockAdded"
   />
 </template>
 

@@ -18,7 +18,11 @@
           <el-button type="text" @click="showEditWatchlistDialog(watchlist)">
             <i class="el-icon-edit"></i> 编辑分组
           </el-button>
-          <el-button type="text" @click="showDeleteWatchlistDialog(watchlist)" :disabled="watchlists.length <= 1">
+          <el-button
+            type="text"
+            @click="showDeleteWatchlistDialog(watchlist)"
+            :disabled="watchlists.length <= 1"
+          >
             <i class="el-icon-delete"></i> 删除分组
           </el-button>
           <el-button type="text" @click="showAddStockDialog">
@@ -50,20 +54,10 @@
           </el-table-column>
           <el-table-column label="操作" width="100">
             <template #default="scope">
-              <el-button
-                type="text"
-                size="small"
-                @click="showStockDetail(scope.row.stockCode)"
-              >
+              <el-button type="text" size="small" @click="showStockDetail(scope.row.stockCode)">
                 查看
               </el-button>
-              <el-button
-                type="text"
-                size="small"
-                @click="removeStock(scope.row)"
-              >
-                删除
-              </el-button>
+              <el-button type="text" size="small" @click="removeStock(scope.row)"> 删除 </el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -71,11 +65,7 @@
     </el-tabs>
 
     <!-- 创建分组对话框 -->
-    <el-dialog
-      title="新建分组"
-      v-model="createWatchlistDialogVisible"
-      width="30%"
-    >
+    <el-dialog title="新建分组" v-model="createWatchlistDialogVisible" width="30%">
       <el-form :model="watchlistForm" label-width="80px">
         <el-form-item label="分组名称" required>
           <el-input v-model="watchlistForm.name" placeholder="请输入分组名称"></el-input>
@@ -99,11 +89,7 @@
     </el-dialog>
 
     <!-- 编辑分组对话框 -->
-    <el-dialog
-      title="编辑分组"
-      v-model="editWatchlistDialogVisible"
-      width="30%"
-    >
+    <el-dialog title="编辑分组" v-model="editWatchlistDialogVisible" width="30%">
       <el-form :model="watchlistForm" label-width="80px">
         <el-form-item label="分组名称" required>
           <el-input v-model="watchlistForm.name" placeholder="请输入分组名称"></el-input>
@@ -127,28 +113,18 @@
     </el-dialog>
 
     <!-- 删除分组确认对话框 -->
-    <el-dialog
-      title="删除分组"
-      v-model="deleteWatchlistDialogVisible"
-      width="30%"
-    >
+    <el-dialog title="删除分组" v-model="deleteWatchlistDialogVisible" width="30%">
       <p>确定要删除分组"{{ currentWatchlist?.name }}"吗？此操作不可恢复。</p>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="deleteWatchlistDialogVisible = false">取消</el-button>
-          <el-button type="danger" @click="deleteWatchlist" :loading="submitting">
-            确定
-          </el-button>
+          <el-button type="danger" @click="deleteWatchlist" :loading="submitting"> 确定 </el-button>
         </span>
       </template>
     </el-dialog>
 
     <!-- 添加股票对话框 -->
-    <el-dialog
-      title="添加关注股票"
-      v-model="addStockDialogVisible"
-      width="30%"
-    >
+    <el-dialog title="添加关注股票" v-model="addStockDialogVisible" width="30%">
       <el-form :model="stockForm" label-width="80px">
         <el-form-item label="股票代码" required>
           <el-input v-model="stockForm.stockCode" placeholder="请输入股票代码"></el-input>
@@ -157,19 +133,13 @@
           <el-input v-model="stockForm.stockName" placeholder="请输入股票名称"></el-input>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input
-            v-model="stockForm.notes"
-            type="textarea"
-            placeholder="请输入备注"
-          ></el-input>
+          <el-input v-model="stockForm.notes" type="textarea" placeholder="请输入备注"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="addStockDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="addStock" :loading="submitting">
-            确定
-          </el-button>
+          <el-button type="primary" @click="addStock" :loading="submitting"> 确定 </el-button>
         </span>
       </template>
     </el-dialog>
@@ -190,7 +160,7 @@ import {
   removeStockFromWatchlist,
   updateWatchlistItemNotes,
   Watchlist,
-  WatchlistItem
+  WatchlistItem,
 } from '@/services/watchlistService'
 
 export default defineComponent({
@@ -207,14 +177,14 @@ export default defineComponent({
     const watchlistForm = ref({
       id: 0,
       name: '',
-      description: ''
+      description: '',
     })
 
     // 股票表单
     const stockForm = ref({
       stockCode: '',
       stockName: '',
-      notes: ''
+      notes: '',
     })
 
     // 对话框显示状态
@@ -229,7 +199,7 @@ export default defineComponent({
 
     // 当前选中的分组
     const currentWatchlist = computed(() => {
-      return watchlists.value.find(w => w.id.toString() === activeWatchlist.value)
+      return watchlists.value.find((w) => w.id.toString() === activeWatchlist.value)
     })
 
     // 当前分组的股票列表
@@ -286,7 +256,7 @@ export default defineComponent({
       watchlistForm.value = {
         id: 0,
         name: '',
-        description: ''
+        description: '',
       }
       createWatchlistDialogVisible.value = true
     }
@@ -302,7 +272,7 @@ export default defineComponent({
         submitting.value = true
         const data = await apiCreateWatchlist({
           name: watchlistForm.value.name,
-          description: watchlistForm.value.description
+          description: watchlistForm.value.description,
         })
         watchlists.value.push(data)
         activeWatchlist.value = data.id.toString()
@@ -322,7 +292,7 @@ export default defineComponent({
       watchlistForm.value = {
         id: watchlist.id,
         name: watchlist.name,
-        description: watchlist.description || ''
+        description: watchlist.description || '',
       }
       editWatchlistDialogVisible.value = true
     }
@@ -338,9 +308,9 @@ export default defineComponent({
         submitting.value = true
         const data = await apiUpdateWatchlist(watchlistForm.value.id, {
           name: watchlistForm.value.name,
-          description: watchlistForm.value.description
+          description: watchlistForm.value.description,
         })
-        const index = watchlists.value.findIndex(w => w.id === data.id)
+        const index = watchlists.value.findIndex((w) => w.id === data.id)
         if (index !== -1) {
           watchlists.value[index] = data
         }
@@ -365,7 +335,7 @@ export default defineComponent({
       try {
         submitting.value = true
         await apiDeleteWatchlist(watchlistForm.value.id)
-        const index = watchlists.value.findIndex(w => w.id === watchlistForm.value.id)
+        const index = watchlists.value.findIndex((w) => w.id === watchlistForm.value.id)
         if (index !== -1) {
           watchlists.value.splice(index, 1)
           delete watchlistItems.value[watchlistForm.value.id]
@@ -388,7 +358,7 @@ export default defineComponent({
       stockForm.value = {
         stockCode: '',
         stockName: '',
-        notes: ''
+        notes: '',
       }
       addStockDialogVisible.value = true
     }
@@ -410,7 +380,7 @@ export default defineComponent({
         const data = await addStockToWatchlist(watchlistId, {
           stockCode: stockForm.value.stockCode,
           stockName: stockForm.value.stockName,
-          notes: stockForm.value.notes
+          notes: stockForm.value.notes,
         })
         if (!watchlistItems.value[watchlistId]) {
           watchlistItems.value[watchlistId] = []
@@ -429,19 +399,15 @@ export default defineComponent({
     // 删除股票
     const removeStock = async (stock: WatchlistItem) => {
       try {
-        await ElMessageBox.confirm(
-          `确定要从关注列表中删除"${stock.stockName}"吗？`,
-          '提示',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        )
+        await ElMessageBox.confirm(`确定要从关注列表中删除"${stock.stockName}"吗？`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        })
 
         const watchlistId = parseInt(activeWatchlist.value)
         await removeStockFromWatchlist(watchlistId, stock.id)
-        const index = watchlistItems.value[watchlistId].findIndex(s => s.id === stock.id)
+        const index = watchlistItems.value[watchlistId].findIndex((s) => s.id === stock.id)
         if (index !== -1) {
           watchlistItems.value[watchlistId].splice(index, 1)
         }
@@ -471,7 +437,7 @@ export default defineComponent({
       try {
         const watchlistId = parseInt(activeWatchlist.value)
         const data = await updateWatchlistItemNotes(watchlistId, stock.id, tempNotes.value)
-        const index = watchlistItems.value[watchlistId].findIndex(s => s.id === stock.id)
+        const index = watchlistItems.value[watchlistId].findIndex((s) => s.id === stock.id)
         if (index !== -1) {
           watchlistItems.value[watchlistId][index].notes = data.notes
         }
@@ -520,9 +486,9 @@ export default defineComponent({
       removeStock,
       editNotes,
       saveNotes,
-      showStockDetail
+      showStockDetail,
     }
-  }
+  },
 })
 </script>
 
@@ -551,6 +517,6 @@ export default defineComponent({
 }
 
 .notes-text:hover {
-  color: #409EFF;
+  color: #409eff;
 }
 </style>
