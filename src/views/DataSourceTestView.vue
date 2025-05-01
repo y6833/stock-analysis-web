@@ -13,8 +13,8 @@
               数据源切换冷却中: {{ formatCooldown(cooldownRemaining) }} 后可再次切换
             </p>
             <div class="cooldown-progress">
-              <div 
-                class="cooldown-bar" 
+              <div
+                class="cooldown-bar"
                 :style="{ width: `${(cooldownRemaining / cooldownPeriod) * 100}%` }"
               ></div>
             </div>
@@ -23,10 +23,10 @@
 
         <div class="source-controls">
           <div class="search-box">
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="搜索数据源..." 
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="搜索数据源..."
               class="search-input"
               @input="filterSources"
             />
@@ -44,9 +44,9 @@
         </div>
 
         <div class="source-list">
-          <div 
-            v-for="source in filteredSources" 
-            :key="source" 
+          <div
+            v-for="source in filteredSources"
+            :key="source"
             class="source-item"
             :class="{ active: source === currentSource }"
           >
@@ -56,12 +56,13 @@
                 <div class="meta-item">
                   <span class="meta-label">热度:</span>
                   <div class="rating">
-                    <span 
-                      v-for="i in 5" 
-                      :key="i" 
+                    <span
+                      v-for="i in 5"
+                      :key="i"
                       class="star"
                       :class="{ filled: i <= Math.round(sourceMetadata[source].popularity / 20) }"
-                    >★</span>
+                      >★</span
+                    >
                   </div>
                 </div>
                 <div class="meta-item">
@@ -71,8 +72,8 @@
                 <div class="meta-item">
                   <span class="meta-label">数据量:</span>
                   <div class="progress-bar">
-                    <div 
-                      class="progress" 
+                    <div
+                      class="progress"
                       :style="{ width: `${sourceMetadata[source].dataVolume}%` }"
                     ></div>
                   </div>
@@ -83,7 +84,7 @@
               <p>{{ getSourceInfo(source).description }}</p>
             </div>
             <div class="source-actions">
-              <button 
+              <button
                 v-if="source !== currentSource"
                 class="btn btn-primary"
                 @click="changeDataSource(source)"
@@ -91,10 +92,8 @@
               >
                 切换到此数据源
               </button>
-              <button v-else class="btn btn-success" disabled>
-                当前使用中
-              </button>
-              <button 
+              <button v-else class="btn btn-success" disabled>当前使用中</button>
+              <button
                 class="btn btn-secondary"
                 @click="testDataSource(source)"
                 :disabled="isLoading"
@@ -112,7 +111,7 @@
           <div class="refresh-info">
             <h3>数据刷新控制</h3>
             <p>测试全局数据刷新功能，包括刷新按钮和冷却时间控制。</p>
-            
+
             <div class="refresh-status">
               <div class="status-item">
                 <span class="status-label">上次刷新时间:</span>
@@ -124,22 +123,26 @@
               </div>
               <div class="status-item">
                 <span class="status-label">剩余冷却时间:</span>
-                <span>{{ refreshCooldownRemaining > 0 ? formatDuration(refreshCooldownRemaining) : '可以刷新' }}</span>
+                <span>{{
+                  refreshCooldownRemaining > 0
+                    ? formatDuration(refreshCooldownRemaining)
+                    : '可以刷新'
+                }}</span>
               </div>
             </div>
-            
+
             <div class="cooldown-info" v-if="refreshCooldownRemaining > 0">
               <div class="cooldown-progress">
-                <div 
-                  class="cooldown-bar" 
+                <div
+                  class="cooldown-bar"
                   :style="{ width: `${(refreshCooldownRemaining / refreshCooldownPeriod) * 100}%` }"
                 ></div>
               </div>
             </div>
           </div>
-          
+
           <div class="refresh-actions">
-            <button 
+            <button
               class="btn btn-primary refresh-button"
               @click="refreshData"
               :disabled="refreshCooldownRemaining > 0 || isRefreshing"
@@ -150,13 +153,8 @@
               </span>
               <span v-else>刷新数据</span>
             </button>
-            
-            <button 
-              class="btn btn-secondary"
-              @click="resetRefreshCooldown"
-            >
-              重置冷却时间
-            </button>
+
+            <button class="btn btn-secondary" @click="resetRefreshCooldown">重置冷却时间</button>
           </div>
         </div>
       </div>
@@ -170,6 +168,7 @@ import { stockService } from '@/services/stockService'
 import { dataRefreshService } from '@/services/dataRefreshService'
 import { useToast } from '@/composables/useToast'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
+import { useUserStore } from '@/stores/userStore'
 
 const { showToast } = useToast()
 
@@ -190,41 +189,46 @@ const refreshCooldownPeriod = 60 * 60 * 1000 // 1小时
 const refreshTimerInterval = ref<number | null>(null)
 
 // 数据源元数据
-const sourceMetadata = ref<Record<string, {
-  popularity: number;
-  updateTime: Date;
-  dataVolume: number;
-}>>({
+const sourceMetadata = ref<
+  Record<
+    string,
+    {
+      popularity: number
+      updateTime: Date
+      dataVolume: number
+    }
+  >
+>({
   tushare: {
     popularity: 90,
     updateTime: new Date('2023-04-20'),
-    dataVolume: 95
+    dataVolume: 95,
   },
   sina: {
     popularity: 85,
     updateTime: new Date('2023-04-18'),
-    dataVolume: 80
+    dataVolume: 80,
   },
   eastmoney: {
     popularity: 80,
     updateTime: new Date('2023-04-15'),
-    dataVolume: 85
+    dataVolume: 85,
   },
   tencent: {
     popularity: 75,
     updateTime: new Date('2023-04-10'),
-    dataVolume: 75
+    dataVolume: 75,
   },
   netease: {
     popularity: 70,
     updateTime: new Date('2023-04-05'),
-    dataVolume: 70
+    dataVolume: 70,
   },
   yahoo: {
     popularity: 65,
     updateTime: new Date('2023-04-01'),
-    dataVolume: 90
-  }
+    dataVolume: 90,
+  },
 })
 
 // 获取数据源信息
@@ -245,15 +249,14 @@ const filterSources = () => {
   } else {
     const query = searchQuery.value.toLowerCase().trim()
     // 根据名称和描述过滤
-    filteredSources.value = availableSources.value.filter(source => {
+    filteredSources.value = availableSources.value.filter((source) => {
       const info = getSourceInfo(source)
       return (
-        info.name.toLowerCase().includes(query) ||
-        info.description.toLowerCase().includes(query)
+        info.name.toLowerCase().includes(query) || info.description.toLowerCase().includes(query)
       )
     })
   }
-  
+
   // 应用当前排序
   sortSources()
 }
@@ -261,21 +264,27 @@ const filterSources = () => {
 // 排序数据源
 const sortSources = () => {
   const sources = [...filteredSources.value]
-  
+
   switch (sortBy.value) {
     case 'popularity':
       // 按热度排序（从高到低）
-      sources.sort((a, b) => sourceMetadata.value[b].popularity - sourceMetadata.value[a].popularity)
+      sources.sort(
+        (a, b) => sourceMetadata.value[b].popularity - sourceMetadata.value[a].popularity
+      )
       break
     case 'updateTime':
       // 按更新时间排序（从新到旧）
-      sources.sort((a, b) => 
-        sourceMetadata.value[b].updateTime.getTime() - sourceMetadata.value[a].updateTime.getTime()
+      sources.sort(
+        (a, b) =>
+          sourceMetadata.value[b].updateTime.getTime() -
+          sourceMetadata.value[a].updateTime.getTime()
       )
       break
     case 'dataVolume':
       // 按数据量排序（从高到低）
-      sources.sort((a, b) => sourceMetadata.value[b].dataVolume - sourceMetadata.value[a].dataVolume)
+      sources.sort(
+        (a, b) => sourceMetadata.value[b].dataVolume - sourceMetadata.value[a].dataVolume
+      )
       break
     default:
       // 默认排序（当前数据源优先，其他按字母顺序）
@@ -285,7 +294,7 @@ const sortSources = () => {
         return a.localeCompare(b)
       })
   }
-  
+
   filteredSources.value = sources
 }
 
@@ -321,9 +330,12 @@ const updateRefreshCooldown = () => {
     refreshCooldownRemaining.value = 0
     return
   }
-  
+
   const now = Date.now()
-  refreshCooldownRemaining.value = Math.max(0, refreshCooldownPeriod - (now - lastRefreshTime.value))
+  refreshCooldownRemaining.value = Math.max(
+    0,
+    refreshCooldownPeriod - (now - lastRefreshTime.value)
+  )
 }
 
 // 格式化冷却时间
@@ -338,7 +350,7 @@ const formatDate = (date: Date) => {
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -351,7 +363,7 @@ const formatDateTime = (timestamp: number) => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   })
 }
 
@@ -359,7 +371,7 @@ const formatDateTime = (timestamp: number) => {
 const formatDuration = (ms: number) => {
   const minutes = Math.floor(ms / 60000)
   const seconds = Math.floor((ms % 60000) / 1000)
-  
+
   if (minutes > 0) {
     return `${minutes}分${seconds}秒`
   } else {
@@ -369,16 +381,29 @@ const formatDuration = (ms: number) => {
 
 // 切换数据源
 const changeDataSource = (source: DataSourceType) => {
-  if (cooldownRemaining.value > 0) {
-    showToast(`数据源切换过于频繁，请在 ${formatCooldown(cooldownRemaining.value)} 后再试`, 'warning')
+  // 获取用户存储
+  const userStore = useUserStore()
+  const isAdmin = userStore.userRole === 'admin'
+
+  // 检查冷却时间（管理员不受限制）
+  if (cooldownRemaining.value > 0 && !isAdmin) {
+    showToast(
+      `数据源切换过于频繁，请在 ${formatCooldown(cooldownRemaining.value)} 后再试`,
+      'warning'
+    )
     return
   }
-  
+
+  // 管理员日志记录
+  if (isAdmin && cooldownRemaining.value > 0) {
+    console.log('管理员用户，跳过数据源切换冷却时间检查')
+  }
+
   try {
     if (stockService.switchDataSource(source)) {
       currentSource.value = source
       showToast(`已切换到${getSourceInfo(source).name}`, 'success')
-      
+
       // 更新切换时间
       localStorage.setItem('last_source_switch_time', Date.now().toString())
       cooldownRemaining.value = cooldownPeriod
@@ -392,7 +417,7 @@ const changeDataSource = (source: DataSourceType) => {
 // 测试数据源连接
 const testDataSource = async (source: DataSourceType) => {
   isLoading.value = true
-  
+
   try {
     await stockService.testDataSource(source)
     showToast(`${getSourceInfo(source).name} 连接测试成功`, 'success')
@@ -407,15 +432,18 @@ const testDataSource = async (source: DataSourceType) => {
 // 刷新数据
 const refreshData = async () => {
   if (refreshCooldownRemaining.value > 0) {
-    showToast(`刷新过于频繁，请在 ${formatDuration(refreshCooldownRemaining.value)} 后再试`, 'warning')
+    showToast(
+      `刷新过于频繁，请在 ${formatDuration(refreshCooldownRemaining.value)} 后再试`,
+      'warning'
+    )
     return
   }
-  
+
   isRefreshing.value = true
-  
+
   try {
     const result = await dataRefreshService.refreshAllData(true)
-    
+
     if (result.success) {
       showToast('数据刷新成功', 'success')
       lastRefreshTime.value = Date.now()
@@ -446,7 +474,7 @@ const startTimers = () => {
   timerInterval.value = window.setInterval(() => {
     updateCooldown()
   }, 1000)
-  
+
   // 数据刷新冷却定时器
   refreshTimerInterval.value = window.setInterval(() => {
     updateRefreshCooldown()
@@ -477,7 +505,7 @@ onUnmounted(() => {
   if (timerInterval.value) {
     clearInterval(timerInterval.value)
   }
-  
+
   if (refreshTimerInterval.value) {
     clearInterval(refreshTimerInterval.value)
   }
@@ -799,15 +827,15 @@ onUnmounted(() => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .search-box {
     max-width: none;
   }
-  
+
   .source-list {
     grid-template-columns: 1fr;
   }
-  
+
   .refresh-actions {
     flex-direction: column;
   }

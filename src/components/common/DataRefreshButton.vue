@@ -195,16 +195,25 @@ const handleRefresh = async () => {
 
       // 根据用户角色设置不同的冷却时间
       const userStore = useUserStore()
-      let limitMs = 60 * 60 * 1000 // 默认1小时
 
+      // 管理员没有任何限制
       if (userStore.userRole === 'admin') {
-        limitMs = 5 * 60 * 1000 // 管理员5分钟
-      } else if (userStore.userRole === 'premium') {
-        limitMs = 30 * 60 * 1000 // 高级会员30分钟
-      }
+        // 管理员不受限制，可以立即再次刷新
+        canRefresh.value = true
+        timeRemaining.value = ''
+      } else {
+        // 非管理员用户设置冷却时间
+        let limitMs = 60 * 60 * 1000 // 默认1小时
 
-      updateTimeRemaining(limitMs)
-      startRefreshTimer(limitMs)
+        if (userStore.membershipLevel === 'premium') {
+          limitMs = 30 * 60 * 1000 // 高级会员30分钟
+        } else if (userStore.membershipLevel === 'enterprise') {
+          limitMs = 15 * 60 * 1000 // 企业版15分钟
+        }
+
+        updateTimeRemaining(limitMs)
+        startRefreshTimer(limitMs)
+      }
     } else {
       emit('refresh-error', result.message || '刷新失败')
     }

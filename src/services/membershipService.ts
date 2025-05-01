@@ -15,6 +15,16 @@ export interface MembershipLevel {
   maxWatchlistItems: number
   maxAlerts: number
   dataSourceLimit: number
+  maxPortfolios: number
+  maxPortfolioItems: number
+  maxHistoryDays: number
+  maxBacktestPeriod: number
+  allowedIndicators: string[]
+  allowExport: boolean
+  allowBatchOperations: boolean
+  allowCustomDashboard: boolean
+  allowAdvancedCharts: boolean
+  maxConcurrentRequests: number
 }
 
 export interface UserMembership extends MembershipLevel {
@@ -26,14 +36,19 @@ export interface UserMembership extends MembershipLevel {
 export const membershipService = {
   /**
    * 获取用户会员信息
+   * @param forceRefresh 是否强制刷新，不使用缓存
    * @returns 用户会员信息
    */
-  async getUserMembership(): Promise<UserMembership> {
+  async getUserMembership(forceRefresh = false): Promise<UserMembership> {
     try {
       // 导入授权头工具函数
       const { getAuthHeaders } = await import('@/utils/auth')
 
-      const response = await axios.get('/api/membership', getAuthHeaders())
+      // 构建请求URL，添加强制刷新参数
+      const url = forceRefresh ? '/api/membership?forceRefresh=true' : '/api/membership'
+
+      const response = await axios.get(url, getAuthHeaders())
+      console.log('会员信息API响应:', response.data)
       return response.data.data
     } catch (error: any) {
       console.error('获取用户会员信息失败:', error)
@@ -50,15 +65,28 @@ export const membershipService = {
         description: '基础功能，有限的数据访问',
         features: [
           '基础股票行情查询',
-          '基础技术指标',
-          '有限的历史数据',
+          '基础技术指标 (MA、MACD)',
+          '最近7天历史数据',
           '每日刷新次数限制',
           '单一数据源',
+          '最多10支股票关注',
+          '最多5个条件提醒',
+          '基础K线图表',
         ],
         dataRefreshInterval: 60 * 60 * 1000, // 1小时
         maxWatchlistItems: 10,
         maxAlerts: 5,
         dataSourceLimit: 1,
+        maxPortfolios: 1,
+        maxPortfolioItems: 5,
+        maxHistoryDays: 7,
+        maxBacktestPeriod: 30,
+        allowedIndicators: ['MA', 'MACD', 'VOL'],
+        allowExport: false,
+        allowBatchOperations: false,
+        allowCustomDashboard: false,
+        allowAdvancedCharts: false,
+        maxConcurrentRequests: 2,
       }
     }
   },
@@ -82,15 +110,27 @@ export const membershipService = {
   /**
    * 检查功能访问权限
    * @param feature 功能名称
+   * @param params 附加参数
    * @returns 是否有权限访问
    */
-  async checkFeatureAccess(feature: string): Promise<boolean> {
+  async checkFeatureAccess(feature: string, params: Record<string, any> = {}): Promise<boolean> {
     try {
       // 导入授权头工具函数
       const { getAuthHeaders } = await import('@/utils/auth')
 
+      // 构建查询参数
+      const queryParams = new URLSearchParams()
+      queryParams.append('feature', feature)
+
+      // 添加附加参数
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value))
+        }
+      })
+
       const response = await axios.get(
-        `/api/membership/check-access?feature=${feature}`,
+        `/api/membership/check-access?${queryParams.toString()}`,
         getAuthHeaders()
       )
       return response.data.hasAccess

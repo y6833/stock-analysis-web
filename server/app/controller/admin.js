@@ -12,7 +12,7 @@ class AdminController extends Controller {
    */
   async getAllUsers() {
     const { ctx, service } = this;
-    
+
     try {
       // 检查管理员权限
       if (!ctx.user || ctx.user.role !== 'admin') {
@@ -23,18 +23,31 @@ class AdminController extends Controller {
         };
         return;
       }
-      
-      // 获取分页参数
-      const { page = 1, pageSize = 20, sortBy = 'id', sortOrder = 'asc' } = ctx.query;
-      
+
+      // 获取分页参数和筛选参数
+      const {
+        page = 1,
+        pageSize = 20,
+        sortBy = 'id',
+        sortOrder = 'asc',
+        search = '',
+        role = '',
+        status = '',
+        membership = ''
+      } = ctx.query;
+
       // 获取用户列表
       const result = await service.admin.getAllUsers({
         page: parseInt(page),
         pageSize: parseInt(pageSize),
         sortBy,
         sortOrder,
+        search,
+        role,
+        status,
+        membership,
       });
-      
+
       ctx.body = {
         success: true,
         data: result.users,
@@ -54,14 +67,14 @@ class AdminController extends Controller {
       };
     }
   }
-  
+
   /**
    * 获取用户详情
    */
   async getUserDetail() {
     const { ctx, service } = this;
     const { userId } = ctx.params;
-    
+
     try {
       // 检查管理员权限
       if (!ctx.user || ctx.user.role !== 'admin') {
@@ -72,10 +85,10 @@ class AdminController extends Controller {
         };
         return;
       }
-      
+
       // 获取用户详情
       const user = await service.admin.getUserDetail(userId);
-      
+
       if (!user) {
         ctx.status = 404;
         ctx.body = {
@@ -84,7 +97,7 @@ class AdminController extends Controller {
         };
         return;
       }
-      
+
       ctx.body = {
         success: true,
         data: user,
@@ -98,7 +111,7 @@ class AdminController extends Controller {
       };
     }
   }
-  
+
   /**
    * 更新用户信息
    */
@@ -106,7 +119,7 @@ class AdminController extends Controller {
     const { ctx, service } = this;
     const { userId } = ctx.params;
     const updateData = ctx.request.body;
-    
+
     try {
       // 检查管理员权限
       if (!ctx.user || ctx.user.role !== 'admin') {
@@ -117,10 +130,10 @@ class AdminController extends Controller {
         };
         return;
       }
-      
+
       // 更新用户信息
       const result = await service.admin.updateUser(userId, updateData);
-      
+
       if (!result.success) {
         ctx.status = 400;
         ctx.body = {
@@ -129,7 +142,7 @@ class AdminController extends Controller {
         };
         return;
       }
-      
+
       ctx.body = {
         success: true,
         data: result.user,
@@ -144,7 +157,7 @@ class AdminController extends Controller {
       };
     }
   }
-  
+
   /**
    * 更改用户状态（启用/禁用）
    */
@@ -152,7 +165,7 @@ class AdminController extends Controller {
     const { ctx, service } = this;
     const { userId } = ctx.params;
     const { status } = ctx.request.body;
-    
+
     try {
       // 检查管理员权限
       if (!ctx.user || ctx.user.role !== 'admin') {
@@ -163,7 +176,7 @@ class AdminController extends Controller {
         };
         return;
       }
-      
+
       // 检查参数
       if (!status || !['active', 'inactive', 'suspended'].includes(status)) {
         ctx.status = 400;
@@ -173,10 +186,10 @@ class AdminController extends Controller {
         };
         return;
       }
-      
+
       // 更新用户状态
       const result = await service.admin.updateUserStatus(userId, status);
-      
+
       if (!result.success) {
         ctx.status = 400;
         ctx.body = {
@@ -185,7 +198,7 @@ class AdminController extends Controller {
         };
         return;
       }
-      
+
       ctx.body = {
         success: true,
         data: { userId, status: result.status },
@@ -200,13 +213,13 @@ class AdminController extends Controller {
       };
     }
   }
-  
+
   /**
    * 获取系统统计信息
    */
   async getSystemStats() {
     const { ctx, service } = this;
-    
+
     try {
       // 检查管理员权限
       if (!ctx.user || ctx.user.role !== 'admin') {
@@ -217,10 +230,10 @@ class AdminController extends Controller {
         };
         return;
       }
-      
+
       // 获取系统统计信息
       const stats = await service.admin.getSystemStats();
-      
+
       ctx.body = {
         success: true,
         data: stats,

@@ -6,6 +6,7 @@ import axios from 'axios'
 import { useToast } from '@/composables/useToast'
 import eventBus from '@/utils/eventBus'
 import { useLogger } from '@/composables/useLogger'
+import { useUserStore } from '@/stores/userStore'
 
 // 禁用的数据源列表
 const DISABLED_SOURCES: DataSourceType[] = ['tushare']
@@ -209,6 +210,10 @@ export const useDataSourceStore = defineStore('dataSource', () => {
   // 切换数据源
   async function switchDataSource(source: DataSourceType): Promise<boolean> {
     try {
+      // 获取用户存储
+      const userStore = useUserStore()
+      const isAdmin = userStore.userRole === 'admin'
+
       // 检查是否是禁用的数据源
       if (DISABLED_SOURCES.includes(source)) {
         logger.warn(`尝试切换到禁用的数据源: ${source}`)
@@ -223,11 +228,16 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         return true
       }
 
-      // 检查冷却时间
-      if (!canSwitchSource.value) {
+      // 检查冷却时间（管理员不受限制）
+      if (!canSwitchSource.value && !isAdmin) {
         logger.warn(`数据源切换过于频繁，请在 ${remainingCooldown.value} 分钟后再试`)
         showToast(`数据源切换过于频繁，请在 ${remainingCooldown.value} 分钟后再试`, 'warning')
         return false
+      }
+
+      // 管理员日志记录
+      if (isAdmin && !canSwitchSource.value) {
+        logger.info('管理员用户，跳过数据源切换冷却时间检查')
       }
 
       logger.info(`切换数据源: 从 ${currentSource.value} 到 ${source}`)

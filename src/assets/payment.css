@@ -1,0 +1,25 @@
+/* 支付相关样式 */
+
+.payment-success-message {
+  text-align: left;
+  padding: 10px;
+}
+
+.payment-success-message p {
+  margin: 10px 0;
+  line-height: 1.5;
+}
+
+.payment-success-message ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.payment-success-message li {
+  margin: 5px 0;
+}
+
+.payment-success-message strong {
+  color: #f56c6c;
+  font-weight: bold;
+}

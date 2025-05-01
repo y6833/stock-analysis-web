@@ -62,8 +62,13 @@ const handleSubmit = async () => {
     const success = await userStore.login(loginForm)
 
     if (success) {
-      // 登录成功，跳转到仪表盘
-      router.push('/')
+      // 登录成功，跳转到仪表盘，然后刷新页面
+      router.push('/').then(() => {
+        // 使用短暂延迟确保路由变更已完成
+        setTimeout(() => {
+          window.location.reload()
+        }, 100)
+      })
     } else {
       // 登录失败，显示错误信息
       formErrors.general = userStore.error || '登录失败，请检查用户名和密码'

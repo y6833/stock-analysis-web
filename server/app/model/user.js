@@ -37,19 +37,7 @@ module.exports = app => {
         isIn: [['user', 'premium', 'admin']],
       },
     },
-    membership: {
-      type: STRING(20),
-      allowNull: false,
-      defaultValue: 'free',
-      validate: {
-        isIn: [['free', 'basic', 'premium', 'enterprise']],
-      },
-    },
-    membershipExpires: {
-      type: DATE,
-      allowNull: true,
-      field: 'membership_expires',
-    },
+    // 会员相关字段已移至 user_membership 表
     status: {
       type: STRING(10),
       allowNull: false,
@@ -105,6 +93,9 @@ module.exports = app => {
     // 使用 this 而不是 app.model.User
     this.hasOne(app.model.UserPreference, { foreignKey: 'userId' });
 
+    // 会员信息
+    this.hasOne(app.model.UserMembership, { foreignKey: 'userId' });
+
     // 关注的股票
     this.hasMany(app.model.UserWatchlist, { foreignKey: 'userId' });
 
@@ -123,6 +114,18 @@ module.exports = app => {
 
     // 浏览历史
     this.hasMany(app.model.UserBrowsingHistory, { foreignKey: 'userId' });
+
+    // 充值请求 - 用户发起的充值请求
+    this.hasMany(app.model.CoinRechargeRequest, {
+      as: 'userRechargeRequests',  // 修改别名，避免冲突
+      foreignKey: 'userId'
+    });
+
+    // 处理的充值请求（管理员）- 管理员处理的充值请求
+    this.hasMany(app.model.CoinRechargeRequest, {
+      as: 'adminProcessedRequests',  // 修改别名，避免冲突
+      foreignKey: 'processedBy'
+    });
   };
 
   return User;

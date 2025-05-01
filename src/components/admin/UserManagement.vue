@@ -189,11 +189,15 @@
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">有效等级</span>
-                  <span class="detail-value">{{ formatMembership(userDetail.membership?.effectiveLevel || userDetail.membership) }}</span>
+                  <span class="detail-value">{{
+                    formatMembership(userDetail.membership?.effectiveLevel || userDetail.membership)
+                  }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">是否过期</span>
-                  <span class="detail-value">{{ userDetail.membership?.expired ? '是' : '否' }}</span>
+                  <span class="detail-value">{{
+                    userDetail.membership?.expired ? '是' : '否'
+                  }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">过期时间</span>
@@ -254,7 +258,12 @@
 
             <div class="form-group">
               <label for="status">状态</label>
-              <select id="status" v-model="editForm.status" required :disabled="editForm.id === currentUserId">
+              <select
+                id="status"
+                v-model="editForm.status"
+                required
+                :disabled="editForm.id === currentUserId"
+              >
                 <option value="active">活跃</option>
                 <option value="inactive">未激活</option>
                 <option value="suspended">已禁用</option>
@@ -345,6 +354,10 @@ const fetchUsers = async () => {
       pageSize: pageSize.value,
       sortBy: 'id',
       sortOrder: 'asc',
+      search: searchQuery.value,
+      role: roleFilter.value,
+      status: statusFilter.value,
+      membership: membershipFilter.value,
     })
 
     users.value = response.data

@@ -12,7 +12,7 @@ const registerForm = reactive<RegisterRequest>({
   username: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
 })
 
 // 表单验证
@@ -21,7 +21,7 @@ const formErrors = reactive({
   email: '',
   password: '',
   confirmPassword: '',
-  general: ''
+  general: '',
 })
 
 // 表单状态
@@ -33,14 +33,14 @@ const agreeToTerms = ref(false)
 // 验证表单
 const validateForm = (): boolean => {
   let isValid = true
-  
+
   // 重置错误
   formErrors.username = ''
   formErrors.email = ''
   formErrors.password = ''
   formErrors.confirmPassword = ''
   formErrors.general = ''
-  
+
   // 验证用户名
   if (!registerForm.username.trim()) {
     formErrors.username = '请输入用户名'
@@ -49,7 +49,7 @@ const validateForm = (): boolean => {
     formErrors.username = '用户名长度不能少于3个字符'
     isValid = false
   }
-  
+
   // 验证邮箱
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!registerForm.email.trim()) {
@@ -59,7 +59,7 @@ const validateForm = (): boolean => {
     formErrors.email = '请输入有效的邮箱地址'
     isValid = false
   }
-  
+
   // 验证密码
   if (!registerForm.password) {
     formErrors.password = '请输入密码'
@@ -68,7 +68,7 @@ const validateForm = (): boolean => {
     formErrors.password = '密码长度不能少于6个字符'
     isValid = false
   }
-  
+
   // 验证确认密码
   if (!registerForm.confirmPassword) {
     formErrors.confirmPassword = '请确认密码'
@@ -77,28 +77,33 @@ const validateForm = (): boolean => {
     formErrors.confirmPassword = '两次输入的密码不一致'
     isValid = false
   }
-  
+
   // 验证服务条款
   if (!agreeToTerms.value) {
     formErrors.general = '请同意服务条款和隐私政策'
     isValid = false
   }
-  
+
   return isValid
 }
 
 // 提交注册
 const handleSubmit = async () => {
   if (!validateForm()) return
-  
+
   isSubmitting.value = true
-  
+
   try {
     const success = await userStore.register(registerForm)
-    
+
     if (success) {
-      // 注册成功，跳转到登录页面
-      router.push('/login?registered=true')
+      // 注册成功，跳转到登录页面，然后刷新页面
+      router.push('/login?registered=true').then(() => {
+        // 使用短暂延迟确保路由变更已完成
+        setTimeout(() => {
+          window.location.reload()
+        }, 100)
+      })
     } else {
       // 注册失败，显示错误信息
       formErrors.general = userStore.error || '注册失败，请稍后再试'
@@ -135,13 +140,13 @@ const toggleConfirmPasswordVisibility = () => {
         <h1 class="auth-title">创建账户</h1>
         <p class="auth-subtitle">注册一个新账户，开始您的股票分析之旅</p>
       </div>
-      
+
       <form @submit.prevent="handleSubmit" class="auth-form">
         <!-- 错误提示 -->
         <div v-if="formErrors.general" class="form-error general-error">
           {{ formErrors.general }}
         </div>
-        
+
         <!-- 用户名 -->
         <div class="form-group">
           <label for="username" class="form-label">用户名</label>
@@ -161,7 +166,7 @@ const toggleConfirmPasswordVisibility = () => {
             {{ formErrors.username }}
           </div>
         </div>
-        
+
         <!-- 邮箱 -->
         <div class="form-group">
           <label for="email" class="form-label">邮箱</label>
@@ -181,7 +186,7 @@ const toggleConfirmPasswordVisibility = () => {
             {{ formErrors.email }}
           </div>
         </div>
-        
+
         <!-- 密码 -->
         <div class="form-group">
           <label for="password" class="form-label">密码</label>
@@ -196,11 +201,7 @@ const toggleConfirmPasswordVisibility = () => {
               placeholder="请输入密码"
               autocomplete="new-password"
             />
-            <button 
-              type="button" 
-              class="toggle-password" 
-              @click="togglePasswordVisibility"
-            >
+            <button type="button" class="toggle-password" @click="togglePasswordVisibility">
               {{ showPassword ? '👁️' : '👁️‍🗨️' }}
             </button>
           </div>
@@ -208,7 +209,7 @@ const toggleConfirmPasswordVisibility = () => {
             {{ formErrors.password }}
           </div>
         </div>
-        
+
         <!-- 确认密码 -->
         <div class="form-group">
           <label for="confirmPassword" class="form-label">确认密码</label>
@@ -223,11 +224,7 @@ const toggleConfirmPasswordVisibility = () => {
               placeholder="请再次输入密码"
               autocomplete="new-password"
             />
-            <button 
-              type="button" 
-              class="toggle-password" 
-              @click="toggleConfirmPasswordVisibility"
-            >
+            <button type="button" class="toggle-password" @click="toggleConfirmPasswordVisibility">
               {{ showConfirmPassword ? '👁️' : '👁️‍🗨️' }}
             </button>
           </div>
@@ -235,31 +232,25 @@ const toggleConfirmPasswordVisibility = () => {
             {{ formErrors.confirmPassword }}
           </div>
         </div>
-        
+
         <!-- 服务条款 -->
         <div class="form-group terms-group">
           <div class="remember-me">
-            <input
-              id="terms"
-              v-model="agreeToTerms"
-              type="checkbox"
-              class="form-checkbox"
-            />
-            <label for="terms">我同意 <a href="#" class="text-link">服务条款</a> 和 <a href="#" class="text-link">隐私政策</a></label>
+            <input id="terms" v-model="agreeToTerms" type="checkbox" class="form-checkbox" />
+            <label for="terms"
+              >我同意 <a href="#" class="text-link">服务条款</a> 和
+              <a href="#" class="text-link">隐私政策</a></label
+            >
           </div>
         </div>
-        
+
         <!-- 提交按钮 -->
-        <button 
-          type="submit" 
-          class="btn btn-primary btn-block" 
-          :disabled="isSubmitting"
-        >
+        <button type="submit" class="btn btn-primary btn-block" :disabled="isSubmitting">
           <span v-if="isSubmitting">注册中...</span>
           <span v-else>注册</span>
         </button>
       </form>
-      
+
       <div class="auth-footer">
         <p>已有账户? <button @click="goToLogin" class="text-link">立即登录</button></p>
       </div>

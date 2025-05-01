@@ -15,6 +15,10 @@ export interface UserListParams {
   pageSize?: number
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
+  search?: string
+  role?: string
+  status?: string
+  membership?: string
 }
 
 // 用户列表响应接口
@@ -69,9 +73,33 @@ export const adminService = {
    */
   async getAllUsers(params: UserListParams = {}): Promise<UserListResponse> {
     try {
-      const { page = 1, pageSize = 20, sortBy = 'id', sortOrder = 'asc' } = params
+      const {
+        page = 1,
+        pageSize = 20,
+        sortBy = 'id',
+        sortOrder = 'asc',
+        search = '',
+        role = '',
+        status = '',
+        membership = '',
+      } = params
+
+      // 构建查询参数
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+        sortBy,
+        sortOrder,
+      })
+
+      // 添加可选参数
+      if (search) queryParams.append('search', search)
+      if (role) queryParams.append('role', role)
+      if (status) queryParams.append('status', status)
+      if (membership) queryParams.append('membership', membership)
+
       const response = await axios.get(
-        `${API_URL}/admin/users?page=${page}&pageSize=${pageSize}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
+        `${API_URL}/admin/users?${queryParams.toString()}`,
         getAuthHeaders()
       )
       return response.data
@@ -87,10 +115,7 @@ export const adminService = {
    */
   async getUserDetail(userId: string | number): Promise<UserDetailResponse> {
     try {
-      const response = await axios.get(
-        `${API_URL}/admin/users/${userId}`,
-        getAuthHeaders()
-      )
+      const response = await axios.get(`${API_URL}/admin/users/${userId}`, getAuthHeaders())
       return response.data
     } catch (error: any) {
       console.error('获取用户详情失败:', error)
@@ -105,11 +130,7 @@ export const adminService = {
    */
   async updateUser(userId: string | number, data: any): Promise<any> {
     try {
-      const response = await axios.put(
-        `${API_URL}/admin/users/${userId}`,
-        data,
-        getAuthHeaders()
-      )
+      const response = await axios.put(`${API_URL}/admin/users/${userId}`, data, getAuthHeaders())
       return response.data
     } catch (error: any) {
       console.error('更新用户信息失败:', error)
@@ -141,10 +162,7 @@ export const adminService = {
    */
   async getSystemStats(): Promise<SystemStatsResponse> {
     try {
-      const response = await axios.get(
-        `${API_URL}/admin/stats`,
-        getAuthHeaders()
-      )
+      const response = await axios.get(`${API_URL}/admin/stats`, getAuthHeaders())
       return response.data
     } catch (error: any) {
       console.error('获取系统统计信息失败:', error)

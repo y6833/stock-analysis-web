@@ -22,7 +22,9 @@
           <div class="limits">
             <div class="limit-item">
               <span class="limit-label">数据刷新间隔</span>
-              <span class="limit-value">{{ formatRefreshInterval(level.dataRefreshInterval) }}</span>
+              <span class="limit-value">{{
+                formatRefreshInterval(level.dataRefreshInterval)
+              }}</span>
             </div>
             <div class="limit-item">
               <span class="limit-label">最大关注股票数</span>
@@ -60,7 +62,7 @@
     <!-- 会员管理 -->
     <div class="user-membership-management">
       <h3 class="section-subtitle">用户会员管理</h3>
-      
+
       <!-- 搜索用户 -->
       <div class="search-box">
         <input
@@ -111,8 +113,19 @@
               </td>
               <td>{{ formatDate(user.membershipExpires) }}</td>
               <td>
-                <span class="status-badge" :class="user.membershipExpires && new Date(user.membershipExpires) < new Date() ? 'status-expired' : 'status-active'">
-                  {{ user.membershipExpires && new Date(user.membershipExpires) < new Date() ? '已过期' : '有效' }}
+                <span
+                  class="status-badge"
+                  :class="
+                    user.membershipExpires && new Date(user.membershipExpires) < new Date()
+                      ? 'status-expired'
+                      : 'status-active'
+                  "
+                >
+                  {{
+                    user.membershipExpires && new Date(user.membershipExpires) < new Date()
+                      ? '已过期'
+                      : '有效'
+                  }}
                 </span>
               </td>
               <td>
@@ -186,7 +199,9 @@
             </div>
 
             <div class="form-actions">
-              <button type="button" class="btn btn-cancel" @click="closeEditMembership">取消</button>
+              <button type="button" class="btn btn-cancel" @click="closeEditMembership">
+                取消
+              </button>
               <button type="submit" class="btn btn-save" :disabled="isSaving">
                 {{ isSaving ? '保存中...' : '保存' }}
               </button>
@@ -229,11 +244,7 @@ const { showToast } = useToast()
 
 // 生命周期钩子
 onMounted(async () => {
-  await Promise.all([
-    fetchMembershipLevels(),
-    fetchUsers(),
-    fetchMembershipStats(),
-  ])
+  await Promise.all([fetchMembershipLevels(), fetchUsers(), fetchMembershipStats()])
 })
 
 // 获取会员等级列表
@@ -268,6 +279,7 @@ const fetchUsers = async () => {
       pageSize: pageSize.value,
       sortBy: 'id',
       sortOrder: 'asc',
+      search: searchQuery.value,
     })
 
     users.value = response.data
@@ -336,10 +348,7 @@ const saveMembershipChanges = async () => {
     closeEditMembership()
 
     // 刷新用户列表和统计信息
-    await Promise.all([
-      fetchUsers(),
-      fetchMembershipStats(),
-    ])
+    await Promise.all([fetchUsers(), fetchMembershipStats()])
   } catch (err: any) {
     console.error('更新会员信息失败:', err)
     showToast(err.message || '更新会员信息失败', 'error')
@@ -525,7 +534,6 @@ const formatDate = (dateString: string) => {
 
 .stats-header {
   padding: 10px 15px;
-  color: white;
 }
 
 .stats-header h4 {

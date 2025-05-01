@@ -5,36 +5,13 @@
       <p class="subtitle">管理用户、会员和系统数据</p>
     </div>
 
-    <div class="admin-tabs">
-      <button
-        class="tab-button"
-        :class="{ active: activeTab === 'dashboard' }"
-        @click="switchTab('dashboard')"
-      >
-        仪表盘
-      </button>
-      <button
-        class="tab-button"
-        :class="{ active: activeTab === 'users' }"
-        @click="switchTab('users')"
-      >
-        用户管理
-      </button>
-      <button
-        class="tab-button"
-        :class="{ active: activeTab === 'membership' }"
-        @click="switchTab('membership')"
-      >
-        会员管理
-      </button>
-      <button
-        class="tab-button"
-        :class="{ active: activeTab === 'cache' }"
-        @click="switchTab('cache')"
-      >
-        缓存管理
-      </button>
-    </div>
+    <el-tabs v-model="activeTab" @tab-click="handleTabClick" class="admin-tabs">
+      <el-tab-pane label="仪表盘" name="dashboard"></el-tab-pane>
+      <el-tab-pane label="用户管理" name="users"></el-tab-pane>
+      <el-tab-pane label="会员管理" name="membership"></el-tab-pane>
+      <el-tab-pane label="充值管理" name="recharge"></el-tab-pane>
+      <el-tab-pane label="缓存管理" name="cache"></el-tab-pane>
+    </el-tabs>
 
     <div class="admin-content">
       <!-- 仪表盘 -->
@@ -52,6 +29,20 @@
         <MembershipManagement />
       </div>
 
+      <!-- 充值管理 -->
+      <div v-if="activeTab === 'recharge'" class="admin-panel">
+        <Suspense>
+          <template #default>
+            <RechargeRequestManagement />
+          </template>
+          <template #fallback>
+            <div class="loading-container">
+              <el-skeleton :rows="10" animated />
+            </div>
+          </template>
+        </Suspense>
+      </div>
+
       <!-- 缓存管理 -->
       <div v-if="activeTab === 'cache'" class="admin-panel">
         <CacheManagement />
@@ -61,48 +52,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, Suspense } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
+import { useToast } from '@/composables/useToast'
+
+// 导入管理组件
 import AdminDashboard from '@/components/admin/AdminDashboard.vue'
 import UserManagement from '@/components/admin/UserManagement.vue'
 import MembershipManagement from '@/components/admin/MembershipManagement.vue'
 import CacheManagement from '@/components/admin/CacheManagement.vue'
+import RechargeRequestManagement from '@/components/admin/RechargeRequestManagement.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { showToast } = useToast()
 
 // 状态
 const activeTab = ref('dashboard')
 
 // 生命周期钩子
-onMounted(() => {
+onMounted(async () => {
   // 检查是否是管理员
   if (userStore.userRole !== 'admin') {
+    showToast('只有管理员才能访问此页面', 'error')
     router.push({ name: 'dashboard', query: { error: 'permission' } })
     return
   }
 
   // 从URL参数中获取活动标签
   const tab = router.currentRoute.value.query.tab as string
-  if (tab && ['dashboard', 'users', 'membership', 'cache'].includes(tab)) {
+  if (tab && ['dashboard', 'users', 'membership', 'recharge', 'cache'].includes(tab)) {
     activeTab.value = tab
   }
 })
 
-// 切换标签
-const switchTab = (tab: string) => {
-  activeTab.value = tab
+// 处理标签点击
+const handleTabClick = (tab: any) => {
   // 更新URL参数
-  router.replace({ query: { ...router.currentRoute.value.query, tab } })
+  router.replace({ query: { ...router.currentRoute.value.query, tab: tab.props.name } })
 }
 </script>
 
 <style scoped>
 .admin-view {
-  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  padding: 20px;
 }
 
 .page-header {
@@ -110,48 +106,15 @@ const switchTab = (tab: string) => {
 }
 
 .page-header h1 {
-  font-size: 24px;
   margin-bottom: 5px;
 }
 
 .subtitle {
   color: #666;
-  font-size: 14px;
 }
 
 .admin-tabs {
-  display: flex;
-  border-bottom: 1px solid #ddd;
   margin-bottom: 20px;
-}
-
-.tab-button {
-  padding: 10px 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  color: #666;
-  position: relative;
-}
-
-.tab-button:hover {
-  color: #333;
-}
-
-.tab-button.active {
-  color: #1890ff;
-  font-weight: 500;
-}
-
-.tab-button.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: #1890ff;
 }
 
 .admin-content {
@@ -162,5 +125,17 @@ const switchTab = (tab: string) => {
 
 .admin-panel {
   padding: 20px;
+}
+
+.loading-container {
+  padding: 20px;
+  min-height: 400px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .admin-view {
+    padding: 10px;
+  }
 }
 </style>

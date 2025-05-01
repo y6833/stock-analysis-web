@@ -7,6 +7,8 @@ import DataSourceIndicator from '@/components/common/DataSourceIndicator.vue'
 import DataRefreshButton from '@/components/common/DataRefreshButton.vue'
 import CacheStatusIndicator from '@/components/common/CacheStatusIndicator.vue'
 import DataSourceProvider from '@/components/DataSourceProvider.vue'
+import { MembershipLevel, checkMembershipLevel } from '@/constants/membership'
+import NotificationCenter from '@/components/common/NotificationCenter.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -59,6 +61,29 @@ const isLoggedIn = computed(() => userStore.isAuthenticated)
 const username = computed(() => userStore.username)
 const userAvatar = computed(() => userStore.userAvatar)
 
+// 会员等级检查
+const canAccessBasicFeatures = computed(() => {
+  if (!isLoggedIn.value) return false
+  if (userStore.userRole === 'admin') return true
+  return checkMembershipLevel(userStore.membershipLevel, MembershipLevel.BASIC)
+})
+
+const canAccessPremiumFeatures = computed(() => {
+  if (!isLoggedIn.value) return false
+  if (userStore.userRole === 'admin') return true
+  return checkMembershipLevel(userStore.membershipLevel, MembershipLevel.PREMIUM)
+})
+
+// 导航到会员中心
+const goToMembership = (requiredLevel: string) => {
+  router.push({
+    name: 'membership',
+    query: {
+      requiredLevel,
+    },
+  })
+}
+
 // 登录
 const login = () => {
   router.push('/login')
@@ -72,7 +97,13 @@ const register = () => {
 // 登出
 const logout = () => {
   userStore.logout()
-  router.push('/')
+  // 先跳转到首页，然后刷新页面
+  router.push('/').then(() => {
+    // 使用短暂延迟确保路由变更已完成
+    setTimeout(() => {
+      window.location.reload()
+    }, 100)
+  })
 }
 
 // 初始化用户状态
@@ -81,15 +112,6 @@ onMounted(async () => {
 
   // 初始化用户状态
   await userStore.initUserState()
-
-  // 确保不使用Tushare数据源
-  const currentSource = localStorage.getItem('preferredDataSource')
-  if (currentSource === 'tushare') {
-    console.log('检测到Tushare数据源，系统已配置为不使用Tushare，自动切换到eastmoney')
-    localStorage.setItem('preferredDataSource', 'eastmoney')
-    // 刷新页面以应用新的数据源设置
-    window.location.reload()
-  }
 })
 
 // 处理数据刷新成功
@@ -150,22 +172,62 @@ onUnmounted(() => {
                   <span class="nav-icon">📈</span>
                   <span class="nav-text">股票分析</span>
                 </RouterLink>
-                <RouterLink to="/portfolio" class="dropdown-item">
-                  <span class="nav-icon">💼</span>
-                  <span class="nav-text">仓位管理</span>
-                </RouterLink>
+                <template v-if="canAccessBasicFeatures">
+                  <RouterLink to="/portfolio" class="dropdown-item">
+                    <span class="nav-icon">💼</span>
+                    <span class="nav-text">仓位管理</span>
+                    <span class="feature-badge basic">基础</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div class="dropdown-item locked" @click="goToMembership(MembershipLevel.BASIC)">
+                    <span class="nav-icon">💼</span>
+                    <span class="nav-text">仓位管理</span>
+                    <span class="feature-badge basic">基础</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
                 <RouterLink to="/market-heatmap" class="dropdown-item">
                   <span class="nav-icon">🌎</span>
                   <span class="nav-text">大盘云图</span>
                 </RouterLink>
-                <RouterLink to="/market-scanner" class="dropdown-item">
-                  <span class="nav-icon">🔍</span>
-                  <span class="nav-text">市场扫描器</span>
-                </RouterLink>
-                <RouterLink to="/export" class="dropdown-item">
-                  <span class="nav-icon">📋</span>
-                  <span class="nav-text">导出报告</span>
-                </RouterLink>
+                <template v-if="canAccessPremiumFeatures">
+                  <RouterLink to="/market-scanner" class="dropdown-item">
+                    <span class="nav-icon">🔍</span>
+                    <span class="nav-text">市场扫描器</span>
+                    <span class="feature-badge premium">高级</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div
+                    class="dropdown-item locked"
+                    @click="goToMembership(MembershipLevel.PREMIUM)"
+                  >
+                    <span class="nav-icon">🔍</span>
+                    <span class="nav-text">市场扫描器</span>
+                    <span class="feature-badge premium">高级</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+
+                <template v-if="canAccessPremiumFeatures">
+                  <RouterLink to="/export" class="dropdown-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">导出报告</span>
+                    <span class="feature-badge premium">高级</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div
+                    class="dropdown-item locked"
+                    @click="goToMembership(MembershipLevel.PREMIUM)"
+                  >
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">导出报告</span>
+                    <span class="feature-badge premium">高级</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
               </div>
             </div>
 
@@ -181,18 +243,59 @@ onUnmounted(() => {
                 <span class="dropdown-arrow">▼</span>
               </button>
               <div class="dropdown-menu" v-show="dropdownOpen.strategy">
-                <RouterLink to="/backtest" class="dropdown-item">
-                  <span class="nav-icon">🔄</span>
-                  <span class="nav-text">策略回测</span>
-                </RouterLink>
-                <RouterLink to="/alerts" class="dropdown-item">
-                  <span class="nav-icon">🔔</span>
-                  <span class="nav-text">条件提醒</span>
-                </RouterLink>
-                <RouterLink to="/simulation" class="dropdown-item">
-                  <span class="nav-icon">🎮</span>
-                  <span class="nav-text">模拟交易</span>
-                </RouterLink>
+                <template v-if="canAccessPremiumFeatures">
+                  <RouterLink to="/backtest" class="dropdown-item">
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-text">策略回测</span>
+                    <span class="feature-badge premium">高级</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div
+                    class="dropdown-item locked"
+                    @click="goToMembership(MembershipLevel.PREMIUM)"
+                  >
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-text">策略回测</span>
+                    <span class="feature-badge premium">高级</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+
+                <template v-if="canAccessBasicFeatures">
+                  <RouterLink to="/alerts" class="dropdown-item">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text">条件提醒</span>
+                    <span class="feature-badge basic">基础</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div class="dropdown-item locked" @click="goToMembership(MembershipLevel.BASIC)">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text">条件提醒</span>
+                    <span class="feature-badge basic">基础</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+
+                <template v-if="canAccessPremiumFeatures">
+                  <RouterLink to="/simulation" class="dropdown-item">
+                    <span class="nav-icon">🎮</span>
+                    <span class="nav-text">模拟交易</span>
+                    <span class="feature-badge premium">高级</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div
+                    class="dropdown-item locked"
+                    @click="goToMembership(MembershipLevel.PREMIUM)"
+                  >
+                    <span class="nav-icon">🎮</span>
+                    <span class="nav-text">模拟交易</span>
+                    <span class="feature-badge premium">高级</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
               </div>
             </div>
 
@@ -261,10 +364,8 @@ onUnmounted(() => {
               <span class="icon">🔍</span>
             </button>
 
-            <!-- 通知按钮 -->
-            <button class="btn btn-outline">
-              <span class="icon">🔔</span>
-            </button>
+            <!-- 通知中心 -->
+            <NotificationCenter v-if="isLoggedIn" />
 
             <!-- 未登录状态 -->
             <template v-if="!isLoggedIn">
@@ -622,6 +723,40 @@ onUnmounted(() => {
   height: 1px;
   background-color: var(--border-light);
   margin: var(--spacing-xs) 0;
+}
+
+/* 功能标识 */
+.feature-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: white;
+  margin-left: auto;
+  font-weight: bold;
+}
+
+.feature-badge.basic {
+  background-color: #409eff;
+}
+
+.feature-badge.premium {
+  background-color: #67c23a;
+}
+
+/* 锁定项 */
+.dropdown-item.locked {
+  opacity: 0.8;
+  position: relative;
+  cursor: pointer;
+}
+
+.dropdown-item.locked:hover {
+  background-color: rgba(var(--accent-color-rgb), 0.1);
+}
+
+.lock-icon {
+  margin-left: 5px;
+  font-size: 12px;
 }
 
 .item-icon {

@@ -78,9 +78,50 @@ class TushareController extends Controller {
   // 获取股票基本信息
   async getStockBasic() {
     const { ctx } = this;
+    const { app } = this;
 
     try {
-      // 执行 Python 脚本获取股票基本信息
+      // 获取数据源参数
+      const dataSource = ctx.query.data_source || 'tushare';
+
+      // 首先尝试从Redis缓存获取数据
+      const cacheKey = `${dataSource}:stock_basic`;
+      let cachedData = null;
+
+      try {
+        if (app.redis) {
+          cachedData = await app.redis.get(cacheKey);
+          if (cachedData) {
+            try {
+              const parsedData = JSON.parse(cachedData);
+              this.ctx.logger.info(`从Redis缓存获取股票基本信息: ${cacheKey}`);
+
+              // 记录缓存命中
+              ctx.service.cacheStats.recordHit(dataSource, 'stock_basic');
+
+              ctx.body = {
+                success: true,
+                message: '从Redis缓存获取股票基本信息成功',
+                data: parsedData.data,
+                source: 'redis_cache',
+                data_source: 'redis_cache',
+                data_source_message: '数据来自Redis缓存'
+              };
+              return;
+            } catch (parseErr) {
+              this.ctx.logger.warn(`解析Redis缓存数据失败: ${parseErr.message}`);
+              // 继续执行，尝试从数据库或API获取
+            }
+          } else {
+            this.ctx.logger.info(`Redis缓存中没有找到股票基本信息: ${cacheKey}`);
+          }
+        }
+      } catch (redisErr) {
+        this.ctx.logger.warn(`从Redis获取缓存失败: ${redisErr.message}`);
+        // 继续执行，尝试从数据库或API获取
+      }
+
+      // 执行 Python 脚本获取股票基本信息（从数据库或API）
       const result = await this.execPythonScript('get_stock_basic');
 
       // 检查结果类型
@@ -96,26 +137,45 @@ class TushareController extends Controller {
         };
       } else if (result.success) {
         // 成功情况
-        const dataSource = result.source || 'database';
+        const resultDataSource = result.source || 'database';
         let dataSourceMessage = '';
 
         // 根据数据来源设置消息
-        if (dataSource === 'database') {
+        if (resultDataSource === 'database') {
           dataSourceMessage = '数据来自数据库';
-        } else if (dataSource === 'api') {
+        } else if (resultDataSource === 'api') {
           dataSourceMessage = '数据来自Tushare API';
-        } else if (dataSource === 'cache') {
+        } else if (resultDataSource === 'cache') {
           dataSourceMessage = '数据来自缓存';
         } else {
-          dataSourceMessage = `数据来自${dataSource}`;
+          dataSourceMessage = `数据来自${resultDataSource}`;
+        }
+
+        // 如果成功获取数据，缓存到Redis
+        if (app.redis && result.data) {
+          try {
+            const dataToCache = {
+              data: result.data,
+              cache_time: new Date().toISOString(),
+              source: resultDataSource
+            };
+
+            // 缓存数据，设置过期时间（默认1小时）
+            const cacheExpire = 60 * 60; // 1小时
+            await app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', cacheExpire);
+            this.ctx.logger.info(`股票基本信息已缓存到Redis: ${cacheKey}, 过期时间: ${cacheExpire}秒`);
+          } catch (cacheErr) {
+            this.ctx.logger.warn(`缓存数据到Redis失败: ${cacheErr.message}`);
+            // 继续执行，不影响返回结果
+          }
         }
 
         ctx.body = {
           success: true,
           message: result.message,
           data: result.data,
-          source: result.source,
-          data_source: dataSource,
+          source: resultDataSource,
+          data_source: resultDataSource,
           data_source_message: dataSourceMessage
         };
       } else {

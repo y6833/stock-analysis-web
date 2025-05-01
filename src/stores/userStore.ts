@@ -158,11 +158,12 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 获取会员信息
-  async function fetchMembershipInfo() {
+  async function fetchMembershipInfo(forceRefresh = false) {
     if (!isAuthenticated.value) return
 
     try {
-      membership.value = await membershipService.getUserMembership()
+      membership.value = await membershipService.getUserMembership(forceRefresh)
+      console.log('获取到会员信息:', membership.value)
       return membership.value
     } catch (err) {
       console.error('获取会员信息失败:', err)
@@ -171,13 +172,16 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 检查功能访问权限
-  async function checkFeatureAccess(feature: string): Promise<boolean> {
+  async function checkFeatureAccess(
+    feature: string,
+    params: Record<string, any> = {}
+  ): Promise<boolean> {
     if (!isAuthenticated.value) return false
 
     // 管理员可以访问所有功能
     if (userRole.value === 'admin') return true
 
-    return await membershipService.checkFeatureAccess(feature)
+    return await membershipService.checkFeatureAccess(feature, params)
   }
 
   // 更新用户资料

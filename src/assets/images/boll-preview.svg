@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="200" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="200" fill="#F0F0F0"/>
+  <text x="200" y="100" font-family="Arial" font-size="24" text-anchor="middle" fill="#333333">BOLL 指标预览图</text>
+  
+  <!-- BOLL 线条示例 -->
+  <path d="M 50,130 C 70,120 90,110 110,100 C 130,90 150,80 170,90 C 190,100 210,110 230,100 C 250,90 270,80 290,90 C 310,100 330,110 350,100" stroke="#3498DB" stroke-width="2" fill="none"/>
+  <path d="M 50,70 C 70,60 90,50 110,40 C 130,30 150,20 170,30 C 190,40 210,50 230,40 C 250,30 270,20 290,30 C 310,40 330,50 350,40" stroke="#E74C3C" stroke-width="2" fill="none" stroke-dasharray="4"/>
+  <path d="M 50,190 C 70,180 90,170 110,160 C 130,150 150,140 170,150 C 190,160 210,170 230,160 C 250,150 270,140 290,150 C 310,160 330,170 350,160" stroke="#2ECC71" stroke-width="2" fill="none" stroke-dasharray="4"/>
+  
+  <!-- 图例 -->
+  <circle cx="50" cy="180" r="4" fill="#3498DB"/>
+  <text x="60" y="185" font-family="Arial" font-size="12" fill="#333333">中轨线</text>
+  
+  <circle cx="150" cy="180" r="4" fill="#E74C3C"/>
+  <text x="160" y="185" font-family="Arial" font-size="12" fill="#333333">上轨线</text>
+  
+  <circle cx="250" cy="180" r="4" fill="#2ECC71"/>
+  <text x="260" y="185" font-family="Arial" font-size="12" fill="#333333">下轨线</text>
+</svg>

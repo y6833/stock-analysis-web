@@ -4,8 +4,11 @@
 
 import 'egg';
 import ExportAlertHistory = require('../../../app/model/alert_history');
+import ExportCoinRechargeRequest = require('../../../app/model/coinRechargeRequest');
+import ExportCoinTransaction = require('../../../app/model/coinTransaction');
 import ExportDashboardWidget = require('../../../app/model/dashboard_widget');
 import ExportIndex = require('../../../app/model/index');
+import ExportNotification = require('../../../app/model/notification');
 import ExportPortfolioHolding = require('../../../app/model/portfolio_holding');
 import ExportSimulationAccount = require('../../../app/model/simulation_account');
 import ExportSimulationPosition = require('../../../app/model/simulation_position');
@@ -17,6 +20,7 @@ import ExportUser = require('../../../app/model/user');
 import ExportUserAlert = require('../../../app/model/user_alert');
 import ExportUserBrowsingHistory = require('../../../app/model/user_browsing_history');
 import ExportUserDashboard = require('../../../app/model/user_dashboard');
+import ExportUserMembership = require('../../../app/model/user_membership');
 import ExportUserPortfolio = require('../../../app/model/user_portfolio');
 import ExportUserPreference = require('../../../app/model/user_preference');
 import ExportUserStrategy = require('../../../app/model/user_strategy');
@@ -28,8 +32,11 @@ import ExportWatchlistItem = require('../../../app/model/watchlist_item');
 declare module 'egg' {
   interface IModel {
     AlertHistory: ReturnType<typeof ExportAlertHistory>;
+    CoinRechargeRequest: ReturnType<typeof ExportCoinRechargeRequest>;
+    CoinTransaction: ReturnType<typeof ExportCoinTransaction>;
     DashboardWidget: ReturnType<typeof ExportDashboardWidget>;
     Index: ReturnType<typeof ExportIndex>;
+    Notification: ReturnType<typeof ExportNotification>;
     PortfolioHolding: ReturnType<typeof ExportPortfolioHolding>;
     SimulationAccount: ReturnType<typeof ExportSimulationAccount>;
     SimulationPosition: ReturnType<typeof ExportSimulationPosition>;
@@ -41,6 +48,7 @@ declare module 'egg' {
     UserAlert: ReturnType<typeof ExportUserAlert>;
     UserBrowsingHistory: ReturnType<typeof ExportUserBrowsingHistory>;
     UserDashboard: ReturnType<typeof ExportUserDashboard>;
+    UserMembership: ReturnType<typeof ExportUserMembership>;
     UserPortfolio: ReturnType<typeof ExportUserPortfolio>;
     UserPreference: ReturnType<typeof ExportUserPreference>;
     UserStrategy: ReturnType<typeof ExportUserStrategy>;

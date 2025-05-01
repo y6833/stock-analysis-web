@@ -157,6 +157,7 @@ import { ElMessage } from 'element-plus'
 import DataSourceComparison from '@/components/settings/DataSourceComparison.vue'
 import DataSourceStatus from '@/components/settings/DataSourceStatus.vue'
 import DataSourceSelector from '@/components/common/DataSourceSelector.vue'
+import { useUserStore } from '@/stores/userStore'
 
 // 当前数据源
 const currentSource = ref<DataSourceType>('tushare')
@@ -354,11 +355,20 @@ const getRemainingCooldown = () => {
 
 // 切换数据源
 const changeDataSource = async (source: DataSourceType) => {
-  // 检查冷却时间
-  if (!checkSourceSwitchCooldown()) {
+  // 获取用户存储
+  const userStore = useUserStore()
+  const isAdmin = userStore.userRole === 'admin'
+
+  // 检查冷却时间（管理员不受限制）
+  if (!checkSourceSwitchCooldown() && !isAdmin) {
     const remainingMinutes = getRemainingCooldown()
     ElMessage.warning(`数据源切换过于频繁，请在 ${remainingMinutes} 分钟后再试`)
     return
+  }
+
+  // 管理员日志记录
+  if (isAdmin && !checkSourceSwitchCooldown()) {
+    console.log('管理员用户，跳过数据源切换冷却时间检查')
   }
 
   if (stockService.switchDataSource(source)) {

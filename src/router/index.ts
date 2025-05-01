@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { userService } from '@/services/userService'
 import { tushareService } from '@/services/tushareService'
+import { membershipGuard } from './membershipGuard'
+import { MembershipLevel } from '@/constants/membership'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -57,7 +59,10 @@ const router = createRouter({
       path: '/portfolio',
       name: 'portfolio',
       component: () => import('../views/PortfolioView.vue'),
-      meta: { requiresAuth: true },
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
     },
     {
       path: '/market-heatmap',
@@ -75,7 +80,10 @@ const router = createRouter({
       path: '/market-scanner',
       name: 'market-scanner',
       component: () => import('../views/MarketScannerView.vue'),
-      meta: { requiresAuth: true },
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.PREMIUM,
+      },
     },
     {
       path: '/tushare-test',
@@ -98,25 +106,37 @@ const router = createRouter({
       path: '/export',
       name: 'export',
       component: () => import('../views/ExportView.vue'),
-      meta: { requiresAuth: true },
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.PREMIUM,
+      },
     },
     {
       path: '/backtest',
       name: 'backtest',
       component: () => import('../views/BacktestView.vue'),
-      meta: { requiresAuth: true },
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.PREMIUM,
+      },
     },
     {
       path: '/alerts',
       name: 'alerts',
       component: () => import('../views/AlertsView.vue'),
-      meta: { requiresAuth: true },
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
     },
     {
       path: '/simulation',
       name: 'simulation',
       component: () => import('../views/SimulationView.vue'),
-      meta: { requiresAuth: true },
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.PREMIUM,
+      },
     },
 
     // 用户相关路由
@@ -142,6 +162,12 @@ const router = createRouter({
       path: '/membership-test',
       name: 'membership-test',
       component: () => import('../views/MembershipTestView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/membership-features',
+      name: 'membership-features',
+      component: () => import('../views/MembershipFeaturesView.vue'),
       meta: { requiresAuth: true },
     },
     {
@@ -200,7 +226,7 @@ const router = createRouter({
 })
 
 // 全局前置守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // 更新当前路径，用于API调用控制
   tushareService.updateCurrentPath(to.path)
 
@@ -231,6 +257,11 @@ router.beforeEach((to, from, next) => {
   // 如果用户已登录且路由是登录/注册页面，重定向到仪表盘
   else if (isLoggedIn && hideForAuth) {
     next({ name: 'dashboard' })
+  }
+  // 检查会员等级权限
+  else if (isLoggedIn && !isAdmin) {
+    // 使用会员等级守卫检查权限
+    return membershipGuard(to, from, next)
   }
   // 其他情况正常导航
   else {

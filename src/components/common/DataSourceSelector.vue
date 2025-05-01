@@ -65,6 +65,7 @@ import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'
 import { useToast } from '@/composables/useToast'
 import eventBus from '@/utils/eventBus'
+import { useUserStore } from '@/stores/userStore'
 
 // 定义属性
 const props = defineProps({
@@ -87,11 +88,15 @@ const emit = defineEmits(['source-changed', 'cache-cleared'])
 
 // 状态
 const { showToast } = useToast()
+const userStore = useUserStore()
 const currentSource = ref<DataSourceType>(stockService.getCurrentDataSourceType())
 const selectedSource = ref<DataSourceType>(currentSource.value)
 const availableSources = ref<DataSourceType[]>([])
 const isChanging = ref(false)
 const isClearing = ref(false)
+
+// 计算属性：是否是管理员
+const isAdmin = computed(() => userStore.userRole === 'admin')
 
 // 计算属性
 const currentDataSourceName = computed(() => {
@@ -118,19 +123,23 @@ const switchDataSource = async () => {
   isChanging.value = true
 
   try {
-    // 检查冷却时间
-    const lastSwitchTime = localStorage.getItem('last_source_switch_time')
-    if (lastSwitchTime) {
-      const now = Date.now()
-      const elapsed = now - parseInt(lastSwitchTime)
-      const cooldownPeriod = 60 * 60 * 1000 // 1小时
+    // 检查冷却时间（管理员不受限制）
+    if (!isAdmin.value) {
+      const lastSwitchTime = localStorage.getItem('last_source_switch_time')
+      if (lastSwitchTime) {
+        const now = Date.now()
+        const elapsed = now - parseInt(lastSwitchTime)
+        const cooldownPeriod = 60 * 60 * 1000 // 1小时
 
-      if (elapsed < cooldownPeriod) {
-        const remainingMinutes = Math.ceil((cooldownPeriod - elapsed) / (60 * 1000))
-        showToast(`数据源切换过于频繁，请在 ${remainingMinutes} 分钟后再试`, 'warning')
-        isChanging.value = false
-        return
+        if (elapsed < cooldownPeriod) {
+          const remainingMinutes = Math.ceil((cooldownPeriod - elapsed) / (60 * 1000))
+          showToast(`数据源切换过于频繁，请在 ${remainingMinutes} 分钟后再试`, 'warning')
+          isChanging.value = false
+          return
+        }
       }
+    } else {
+      console.log('管理员用户，跳过数据源切换冷却时间检查')
     }
 
     // 执行切换

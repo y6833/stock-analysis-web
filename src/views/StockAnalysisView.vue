@@ -145,35 +145,55 @@ const fetchStockData = async () => {
       stockSymbol.value = symbol
     }
 
-    const result = await stockService.getStockData(stockSymbol.value)
+    try {
+      const result = await stockService.getStockData(stockSymbol.value)
 
-    // 保存股票数据
-    stockData.value = result
+      // 保存股票数据
+      stockData.value = result
 
-    // 保存数据来源信息
-    if (result.data_source) {
-      dataSource.value = result.data_source
-      dataSourceMessage.value = result.data_source_message || `数据来自${result.data_source}`
-      isRealTime.value = result.is_real_time || false
-      isCache.value = result.is_cache || false
+      // 保存数据来源信息
+      if (result.data_source) {
+        dataSource.value = result.data_source
+        dataSourceMessage.value = result.data_source_message || `数据来自${result.data_source}`
+        isRealTime.value = result.is_real_time || false
+        isCache.value = result.is_cache || false
 
-      // 显示数据来源提示
-      const sourceType = isRealTime.value ? '实时' : '缓存'
-      const toastType = isRealTime.value ? 'success' : 'info'
-      showToast(dataSourceMessage.value, toastType)
+        // 显示数据来源提示
+        const sourceType = isRealTime.value ? '实时' : '缓存'
+        const toastType = isRealTime.value ? 'success' : 'info'
+        showToast(dataSourceMessage.value, toastType)
 
-      console.log(`数据来源: ${dataSource.value}, ${sourceType}数据`)
+        console.log(`数据来源: ${dataSource.value}, ${sourceType}数据`)
+      }
+
+      // 添加延迟，确保DOM已经完全渲染
+      console.log('数据加载完成，延迟300ms初始化图表')
+      setTimeout(() => {
+        initChart()
+        analyzeStock()
+      }, 300)
+    } catch (dataError) {
+      console.error('获取股票数据失败:', dataError)
+
+      // 显示具体的错误信息
+      if (dataError.message && dataError.message.includes('所有数据源均失败')) {
+        error.value = `无法获取${stockSymbol.value}的数据，所有数据源均无法提供数据`
+        showToast(error.value, 'error')
+      } else {
+        error.value = `获取${stockSymbol.value}的数据失败: ${dataError.message || '未知错误'}`
+        showToast(error.value, 'error')
+      }
+
+      // 清空股票数据
+      stockData.value = null
     }
-
-    // 添加延迟，确保DOM已经完全渲染
-    console.log('数据加载完成，延迟300ms初始化图表')
-    setTimeout(() => {
-      initChart()
-      analyzeStock()
-    }, 300)
   } catch (err) {
-    console.error('获取股票数据失败:', err)
+    console.error('处理股票数据请求失败:', err)
     error.value = '获取股票数据失败，请稍后再试'
+    showToast(error.value, 'error')
+
+    // 清空股票数据
+    stockData.value = null
   } finally {
     isLoading.value = false
   }
@@ -194,6 +214,16 @@ const searchStocks = async () => {
     showSearchResults.value = true
   } catch (err) {
     console.error('搜索股票失败:', err)
+
+    // 显示具体的错误信息
+    if (err.message && err.message.includes('所有数据源均失败')) {
+      showToast(`无法搜索股票。所有数据源均无法提供数据，请检查网络连接或稍后再试。`, 'error')
+    } else {
+      showToast(`搜索股票失败: ${err.message || '未知错误'}`, 'error')
+    }
+
+    // 清空搜索结果
+    searchResults.value = []
   } finally {
     isSearching.value = false
   }

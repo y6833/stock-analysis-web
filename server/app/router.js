@@ -150,6 +150,28 @@ module.exports = app => {
   router.get('/api/membership/check-access', auth, controller.membership.checkFeatureAccess);
   router.post('/api/membership/update', auth, controller.membership.updateMembership);
 
+  // 逗币相关路由
+  router.get('/api/coins', auth, controller.coins.getUserCoins);
+  router.get('/api/coins/transactions', auth, controller.coins.getTransactions);
+  router.post('/api/coins/exchange', auth, controller.coins.exchangeMembership);
+  router.post('/api/coins/add', auth, controller.coins.addCoins); // 仅限管理员
+  router.post('/api/coins/deduct', auth, controller.coins.deductCoins); // 仅限管理员
+
+  // 逗币充值请求路由
+  router.post('/api/coins/recharge', auth, controller.coinRecharge.createRechargeRequest);
+  router.get('/api/coins/recharge', auth, controller.coinRecharge.getUserRechargeRequests);
+  router.get('/api/coins/recharge/all', auth, controller.coinRecharge.getAllRechargeRequests); // 仅限管理员
+  router.get('/api/coins/recharge/:requestId', auth, controller.coinRecharge.getRechargeRequestDetail);
+  router.post('/api/coins/recharge/:requestId/process', auth, controller.coinRecharge.processRechargeRequest); // 仅限管理员
+  router.post('/api/coins/recharge/:requestId/cancel', auth, controller.coinRecharge.cancelRechargeRequest);
+
+  // 通知路由
+  router.get('/api/notifications', auth, controller.notification.getUserNotifications);
+  router.get('/api/notifications/unread-count', auth, controller.notification.getUnreadCount);
+  router.post('/api/notifications/:notificationId/read', auth, controller.notification.markAsRead);
+  router.post('/api/notifications/read-all', auth, controller.notification.markAllAsRead);
+  router.delete('/api/notifications/:notificationId', auth, controller.notification.deleteNotification);
+
   // 管理员相关路由（需要管理员权限）
   router.get('/api/admin/users', auth, controller.admin.getAllUsers);
   router.get('/api/admin/users/:userId', auth, controller.admin.getUserDetail);
