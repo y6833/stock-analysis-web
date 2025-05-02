@@ -119,6 +119,7 @@ const searchQuery = ref('')
 const searchResults = ref<Stock[]>([])
 const isSearching = ref(false)
 const showSearchResults = ref(false)
+const searchTimeoutRef = ref<ReturnType<typeof setTimeout> | null>(null)
 
 // 获取股票数据
 const fetchStockData = async () => {
@@ -209,24 +210,55 @@ const searchStocks = async () => {
 
   isSearching.value = true
 
-  try {
-    searchResults.value = await stockService.searchStocks(searchQuery.value)
-    showSearchResults.value = true
-  } catch (err) {
-    console.error('搜索股票失败:', err)
-
-    // 显示具体的错误信息
-    if (err.message && err.message.includes('所有数据源均失败')) {
-      showToast(`无法搜索股票。所有数据源均无法提供数据，请检查网络连接或稍后再试。`, 'error')
-    } else {
-      showToast(`搜索股票失败: ${err.message || '未知错误'}`, 'error')
-    }
-
-    // 清空搜索结果
-    searchResults.value = []
-  } finally {
-    isSearching.value = false
+  // 添加防抖，避免频繁请求
+  // 使用本地变量而不是 window 对象
+  if (searchTimeoutRef.value) {
+    clearTimeout(searchTimeoutRef.value)
   }
+
+  searchTimeoutRef.value = setTimeout(async () => {
+    try {
+      // 确保搜索查询不为空
+      const query = searchQuery.value.trim()
+      if (!query) {
+        searchResults.value = []
+        showSearchResults.value = false
+        isSearching.value = false
+        return
+      }
+
+      // 执行搜索
+      const results = await stockService.searchStocks(query)
+
+      // 只有当搜索查询没有变化时才更新结果
+      if (query === searchQuery.value.trim()) {
+        searchResults.value = results
+        showSearchResults.value = true
+      }
+    } catch (err) {
+      console.error('搜索股票失败:', err)
+
+      // 显示具体的错误信息
+      if (err.message && err.message.includes('所有数据源均失败')) {
+        showToast(`无法搜索股票。所有数据源均无法提供数据，请检查网络连接或稍后再试。`, 'error')
+      } else if (err.response) {
+        showToast(
+          `搜索股票失败: ${err.response.data?.message || err.message || '服务器错误'}`,
+          'error'
+        )
+      } else if (err.request) {
+        showToast('搜索股票失败: 网络请求未收到响应，请检查网络连接', 'error')
+      } else {
+        showToast(`搜索股票失败: ${err.message || '未知错误'}`, 'error')
+      }
+
+      // 清空搜索结果
+      searchResults.value = []
+    } finally {
+      isSearching.value = false
+      searchTimeoutRef.value = null
+    }
+  }, 300) // 300ms 防抖延迟
 }
 
 // 显示用户关注的股票
@@ -234,11 +266,39 @@ const showWatchlistStocks = async () => {
   try {
     isLoading.value = true
 
-    // 导入关注列表服务
-    const { getUserWatchlists, getWatchlistItems } = await import('@/services/watchlistService')
+    // 先清空搜索结果，避免显示旧数据
+    searchResults.value = []
+
+    // 预先导入关注列表服务，避免动态导入可能的失败
+    let watchlistService
+    try {
+      watchlistService = await import('@/services/watchlistService')
+    } catch (importError) {
+      console.error('导入关注列表服务失败:', importError)
+      showToast('加载关注列表服务失败，请刷新页面重试', 'error')
+      isLoading.value = false
+      return
+    }
+
+    const { getUserWatchlists, getWatchlistItems } = watchlistService
 
     // 获取用户的所有关注分组
-    const watchlists = await getUserWatchlists()
+    let watchlists
+    try {
+      watchlists = await getUserWatchlists()
+    } catch (watchlistError) {
+      console.error('获取关注分组失败:', watchlistError)
+
+      // 检查是否是未登录错误
+      if (watchlistError.response && watchlistError.response.status === 401) {
+        showToast('您需要登录才能查看关注列表', 'warning')
+      } else {
+        showToast('获取关注分组失败: ' + (watchlistError.message || '未知错误'), 'error')
+      }
+
+      isLoading.value = false
+      return
+    }
 
     if (!watchlists || watchlists.length === 0) {
       showToast('您还没有创建关注列表，请先创建关注列表', 'info')
@@ -247,7 +307,15 @@ const showWatchlistStocks = async () => {
     }
 
     // 获取第一个关注分组的股票
-    const watchlistItems = await getWatchlistItems(watchlists[0].id)
+    let watchlistItems
+    try {
+      watchlistItems = await getWatchlistItems(watchlists[0].id)
+    } catch (itemsError) {
+      console.error('获取关注股票失败:', itemsError)
+      showToast('获取关注股票失败: ' + (itemsError.message || '未知错误'), 'error')
+      isLoading.value = false
+      return
+    }
 
     if (!watchlistItems || watchlistItems.length === 0) {
       showToast('您的关注列表为空，请先添加股票到关注列表', 'info')
@@ -275,7 +343,17 @@ const showWatchlistStocks = async () => {
     console.log('从数据库获取的关注列表数据:', searchResults.value)
   } catch (error) {
     console.error('获取关注列表失败:', error)
-    showToast('获取关注列表失败', 'error')
+    // 提供更详细的错误信息
+    if (error.response) {
+      showToast(
+        `获取关注列表失败: ${error.response.data?.message || error.message || '服务器错误'}`,
+        'error'
+      )
+    } else if (error.request) {
+      showToast('获取关注列表失败: 网络请求未收到响应，请检查网络连接', 'error')
+    } else {
+      showToast(`获取关注列表失败: ${error.message || '未知错误'}`, 'error')
+    }
   } finally {
     isLoading.value = false
   }
@@ -286,12 +364,39 @@ const showPortfolioStocks = async () => {
   try {
     isLoading.value = true
 
-    // 导入投资组合服务
-    const { usePortfolioStore } = await import('@/stores/portfolioStore')
+    // 先清空搜索结果，避免显示旧数据
+    searchResults.value = []
+
+    // 预先导入投资组合服务，避免动态导入可能的失败
+    let portfolioModule
+    try {
+      portfolioModule = await import('@/stores/portfolioStore')
+    } catch (importError) {
+      console.error('导入投资组合服务失败:', importError)
+      showToast('加载投资组合服务失败，请刷新页面重试', 'error')
+      isLoading.value = false
+      return
+    }
+
+    const { usePortfolioStore } = portfolioModule
     const portfolioStore = usePortfolioStore()
 
     // 获取用户的所有投资组合
-    await portfolioStore.fetchPortfolios()
+    try {
+      await portfolioStore.fetchPortfolios()
+    } catch (portfoliosError) {
+      console.error('获取投资组合列表失败:', portfoliosError)
+
+      // 检查是否是未登录错误
+      if (portfoliosError.response && portfoliosError.response.status === 401) {
+        showToast('您需要登录才能查看持仓', 'warning')
+      } else {
+        showToast('获取投资组合失败: ' + (portfoliosError.message || '未知错误'), 'error')
+      }
+
+      isLoading.value = false
+      return
+    }
 
     if (!portfolioStore.portfolios || portfolioStore.portfolios.length === 0) {
       showToast('您还没有创建投资组合，请先创建投资组合', 'info')
@@ -300,13 +405,20 @@ const showPortfolioStocks = async () => {
     }
 
     // 获取当前投资组合的持仓
-    if (!portfolioStore.currentPortfolioId) {
-      // 如果没有当前选中的投资组合，选择第一个
-      await portfolioStore.switchPortfolio(portfolioStore.portfolios[0].id)
-    }
+    try {
+      if (!portfolioStore.currentPortfolioId) {
+        // 如果没有当前选中的投资组合，选择第一个
+        await portfolioStore.switchPortfolio(portfolioStore.portfolios[0].id)
+      }
 
-    // 获取持仓数据
-    await portfolioStore.fetchHoldings(portfolioStore.currentPortfolioId as number)
+      // 获取持仓数据
+      await portfolioStore.fetchHoldings(portfolioStore.currentPortfolioId as number)
+    } catch (holdingsError) {
+      console.error('获取持仓数据失败:', holdingsError)
+      showToast('获取持仓数据失败: ' + (holdingsError.message || '未知错误'), 'error')
+      isLoading.value = false
+      return
+    }
 
     if (!portfolioStore.holdings || portfolioStore.holdings.length === 0) {
       showToast('您的持仓为空，请先添加股票到持仓', 'info')
@@ -337,7 +449,17 @@ const showPortfolioStocks = async () => {
     console.log('从数据库获取的持仓数据:', searchResults.value)
   } catch (error) {
     console.error('获取持仓失败:', error)
-    showToast('获取持仓失败', 'error')
+    // 提供更详细的错误信息
+    if (error.response) {
+      showToast(
+        `获取持仓失败: ${error.response.data?.message || error.message || '服务器错误'}`,
+        'error'
+      )
+    } else if (error.request) {
+      showToast('获取持仓失败: 网络请求未收到响应，请检查网络连接', 'error')
+    } else {
+      showToast(`获取持仓失败: ${error.message || '未知错误'}`, 'error')
+    }
   } finally {
     isLoading.value = false
   }
@@ -853,6 +975,7 @@ onMounted(() => {
             v-model="searchQuery"
             @input="searchStocks"
             @focus="showSearchResults = !!searchQuery"
+            @blur="setTimeout(() => (showSearchResults = false), 200)"
             placeholder="输入股票代码或名称进行搜索"
             class="search-input"
           />
@@ -862,16 +985,19 @@ onMounted(() => {
               <span>搜索中...</span>
             </div>
             <div v-else-if="searchResults.length === 0" class="no-results">未找到相关股票</div>
-            <div
-              v-else
-              v-for="stock in searchResults"
-              :key="stock.symbol"
-              class="search-result-item"
-              @click="selectStock(stock)"
-            >
-              <span class="stock-symbol">{{ stock.symbol }}</span>
-              <span class="stock-name">{{ stock.name }}</span>
-              <span class="stock-market">{{ stock.market }}</span>
+            <div v-else class="search-results-list">
+              <div
+                v-for="stock in searchResults"
+                :key="stock.symbol"
+                class="search-result-item"
+                @click="selectStock(stock)"
+                @mousedown.prevent
+              >
+                <span class="stock-symbol">{{ stock.symbol }}</span>
+                <span class="stock-name">{{ stock.name }}</span>
+                <span class="stock-market">{{ stock.market }}</span>
+                <span v-if="stock.industry" class="stock-industry">{{ stock.industry }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -884,12 +1010,50 @@ onMounted(() => {
 
       <div class="quick-filters">
         <span class="filter-label">快速筛选：</span>
-        <button class="filter-btn" @click="searchQuery = '600519'">$贵州茅台</button>
-        <button class="filter-btn" @click="searchQuery = '000001'">$平安银行</button>
-        <button class="filter-btn" @click="searchQuery = '601318'">$中国平安</button>
-        <button class="filter-btn" @click="searchQuery = '600036'">$招商银行</button>
-        <button class="filter-btn special-btn" @click="showWatchlistStocks">我的关注</button>
-        <button class="filter-btn special-btn" @click="showPortfolioStocks">我的持仓</button>
+        <div class="filter-buttons">
+          <button
+            class="filter-btn"
+            @click="
+              searchQuery = '600519'
+              searchStocks()
+            "
+          >
+            <span class="btn-icon">🏆</span>贵州茅台
+          </button>
+          <button
+            class="filter-btn"
+            @click="
+              searchQuery = '000001'
+              searchStocks()
+            "
+          >
+            <span class="btn-icon">🏦</span>平安银行
+          </button>
+          <button
+            class="filter-btn"
+            @click="
+              searchQuery = '601318'
+              searchStocks()
+            "
+          >
+            <span class="btn-icon">🛡️</span>中国平安
+          </button>
+          <button
+            class="filter-btn"
+            @click="
+              searchQuery = '600036'
+              searchStocks()
+            "
+          >
+            <span class="btn-icon">💰</span>招商银行
+          </button>
+          <button class="filter-btn special-btn" @click="showWatchlistStocks">
+            <span class="btn-icon">⭐</span>我的关注
+          </button>
+          <button class="filter-btn special-btn" @click="showPortfolioStocks">
+            <span class="btn-icon">📊</span>我的持仓
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1216,23 +1380,36 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-top: none;
   border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  max-height: 350px;
+  overflow-y: auto;
+  z-index: 100; /* 提高z-index确保显示在其他元素上方 */
+  box-shadow: var(--shadow-md);
+}
+
+.search-results-list {
   max-height: 300px;
   overflow-y: auto;
-  z-index: 10;
-  box-shadow: var(--shadow-md);
 }
 
 .search-result-item {
   padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
   border-bottom: 1px solid var(--border-light);
-  transition: background-color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .search-result-item:hover {
   background-color: var(--bg-secondary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.search-result-item:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .search-result-item:last-child {
@@ -1243,16 +1420,30 @@ onMounted(() => {
   font-weight: 600;
   color: var(--primary-color);
   margin-right: var(--spacing-md);
+  min-width: 80px;
 }
 
 .stock-name {
   flex: 1;
   color: var(--text-primary);
+  font-weight: 500;
 }
 
 .stock-market {
   color: var(--text-muted);
   font-size: var(--font-size-sm);
+  margin-right: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.stock-industry {
+  color: var(--accent-color);
+  font-size: var(--font-size-sm);
+  background-color: var(--accent-light);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .searching,
@@ -1281,19 +1472,25 @@ onMounted(() => {
 /* 快速筛选 */
 .quick-filters {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
 }
 
 .filter-label {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
-  margin-right: var(--spacing-xs);
+  font-weight: 500;
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
 }
 
 .filter-btn {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
@@ -1301,12 +1498,26 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .filter-btn:hover {
   background-color: var(--bg-tertiary);
   border-color: var(--accent-light);
   color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.filter-btn .btn-icon {
+  font-size: 1.1em;
 }
 
 .filter-btn.special-btn {

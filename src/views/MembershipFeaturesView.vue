@@ -353,10 +353,12 @@ import { membershipService, type MembershipLevel } from '@/services/membershipSe
 import { ElMessageBox, ElLoading } from 'element-plus'
 import { InfoFilled, Refresh } from '@element-plus/icons-vue'
 import { useToast } from '@/composables/useToast'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const userStore = useUserStore()
 const { showToast } = useToast()
+const route = useRoute() // 在setup顶层调用useRoute
+const router = useRouter() // 在setup顶层调用useRouter
 
 // 状态
 const isLoading = ref(true)
@@ -609,7 +611,18 @@ const handleExchange = async (level: string, days: number, coinsNeeded: number) 
 // 处理企业会员咨询
 const handleEnterpriseInquiry = async () => {
   try {
+    // 获取用户信息
+    const userId = userStore.userId || '未登录用户'
     const userEmail = userStore.userEmail || ''
+    const isAuthenticated = userStore.isAuthenticated
+
+    // 调试输出用户信息
+    console.log('企业会员咨询 - 用户信息:', {
+      userId,
+      userEmail,
+      isAuthenticated,
+      user: userStore.user,
+    })
 
     await ElMessageBox.prompt('请留下您的联系邮箱，我们会尽快与您联系', '企业会员咨询', {
       confirmButtonText: '提交',
@@ -621,7 +634,7 @@ const handleEnterpriseInquiry = async () => {
       showToast(`感谢您的咨询，我们会尽快发送企业会员详情到 ${email}`, 'success')
 
       console.log('企业会员咨询:', {
-        userId: userStore.userId,
+        userId,
         email,
         timestamp: new Date().toISOString(),
       })
@@ -714,8 +727,18 @@ const handleRechargeCoins = async () => {
     })
 
     // 显示支付二维码对话框
+    // 获取用户信息
     const userId = userStore.userId || '未登录用户'
     const userEmail = userStore.userEmail || '未知邮箱'
+    const isAuthenticated = userStore.isAuthenticated
+
+    // 调试输出用户信息
+    console.log('充值逗币 - 用户信息:', {
+      userId,
+      userEmail,
+      isAuthenticated,
+      user: userStore.user,
+    })
 
     // 计算支付金额
     let payAmount = 0
@@ -809,8 +832,7 @@ const handleRechargeCoins = async () => {
                   callback: (action) => {
                     if (action === 'confirm') {
                       // 跳转到充值记录页面
-                      // 这里可以添加跳转逻辑
-                      console.log('跳转到充值记录页面')
+                      router.push('/recharge-records')
                     }
                   },
                 }
@@ -846,8 +868,18 @@ const handleUpgrade = async (level: string) => {
     })
 
     // 显示支付二维码对话框
+    // 获取用户信息
     const userId = userStore.userId || '未登录用户'
     const userEmail = userStore.userEmail || '未知邮箱'
+    const isAuthenticated = userStore.isAuthenticated
+
+    // 调试输出用户信息
+    console.log('会员升级 - 用户信息:', {
+      userId,
+      userEmail,
+      isAuthenticated,
+      user: userStore.user,
+    })
 
     // 使用 Element Plus 的 MessageBox 显示支付二维码
     await ElMessageBox.alert(
@@ -944,6 +976,19 @@ onMounted(async () => {
   isLoading.value = true
 
   try {
+    // 获取用户信息
+    const userId = userStore.userId || '未登录用户'
+    const userEmail = userStore.userEmail || '未知邮箱'
+    const isAuthenticated = userStore.isAuthenticated
+
+    // 调试输出用户信息
+    console.log('会员页面初始化 - 用户信息:', {
+      userId,
+      userEmail,
+      isAuthenticated,
+      user: userStore.user,
+    })
+
     // 获取会员信息
     await userStore.fetchMembershipInfo()
 
@@ -954,7 +999,6 @@ onMounted(async () => {
     await fetchUserCoins()
 
     // 检查是否需要滚动到充值部分
-    const route = useRoute()
     if (route.query.section === 'recharge') {
       // 等待DOM更新完成
       await nextTick()

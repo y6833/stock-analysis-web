@@ -7,7 +7,7 @@
         </el-button>
       </el-badge>
     </div>
-    
+
     <div v-if="showNotifications" class="notification-dropdown">
       <div class="notification-header">
         <h3>通知中心</h3>
@@ -20,15 +20,15 @@
           </el-button>
         </div>
       </div>
-      
+
       <div v-if="isLoading" class="notification-loading">
         <el-skeleton :rows="3" animated />
       </div>
-      
+
       <div v-else-if="notifications.length === 0" class="notification-empty">
         <el-empty description="暂无通知" />
       </div>
-      
+
       <div v-else class="notification-list">
         <div
           v-for="notification in notifications"
@@ -39,9 +39,15 @@
         >
           <div class="notification-icon">
             <el-icon v-if="getNotificationIcon(notification.type) === 'Coin'"><Coin /></el-icon>
-            <el-icon v-else-if="getNotificationIcon(notification.type) === 'Check'"><Check /></el-icon>
-            <el-icon v-else-if="getNotificationIcon(notification.type) === 'Close'"><Close /></el-icon>
-            <el-icon v-else-if="getNotificationIcon(notification.type) === 'InfoFilled'"><InfoFilled /></el-icon>
+            <el-icon v-else-if="getNotificationIcon(notification.type) === 'Check'"
+              ><Check
+            /></el-icon>
+            <el-icon v-else-if="getNotificationIcon(notification.type) === 'Close'"
+              ><Close
+            /></el-icon>
+            <el-icon v-else-if="getNotificationIcon(notification.type) === 'InfoFilled'"
+              ><InfoFilled
+            /></el-icon>
             <el-icon v-else><Bell /></el-icon>
           </div>
           <div class="notification-content">
@@ -54,11 +60,9 @@
           </div>
         </div>
       </div>
-      
+
       <div class="notification-footer">
-        <el-button type="text" @click="viewAllNotifications">
-          查看全部通知
-        </el-button>
+        <el-button type="text" @click="viewAllNotifications"> 查看全部通知 </el-button>
       </div>
     </div>
   </div>
@@ -71,7 +75,7 @@ import { Bell, Refresh, Coin, Check, Close, InfoFilled } from '@element-plus/ico
 import { useToast } from '@/composables/useToast'
 
 // 导入服务
-const notificationService = (await import('@/services/notificationService')).default
+import notificationService from '@/services/notificationService'
 
 // 状态
 const router = useRouter()
@@ -84,13 +88,13 @@ const showNotifications = ref(false)
 // 获取通知列表
 const fetchNotifications = async () => {
   isLoading.value = true
-  
+
   try {
     const result = await notificationService.getUserNotifications({
       page: 1,
       pageSize: 5,
     })
-    
+
     notifications.value = result.list
   } catch (error) {
     console.error('获取通知列表失败:', error)
@@ -112,13 +116,13 @@ const fetchUnreadCount = async () => {
 const markAsRead = async (notificationId: number) => {
   try {
     await notificationService.markAsRead(notificationId)
-    
+
     // 更新本地通知状态
-    const notification = notifications.value.find(n => n.id === notificationId)
+    const notification = notifications.value.find((n) => n.id === notificationId)
     if (notification) {
       notification.isRead = true
     }
-    
+
     // 更新未读数量
     await fetchUnreadCount()
   } catch (error) {
@@ -130,15 +134,15 @@ const markAsRead = async (notificationId: number) => {
 const markAllAsRead = async () => {
   try {
     await notificationService.markAllAsRead()
-    
+
     // 更新本地通知状态
-    notifications.value.forEach(notification => {
+    notifications.value.forEach((notification) => {
       notification.isRead = true
     })
-    
+
     // 更新未读数量
     unreadCount.value = 0
-    
+
     showToast('已将所有通知标记为已读', 'success')
   } catch (error) {
     console.error('标记所有通知为已读失败:', error)
@@ -149,7 +153,7 @@ const markAllAsRead = async () => {
 // 切换通知面板
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
-  
+
   if (showNotifications.value) {
     fetchNotifications()
   }
@@ -161,7 +165,7 @@ const handleNotificationClick = async (notification) => {
   if (!notification.isRead) {
     await markAsRead(notification.id)
   }
-  
+
   // 根据通知类型执行不同操作
   if (notification.type.includes('recharge')) {
     // 跳转到充值记录页面
@@ -195,31 +199,31 @@ const getNotificationIcon = (type: string) => {
 // 格式化时间
 const formatTime = (dateStr: string) => {
   if (!dateStr) return ''
-  
+
   const date = new Date(dateStr)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
+
   // 一分钟内
   if (diff < 60 * 1000) {
     return '刚刚'
   }
-  
+
   // 一小时内
   if (diff < 60 * 60 * 1000) {
     return `${Math.floor(diff / (60 * 1000))}分钟前`
   }
-  
+
   // 一天内
   if (diff < 24 * 60 * 60 * 1000) {
     return `${Math.floor(diff / (60 * 60 * 1000))}小时前`
   }
-  
+
   // 一周内
   if (diff < 7 * 24 * 60 * 60 * 1000) {
     return `${Math.floor(diff / (24 * 60 * 60 * 1000))}天前`
   }
-  
+
   // 其他情况
   return date.toLocaleDateString()
 }
@@ -239,10 +243,10 @@ let refreshInterval: number | null = null
 onMounted(() => {
   // 获取未读通知数量
   fetchUnreadCount()
-  
+
   // 添加点击外部关闭事件
   document.addEventListener('click', handleClickOutside)
-  
+
   // 设置定时刷新
   refreshInterval = window.setInterval(() => {
     fetchUnreadCount()
@@ -253,7 +257,7 @@ onMounted(() => {
 onUnmounted(() => {
   // 移除点击外部关闭事件
   document.removeEventListener('click', handleClickOutside)
-  
+
   // 清除定时器
   if (refreshInterval) {
     clearInterval(refreshInterval)
@@ -279,6 +283,22 @@ onUnmounted(() => {
 
 .notification-button.has-unread {
   color: #e6a23c;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(230, 162, 60, 0.4);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(230, 162, 60, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(230, 162, 60, 0);
+  }
 }
 
 .notification-dropdown {

@@ -624,8 +624,43 @@ export const tushareService = {
         }
       }
 
-      // 使用模拟数据，避免频繁API调用
-      log(`使用模拟数据代替API调用: ${indexCode}`)
+      // 尝试使用API调用，如果失败则使用模拟数据
+      log(`尝试获取指数信息: ${indexCode}`)
+
+      try {
+        // 获取指数基本信息
+        const data = await tushareRequest('index_basic', {
+          ts_code: indexCode,
+          fields:
+            'ts_code,name,market,publisher,category,base_date,base_point,list_date,weight_rule,desc,exp_date',
+        })
+
+        if (data && data.items && data.items.length > 0) {
+          const { fields, items } = data
+          const indexData = items[0]
+
+          const nameIndex = fields.indexOf('name')
+          const marketIndex = fields.indexOf('market')
+          const publisherIndex = fields.indexOf('publisher')
+          const categoryIndex = fields.indexOf('category')
+
+          const indexInfo = {
+            code: indexCode,
+            name: indexData[nameIndex],
+            market: indexData[marketIndex],
+            publisher: indexData[publisherIndex],
+            category: indexData[categoryIndex],
+            components: 0, // 暂时无法获取成分股数量
+          }
+
+          // 缓存数据
+          cacheData(cacheKey, indexInfo, CACHE_EXPIRE_MS)
+
+          return indexInfo
+        }
+      } catch (apiError) {
+        log(`API调用失败，使用模拟数据代替: ${indexCode}`, apiError)
+      }
 
       // 模拟指数基本信息
       const mockIndexInfo: Record<string, any> = {
@@ -749,8 +784,58 @@ export const tushareService = {
         }
       }
 
-      // 使用模拟数据，避免频繁API调用
-      log(`使用模拟数据代替API调用: ${indexCode}`)
+      // 尝试使用API调用，如果失败则使用模拟数据
+      log(`尝试获取指数行情: ${indexCode}`)
+
+      try {
+        // 获取当前日期
+        const today = new Date()
+        const formatDate = (date: Date) => {
+          return date.toISOString().split('T')[0].replace(/-/g, '')
+        }
+
+        // 获取最近交易日数据
+        const data = await tushareRequest('index_daily', {
+          ts_code: indexCode,
+          start_date: formatDate(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)), // 7天前
+          end_date: formatDate(today),
+        })
+
+        if (data && data.items && data.items.length > 0) {
+          // 获取最新一天的数据
+          const { fields, items } = data
+          const latestData = items[0] // 假设数据是按日期降序排列的
+
+          const closeIndex = fields.indexOf('close')
+          const openIndex = fields.indexOf('open')
+          const highIndex = fields.indexOf('high')
+          const lowIndex = fields.indexOf('low')
+          const preCloseIndex = fields.indexOf('pre_close')
+          const changeIndex = fields.indexOf('change')
+          const pctChgIndex = fields.indexOf('pct_chg')
+          const volIndex = fields.indexOf('vol')
+          const amountIndex = fields.indexOf('amount')
+
+          const quoteData = {
+            close: parseFloat(latestData[closeIndex]),
+            open: parseFloat(latestData[openIndex]),
+            high: parseFloat(latestData[highIndex]),
+            low: parseFloat(latestData[lowIndex]),
+            pre_close: parseFloat(latestData[preCloseIndex] || latestData[closeIndex]),
+            change: changeIndex !== -1 ? parseFloat(latestData[changeIndex]) : 0,
+            pct_chg: pctChgIndex !== -1 ? parseFloat(latestData[pctChgIndex]) : 0,
+            vol: parseFloat(latestData[volIndex]),
+            amount: parseFloat(latestData[amountIndex]),
+          }
+
+          // 缓存数据
+          cacheData(cacheKey, quoteData, QUOTE_CACHE_EXPIRE_MS)
+
+          return quoteData
+        }
+      } catch (apiError) {
+        log(`API调用失败，使用模拟数据代替: ${indexCode}`, apiError)
+      }
 
       // 模拟指数行情基础数据
       const baseValues: Record<string, number> = {
@@ -862,8 +947,34 @@ export const tushareService = {
         }
       }
 
-      // 使用模拟数据，避免频繁API调用
-      log(`使用模拟数据代替API调用: 行业板块列表`)
+      // 尝试使用API调用，如果失败则使用模拟数据
+      log(`尝试获取行业板块列表`)
+
+      try {
+        // 获取行业板块列表
+        const data = await tushareRequest('index_classify', {
+          level: 'L1',
+          src: 'SW', // 申万行业分类
+        })
+
+        if (data && data.items && data.items.length > 0) {
+          const { fields, items } = data
+          const indexCodeIndex = fields.indexOf('index_code')
+          const indexNameIndex = fields.indexOf('industry_name')
+
+          const sectorList = items.map((item: any) => ({
+            code: item[indexCodeIndex],
+            name: item[indexNameIndex],
+          }))
+
+          // 缓存数据
+          cacheSectorList(sectorList)
+
+          return sectorList
+        }
+      } catch (apiError) {
+        log(`API调用失败，使用模拟数据代替: 行业板块列表`, apiError)
+      }
 
       // 模拟行业板块列表
       const mockSectors = [

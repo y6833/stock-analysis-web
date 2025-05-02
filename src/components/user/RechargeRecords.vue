@@ -25,7 +25,7 @@
     <!-- 筛选器 -->
     <div class="filter-bar">
       <div class="filter-item">
-        <label>状态:</label>
+        <label style="width: 50px">状态:</label>
         <el-select v-model="filters.status" placeholder="全部状态" clearable>
           <el-option label="待处理" value="pending" />
           <el-option label="已完成" value="completed" />
@@ -193,7 +193,7 @@ import { ElMessageBox } from 'element-plus'
 import { useToast } from '@/composables/useToast'
 
 // 导入服务
-const coinsService = (await import('@/services/coinsService')).default
+import coinsService from '@/services/coinsService'
 
 // 状态
 const isLoading = ref(false)
@@ -402,6 +402,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 150px;
 }
 
 .request-list {

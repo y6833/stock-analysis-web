@@ -171,6 +171,18 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/recharge-records',
+      name: 'recharge-records',
+      component: () => import('../views/user/RechargeRecordsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: () => import('../views/user/NotificationsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/alerts-migration-test',
       name: 'alerts-migration-test',
       component: () => import('../views/AlertsMigrationTestView.vue'),

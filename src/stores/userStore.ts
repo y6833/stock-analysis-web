@@ -25,6 +25,8 @@ export const useUserStore = defineStore('user', () => {
 
   // 计算属性
   const username = computed(() => user.value?.username || '')
+  const userId = computed(() => user.value?.id || '')
+  const userEmail = computed(() => user.value?.email || '')
   const userRole = computed(() => user.value?.role || 'user')
   const userAvatar = computed(() => user.value?.avatar || '/src/assets/default-avatar.svg')
   const userPreferences = computed(() => profile.value?.preferences || null)
@@ -266,6 +268,8 @@ export const useUserStore = defineStore('user', () => {
 
     // 计算属性
     username,
+    userId,
+    userEmail,
     userRole,
     userAvatar,
     userPreferences,
