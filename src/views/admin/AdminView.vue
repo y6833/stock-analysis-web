@@ -10,6 +10,7 @@
       <el-tab-pane label="用户管理" name="users"></el-tab-pane>
       <el-tab-pane label="会员管理" name="membership"></el-tab-pane>
       <el-tab-pane label="充值管理" name="recharge"></el-tab-pane>
+      <el-tab-pane label="页面管理" name="pages"></el-tab-pane>
       <el-tab-pane label="缓存管理" name="cache"></el-tab-pane>
     </el-tabs>
 
@@ -43,6 +44,11 @@
         </Suspense>
       </div>
 
+      <!-- 页面管理 -->
+      <div v-if="activeTab === 'pages'" class="admin-panel">
+        <PageManagement />
+      </div>
+
       <!-- 缓存管理 -->
       <div v-if="activeTab === 'cache'" class="admin-panel">
         <CacheManagement />
@@ -63,6 +69,7 @@ import UserManagement from '@/components/admin/UserManagement.vue'
 import MembershipManagement from '@/components/admin/MembershipManagement.vue'
 import CacheManagement from '@/components/admin/CacheManagement.vue'
 import RechargeRequestManagement from '@/components/admin/RechargeRequestManagement.vue'
+import PageManagement from '@/components/admin/PageManagement.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -82,7 +89,7 @@ onMounted(async () => {
 
   // 从URL参数中获取活动标签
   const tab = router.currentRoute.value.query.tab as string
-  if (tab && ['dashboard', 'users', 'membership', 'recharge', 'cache'].includes(tab)) {
+  if (tab && ['dashboard', 'users', 'membership', 'recharge', 'pages', 'cache'].includes(tab)) {
     activeTab.value = tab
   }
 })

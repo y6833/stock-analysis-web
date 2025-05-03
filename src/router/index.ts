@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { userService } from '@/services/userService'
 import { tushareService } from '@/services/tushareService'
 import { membershipGuard } from './membershipGuard'
+import { pageGuard } from './pageGuard'
 import { MembershipLevel } from '@/constants/membership'
 import HomeView from '../views/HomeView.vue'
 
@@ -237,10 +238,24 @@ const router = createRouter({
   ],
 })
 
+// 记录上一个路由路径，避免重复处理
+let lastPath = ''
+
 // 全局前置守卫
 router.beforeEach(async (to, from, next) => {
-  // 更新当前路径，用于API调用控制
-  tushareService.updateCurrentPath(to.path)
+  // 如果是相同路径的重定向，直接放行（避免循环）
+  if (to.path === from.path && to.path === lastPath) {
+    console.log('[路由守卫] 检测到相同路径重定向，直接放行:', to.path)
+    return next()
+  }
+
+  // 记录当前路径
+  lastPath = to.path
+
+  // 更新当前路径，用于API调用控制（只在路径变化时更新）
+  if (to.path !== from.path) {
+    tushareService.updateCurrentPath(to.path)
+  }
 
   // 检查路由是否需要认证和权限
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
@@ -254,30 +269,41 @@ router.beforeEach(async (to, from, next) => {
 
   // 如果路由需要认证且用户未登录，重定向到登录页面
   if (requiresAuth && !isLoggedIn) {
-    next({
+    return next({
       name: 'login',
       query: { redirect: to.fullPath }, // 保存原始目标路径
     })
   }
   // 如果路由需要管理员权限但用户不是管理员，重定向到仪表盘
   else if (requiresAdmin && !isAdmin) {
-    next({
+    return next({
       name: 'dashboard',
       query: { error: 'permission' }, // 传递权限错误信息
     })
   }
   // 如果用户已登录且路由是登录/注册页面，重定向到仪表盘
   else if (isLoggedIn && hideForAuth) {
-    next({ name: 'dashboard' })
+    return next({ name: 'dashboard' })
   }
-  // 检查会员等级权限
+  // 检查页面权限
   else if (isLoggedIn && !isAdmin) {
-    // 使用会员等级守卫检查权限
-    return membershipGuard(to, from, next)
+    // 如果是会员功能页面，直接放行（避免循环）
+    if (to.path === '/membership-features') {
+      return next()
+    }
+
+    // 优先使用页面守卫检查权限
+    try {
+      return pageGuard(to, from, next)
+    } catch (error) {
+      console.error('页面守卫出错，回退到会员等级守卫:', error)
+      // 出错时回退到会员等级守卫
+      return membershipGuard(to, from, next)
+    }
   }
   // 其他情况正常导航
   else {
-    next()
+    return next()
   }
 })
 

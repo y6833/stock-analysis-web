@@ -2047,6 +2047,500 @@
       "GET"
     ],
     "paramNames": [],
+    "path": "/api/pages",
+    "regexp": "/^\\/api\\/pages(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/pages/:id",
+    "regexp": "/^\\/api\\/pages\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/pages",
+    "regexp": "/^\\/api\\/pages(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/pages/:id",
+    "regexp": "/^\\/api\\/pages\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/pages/:id",
+    "regexp": "/^\\/api\\/pages\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/pages/:id/permissions",
+    "regexp": "/^\\/api\\/pages\\/((?:[^\\/]+?))\\/permissions(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/pages/batch-status",
+    "regexp": "/^\\/api\\/pages\\/batch-status(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/pages/init",
+    "regexp": "/^\\/api\\/pages\\/init(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/user-menu",
+    "regexp": "/^\\/api\\/user-menu(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/check-page-access",
+    "regexp": "/^\\/api\\/check-page-access(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/page-stats/summary",
+    "regexp": "/^\\/api\\/page-stats\\/summary(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/page-stats/stats",
+    "regexp": "/^\\/api\\/page-stats\\/stats(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/page-stats/logs",
+    "regexp": "/^\\/api\\/page-stats\\/logs(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/page-stats/log",
+    "regexp": "/^\\/api\\/page-stats\\/log(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/page-stats/duration",
+    "regexp": "/^\\/api\\/page-stats\\/duration(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/page-groups",
+    "regexp": "/^\\/api\\/page-groups(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/page-groups/:id",
+    "regexp": "/^\\/api\\/page-groups\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/page-groups",
+    "regexp": "/^\\/api\\/page-groups(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/page-groups/:id",
+    "regexp": "/^\\/api\\/page-groups\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/page-groups/:id",
+    "regexp": "/^\\/api\\/page-groups\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/page-groups/:id/permissions",
+    "regexp": "/^\\/api\\/page-groups\\/((?:[^\\/]+?))\\/permissions(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/permission-templates",
+    "regexp": "/^\\/api\\/permission-templates(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/permission-templates/:id",
+    "regexp": "/^\\/api\\/permission-templates\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/permission-templates",
+    "regexp": "/^\\/api\\/permission-templates(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/permission-templates/:id",
+    "regexp": "/^\\/api\\/permission-templates\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/permission-templates/:id",
+    "regexp": "/^\\/api\\/permission-templates\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/permission-templates/apply-to-page",
+    "regexp": "/^\\/api\\/permission-templates\\/apply-to-page(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/permission-templates/apply-to-group",
+    "regexp": "/^\\/api\\/permission-templates\\/apply-to-group(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
     "path": "/api/logs/data-source",
     "regexp": "/^\\/api\\/logs\\/data-source(?:\\/(?=$))?$/",
     "stack": [

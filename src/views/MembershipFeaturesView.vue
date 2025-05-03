@@ -456,18 +456,18 @@ const handleExchange = async (level: string, days: number, coinsNeeded: number) 
       // 关闭加载状态
       loadingInstance.close()
 
-      // 更新逗币余额
-      await fetchUserCoins()
+      // 更新逗币余额（强制刷新）
+      await fetchUserCoins(true)
 
-      // 更新会员信息
-      await userStore.fetchMembershipInfo()
+      // 更新会员信息（只更新一次）
+      await userStore.fetchMembershipInfo(true)
 
       // 显示成功消息
       // 获取会员过期时间
       let expiryDateStr = '未知'
       try {
-        // 强制刷新会员信息
-        await userStore.fetchMembershipInfo(true)
+        // 会员信息已经更新，不需要再次刷新
+        // await userStore.fetchMembershipInfo(true)
 
         // 首先尝试从兑换结果中获取过期时间
         if (result.expiresAt) {
@@ -944,8 +944,19 @@ const fetchMembershipLevels = async () => {
   }
 }
 
+// 上次获取逗币余额的时间
+let lastFetchCoinsTime = 0
+const COINS_CACHE_DURATION = 60 * 1000 // 1分钟缓存
+
 // 获取用户逗币余额
-const fetchUserCoins = async () => {
+const fetchUserCoins = async (forceRefresh = false) => {
+  // 如果不是强制刷新，且距离上次获取时间不足1分钟，则跳过
+  const now = Date.now()
+  if (!forceRefresh && lastFetchCoinsTime > 0 && now - lastFetchCoinsTime < COINS_CACHE_DURATION) {
+    console.log('逗币余额已缓存，跳过获取')
+    return
+  }
+
   coinsLoading.value = true
   try {
     // 导入逗币服务
@@ -958,6 +969,8 @@ const fetchUserCoins = async () => {
     if (typeof coins === 'number' && !isNaN(coins)) {
       userCoins.value = coins
       console.log('获取到用户逗币余额:', coins)
+      // 更新最后获取时间
+      lastFetchCoinsTime = now
     } else {
       console.warn('获取到的逗币余额无效:', coins)
       // 保持默认值
@@ -989,14 +1002,23 @@ onMounted(async () => {
       user: userStore.user,
     })
 
-    // 获取会员信息
-    await userStore.fetchMembershipInfo()
+    // 检查是否已经有会员信息，避免重复请求
+    if (!userStore.membershipInfo || Object.keys(userStore.membershipInfo).length === 0) {
+      console.log('没有会员信息，正在获取...')
+      await userStore.fetchMembershipInfo()
+    } else {
+      console.log('已有会员信息，跳过获取')
+    }
 
-    // 获取会员等级列表
-    await fetchMembershipLevels()
+    // 获取会员等级列表（如果尚未加载）
+    if (membershipLevels.value.length === 0) {
+      await fetchMembershipLevels()
+    }
 
-    // 获取用户逗币余额
-    await fetchUserCoins()
+    // 获取用户逗币余额（如果尚未加载）
+    if (userCoins.value === 0) {
+      await fetchUserCoins()
+    }
 
     // 检查是否需要滚动到充值部分
     if (route.query.section === 'recharge') {

@@ -161,14 +161,58 @@ export const useUserStore = defineStore('user', () => {
 
   // 获取会员信息
   async function fetchMembershipInfo(forceRefresh = false) {
-    if (!isAuthenticated.value) return
+    if (!isAuthenticated.value) {
+      console.warn('获取会员信息失败: 用户未登录')
+      return null
+    }
 
     try {
-      membership.value = await membershipService.getUserMembership(forceRefresh)
-      console.log('获取到会员信息:', membership.value)
-      return membership.value
+      console.log(`[会员信息] 开始获取会员信息, 强制刷新: ${forceRefresh}`)
+
+      // 获取会员信息前先输出当前状态
+      console.log('[会员信息] 当前会员状态:', {
+        userId: userId.value,
+        username: username.value,
+        currentMembership: membership.value,
+        currentLevel: membership.value?.effectiveLevel || 'unknown',
+      })
+
+      // 获取会员信息
+      const result = await membershipService.getUserMembership(forceRefresh)
+
+      // 检查结果是否有效
+      if (!result) {
+        console.error('[会员信息] 获取会员信息失败: 返回结果为空')
+        return null
+      }
+
+      // 更新会员信息
+      membership.value = result
+
+      // 输出详细的会员信息
+      console.log('[会员信息] 获取到会员信息:', {
+        level: result.level,
+        effectiveLevel: result.effectiveLevel,
+        expired: result.expired,
+        expiresAt: result.expiresAt,
+        name: result.name,
+      })
+
+      // 如果是高级会员，特别标记
+      if (['premium', 'enterprise'].includes(result.effectiveLevel)) {
+        console.log(`[会员信息] 用户 ${username.value} 是高级会员，应该有权限访问所有功能`)
+      }
+
+      return result
     } catch (err) {
-      console.error('获取会员信息失败:', err)
+      console.error('[会员信息] 获取会员信息失败:', err)
+
+      // 如果已经有会员信息，保留现有信息而不是返回null
+      if (membership.value) {
+        console.log('[会员信息] 保留现有会员信息:', membership.value)
+        return membership.value
+      }
+
       return null
     }
   }

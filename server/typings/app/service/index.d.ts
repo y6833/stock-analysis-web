@@ -17,6 +17,7 @@ import ExportData = require('../../../app/service/data');
 import ExportLogs = require('../../../app/service/logs');
 import ExportMembership = require('../../../app/service/membership');
 import ExportNotification = require('../../../app/service/notification');
+import ExportPage = require('../../../app/service/page');
 import ExportPortfolio = require('../../../app/service/portfolio');
 import ExportProxy = require('../../../app/service/proxy');
 import ExportSimulation = require('../../../app/service/simulation');
@@ -36,6 +37,7 @@ declare module 'egg' {
     logs: AutoInstanceType<typeof ExportLogs>;
     membership: AutoInstanceType<typeof ExportMembership>;
     notification: AutoInstanceType<typeof ExportNotification>;
+    page: AutoInstanceType<typeof ExportPage>;
     portfolio: AutoInstanceType<typeof ExportPortfolio>;
     proxy: AutoInstanceType<typeof ExportProxy>;
     simulation: AutoInstanceType<typeof ExportSimulation>;

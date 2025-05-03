@@ -9,6 +9,8 @@ import CacheStatusIndicator from '@/components/common/CacheStatusIndicator.vue'
 import DataSourceProvider from '@/components/DataSourceProvider.vue'
 import { MembershipLevel, checkMembershipLevel } from '@/constants/membership'
 import NotificationCenter from '@/components/common/NotificationCenter.vue'
+// 暂时注释掉，直到创建了必要的服务
+// import PageAccessRecorder from '@/components/common/PageAccessRecorder.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -106,12 +108,29 @@ const logout = () => {
   })
 }
 
+// 导入页面服务
+import pageService from '@/services/pageService'
+
 // 初始化用户状态
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
 
+  // 清除页面权限缓存
+  pageService.clearPageAccessCache()
+
   // 初始化用户状态
   await userStore.initUserState()
+
+  // 如果用户已登录，强制刷新会员信息
+  if (userStore.isAuthenticated) {
+    console.log('[App] 用户已登录，强制刷新会员信息')
+    try {
+      const membershipInfo = await userStore.fetchMembershipInfo(true)
+      console.log('[App] 会员信息刷新成功:', membershipInfo)
+    } catch (error) {
+      console.error('[App] 刷新会员信息失败:', error)
+    }
+  }
 })
 
 // 处理数据刷新成功
@@ -135,6 +154,9 @@ onUnmounted(() => {
 <template>
   <DataSourceProvider>
     <div class="app-container">
+      <!-- 页面访问记录器 - 暂时禁用 -->
+      <!-- <PageAccessRecorder /> -->
+
       <!-- 消息提示组件 -->
       <!-- <MessageToast /> -->
 

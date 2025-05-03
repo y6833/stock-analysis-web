@@ -94,10 +94,23 @@ export function setAllowApiCall(allow: boolean): void {
   log(`API调用权限已${allow ? '开启' : '关闭'}`)
 }
 
+// 记录已经更新过的路径，避免重复日志
+const updatedPaths = new Set<string>()
+
 // 更新当前路径
 export function updateCurrentPath(path: string): void {
+  // 如果路径没有变化，不做任何操作
+  if (currentPath === path) {
+    return
+  }
+
   currentPath = path
-  log(`当前路径已更新为: ${path}`)
+
+  // 只有首次更新路径时才打印日志
+  if (!updatedPaths.has(path)) {
+    log(`当前路径已更新为: ${path}`)
+    updatedPaths.add(path)
+  }
 }
 
 // Tushare API 请求函数

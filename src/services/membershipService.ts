@@ -47,15 +47,88 @@ export const membershipService = {
       // 构建请求URL，添加强制刷新参数
       const url = forceRefresh ? '/api/membership?forceRefresh=true' : '/api/membership'
 
-      const response = await axios.get(url, getAuthHeaders())
-      console.log('会员信息API响应:', response.data)
-      return response.data.data
+      console.log(`[会员服务] 请求会员信息, URL: ${url}, 强制刷新: ${forceRefresh}`)
+
+      // 获取授权头
+      const headers = getAuthHeaders()
+      console.log('[会员服务] 授权头:', headers)
+
+      // 发送请求
+      const response = await axios.get(url, headers)
+
+      // 检查响应
+      if (!response.data || !response.data.data) {
+        console.error('[会员服务] 会员信息API响应无效:', response)
+        throw new Error('会员信息API响应无效')
+      }
+
+      console.log('[会员服务] 会员信息API响应:', response.data)
+
+      // 检查会员信息是否有效
+      const membershipData = response.data.data
+      if (!membershipData.effectiveLevel) {
+        console.error('[会员服务] 会员信息缺少effectiveLevel字段:', membershipData)
+        throw new Error('会员信息缺少effectiveLevel字段')
+      }
+
+      // 如果是高级会员，特别标记
+      if (['premium', 'enterprise'].includes(membershipData.effectiveLevel)) {
+        console.log(`[会员服务] 用户是高级会员 (${membershipData.effectiveLevel})，应该有更多权限`)
+      }
+
+      // 缓存会员信息到localStorage
+      try {
+        localStorage.setItem('user_membership', JSON.stringify(membershipData))
+        console.log('[会员服务] 会员信息已缓存到localStorage')
+      } catch (cacheError) {
+        console.error('[会员服务] 缓存会员信息失败:', cacheError)
+      }
+
+      return membershipData
     } catch (error: any) {
-      console.error('获取用户会员信息失败:', error)
+      console.error('[会员服务] 获取用户会员信息失败:', error)
+
+      // 检查是否是网络错误
+      if (
+        error.message &&
+        (error.message.includes('Network Error') || error.message.includes('timeout'))
+      ) {
+        console.warn('[会员服务] 网络错误，尝试再次请求...')
+
+        try {
+          // 再次尝试，使用不同的URL参数
+          const retryUrl = forceRefresh ? '/api/membership' : '/api/membership?forceRefresh=true'
+          const { getAuthHeaders } = await import('@/utils/auth')
+          const response = await axios.get(retryUrl, getAuthHeaders())
+
+          if (response.data && response.data.data) {
+            console.log('[会员服务] 重试成功，会员信息:', response.data.data)
+            return response.data.data
+          }
+        } catch (retryError) {
+          console.error('[会员服务] 重试获取会员信息失败:', retryError)
+        }
+      }
+
       const { showToast } = useToast()
       showToast(`获取会员信息失败: ${error.response?.data?.message || error.message}`, 'error')
 
-      // 返回默认的免费会员信息
+      // 返回默认的会员信息（根据后端API的实际响应）
+      console.warn('[会员服务] 返回默认会员信息')
+
+      // 尝试从localStorage获取缓存的会员信息
+      try {
+        const cachedMembership = localStorage.getItem('user_membership')
+        if (cachedMembership) {
+          const parsedMembership = JSON.parse(cachedMembership)
+          console.log('[会员服务] 使用缓存的会员信息:', parsedMembership)
+          return parsedMembership
+        }
+      } catch (cacheError) {
+        console.error('[会员服务] 读取缓存会员信息失败:', cacheError)
+      }
+
+      // 如果没有缓存，返回默认的免费会员信息
       return {
         level: 'free',
         effectiveLevel: 'free',

@@ -179,6 +179,42 @@ module.exports = app => {
   router.patch('/api/admin/users/:userId/status', auth, controller.admin.updateUserStatus);
   router.get('/api/admin/stats', auth, controller.admin.getSystemStats);
 
+  // 页面管理相关路由（需要管理员权限）
+  router.get('/api/pages', auth, controller.page.getAllPages);
+  router.get('/api/pages/:id', auth, controller.page.getPageById);
+  router.post('/api/pages', auth, controller.page.createPage);
+  router.put('/api/pages/:id', auth, controller.page.updatePage);
+  router.delete('/api/pages/:id', auth, controller.page.deletePage);
+  router.put('/api/pages/:id/permissions', auth, controller.page.updatePagePermissions);
+  router.post('/api/pages/batch-status', auth, controller.page.batchUpdateStatus);
+  router.post('/api/pages/init', auth, controller.page.initSystemPages);
+  router.get('/api/user-menu', auth, controller.page.getUserMenu);
+  router.get('/api/check-page-access', auth, controller.page.checkPageAccess);
+
+  // 页面统计相关路由
+  router.get('/api/page-stats/summary', auth, controller.pageStats.getPageAccessSummary);
+  router.get('/api/page-stats/stats', auth, controller.pageStats.getPageAccessStats);
+  router.get('/api/page-stats/logs', auth, controller.pageStats.getPageAccessLogs);
+  router.post('/api/page-stats/log', controller.pageStats.logPageAccess);
+  router.post('/api/page-stats/duration', controller.pageStats.updatePageDuration);
+
+  // 页面组相关路由
+  router.get('/api/page-groups', auth, controller.pageGroup.getAllPageGroups);
+  router.get('/api/page-groups/:id', auth, controller.pageGroup.getPageGroupById);
+  router.post('/api/page-groups', auth, controller.pageGroup.createPageGroup);
+  router.put('/api/page-groups/:id', auth, controller.pageGroup.updatePageGroup);
+  router.delete('/api/page-groups/:id', auth, controller.pageGroup.deletePageGroup);
+  router.put('/api/page-groups/:id/permissions', auth, controller.pageGroup.setPageGroupPermissions);
+
+  // 权限模板相关路由
+  router.get('/api/permission-templates', auth, controller.permissionTemplate.getAllTemplates);
+  router.get('/api/permission-templates/:id', auth, controller.permissionTemplate.getTemplateById);
+  router.post('/api/permission-templates', auth, controller.permissionTemplate.createTemplate);
+  router.put('/api/permission-templates/:id', auth, controller.permissionTemplate.updateTemplate);
+  router.delete('/api/permission-templates/:id', auth, controller.permissionTemplate.deleteTemplate);
+  router.post('/api/permission-templates/apply-to-page', auth, controller.permissionTemplate.applyTemplateToPage);
+  router.post('/api/permission-templates/apply-to-group', auth, controller.permissionTemplate.applyTemplateToGroup);
+
   // 日志相关路由（需要认证）
   router.get('/api/logs/data-source', auth, controller.logs.getDataSourceLogs);
   router.get('/api/logs/data-source/recent', auth, controller.logs.getRecentDataSourceLogs);
