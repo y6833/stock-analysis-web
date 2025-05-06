@@ -4,19 +4,305 @@
       <h1>专业股票分析工具</h1>
       <p class="subtitle">基于技术指标的智能分析系统，帮助您做出更明智的投资决策</p>
     </div>
-    
-    <div class="content">
-      <p>正在加载股票分析工具...</p>
+
+    <div class="stock-search">
+      <div class="search-input">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="输入股票代码或名称搜索..."
+          @input="handleSearch"
+        />
+        <button class="search-btn" @click="handleSearch">
+          <span>🔍</span>
+        </button>
+      </div>
+
+      <div v-if="searchResults.length > 0" class="search-results">
+        <div
+          v-for="stock in searchResults"
+          :key="stock.symbol"
+          class="search-result-item"
+          @click="selectStock(stock.symbol)"
+        >
+          <span class="stock-symbol">{{ stock.symbol }}</span>
+          <span class="stock-name">{{ stock.name }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isLoading" class="loading-container">
+      <p>正在加载股票数据...</p>
       <div class="loading-spinner"></div>
+    </div>
+
+    <div v-else-if="currentStock" class="stock-content">
+      <div class="stock-header">
+        <div class="stock-title">
+          <h2>{{ currentStock.name }}</h2>
+          <span class="stock-code">{{ currentStock.symbol }}</span>
+          <span
+            v-if="currentStock.data_source"
+            class="stock-data-source"
+            :class="getDataSourceClass(currentStock.data_source)"
+            :title="'数据来源: ' + currentStock.data_source"
+          >
+            {{ getDataSourceIcon(currentStock.data_source) }}
+          </span>
+        </div>
+        <div class="stock-price-container">
+          <div class="stock-price">{{ currentStock.price.toFixed(2) }}</div>
+          <div class="stock-change" :class="currentStock.pct_chg >= 0 ? 'up' : 'down'">
+            {{ currentStock.pct_chg >= 0 ? '+' : '' }}{{ currentStock.pct_chg.toFixed(2) }}%
+          </div>
+        </div>
+      </div>
+
+      <div class="stock-details">
+        <div class="detail-item">
+          <span class="detail-label">开盘价</span>
+          <span class="detail-value">{{ currentStock.open.toFixed(2) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">最高价</span>
+          <span class="detail-value">{{ currentStock.high.toFixed(2) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">最低价</span>
+          <span class="detail-value">{{ currentStock.low.toFixed(2) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">昨收价</span>
+          <span class="detail-value">{{ currentStock.pre_close.toFixed(2) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">成交量</span>
+          <span class="detail-value">{{ formatVolume(currentStock.vol) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">成交额</span>
+          <span class="detail-value">{{ formatAmount(currentStock.amount) }}</span>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="action-btn refresh-btn" @click="refreshStockData">
+          <span>刷新数据</span>
+        </button>
+        <button class="action-btn add-watchlist-btn" @click="addToWatchlist">
+          <span>添加到关注列表</span>
+        </button>
+      </div>
+
+      <div class="chart-container">
+        <p>股票图表区域 (待实现)</p>
+      </div>
+    </div>
+
+    <div v-else class="empty-state">
+      <p>请搜索并选择一只股票进行分析</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { stockService } from '@/services/stockService'
+import { toast } from '@/utils/toast'
+import type { Stock, StockQuote } from '@/types/stock'
+import type { DashboardSettings, Watchlist, WatchlistItem } from '@/types/dashboard'
 
-onMounted(() => {
+// 状态
+const searchQuery = ref('')
+const searchResults = ref<Stock[]>([])
+const currentStock = ref<StockQuote | null>(null)
+const isLoading = ref(false)
+
+// 搜索股票
+const handleSearch = async () => {
+  if (!searchQuery.value || searchQuery.value.length < 2) {
+    searchResults.value = []
+    return
+  }
+
+  try {
+    const results = await stockService.searchStocks(searchQuery.value)
+    searchResults.value = results.slice(0, 10) // 限制显示前10条结果
+  } catch (error) {
+    console.error('搜索股票失败:', error)
+    toast.error('搜索股票失败，请稍后再试')
+    searchResults.value = []
+  }
+}
+
+// 选择股票
+const selectStock = async (symbol: string) => {
+  searchResults.value = [] // 清空搜索结果
+  isLoading.value = true
+
+  try {
+    // 使用不强制刷新的方式获取股票行情，优先使用缓存
+    const quote = await stockService.getStockQuote(symbol, false)
+    currentStock.value = quote
+  } catch (error) {
+    console.error(`获取股票 ${symbol} 行情失败:`, error)
+    toast.error(`获取股票行情失败: ${(error as Error).message || '未知错误'}`)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 刷新股票数据
+const refreshStockData = async () => {
+  if (!currentStock.value) return
+
+  isLoading.value = true
+
+  try {
+    // 强制刷新股票行情
+    const quote = await stockService.getStockQuote(currentStock.value.symbol, true)
+    currentStock.value = quote
+    toast.success('股票数据已刷新')
+  } catch (error) {
+    console.error(`刷新股票 ${currentStock.value.symbol} 行情失败:`, error)
+    toast.error(`刷新股票行情失败: ${(error as Error).message || '未知错误'}`)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 添加到关注列表
+const addToWatchlist = async () => {
+  if (!currentStock.value) return
+
+  try {
+    // 获取当前用户的关注列表
+    const dashboardSettings = await stockService.getDashboardSettings()
+
+    if (!dashboardSettings || !dashboardSettings.watchlists) {
+      toast.error('获取关注列表失败')
+      return
+    }
+
+    // 检查是否已经在关注列表中
+    const defaultWatchlist =
+      dashboardSettings.watchlists.find(
+        (w: Watchlist) => w.id === dashboardSettings.activeWatchlistId
+      ) || dashboardSettings.watchlists[0]
+
+    if (!defaultWatchlist) {
+      toast.error('未找到默认关注列表')
+      return
+    }
+
+    // 检查股票是否已在关注列表中
+    const isAlreadyInWatchlist = defaultWatchlist.items.some(
+      (stock: WatchlistItem) => stock.symbol === currentStock.value?.symbol
+    )
+
+    if (isAlreadyInWatchlist) {
+      toast.info(`${currentStock.value.name} 已在关注列表中`)
+      return
+    }
+
+    // 添加到关注列表
+    defaultWatchlist.items.push({
+      symbol: currentStock.value.symbol,
+      name: currentStock.value.name,
+      price: currentStock.value.price,
+      change: currentStock.value.change,
+      changePercent: currentStock.value.pct_chg,
+      volume: currentStock.value.vol,
+      turnover: currentStock.value.amount,
+      notes: '',
+      addedAt: new Date().toISOString(),
+    })
+
+    // 保存更新后的关注列表
+    await stockService.saveDashboardSettings(dashboardSettings)
+
+    toast.success(`已添加 ${currentStock.value.name} 到关注列表`)
+  } catch (error) {
+    console.error('添加到关注列表失败:', error)
+    toast.error(`添加到关注列表失败: ${(error as Error).message || '未知错误'}`)
+  }
+}
+
+// 格式化成交量
+const formatVolume = (vol: number): string => {
+  if (vol >= 100000000) {
+    return (vol / 100000000).toFixed(2) + '亿手'
+  } else if (vol >= 10000) {
+    return (vol / 10000).toFixed(2) + '万手'
+  } else {
+    return vol.toFixed(0) + '手'
+  }
+}
+
+// 格式化成交额
+const formatAmount = (amount: number): string => {
+  if (amount >= 100000000) {
+    return (amount / 100000000).toFixed(2) + '亿'
+  } else if (amount >= 10000) {
+    return (amount / 10000).toFixed(2) + '万'
+  } else {
+    return amount.toFixed(0)
+  }
+}
+
+// 获取数据源类名
+const getDataSourceClass = (dataSource: string): string => {
+  if (!dataSource) return ''
+
+  if (dataSource.includes('api')) return 'api'
+  if (dataSource.includes('cache')) return 'cache'
+  if (dataSource.includes('mock')) return 'mock'
+
+  return ''
+}
+
+// 获取数据源图标
+const getDataSourceIcon = (dataSource: string): string => {
+  if (!dataSource) return ''
+
+  if (dataSource.includes('api')) return '🔄'
+  if (dataSource.includes('cache')) return '💾'
+  if (dataSource.includes('mock')) return '📊'
+
+  return ''
+}
+
+onMounted(async () => {
   console.log('StockAnalysisView 组件已加载')
+
+  try {
+    // 尝试从URL参数获取股票代码
+    const urlParams = new URLSearchParams(window.location.search)
+    const symbolFromUrl = urlParams.get('symbol')
+
+    if (symbolFromUrl) {
+      // 如果URL中有股票代码，直接加载该股票
+      await selectStock(symbolFromUrl)
+    } else {
+      // 否则尝试加载默认股票
+      try {
+        const dashboardSettings = await stockService.getDashboardSettings()
+        if (dashboardSettings && dashboardSettings.defaultSymbol) {
+          await selectStock(dashboardSettings.defaultSymbol)
+        } else {
+          // 如果没有默认股票，加载上证指数
+          await selectStock('000001.SH')
+        }
+      } catch (settingsError) {
+        console.error('获取仪表盘设置失败:', settingsError)
+        // 加载上证指数作为备选
+        await selectStock('000001.SH')
+      }
+    }
+  } catch (error) {
+    console.error('初始化股票数据失败:', error)
+    toast.error('初始化股票数据失败，请手动搜索股票')
+  }
 })
 </script>
 
@@ -34,38 +320,260 @@ onMounted(() => {
 
 .page-header h1 {
   font-size: 28px;
-  color: #42b983;
+  color: var(--primary-color);
   margin-bottom: 10px;
 }
 
 .subtitle {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 16px;
 }
 
-.content {
+.stock-search {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  display: flex;
+  width: 100%;
+}
+
+.search-input input {
+  flex: 1;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px 0 0 4px;
+  font-size: 16px;
+}
+
+.search-btn {
+  padding: 0 15px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-result-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+
+.search-result-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.stock-symbol {
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.stock-name {
+  color: var(--text-secondary);
+}
+
+.loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 300px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  padding: 20px;
 }
 
 .loading-spinner {
   width: 50px;
   height: 50px;
   border: 4px solid rgba(66, 185, 131, 0.2);
-  border-top: 4px solid #42b983;
+  border-top: 4px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-top: 20px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.stock-content {
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.stock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.stock-title {
+  display: flex;
+  align-items: center;
+}
+
+.stock-title h2 {
+  margin: 0;
+  margin-right: 10px;
+}
+
+.stock-code {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-right: 10px;
+}
+
+.stock-data-source {
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background-color: var(--bg-tertiary);
+}
+
+.stock-data-source.api {
+  color: var(--accent-color);
+}
+
+.stock-data-source.cache {
+  color: var(--info-color);
+}
+
+.stock-data-source.mock {
+  color: var(--warning-color);
+}
+
+.stock-price-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.stock-price {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.stock-change {
+  font-size: 16px;
+}
+
+.stock-change.up {
+  color: var(--stock-up);
+}
+
+.stock-change.down {
+  color: var(--stock-down);
+}
+
+.stock-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.detail-item {
+  background-color: var(--bg-primary);
+  padding: 10px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.detail-value {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.action-btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.refresh-btn {
+  background-color: var(--info-color);
+  color: white;
+}
+
+.add-watchlist-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.chart-container {
+  background-color: var(--bg-primary);
+  border-radius: 4px;
+  padding: 20px;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .stock-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stock-price-container {
+    align-items: flex-start;
+    margin-top: 10px;
+  }
+
+  .stock-details {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

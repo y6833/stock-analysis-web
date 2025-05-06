@@ -80,6 +80,13 @@ export async function pageGuard(
     username: userStore.username,
   })
 
+  // 特殊页面直接放行
+  const specialPages = ['/dashboard', '/', '/about', '/membership-features']
+  if (specialPages.includes(to.path)) {
+    console.log(`[页面守卫] 特殊页面直接放行: ${to.path}`)
+    return next()
+  }
+
   try {
     // 检查页面访问权限
     const hasAccess = await pageService.checkPageAccess(to.path)
@@ -109,26 +116,25 @@ export async function pageGuard(
   } catch (error) {
     console.error('检查页面权限失败:', error)
 
-    // 如果是数据库表不存在的错误，不显示错误消息
-    if (
-      error instanceof Error &&
-      error.message &&
-      (error.message.includes("doesn't exist") || error.message.includes('no such table'))
-    ) {
-      console.warn('页面管理表不存在，回退到会员等级守卫')
-    } else {
-      // 其他错误可以显示提示
+    // 如果是数据库表不存在的错误或网络错误，允许访问基础页面
+    const basicPages = ['/stock', '/market-heatmap', '/industry-analysis', '/test-dashboard']
+    if (basicPages.includes(to.path)) {
+      console.warn(`检查页面权限失败，但这是基础页面，允许访问: ${to.path}`)
+      return next()
+    }
+
+    // 其他错误可以显示提示
+    if (!hasShownPermissionMessage(to.path + '_error')) {
       ElMessage({
-        message: '页面权限检查失败，使用默认权限检查',
+        message: '页面权限检查失败，请稍后再试',
         type: 'warning',
         duration: 3000,
       })
+      markPermissionMessageShown(to.path + '_error')
     }
 
-    // 出错时，使用默认的会员等级守卫
-    return import('./membershipGuard').then(({ default: membershipGuard }) => {
-      return membershipGuard(to, from, next)
-    })
+    // 出错时，重定向到仪表盘
+    return next({ path: '/dashboard' })
   }
 
   // 满足要求，放行

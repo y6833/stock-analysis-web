@@ -60,21 +60,27 @@
                       v-for="i in 5"
                       :key="i"
                       class="star"
-                      :class="{ filled: i <= Math.round(sourceMetadata[source].popularity / 20) }"
+                      :class="{
+                        filled: i <= Math.round((sourceMetadata[source]?.popularity || 0) / 20),
+                      }"
                       >★</span
                     >
                   </div>
                 </div>
                 <div class="meta-item">
                   <span class="meta-label">更新:</span>
-                  <span>{{ formatDate(sourceMetadata[source].updateTime) }}</span>
+                  <span>{{
+                    sourceMetadata[source]?.updateTime
+                      ? formatDate(sourceMetadata[source].updateTime)
+                      : '未知'
+                  }}</span>
                 </div>
                 <div class="meta-item">
                   <span class="meta-label">数据量:</span>
                   <div class="progress-bar">
                     <div
                       class="progress"
-                      :style="{ width: `${sourceMetadata[source].dataVolume}%` }"
+                      :style="{ width: `${sourceMetadata[source]?.dataVolume || 0}%` }"
                     ></div>
                   </div>
                 </div>
@@ -269,21 +275,23 @@ const sortSources = () => {
     case 'popularity':
       // 按热度排序（从高到低）
       sources.sort(
-        (a, b) => sourceMetadata.value[b].popularity - sourceMetadata.value[a].popularity
+        (a, b) =>
+          (sourceMetadata.value[b]?.popularity || 0) - (sourceMetadata.value[a]?.popularity || 0)
       )
       break
     case 'updateTime':
       // 按更新时间排序（从新到旧）
-      sources.sort(
-        (a, b) =>
-          sourceMetadata.value[b].updateTime.getTime() -
-          sourceMetadata.value[a].updateTime.getTime()
-      )
+      sources.sort((a, b) => {
+        const timeA = sourceMetadata.value[a]?.updateTime?.getTime() || 0
+        const timeB = sourceMetadata.value[b]?.updateTime?.getTime() || 0
+        return timeB - timeA
+      })
       break
     case 'dataVolume':
       // 按数据量排序（从高到低）
       sources.sort(
-        (a, b) => sourceMetadata.value[b].dataVolume - sourceMetadata.value[a].dataVolume
+        (a, b) =>
+          (sourceMetadata.value[b]?.dataVolume || 0) - (sourceMetadata.value[a]?.dataVolume || 0)
       )
       break
     default:

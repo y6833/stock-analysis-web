@@ -461,12 +461,35 @@ class PageController extends Controller {
         return;
       }
 
+      // 特殊页面直接允许访问
+      const specialPages = [
+        '/membership-features', // 会员功能页面（避免循环）
+        '/dashboard', // 仪表盘（基础功能，所有用户都可访问）
+        '/', // 首页
+        '/about', // 关于页面
+        '/profile', // 个人资料页面
+        '/settings', // 设置页面
+        '/notifications', // 通知页面
+        '/recharge-records', // 充值记录页面
+      ];
+
+      if (specialPages.includes(path)) {
+        ctx.body = {
+          success: true,
+          hasAccess: true,
+          membershipLevel: ctx.user.role === 'admin' ? 'admin' : 'free',
+          message: '特殊页面直接允许访问',
+        };
+        return;
+      }
+
       // 管理员拥有所有权限
       if (ctx.user.role === 'admin') {
         ctx.body = {
           success: true,
           hasAccess: true,
           isAdmin: true,
+          message: '管理员拥有所有权限',
         };
         return;
       }
@@ -476,6 +499,35 @@ class PageController extends Controller {
         const membershipInfo = await service.membership.getUserMembership(ctx.user.id);
         const membershipLevel = membershipInfo.effectiveLevel;
 
+        // 基础页面（免费用户可访问）
+        const basicPages = [
+          '/stock', // 股票分析
+          '/market-heatmap', // 市场热图
+          '/industry-analysis', // 行业分析
+          '/test-dashboard', // 测试仪表盘
+        ];
+
+        if (basicPages.includes(path)) {
+          ctx.body = {
+            success: true,
+            hasAccess: true,
+            membershipLevel,
+            message: '基础页面允许访问',
+          };
+          return;
+        }
+
+        // 高级会员可以访问所有功能
+        if (['premium', 'enterprise'].includes(membershipLevel)) {
+          ctx.body = {
+            success: true,
+            hasAccess: true,
+            membershipLevel,
+            message: '高级会员可以访问所有功能',
+          };
+          return;
+        }
+
         // 检查页面访问权限
         const hasAccess = await service.page.checkPageAccess(path, membershipLevel);
 
@@ -483,6 +535,7 @@ class PageController extends Controller {
           success: true,
           hasAccess,
           membershipLevel,
+          requiredLevel: hasAccess ? membershipLevel : 'premium',
         };
       } catch (error) {
         // 检查是否是数据库表不存在的错误
@@ -494,6 +547,7 @@ class PageController extends Controller {
             hasAccess: true,
             membershipLevel: 'unknown',
             fallback: true,
+            message: '页面管理表不存在，默认允许访问',
           };
         } else {
           // 重新抛出其他错误

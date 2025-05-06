@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { userService } from '@/services/userService'
 import { tushareService } from '@/services/tushareService'
-import { membershipGuard } from './membershipGuard'
 import { pageGuard } from './pageGuard'
 import { MembershipLevel } from '@/constants/membership'
+import { useUserStore } from '@/stores/userStore'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -292,14 +292,15 @@ router.beforeEach(async (to, from, next) => {
       return next()
     }
 
-    // 优先使用页面守卫检查权限
-    try {
-      return pageGuard(to, from, next)
-    } catch (error) {
-      console.error('页面守卫出错，回退到会员等级守卫:', error)
-      // 出错时回退到会员等级守卫
-      return membershipGuard(to, from, next)
+    // 高级会员和企业会员可以访问所有功能
+    const userStore = useUserStore()
+    if (['premium', 'enterprise'].includes(userStore.membershipLevel)) {
+      console.log(`[路由守卫] 用户是高级会员或企业会员，直接放行: ${to.path}`)
+      return next()
     }
+
+    // 使用统一的页面权限检查
+    return pageGuard(to, from, next)
   }
   // 其他情况正常导航
   else {

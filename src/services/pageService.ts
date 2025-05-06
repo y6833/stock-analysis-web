@@ -316,14 +316,48 @@ export const pageService = {
    */
   async checkPageAccess(path: string, forceRefresh = false): Promise<boolean> {
     // 特殊页面直接允许访问
-    if (
-      path === '/membership-features' || // 会员功能页面（避免循环）
-      path === '/dashboard' || // 仪表盘（基础功能，所有用户都可访问）
-      path === '/' || // 首页
-      path === '/about' // 关于页面
-    ) {
+    const specialPages = [
+      '/membership-features', // 会员功能页面（避免循环）
+      '/dashboard', // 仪表盘（基础功能，所有用户都可访问）
+      '/', // 首页
+      '/about', // 关于页面
+      '/profile', // 个人资料页面
+      '/settings', // 设置页面
+      '/notifications', // 通知页面
+      '/recharge-records', // 充值记录页面
+    ]
+
+    if (specialPages.includes(path)) {
       console.log(`[页面权限] 特殊页面直接允许访问: ${path}`)
       return true
+    }
+
+    // 基础页面（免费用户可访问）
+    const basicPages = [
+      '/stock', // 股票分析
+      '/market-heatmap', // 市场热图
+      '/industry-analysis', // 行业分析
+      '/test-dashboard', // 测试仪表盘
+    ]
+
+    // 检查用户是否是高级会员
+    try {
+      const { useUserStore } = await import('@/stores/userStore')
+      const userStore = useUserStore()
+
+      // 如果是高级会员或企业会员，直接允许访问
+      if (['premium', 'enterprise'].includes(userStore.membershipLevel)) {
+        console.log(`[页面权限] 用户是高级会员或企业会员，直接允许访问: ${path}`)
+        return true
+      }
+
+      // 如果是基础页面，免费用户也可以访问
+      if (basicPages.includes(path)) {
+        console.log(`[页面权限] 基础页面允许访问: ${path}`)
+        return true
+      }
+    } catch (error) {
+      console.error('获取用户会员信息失败:', error)
     }
 
     // 检查缓存
@@ -361,52 +395,35 @@ export const pageService = {
 
       return response.data.hasAccess
     } catch (error: any) {
+      console.error('检查页面访问权限失败:', error)
+
       // 检查是否是数据库表不存在的错误
-      if (
+      const isTableNotExistError =
         error.response?.data?.message &&
         (error.response.data.message.includes("doesn't exist") ||
           error.response.data.message.includes('no such table'))
-      ) {
-        console.warn('页面管理表不存在，默认允许访问:', path)
-        // 表不存在时，默认允许访问
-        const result = true
+
+      // 如果是数据库表不存在错误或者是基础页面，允许访问
+      if (isTableNotExistError || basicPages.includes(path)) {
+        const reason = isTableNotExistError ? '页面管理表不存在' : '这是基础页面'
+        console.warn(`检查页面权限失败，但${reason}，默认允许访问:`, path)
 
         // 缓存结果
         this._pageAccessCache.set(path, {
-          hasAccess: result,
+          hasAccess: true,
           timestamp: now,
         })
 
-        return result
-      }
-
-      console.error('检查页面访问权限失败:', error)
-
-      // 检查是否是基础页面，如果是则默认允许访问
-      const basicPages = ['/stock', '/market-heatmap', '/industry-analysis', '/test-dashboard']
-      if (basicPages.includes(path)) {
-        console.warn('检查页面权限失败，但这是基础页面，默认允许访问:', path)
-        const result = true
-
-        // 缓存结果
-        this._pageAccessCache.set(path, {
-          hasAccess: result,
-          timestamp: now,
-        })
-
-        return result
+        return true
       }
 
       // 其他错误情况下，默认拒绝访问
-      const result = false
-
-      // 缓存结果
       this._pageAccessCache.set(path, {
-        hasAccess: result,
+        hasAccess: false,
         timestamp: now,
       })
 
-      return result
+      return false
     }
   },
 }

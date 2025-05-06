@@ -4,6 +4,8 @@ export interface Stock {
   name: string
   market: string
   industry: string
+  data_source?: string
+  listDate?: string
 }
 
 // 股票数据
@@ -110,6 +112,9 @@ export interface StockQuote {
   total_mv?: number
   circ_mv?: number
   update_time: string
+  data_source?: string
+  data_source_message?: string
+  source_type?: string
 }
 
 // 财经新闻

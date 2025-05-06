@@ -184,8 +184,8 @@ const refreshMarketData = async (forceRefresh = true) => {
         const updatedItems = await Promise.all(
           activeWatchlist.value.items.map(async (item: WatchlistItem) => {
             try {
-              // 获取股票最新行情
-              const stockQuote = await stockService.getStockQuote(item.symbol)
+              // 获取股票最新行情，传递 forceRefresh 参数
+              const stockQuote = await stockService.getStockQuote(item.symbol, forceRefresh)
 
               if (stockQuote) {
                 const previousPrice = item.price || stockQuote.pre_close
@@ -200,13 +200,18 @@ const refreshMarketData = async (forceRefresh = true) => {
                   changePercent,
                   volume: stockQuote.vol || 0,
                   turnover: stockQuote.amount || 0,
+                  data_source: stockQuote.data_source || stockQuote.source_type || 'unknown',
                 }
               }
 
               return item
             } catch (error) {
               console.error(`获取股票 ${item.symbol} 行情失败:`, error)
-              return item
+              // 保留原有数据，不更新
+              return {
+                ...item,
+                data_source: 'error',
+              }
             }
           })
         )
@@ -235,6 +240,7 @@ const refreshMarketData = async (forceRefresh = true) => {
 
     // 获取最新财经新闻
     try {
+      // 传递 forceRefresh 参数，控制是否强制刷新
       const news = await stockService.getFinancialNews(5)
       if (news && news.length > 0) {
         newsItems.value = news.map((item: any) => ({
@@ -243,8 +249,10 @@ const refreshMarketData = async (forceRefresh = true) => {
           source: item.source,
           url: item.url,
           important: item.important,
+          data_source: item.data_source || item.source_type || 'unknown',
         }))
       } else {
+        console.log('未获取到新闻数据，使用模拟数据')
         // 如果没有获取到新闻，使用模拟数据
         newsItems.value = [
           {
@@ -253,35 +261,65 @@ const refreshMarketData = async (forceRefresh = true) => {
             source: '财经日报',
             url: '#',
             important: true,
+            data_source: 'mock',
           },
           {
             title: '科技板块全线上涨，半导体行业领涨',
             time: '30分钟前',
             source: '证券时报',
             url: '#',
+            data_source: 'mock',
           },
           {
             title: '多家券商上调A股目标位，看好下半年行情',
             time: '1小时前',
             source: '上海证券报',
             url: '#',
+            data_source: 'mock',
           },
           {
             title: '外资连续三日净流入，北向资金今日净买入超50亿',
             time: '2小时前',
             source: '中国证券报',
             url: '#',
+            data_source: 'mock',
           },
           {
             title: '新能源汽车销量创新高，相关概念股受关注',
             time: '3小时前',
             source: '第一财经',
             url: '#',
+            data_source: 'mock',
           },
         ]
       }
     } catch (error) {
       console.error('获取财经新闻失败:', error)
+      // 使用模拟数据作为备份
+      newsItems.value = [
+        {
+          title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
+          time: '10分钟前',
+          source: '财经日报',
+          url: '#',
+          important: true,
+          data_source: 'mock (error)',
+        },
+        {
+          title: '科技板块全线上涨，半导体行业领涨',
+          time: '30分钟前',
+          source: '证券时报',
+          url: '#',
+          data_source: 'mock (error)',
+        },
+        {
+          title: '多家券商上调A股目标位，看好下半年行情',
+          time: '1小时前',
+          source: '上海证券报',
+          url: '#',
+          data_source: 'mock (error)',
+        },
+      ]
     }
   } catch (error) {
     console.error('刷新市场数据失败:', error)
@@ -648,6 +686,28 @@ const showMobileApp = () => {
   // 后续可以实现二维码扫描下载移动端应用
 }
 
+// 获取数据源类名
+const getDataSourceClass = (dataSource: string): string => {
+  if (!dataSource) return ''
+
+  if (dataSource.includes('api')) return 'api'
+  if (dataSource.includes('cache')) return 'cache'
+  if (dataSource.includes('mock')) return 'mock'
+
+  return ''
+}
+
+// 获取数据源图标
+const getDataSourceIcon = (dataSource: string): string => {
+  if (!dataSource) return ''
+
+  if (dataSource.includes('api')) return '🔄'
+  if (dataSource.includes('cache')) return '💾'
+  if (dataSource.includes('mock')) return '📊'
+
+  return ''
+}
+
 // 保存关注列表
 const saveWatchlists = async (watchlists: Watchlist[], activeWatchlistId: string) => {
   if (!dashboardSettings.value) return
@@ -846,7 +906,17 @@ onUnmounted(() => {
             </thead>
             <tbody>
               <tr v-for="stock in watchlistStocks" :key="stock.symbol">
-                <td>{{ stock.symbol }}</td>
+                <td>
+                  {{ stock.symbol }}
+                  <span
+                    v-if="stock.data_source"
+                    class="stock-data-source"
+                    :class="getDataSourceClass(stock.data_source)"
+                    :title="'数据来源: ' + stock.data_source"
+                  >
+                    {{ getDataSourceIcon(stock.data_source) }}
+                  </span>
+                </td>
                 <td>{{ stock.name }}</td>
                 <td>
                   {{ typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price }}
@@ -933,6 +1003,13 @@ onUnmounted(() => {
               <div class="news-meta">
                 <span class="news-time">{{ news.time }}</span>
                 <span class="news-source">{{ news.source }}</span>
+                <span
+                  v-if="news.data_source"
+                  class="news-data-source"
+                  :class="getDataSourceClass(news.data_source)"
+                >
+                  {{ getDataSourceIcon(news.data_source) }}
+                </span>
               </div>
             </div>
             <div class="news-actions">
@@ -1304,6 +1381,28 @@ onUnmounted(() => {
   color: var(--stock-down);
 }
 
+.stock-data-source {
+  font-size: 10px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background-color: var(--bg-tertiary);
+  margin-left: 4px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.stock-data-source.api {
+  color: var(--accent-color);
+}
+
+.stock-data-source.cache {
+  color: var(--info-color);
+}
+
+.stock-data-source.mock {
+  color: var(--warning-color);
+}
+
 /* 热门股票卡片 */
 .popular-stocks {
   grid-area: popular-stocks;
@@ -1416,6 +1515,26 @@ onUnmounted(() => {
   gap: var(--spacing-md);
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  align-items: center;
+}
+
+.news-data-source {
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background-color: var(--bg-tertiary);
+}
+
+.news-data-source.api {
+  color: var(--accent-color);
+}
+
+.news-data-source.cache {
+  color: var(--info-color);
+}
+
+.news-data-source.mock {
+  color: var(--warning-color);
 }
 
 .news-actions {

@@ -15,21 +15,65 @@ export class TushareDataSource implements DataSourceInterface {
    * 获取股票列表
    * @param options 可选参数
    */
-  async getStocks(options?: { sourceType?: DataSourceType }): Promise<Stock[]> {
+  async getStocks(options?: {
+    sourceType?: DataSourceType
+    forceRefresh?: boolean
+  }): Promise<Stock[]> {
     try {
       // 设置数据源类型
       const sourceType = options?.sourceType || this.sourceType
+      const forceRefresh = options?.forceRefresh || false
+
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedStocks = tushareService.getCachedStocks()
+        if (cachedStocks && cachedStocks.length > 0) {
+          console.log('使用缓存的股票列表')
+          return cachedStocks
+        }
+      }
 
       // 确保使用Tushare数据源
       tushareService.setAllowApiCall(true)
 
-      // 获取股票列表
-      const stocks = await tushareService.getStocks()
+      try {
+        // 获取股票列表
+        const stocks = await tushareService.getStocks()
 
-      // 重置API调用权限
-      tushareService.setAllowApiCall(false)
+        // 重置API调用权限
+        tushareService.setAllowApiCall(false)
 
-      return stocks
+        return stocks
+      } catch (apiError) {
+        console.error('Tushare API获取股票列表失败:', apiError)
+
+        // 尝试使用模拟数据
+        const mockStocks = tushareService.getMockStockList
+          ? tushareService.getMockStockList()
+          : { items: [], fields: [] }
+
+        if (mockStocks && mockStocks.items && mockStocks.items.length > 0) {
+          const { fields, items } = mockStocks
+          const tsCodeIndex = fields.indexOf('ts_code')
+          const nameIndex = fields.indexOf('name')
+          const industryIndex = fields.indexOf('industry')
+          const marketIndex = fields.indexOf('market')
+
+          const stocks: Stock[] = items.map((item: any) => ({
+            symbol: item[tsCodeIndex],
+            name: item[nameIndex],
+            industry: item[industryIndex] || '',
+            market: item[marketIndex] || '',
+            data_source: 'mock',
+          }))
+
+          console.log('使用模拟股票列表数据')
+          return stocks
+        }
+
+        // 如果模拟数据也失败，抛出原始错误
+        throw apiError
+      }
     } catch (error) {
       console.error('Tushare获取股票列表失败:', error)
       throw error
@@ -98,22 +142,92 @@ export class TushareDataSource implements DataSourceInterface {
    */
   async getStockQuote(
     symbol: string,
-    options?: { sourceType?: DataSourceType }
+    options?: { sourceType?: DataSourceType; forceRefresh?: boolean }
   ): Promise<StockQuote> {
     try {
       // 设置数据源类型
       const sourceType = options?.sourceType || this.sourceType
+      const forceRefresh = options?.forceRefresh || false
+
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh && tushareService.getCachedStockQuote) {
+        const cachedQuote = tushareService.getCachedStockQuote(symbol)
+        if (cachedQuote) {
+          console.log(`使用缓存的股票行情: ${symbol}`)
+          return cachedQuote
+        }
+      }
 
       // 确保使用Tushare数据源
       tushareService.setAllowApiCall(true)
 
-      // 获取股票行情
-      const quote = await tushareService.getStockQuote(symbol)
+      try {
+        // 获取股票行情
+        const quote = await tushareService.getStockQuote(symbol, forceRefresh)
 
-      // 重置API调用权限
-      tushareService.setAllowApiCall(false)
+        // 重置API调用权限
+        tushareService.setAllowApiCall(false)
 
-      return quote
+        return quote
+      } catch (apiError) {
+        console.error(`Tushare获取股票${symbol}行情失败:`, apiError)
+
+        // 尝试使用模拟数据
+        if (typeof tushareService.getMockStockData === 'function') {
+          console.log(`尝试使用模拟数据获取股票${symbol}行情`)
+          const mockData = tushareService.getMockStockData(symbol)
+
+          if (mockData && mockData.items && mockData.items.length > 0) {
+            const { fields, items } = mockData
+            const latestData = items[0]
+
+            const openIndex = fields.indexOf('open')
+            const closeIndex = fields.indexOf('close')
+            const highIndex = fields.indexOf('high')
+            const lowIndex = fields.indexOf('low')
+            const volIndex = fields.indexOf('vol')
+            const amountIndex = fields.indexOf('amount')
+
+            // 获取股票名称
+            let stockName = '未知'
+            if (symbol === '600519.SH') stockName = '贵州茅台'
+            else if (symbol === '000001.SZ') stockName = '平安银行'
+            else {
+              try {
+                const stockInfo = await this.getStockBySymbol(symbol)
+                if (stockInfo) stockName = stockInfo.name
+              } catch (e) {
+                console.warn(`无法获取股票${symbol}的名称信息`, e)
+              }
+            }
+
+            const stockQuote: StockQuote = {
+              symbol,
+              name: stockName,
+              price: parseFloat(latestData[closeIndex]),
+              open: parseFloat(latestData[openIndex]),
+              high: parseFloat(latestData[highIndex]),
+              low: parseFloat(latestData[lowIndex]),
+              close: parseFloat(latestData[closeIndex]),
+              pre_close:
+                items.length > 1
+                  ? parseFloat(items[1][closeIndex])
+                  : parseFloat(latestData[closeIndex]),
+              change: 0,
+              pct_chg: 0,
+              vol: parseFloat(latestData[volIndex]),
+              amount: parseFloat(latestData[amountIndex]),
+              update_time: new Date().toISOString(),
+              data_source: 'mock',
+            }
+
+            return stockQuote
+          }
+        }
+
+        // 如果模拟数据也失败，抛出原始错误
+        throw apiError
+      }
     } catch (error) {
       console.error(`Tushare获取股票${symbol}行情失败:`, error)
       throw error
@@ -127,25 +241,76 @@ export class TushareDataSource implements DataSourceInterface {
    */
   async getFinancialNews(
     count: number = 5,
-    options?: { sourceType?: DataSourceType }
+    options?: { sourceType?: DataSourceType; forceRefresh?: boolean }
   ): Promise<FinancialNews[]> {
     try {
       // 设置数据源类型
       const sourceType = options?.sourceType || this.sourceType
+      const forceRefresh = options?.forceRefresh || false
 
       // 确保使用Tushare数据源
       tushareService.setAllowApiCall(true)
 
-      // 使用tushareService获取财经新闻
-      if (typeof tushareService.getFinancialNews === 'function') {
-        const news = await tushareService.getFinancialNews(count)
+      try {
+        // 使用tushareService获取财经新闻
+        if (typeof tushareService.getFinancialNews === 'function') {
+          const news = await tushareService.getFinancialNews(count, forceRefresh)
 
-        // 重置API调用权限
-        tushareService.setAllowApiCall(false)
+          // 重置API调用权限
+          tushareService.setAllowApiCall(false)
 
-        return news
-      } else {
-        throw new Error('Tushare数据源未实现getFinancialNews方法')
+          // 添加数据源信息
+          return news.map((item) => ({
+            ...item,
+            data_source: 'tushare',
+          }))
+        } else {
+          throw new Error('Tushare数据源未实现getFinancialNews方法')
+        }
+      } catch (apiError) {
+        console.error('Tushare API获取财经新闻失败:', apiError)
+
+        // 尝试使用模拟数据
+        console.log('使用模拟财经新闻数据')
+
+        // 生成模拟新闻数据
+        const mockNews: FinancialNews[] = [
+          {
+            title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
+            time: '10分钟前',
+            source: '财经日报',
+            url: '#',
+            important: true,
+            content:
+              '中国人民银行今日宣布，决定于下周一起下调金融机构存款准备金率0.5个百分点，预计将释放长期资金约1万亿元。',
+            data_source: 'mock (tushare)',
+          },
+          {
+            title: '科技板块全线上涨，半导体行业领涨',
+            time: '30分钟前',
+            source: '证券时报',
+            url: '#',
+            important: false,
+            content:
+              '今日A股市场，科技板块表现强势，全线上涨。其中，半导体行业领涨，多只个股涨停。',
+            data_source: 'mock (tushare)',
+          },
+          {
+            title: '多家券商上调A股目标位，看好下半年行情',
+            time: '1小时前',
+            source: '上海证券报',
+            url: '#',
+            important: false,
+            content: '近日，多家券商发布研报，上调A股目标位，普遍看好下半年市场行情。',
+            data_source: 'mock (tushare)',
+          },
+        ]
+
+        // 随机打乱新闻顺序
+        const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
+
+        // 返回指定数量的新闻
+        return shuffledNews.slice(0, count)
       }
     } catch (error) {
       console.error('Tushare获取财经新闻失败:', error)

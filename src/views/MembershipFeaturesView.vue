@@ -29,7 +29,7 @@
                   size="small"
                   circle
                   :loading="coinsLoading"
-                  @click="fetchUserCoins"
+                  @click="fetchUserCoins(true)"
                   title="刷新逗币余额"
                 >
                   <el-icon><Refresh /></el-icon>
@@ -43,6 +43,24 @@
               <el-tag type="danger">管理员身份</el-tag>
               <span>作为管理员，您拥有所有功能的访问权限，不受会员等级限制</span>
             </p>
+            <div v-else-if="isPremium" class="premium-notice">
+              <el-tag type="success">高级会员</el-tag>
+              <span>作为高级会员，您可以访问所有功能</span>
+            </div>
+            <div v-if="membershipStatus.length > 0" class="membership-status-list">
+              <p><strong>会员状态详情:</strong></p>
+              <ul>
+                <li v-for="(status, index) in membershipStatus" :key="index">
+                  {{ status.name }}:
+                  <span :class="status.active ? 'status-active' : 'status-inactive'">
+                    {{ status.active ? '有效' : '无效' }}
+                  </span>
+                  <span v-if="status.expiresAt">
+                    (到期时间: {{ formatExpiryDate(status.expiresAt) }})
+                  </span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -369,10 +387,16 @@ const userCoins = ref(0) // 用户逗币余额
 const basicDays = ref(3) // 默认兑换3天普通会员
 const premiumDays = ref(1) // 默认兑换1天高级会员
 const selectedCoinAmount = ref(0) // 选择的充值逗币数量
+const membershipStatus = ref<
+  Array<{ name: string; level: string; active: boolean; expiresAt: string | null }>
+>([])
 
 // 计算属性
 const membership = computed(() => userStore.membership)
 const isAdmin = computed(() => userStore.userRole === 'admin')
+const isPremium = computed(() =>
+  ['premium', 'enterprise'].includes(userStore.membershipLevel || '')
+)
 
 const upgradeLevels = computed(() => {
   // 过滤出比当前等级高的会员等级
@@ -462,13 +486,13 @@ const handleExchange = async (level: string, days: number, coinsNeeded: number) 
       // 更新会员信息（只更新一次）
       await userStore.fetchMembershipInfo(true)
 
+      // 更新会员状态详情
+      await fetchMembershipStatus()
+
       // 显示成功消息
       // 获取会员过期时间
       let expiryDateStr = '未知'
       try {
-        // 会员信息已经更新，不需要再次刷新
-        // await userStore.fetchMembershipInfo(true)
-
         // 首先尝试从兑换结果中获取过期时间
         if (result.expiresAt) {
           const expiryDate = new Date(result.expiresAt)
@@ -482,11 +506,20 @@ const handleExchange = async (level: string, days: number, coinsNeeded: number) 
         const memberInfo = userStore.membershipInfo
         console.log('最新会员信息:', memberInfo)
 
-        if (memberInfo && memberInfo.expiresAt) {
-          const expiryDate = new Date(memberInfo.expiresAt)
-          if (!isNaN(expiryDate.getTime())) {
-            expiryDateStr = expiryDate.toLocaleDateString()
-            console.log('从会员信息中获取到过期时间:', expiryDateStr, expiryDate)
+        // 根据兑换的会员级别获取对应的过期时间
+        if (memberInfo) {
+          if (level === 'premium' && memberInfo.premiumExpiresAt) {
+            const expiryDate = new Date(memberInfo.premiumExpiresAt)
+            if (!isNaN(expiryDate.getTime())) {
+              expiryDateStr = expiryDate.toLocaleDateString()
+              console.log('从会员信息中获取到高级会员过期时间:', expiryDateStr, expiryDate)
+            }
+          } else if (level === 'basic' && memberInfo.basicExpiresAt) {
+            const expiryDate = new Date(memberInfo.basicExpiresAt)
+            if (!isNaN(expiryDate.getTime())) {
+              expiryDateStr = expiryDate.toLocaleDateString()
+              console.log('从会员信息中获取到普通会员过期时间:', expiryDateStr, expiryDate)
+            }
           }
         }
       } catch (err) {
@@ -984,6 +1017,52 @@ const fetchUserCoins = async (forceRefresh = false) => {
   }
 }
 
+// 获取会员状态详情
+const fetchMembershipStatus = async () => {
+  try {
+    // 获取会员信息
+    const memberInfo = userStore.membershipInfo
+    if (!memberInfo) return
+
+    // 清空状态列表
+    membershipStatus.value = []
+
+    // 添加高级会员状态
+    if (memberInfo.premiumExpiresAt) {
+      membershipStatus.value.push({
+        name: '高级会员',
+        level: 'premium',
+        active: memberInfo.effectiveLevel === 'premium',
+        expiresAt: memberInfo.premiumExpiresAt,
+      })
+    }
+
+    // 添加普通会员状态
+    if (memberInfo.basicExpiresAt) {
+      membershipStatus.value.push({
+        name: '普通会员',
+        level: 'basic',
+        active: memberInfo.effectiveLevel === 'basic',
+        expiresAt: memberInfo.basicExpiresAt,
+      })
+    }
+
+    // 添加企业会员状态
+    if (memberInfo.enterpriseExpiresAt) {
+      membershipStatus.value.push({
+        name: '企业会员',
+        level: 'enterprise',
+        active: memberInfo.effectiveLevel === 'enterprise',
+        expiresAt: memberInfo.enterpriseExpiresAt,
+      })
+    }
+
+    console.log('会员状态详情:', membershipStatus.value)
+  } catch (error) {
+    console.error('获取会员状态详情失败:', error)
+  }
+}
+
 // 初始化
 onMounted(async () => {
   isLoading.value = true
@@ -1009,6 +1088,9 @@ onMounted(async () => {
     } else {
       console.log('已有会员信息，跳过获取')
     }
+
+    // 获取会员状态详情
+    await fetchMembershipStatus()
 
     // 获取会员等级列表（如果尚未加载）
     if (membershipLevels.value.length === 0) {
@@ -1164,6 +1246,46 @@ onMounted(async () => {
   background-color: #fef0f0;
   border-radius: 4px;
   border-left: 3px solid #f56c6c;
+}
+
+.premium-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f0f9eb;
+  border-radius: 4px;
+  border-left: 3px solid #67c23a;
+}
+
+.membership-status-list {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.membership-status-list ul {
+  list-style: none;
+  padding-left: 10px;
+  margin: 10px 0;
+}
+
+.membership-status-list li {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-active {
+  color: #67c23a;
+  font-weight: bold;
+}
+
+.status-inactive {
+  color: #909399;
 }
 
 .feature-test-card {

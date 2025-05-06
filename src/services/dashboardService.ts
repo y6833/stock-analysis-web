@@ -61,7 +61,8 @@ export async function getDashboardSettings(): Promise<DashboardSettings> {
                 let turnover = 0
 
                 try {
-                  const quote = await stockService.getStockQuote(item.stockCode)
+                  // 使用带有缓存的方式获取股票行情，不强制刷新
+                  const quote = await stockService.getStockQuote(item.stockCode, false)
                   if (quote) {
                     price = quote.price || 0
                     const prevPrice = quote.pre_close || price
@@ -72,6 +73,12 @@ export async function getDashboardSettings(): Promise<DashboardSettings> {
                   }
                 } catch (error) {
                   console.error(`获取股票 ${item.stockCode} 行情失败:`, error)
+                  // 使用模拟数据或默认值
+                  price = item.price || 0
+                  change = item.change || 0
+                  changePercent = item.changePercent || 0
+                  volume = item.volume || 0
+                  turnover = item.turnover || 0
                 }
 
                 return {

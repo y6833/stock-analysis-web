@@ -323,16 +323,45 @@ export class AKShareDataSource implements DataSourceInterface {
   /**
    * 获取财经新闻
    * @param count 新闻数量
+   * @param options 可选参数
    */
-  async getFinancialNews(count: number = 5): Promise<FinancialNews[]> {
+  async getFinancialNews(
+    count: number = 5,
+    options?: { sourceType?: DataSourceType; forceRefresh?: boolean }
+  ): Promise<FinancialNews[]> {
     try {
       console.log('获取财经新闻')
+      const forceRefresh = options?.forceRefresh || false
+
+      // 如果不强制刷新，尝试从缓存获取
+      if (!forceRefresh) {
+        try {
+          const cacheKey = 'akshare_news_cache'
+          const cachedData = localStorage.getItem(cacheKey)
+          if (cachedData) {
+            const { data, timestamp } = JSON.parse(cachedData)
+            const now = new Date().getTime()
+
+            // 检查缓存是否过期（15分钟）
+            if (now - timestamp < 15 * 60 * 1000) {
+              console.log(`使用缓存的AKShare财经新闻`)
+              return data.slice(0, count).map((item: FinancialNews) => ({
+                ...item,
+                data_source: 'akshare_cache',
+              }))
+            }
+          }
+        } catch (cacheError) {
+          console.warn('读取AKShare新闻缓存失败:', cacheError)
+        }
+      }
 
       // 尝试通过后端代理获取财经新闻
       try {
         const response = await axios.get(`${this.AKSHARE_API_URL}/news`, {
           params: {
             count,
+            force_refresh: forceRefresh,
           },
         })
 
@@ -345,11 +374,25 @@ export class AKShareDataSource implements DataSourceInterface {
             url: item.url || '#',
             important: item.important || false,
             content: item.content || '',
+            data_source: 'akshare_api',
           }))
 
           // 如果有消息，显示
           if (response.data.message) {
             console.log(`AKShare财经新闻: ${response.data.message}`)
+          }
+
+          // 缓存数据
+          try {
+            localStorage.setItem(
+              'akshare_news_cache',
+              JSON.stringify({
+                data: news,
+                timestamp: new Date().getTime(),
+              })
+            )
+          } catch (cacheError) {
+            console.warn('缓存AKShare新闻数据失败:', cacheError)
           }
 
           return news
@@ -358,9 +401,25 @@ export class AKShareDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取财经新闻失败，使用模拟数据:', proxyError)
       }
 
+      // 如果API调用失败，尝试从缓存获取
+      try {
+        const cacheKey = 'akshare_news_cache'
+        const cachedData = localStorage.getItem(cacheKey)
+        if (cachedData) {
+          const { data } = JSON.parse(cachedData)
+          console.log(`API失败后使用缓存的AKShare财经新闻`)
+          return data.slice(0, count).map((item: FinancialNews) => ({
+            ...item,
+            data_source: 'akshare_cache (API失败)',
+          }))
+        }
+      } catch (cacheError) {
+        console.warn('读取AKShare新闻缓存失败:', cacheError)
+      }
+
       console.log('使用模拟数据生成财经新闻')
 
-      // 如果后端代理未实现或返回格式不正确，使用模拟数据
+      // 如果API调用失败且缓存不可用，使用模拟数据
       const mockNews: FinancialNews[] = [
         {
           title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
@@ -368,6 +427,7 @@ export class AKShareDataSource implements DataSourceInterface {
           source: 'AKShare',
           url: '#',
           important: true,
+          data_source: 'akshare_mock',
         },
         {
           title: '科技板块全线上涨，半导体行业领涨',
@@ -375,6 +435,7 @@ export class AKShareDataSource implements DataSourceInterface {
           source: 'AKShare',
           url: '#',
           important: false,
+          data_source: 'akshare_mock',
         },
         {
           title: '多家券商上调A股目标位，看好下半年行情',
@@ -382,6 +443,7 @@ export class AKShareDataSource implements DataSourceInterface {
           source: 'AKShare',
           url: '#',
           important: false,
+          data_source: 'akshare_mock',
         },
         {
           title: '外资连续三日净流入，北向资金今日净买入超50亿',
@@ -389,6 +451,7 @@ export class AKShareDataSource implements DataSourceInterface {
           source: 'AKShare',
           url: '#',
           important: false,
+          data_source: 'akshare_mock',
         },
         {
           title: '新能源汽车销量创新高，相关概念股受关注',
@@ -396,6 +459,7 @@ export class AKShareDataSource implements DataSourceInterface {
           source: 'AKShare',
           url: '#',
           important: false,
+          data_source: 'akshare_mock',
         },
         {
           title: '国常会：进一步扩大内需，促进消费持续恢复',
@@ -403,6 +467,7 @@ export class AKShareDataSource implements DataSourceInterface {
           source: 'AKShare',
           url: '#',
           important: true,
+          data_source: 'akshare_mock',
         },
         {
           title: '两部门：加大对先进制造业支持力度，优化融资环境',
@@ -410,11 +475,25 @@ export class AKShareDataSource implements DataSourceInterface {
           source: 'AKShare',
           url: '#',
           important: false,
+          data_source: 'akshare_mock',
         },
       ]
 
       // 随机打乱新闻顺序
       const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
+
+      // 缓存模拟数据
+      try {
+        localStorage.setItem(
+          'akshare_news_cache',
+          JSON.stringify({
+            data: shuffledNews,
+            timestamp: new Date().getTime(),
+          })
+        )
+      } catch (cacheError) {
+        console.warn('缓存AKShare模拟新闻数据失败:', cacheError)
+      }
 
       // 返回指定数量的新闻
       return shuffledNews.slice(0, count)

@@ -412,13 +412,19 @@ export const stockService = {
   },
 
   // 获取股票实时行情
-  async getStockQuote(symbol: string): Promise<StockQuote & { source_type?: DataSourceType }> {
+  async getStockQuote(
+    symbol: string,
+    forceRefresh = false
+  ): Promise<StockQuote & { source_type?: DataSourceType }> {
     // 获取所有可用的数据源
     const availableSources = DataSourceFactory.getAvailableDataSources()
 
     // 首先尝试当前选择的数据源
     try {
-      const quote = await dataSource.getStockQuote(symbol, { sourceType: currentDataSourceType })
+      const quote = await dataSource.getStockQuote(symbol, {
+        sourceType: currentDataSourceType,
+        forceRefresh,
+      })
       // 添加数据源类型
       console.log(`使用 ${currentDataSourceType} 数据源获取股票${symbol}行情成功`)
       return { ...quote, source_type: currentDataSourceType }
@@ -436,7 +442,10 @@ export const stockService = {
         try {
           console.log(`尝试使用 ${sourceType} 数据源获取股票${symbol}行情...`)
           const tempDataSource = DataSourceFactory.createDataSource(sourceType)
-          const quote = await tempDataSource.getStockQuote(symbol, { sourceType })
+          const quote = await tempDataSource.getStockQuote(symbol, {
+            sourceType,
+            forceRefresh,
+          })
 
           console.log(`使用 ${sourceType} 数据源获取股票${symbol}行情成功`)
           showToast(
@@ -453,7 +462,33 @@ export const stockService = {
         }
       }
 
-      // 所有数据源都失败，返回错误信息
+      // 尝试使用模拟数据
+      try {
+        console.log(`所有数据源获取失败，尝试使用模拟数据...`)
+
+        // 检查是否有模拟数据生成函数
+        if (typeof dataSource.generateMockStockQuote === 'function') {
+          const mockQuote = await dataSource.generateMockStockQuote(symbol)
+          console.log(`使用模拟数据获取股票${symbol}行情成功`)
+          showToast(`使用模拟数据显示${symbol}的行情`, 'warning')
+          return { ...mockQuote, source_type: 'mock' }
+        }
+
+        // 如果当前数据源没有模拟数据生成函数，尝试其他数据源的模拟数据
+        for (const sourceType of otherSources) {
+          const tempDataSource = DataSourceFactory.createDataSource(sourceType)
+          if (typeof tempDataSource.generateMockStockQuote === 'function') {
+            const mockQuote = await tempDataSource.generateMockStockQuote(symbol)
+            console.log(`使用${sourceType}的模拟数据获取股票${symbol}行情成功`)
+            showToast(`使用模拟数据显示${symbol}的行情`, 'warning')
+            return { ...mockQuote, source_type: 'mock' }
+          }
+        }
+      } catch (mockError) {
+        console.error(`生成模拟数据失败:`, mockError)
+      }
+
+      // 所有数据源和模拟数据都失败，返回错误信息
       console.error(`所有数据源获取股票${symbol}行情均失败`)
       showToast(
         `无法获取${symbol}的实时行情。所有数据源均无法提供数据，请检查网络连接或稍后再试。`,
@@ -467,17 +502,25 @@ export const stockService = {
 
   // 获取财经新闻
   async getFinancialNews(
-    count: number = 5
-  ): Promise<(FinancialNews & { source_type?: DataSourceType })[]> {
+    count: number = 5,
+    forceRefresh = false
+  ): Promise<(FinancialNews & { source_type?: DataSourceType; data_source?: string })[]> {
     // 获取所有可用的数据源
     const availableSources = DataSourceFactory.getAvailableDataSources()
 
     // 首先尝试当前选择的数据源
     try {
-      const news = await dataSource.getFinancialNews(count, { sourceType: currentDataSourceType })
+      const news = await dataSource.getFinancialNews(count, {
+        sourceType: currentDataSourceType,
+        forceRefresh,
+      })
       // 添加数据源类型
       console.log(`使用 ${currentDataSourceType} 数据源获取财经新闻成功`)
-      return news.map((item) => ({ ...item, source_type: currentDataSourceType }))
+      return news.map((item) => ({
+        ...item,
+        source_type: currentDataSourceType,
+        data_source: item.data_source || currentDataSourceType,
+      }))
     } catch (error) {
       console.error(`${dataSource.getName()}获取财经新闻失败:`, error)
 
@@ -492,7 +535,10 @@ export const stockService = {
         try {
           console.log(`尝试使用 ${sourceType} 数据源获取财经新闻...`)
           const tempDataSource = DataSourceFactory.createDataSource(sourceType)
-          const news = await tempDataSource.getFinancialNews(count, { sourceType })
+          const news = await tempDataSource.getFinancialNews(count, {
+            sourceType,
+            forceRefresh,
+          })
 
           console.log(`使用 ${sourceType} 数据源获取财经新闻成功`)
           showToast(
@@ -502,14 +548,104 @@ export const stockService = {
             'info'
           )
 
-          return news.map((item) => ({ ...item, source_type: sourceType }))
+          return news.map((item) => ({
+            ...item,
+            source_type: sourceType,
+            data_source: item.data_source || sourceType,
+          }))
         } catch (sourceError) {
           console.error(`${sourceType} 数据源获取财经新闻失败:`, sourceError)
           // 继续尝试下一个数据源
         }
       }
 
-      // 所有数据源都失败，返回错误信息
+      // 尝试使用模拟数据
+      try {
+        console.log(`所有数据源获取失败，使用模拟财经新闻数据...`)
+
+        // 生成模拟新闻数据
+        const mockNews: FinancialNews[] = [
+          {
+            title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
+            time: '10分钟前',
+            source: '财经日报',
+            url: '#',
+            important: true,
+            content:
+              '中国人民银行今日宣布，决定于下周一起下调金融机构存款准备金率0.5个百分点，预计将释放长期资金约1万亿元。',
+          },
+          {
+            title: '科技板块全线上涨，半导体行业领涨',
+            time: '30分钟前',
+            source: '证券时报',
+            url: '#',
+            important: false,
+            content:
+              '今日A股市场，科技板块表现强势，全线上涨。其中，半导体行业领涨，多只个股涨停。',
+          },
+          {
+            title: '多家券商上调A股目标位，看好下半年行情',
+            time: '1小时前',
+            source: '上海证券报',
+            url: '#',
+            important: false,
+            content: '近日，多家券商发布研报，上调A股目标位，普遍看好下半年市场行情。',
+          },
+          {
+            title: '外资连续三日净流入，北向资金今日净买入超50亿',
+            time: '2小时前',
+            source: '中国证券报',
+            url: '#',
+            important: false,
+            content:
+              '据统计数据显示，外资已连续三个交易日净流入A股市场，今日北向资金净买入超过50亿元。',
+          },
+          {
+            title: '新能源汽车销量创新高，相关概念股受关注',
+            time: '3小时前',
+            source: '第一财经',
+            url: '#',
+            important: false,
+            content:
+              '据中国汽车工业协会最新数据，上月我国新能源汽车销量再创历史新高，同比增长超过50%。',
+          },
+          {
+            title: '国常会：进一步扩大内需，促进消费持续恢复',
+            time: '4小时前',
+            source: '新华社',
+            url: '#',
+            important: true,
+            content: '国务院常务会议今日召开，会议强调要进一步扩大内需，促进消费持续恢复和升级。',
+          },
+          {
+            title: '两部门：加大对先进制造业支持力度，优化融资环境',
+            time: '5小时前',
+            source: '经济参考报',
+            url: '#',
+            important: false,
+            content: '财政部、工信部联合发文，要求加大对先进制造业的支持力度，优化融资环境。',
+          },
+        ]
+
+        // 随机打乱新闻顺序
+        const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
+
+        // 返回指定数量的新闻
+        const result = shuffledNews.slice(0, count).map((item) => ({
+          ...item,
+          source_type: 'mock',
+          data_source: 'mock',
+        }))
+
+        console.log(`成功生成 ${result.length} 条模拟财经新闻`)
+        showToast(`使用模拟数据显示财经新闻`, 'warning')
+
+        return result
+      } catch (mockError) {
+        console.error(`生成模拟财经新闻数据失败:`, mockError)
+      }
+
+      // 所有数据源和模拟数据都失败，返回错误信息
       console.error(`所有数据源获取财经新闻均失败`)
       showToast(`无法获取财经新闻。所有数据源均无法提供数据，请检查网络连接或稍后再试。`, 'error')
 

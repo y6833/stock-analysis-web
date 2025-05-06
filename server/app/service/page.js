@@ -307,6 +307,42 @@ class PageService extends Service {
   async checkPageAccess(path, membershipLevel) {
     const { ctx } = this;
 
+    // 特殊页面直接允许访问
+    const specialPages = [
+      '/membership-features', // 会员功能页面（避免循环）
+      '/dashboard', // 仪表盘（基础功能，所有用户都可访问）
+      '/', // 首页
+      '/about', // 关于页面
+      '/profile', // 个人资料页面
+      '/settings', // 设置页面
+      '/notifications', // 通知页面
+      '/recharge-records', // 充值记录页面
+    ];
+
+    if (specialPages.includes(path)) {
+      ctx.logger.info(`[页面权限] 特殊页面直接允许访问: ${path}`);
+      return true;
+    }
+
+    // 基础页面（免费用户可访问）
+    const basicPages = [
+      '/stock', // 股票分析
+      '/market-heatmap', // 市场热图
+      '/industry-analysis', // 行业分析
+      '/test-dashboard', // 测试仪表盘
+    ];
+
+    if (basicPages.includes(path)) {
+      ctx.logger.info(`[页面权限] 基础页面允许访问: ${path}`);
+      return true;
+    }
+
+    // 高级会员可以访问所有功能
+    if (['premium', 'enterprise'].includes(membershipLevel)) {
+      ctx.logger.info(`[页面权限] 高级会员直接允许访问: ${path}`);
+      return true;
+    }
+
     try {
       // 查询页面
       const page = await ctx.model.SystemPage.findOne({
@@ -323,18 +359,29 @@ class PageService extends Service {
 
       // 页面不存在或未启用
       if (!page) {
+        ctx.logger.warn(`[页面权限] 页面不存在或未启用: ${path}`);
         return false;
       }
 
       // 检查权限
       if (page.permissions && page.permissions.length > 0) {
-        return page.permissions[0].hasAccess;
+        const hasAccess = page.permissions[0].hasAccess;
+        ctx.logger.info(`[页面权限] 权限检查结果: ${path} -> ${hasAccess ? '允许' : '拒绝'}`);
+        return hasAccess;
       }
 
       // 默认无权限
+      ctx.logger.warn(`[页面权限] 未找到权限配置，默认拒绝访问: ${path}`);
       return false;
     } catch (error) {
       ctx.logger.error('检查页面访问权限失败:', error);
+
+      // 出错时，如果是基础页面，允许访问
+      if (basicPages.includes(path)) {
+        ctx.logger.warn(`[页面权限] 检查失败但是基础页面，允许访问: ${path}`);
+        return true;
+      }
+
       return false;
     }
   }
