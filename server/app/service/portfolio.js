@@ -481,14 +481,17 @@ class PortfolioService extends Service {
     try {
       // 查找所有持仓的股票，去重，只返回持仓数量大于0的股票
       const holdings = await ctx.model.PortfolioHolding.findAll({
-        attributes: ['stockCode', 'stockName'],
+        attributes: [
+          [ctx.app.Sequelize.col('stock_code'), 'stockCode'],
+          [ctx.app.Sequelize.fn('MAX', ctx.app.Sequelize.col('stock_name')), 'stockName']
+        ],
         where: {
           quantity: {
             [ctx.app.Sequelize.Op.gt]: 0
           }
         },
-        group: ['stockCode'],
-        order: [['stockCode', 'ASC']],
+        group: ['stock_code'],
+        order: [['stock_code', 'ASC']],
       });
 
       return holdings.map(holding => ({

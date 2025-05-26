@@ -16,13 +16,6 @@ module.exports = app => {
         return;
       }
 
-      // 跳过 CoinRechargeRequest 模型，我们将在后面手动处理它
-      if (modelName === 'coin_recharge_request') {
-        console.log(`跳过模型: ${modelName}`);
-        associatedModels.add(modelName);
-        return;
-      }
-
       // 检查模型是否有 associate 方法
       if (models[modelName].associate && typeof models[modelName].associate === 'function') {
         try {

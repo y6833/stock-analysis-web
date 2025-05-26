@@ -115,17 +115,21 @@ module.exports = app => {
     // 浏览历史
     this.hasMany(app.model.UserBrowsingHistory, { foreignKey: 'userId' });
 
+    // 充值请求关联暂时注释，避免循环依赖
+    // TODO: 在解决模型加载顺序问题后重新启用
+    /*
     // 充值请求 - 用户发起的充值请求
     this.hasMany(app.model.CoinRechargeRequest, {
-      as: 'userRechargeRequests',  // 修改别名，避免冲突
+      as: 'coinRechargeRequests',  // 修改别名，避免冲突
       foreignKey: 'userId'
     });
 
     // 处理的充值请求（管理员）- 管理员处理的充值请求
     this.hasMany(app.model.CoinRechargeRequest, {
-      as: 'adminProcessedRequests',  // 修改别名，避免冲突
+      as: 'processedRechargeRequests',  // 修改别名，避免冲突
       foreignKey: 'processedBy'
     });
+    */
   };
 
   return User;

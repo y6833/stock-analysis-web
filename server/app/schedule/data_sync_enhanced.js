@@ -166,11 +166,21 @@ class DataSyncEnhancedTask extends Subscription {
       // 获取行业列表
       const industries = await ctx.service.stock.getIndustryList();
 
+      // 确保 industries 是数组
+      if (!Array.isArray(industries)) {
+        ctx.logger.warn('行业列表不是数组格式:', industries);
+        return;
+      }
+
       // 同步每个行业的数据
       const industryPromises = industries.slice(0, 10).map(async (industry) => {
         try {
           const industryData = await ctx.service.stock.getIndustryData(industry.code);
-          await ctx.service.cache.set(`industry:${industry.code}`, industryData, 600); // 10分钟缓存
+
+          // 使用 Redis 直接设置缓存
+          if (ctx.app.redis) {
+            await ctx.app.redis.set(`industry:${industry.code}`, JSON.stringify(industryData), 'EX', 600);
+          }
 
         } catch (error) {
           ctx.logger.warn(`同步行业 ${industry.name} 失败:`, error);
@@ -239,15 +249,29 @@ class DataSyncEnhancedTask extends Subscription {
 
       // 同步市场概览数据
       const marketOverview = await ctx.service.dashboard.getMarketOverview(true);
-      await ctx.service.cache.set('market_overview', marketOverview, 300); // 5分钟缓存
+      if (ctx.app.redis) {
+        await ctx.app.redis.set('market_overview', JSON.stringify(marketOverview), 'EX', 300);
+      }
 
       // 同步涨跌停数据
-      const limitData = await this.syncLimitData();
-      await ctx.service.cache.set('limit_data', limitData, 300);
+      try {
+        const limitData = await this.syncLimitData();
+        if (ctx.app.redis) {
+          await ctx.app.redis.set('limit_data', JSON.stringify(limitData), 'EX', 300);
+        }
+      } catch (error) {
+        ctx.logger.warn('同步涨跌停数据失败:', error);
+      }
 
       // 同步资金流向数据
-      const moneyFlowData = await this.syncMoneyFlowData();
-      await ctx.service.cache.set('money_flow', moneyFlowData, 600); // 10分钟缓存
+      try {
+        const moneyFlowData = await this.syncMoneyFlowData();
+        if (ctx.app.redis) {
+          await ctx.app.redis.set('money_flow', JSON.stringify(moneyFlowData), 'EX', 600);
+        }
+      } catch (error) {
+        ctx.logger.warn('同步资金流向数据失败:', error);
+      }
 
       ctx.logger.info('市场数据同步完成');
 
@@ -273,8 +297,13 @@ class DataSyncEnhancedTask extends Subscription {
       // 获取持仓股票
       const portfolioStocks = await ctx.service.portfolio.getAllPortfolioStocks();
 
+      // 确保所有数据都是数组
+      const safeHotStocks = Array.isArray(hotStocks) ? hotStocks : [];
+      const safeWatchlistStocks = Array.isArray(watchlistStocks) ? watchlistStocks : [];
+      const safePortfolioStocks = Array.isArray(portfolioStocks) ? portfolioStocks : [];
+
       // 合并去重
-      const allStocks = [...hotStocks, ...watchlistStocks, ...portfolioStocks];
+      const allStocks = [...safeHotStocks, ...safeWatchlistStocks, ...safePortfolioStocks];
       const uniqueStocks = this.deduplicateStocks(allStocks);
 
       return uniqueStocks;
@@ -282,6 +311,57 @@ class DataSyncEnhancedTask extends Subscription {
     } catch (error) {
       ctx.logger.error('获取同步股票列表失败:', error);
       return [];
+    }
+  }
+
+  /**
+   * 同步涨跌停数据
+   */
+  async syncLimitData() {
+    const { ctx } = this;
+
+    try {
+      // 获取涨停股票
+      const limitUpStocks = await ctx.service.stock.getLimitUpStocks();
+
+      // 获取跌停股票
+      const limitDownStocks = await ctx.service.stock.getLimitDownStocks();
+
+      return {
+        limitUp: Array.isArray(limitUpStocks) ? limitUpStocks : [],
+        limitDown: Array.isArray(limitDownStocks) ? limitDownStocks : [],
+        updateTime: new Date(),
+      };
+    } catch (error) {
+      ctx.logger.warn('获取涨跌停数据失败:', error);
+      return {
+        limitUp: [],
+        limitDown: [],
+        updateTime: new Date(),
+      };
+    }
+  }
+
+  /**
+   * 同步资金流向数据
+   */
+  async syncMoneyFlowData() {
+    const { ctx } = this;
+
+    try {
+      // 获取主力资金流向
+      const moneyFlow = await ctx.service.stock.getMoneyFlow();
+
+      return {
+        data: Array.isArray(moneyFlow) ? moneyFlow : [],
+        updateTime: new Date(),
+      };
+    } catch (error) {
+      ctx.logger.warn('获取资金流向数据失败:', error);
+      return {
+        data: [],
+        updateTime: new Date(),
+      };
     }
   }
 
@@ -375,7 +455,9 @@ class DataSyncEnhancedTask extends Subscription {
         apiCallCount: await this.getApiCallCount(),
       };
 
-      await ctx.service.cache.set('data_statistics', stats, 3600); // 1小时缓存
+      if (ctx.app.redis) {
+        await ctx.app.redis.set('data_statistics', JSON.stringify(stats), 'EX', 3600);
+      }
 
     } catch (error) {
       ctx.logger.warn('更新数据统计失败:', error);

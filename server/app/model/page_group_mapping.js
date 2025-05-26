@@ -34,11 +34,16 @@ module.exports = app => {
   });
 
   PageGroupMapping.associate = function () {
+    // 防止重复关联
+    if (PageGroupMapping.associations && Object.keys(PageGroupMapping.associations).length > 0) {
+      return;
+    }
+
     // 页面组关联
-    this.belongsTo(app.model.PageGroup, { foreignKey: 'groupId', as: 'pageGroup' });
+    this.belongsTo(app.model.PageGroup, { foreignKey: 'groupId', as: 'group' });
 
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'systemPage' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'mappedPage' });
   };
 
   return PageGroupMapping;

@@ -144,7 +144,9 @@
       "password": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "db": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "retry_strategy": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "connect_timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      "connect_timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "lazyConnect": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetriesPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
     },
     "allowFail": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
     "default": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-redis\\config\\config.default.js",

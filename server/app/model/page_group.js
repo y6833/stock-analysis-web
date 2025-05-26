@@ -31,13 +31,18 @@ module.exports = app => {
     },
   });
 
-  PageGroup.associate = function() {
+  PageGroup.associate = function () {
+    // 防止重复关联
+    if (PageGroup.associations && Object.keys(PageGroup.associations).length > 0) {
+      return;
+    }
+
     // 页面关联
     this.belongsToMany(app.model.SystemPage, {
       through: app.model.PageGroupMapping,
       foreignKey: 'groupId',
       otherKey: 'pageId',
-      as: 'pages',
+      as: 'groupSystemPages',
     });
   };
 

@@ -1118,14 +1118,22 @@ class StockService extends Service {
 
   // 获取股票数量统计
   async getStockCount() {
-    const { app, ctx } = this;
+    const { ctx } = this;
 
     try {
-      // 从数据库获取股票数量
-      const result = await app.mysql.query('SELECT COUNT(*) as count FROM stocks');
-      return result[0]?.count || 0;
+      // 检查 Stock 模型是否存在
+      if (ctx.model.Stock) {
+        // 使用 Sequelize 模型获取股票数量
+        const count = await ctx.model.Stock.count();
+        return count;
+      } else {
+        // 如果模型不存在，尝试直接查询
+        const result = await ctx.app.mysql.query('SELECT COUNT(*) as count FROM stocks');
+        return result[0]?.count || 0;
+      }
     } catch (err) {
       ctx.logger.error('获取股票数量失败:', err);
+      // 返回一个默认值，避免阻塞其他功能
       return 0;
     }
   }

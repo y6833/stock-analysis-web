@@ -251,9 +251,12 @@ class WatchlistService extends Service {
     try {
       // 查找所有关注的股票，去重
       const items = await ctx.model.WatchlistItem.findAll({
-        attributes: ['stockCode', 'stockName'],
-        group: ['stockCode'],
-        order: [['stockCode', 'ASC']],
+        attributes: [
+          [ctx.app.Sequelize.col('stock_code'), 'stockCode'],
+          [ctx.app.Sequelize.fn('MAX', ctx.app.Sequelize.col('stock_name')), 'stockName']
+        ],
+        group: ['stock_code'],
+        order: [['stock_code', 'ASC']],
       });
 
       return items.map(item => ({

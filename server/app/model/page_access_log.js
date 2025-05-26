@@ -82,11 +82,16 @@ module.exports = app => {
   });
 
   PageAccessLog.associate = function () {
+    // 防止重复关联
+    if (PageAccessLog.associations && Object.keys(PageAccessLog.associations).length > 0) {
+      return;
+    }
+
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'systemPage' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'accessedPage' });
 
     // 用户关联
-    this.belongsTo(app.model.User, { foreignKey: 'userId', as: 'user' });
+    this.belongsTo(app.model.User, { foreignKey: 'userId', as: 'accessUser' });
   };
 
   return PageAccessLog;

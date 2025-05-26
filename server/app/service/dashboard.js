@@ -34,10 +34,10 @@ class DashboardService extends Service {
 
       // 获取主要指数数据
       const indices = await this.getMarketIndices();
-      
+
       // 获取行业板块数据
       const sectors = await this.getIndustrySectors();
-      
+
       // 获取市场宽度数据
       const breadth = await this.getMarketBreadth();
 
@@ -52,7 +52,9 @@ class DashboardService extends Service {
 
       // 缓存数据（5分钟）
       try {
-        await ctx.service.cache.set(cacheKey, marketOverview, 300);
+        if (ctx.app.redis) {
+          await ctx.app.redis.set(cacheKey, JSON.stringify(marketOverview), 'EX', 300);
+        }
       } catch (cacheErr) {
         ctx.logger.warn('缓存市场概览数据失败:', cacheErr);
       }
@@ -60,17 +62,20 @@ class DashboardService extends Service {
       return marketOverview;
     } catch (err) {
       ctx.logger.error('获取市场概览数据失败:', err);
-      
+
       // 如果API调用失败，尝试返回缓存数据
       try {
-        const cachedData = await ctx.service.cache.get(cacheKey);
-        if (cachedData) {
-          ctx.logger.info('API调用失败，返回缓存数据');
-          return {
-            ...cachedData,
-            data_source: 'cache_fallback',
-            data_source_message: '数据来自缓存（API调用失败）'
-          };
+        if (ctx.app.redis) {
+          const cachedData = await ctx.app.redis.get(cacheKey);
+          if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            ctx.logger.info('API调用失败，返回缓存数据');
+            return {
+              ...parsedData,
+              data_source: 'cache_fallback',
+              data_source_message: '数据来自缓存（API调用失败）'
+            };
+          }
         }
       } catch (cacheErr) {
         ctx.logger.warn('获取缓存数据也失败:', cacheErr);
@@ -87,7 +92,7 @@ class DashboardService extends Service {
    */
   async getMarketIndices() {
     const { ctx } = this;
-    
+
     const indexCodes = [
       '000001.SH', // 上证指数
       '399001.SZ', // 深证成指
@@ -133,7 +138,7 @@ class DashboardService extends Service {
    */
   async getIndustrySectors() {
     const { ctx } = this;
-    
+
     try {
       const industryList = await ctx.service.stock.getIndustryList();
       const sectors = [];

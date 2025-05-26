@@ -81,6 +81,11 @@ module.exports = app => {
 
   // 使用 associate 方法建立关联关系
   CoinRechargeRequest.associate = function () {
+    // 防止重复关联
+    if (CoinRechargeRequest.associations && Object.keys(CoinRechargeRequest.associations).length > 0) {
+      return;
+    }
+
     // 建立 CoinRechargeRequest 与 User 的关联关系
     // 申请人关联
     CoinRechargeRequest.belongsTo(app.model.User, {

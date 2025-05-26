@@ -434,6 +434,106 @@ class CacheService extends Service {
   }
 
   /**
+   * 设置缓存数据
+   * @param {string} key - 缓存键
+   * @param {any} value - 缓存值
+   * @param {number} ttl - 过期时间（秒）
+   * @returns {Promise<Object>} - 设置结果
+   */
+  async set(key, value, ttl = 3600) {
+    const { app, ctx } = this;
+
+    try {
+      // 检查 Redis 是否可用
+      if (!app.redis) {
+        return {
+          success: false,
+          message: 'Redis 客户端不可用',
+          error: 'Redis not available'
+        };
+      }
+
+      // 将值转换为JSON字符串
+      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+
+      // 设置缓存
+      await app.redis.set(key, valueStr, 'EX', ttl);
+
+      ctx.logger.info(`缓存设置成功: ${key}, TTL: ${ttl}秒`);
+
+      return {
+        success: true,
+        message: `缓存 ${key} 设置成功`,
+        key,
+        ttl
+      };
+    } catch (error) {
+      ctx.logger.error('设置缓存失败:', error);
+      return {
+        success: false,
+        message: '设置缓存失败',
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * 获取缓存数据
+   * @param {string} key - 缓存键
+   * @returns {Promise<Object>} - 获取结果
+   */
+  async get(key) {
+    const { app, ctx } = this;
+
+    try {
+      // 检查 Redis 是否可用
+      if (!app.redis) {
+        return {
+          success: false,
+          message: 'Redis 客户端不可用',
+          data: null
+        };
+      }
+
+      // 获取缓存
+      const value = await app.redis.get(key);
+
+      if (value === null) {
+        return {
+          success: false,
+          message: '缓存不存在或已过期',
+          data: null
+        };
+      }
+
+      // 尝试解析JSON
+      let data;
+      try {
+        data = JSON.parse(value);
+      } catch (parseErr) {
+        // 如果解析失败，返回原始字符串
+        data = value;
+      }
+
+      ctx.logger.info(`缓存获取成功: ${key}`);
+
+      return {
+        success: true,
+        message: `缓存 ${key} 获取成功`,
+        data
+      };
+    } catch (error) {
+      ctx.logger.error('获取缓存失败:', error);
+      return {
+        success: false,
+        message: '获取缓存失败',
+        error: error.message,
+        data: null
+      };
+    }
+  }
+
+  /**
    * 删除缓存键
    * @param {string} key - 缓存键
    * @returns {Promise<Object>} - 删除结果
@@ -457,6 +557,106 @@ class CacheService extends Service {
         success: false,
         message: '删除缓存键失败',
         error: error.message
+      };
+    }
+  }
+
+  /**
+   * 设置缓存数据
+   * @param {string} key - 缓存键
+   * @param {any} value - 缓存值
+   * @param {number} ttl - 过期时间（秒）
+   * @returns {Promise<Object>} - 设置结果
+   */
+  async set(key, value, ttl = 3600) {
+    const { app, ctx } = this;
+
+    try {
+      // 检查 Redis 是否可用
+      if (!app.redis) {
+        return {
+          success: false,
+          message: 'Redis 客户端不可用',
+          error: 'Redis not available'
+        };
+      }
+
+      // 将值转换为JSON字符串
+      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+
+      // 设置缓存
+      await app.redis.set(key, valueStr, 'EX', ttl);
+
+      ctx.logger.info(`缓存设置成功: ${key}, TTL: ${ttl}秒`);
+
+      return {
+        success: true,
+        message: `缓存 ${key} 设置成功`,
+        key,
+        ttl
+      };
+    } catch (error) {
+      ctx.logger.error('设置缓存失败:', error);
+      return {
+        success: false,
+        message: '设置缓存失败',
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * 获取缓存数据
+   * @param {string} key - 缓存键
+   * @returns {Promise<Object>} - 获取结果
+   */
+  async get(key) {
+    const { app, ctx } = this;
+
+    try {
+      // 检查 Redis 是否可用
+      if (!app.redis) {
+        return {
+          success: false,
+          message: 'Redis 客户端不可用',
+          data: null
+        };
+      }
+
+      // 获取缓存
+      const value = await app.redis.get(key);
+
+      if (value === null) {
+        return {
+          success: false,
+          message: '缓存不存在或已过期',
+          data: null
+        };
+      }
+
+      // 尝试解析JSON
+      let data;
+      try {
+        data = JSON.parse(value);
+      } catch (parseErr) {
+        // 如果解析失败，返回原始字符串
+        data = value;
+      }
+
+      ctx.logger.info(`缓存获取成功: ${key}`);
+
+      return {
+        success: true,
+        message: `缓存 ${key} 获取成功`,
+        data
+      };
+    } catch (error) {
+      ctx.logger.error('获取缓存失败:', error);
+      return {
+        success: false,
+        message: '获取缓存失败',
+        error: error.message,
+        data: null
       };
     }
   }

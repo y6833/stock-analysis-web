@@ -41,8 +41,13 @@ module.exports = app => {
   });
 
   PagePermission.associate = function () {
+    // 防止重复关联
+    if (PagePermission.associations && Object.keys(PagePermission.associations).length > 0) {
+      return;
+    }
+
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'systemPage' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'permissionPage' });
   };
 
   return PagePermission;

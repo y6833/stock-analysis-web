@@ -61,11 +61,16 @@ module.exports = app => {
   });
 
   PageAccessStat.associate = function () {
+    // 防止重复关联
+    if (PageAccessStat.associations && Object.keys(PageAccessStat.associations).length > 0) {
+      return;
+    }
+
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'systemPage' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'accessPage' });
 
     // 用户关联
-    this.belongsTo(app.model.User, { foreignKey: 'userId', as: 'user' });
+    this.belongsTo(app.model.User, { foreignKey: 'userId', as: 'accessUser' });
   };
 
   return PageAccessStat;

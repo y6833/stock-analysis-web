@@ -51,6 +51,42 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/advanced-dashboard',
+      name: 'advanced-dashboard',
+      component: () => import('../views/AdvancedDashboardView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.PREMIUM,
+      },
+    },
+    {
+      path: '/smart-recommendation',
+      name: 'smart-recommendation',
+      component: () => import('../views/SmartRecommendationView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
+    },
+    {
+      path: '/realtime-monitor',
+      name: 'realtime-monitor',
+      component: () => import('../views/RealtimeMonitorView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.PREMIUM,
+      },
+    },
+    {
+      path: '/stock-monitor',
+      name: 'stock-monitor',
+      component: () => import('../views/StockMonitorView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
+    },
+    {
       path: '/stock',
       name: 'stock',
       component: () => import('../views/StockAnalysisView.vue'),

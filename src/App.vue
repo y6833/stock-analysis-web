@@ -17,6 +17,7 @@ const userStore = useUserStore()
 
 // 下拉菜单状态
 const dropdownOpen = ref({
+  dashboard: false,
   analysis: false,
   strategy: false,
   user: false,
@@ -173,10 +174,60 @@ onUnmounted(() => {
               <span class="nav-icon">🏠</span>
               <span class="nav-text">首页</span>
             </RouterLink>
-            <RouterLink to="/dashboard" class="nav-link">
-              <span class="nav-icon">📊</span>
-              <span class="nav-text">仪表盘</span>
-            </RouterLink>
+            <!-- 仪表盘下拉菜单 -->
+            <div class="dropdown-container">
+              <button
+                class="nav-link dropdown-toggle"
+                :class="{ active: dropdownOpen.dashboard }"
+                @click="toggleDropdown('dashboard')"
+              >
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">仪表盘</span>
+                <span class="dropdown-arrow">▼</span>
+              </button>
+              <div class="dropdown-menu" v-show="dropdownOpen.dashboard">
+                <RouterLink to="/dashboard" class="dropdown-item">
+                  <span class="nav-icon">📊</span>
+                  <span class="nav-text">基础仪表盘</span>
+                </RouterLink>
+                <template v-if="canAccessPremiumFeatures">
+                  <RouterLink to="/advanced-dashboard" class="dropdown-item">
+                    <span class="nav-icon">🚀</span>
+                    <span class="nav-text">高级仪表盘</span>
+                    <span class="feature-badge premium">高级</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div
+                    class="dropdown-item locked"
+                    @click="goToMembership(MembershipLevel.PREMIUM)"
+                  >
+                    <span class="nav-icon">🚀</span>
+                    <span class="nav-text">高级仪表盘</span>
+                    <span class="feature-badge premium">高级</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+                <template v-if="canAccessPremiumFeatures">
+                  <RouterLink to="/realtime-monitor" class="dropdown-item">
+                    <span class="nav-icon">⚡</span>
+                    <span class="nav-text">实时监控</span>
+                    <span class="feature-badge premium">高级</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div
+                    class="dropdown-item locked"
+                    @click="goToMembership(MembershipLevel.PREMIUM)"
+                  >
+                    <span class="nav-icon">⚡</span>
+                    <span class="nav-text">实时监控</span>
+                    <span class="feature-badge premium">高级</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+              </div>
+            </div>
 
             <!-- 分析工具下拉菜单 -->
             <div class="dropdown-container">
@@ -194,6 +245,36 @@ onUnmounted(() => {
                   <span class="nav-icon">📈</span>
                   <span class="nav-text">股票分析</span>
                 </RouterLink>
+                <template v-if="canAccessBasicFeatures">
+                  <RouterLink to="/smart-recommendation" class="dropdown-item">
+                    <span class="nav-icon">🤖</span>
+                    <span class="nav-text">AI智能推荐</span>
+                    <span class="feature-badge basic">基础</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div class="dropdown-item locked" @click="goToMembership(MembershipLevel.BASIC)">
+                    <span class="nav-icon">🤖</span>
+                    <span class="nav-text">AI智能推荐</span>
+                    <span class="feature-badge basic">基础</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+                <template v-if="canAccessBasicFeatures">
+                  <RouterLink to="/stock-monitor" class="dropdown-item">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">爱盯盘监控</span>
+                    <span class="feature-badge basic">基础</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div class="dropdown-item locked" @click="goToMembership(MembershipLevel.BASIC)">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">爱盯盘监控</span>
+                    <span class="feature-badge basic">基础</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
                 <template v-if="canAccessBasicFeatures">
                   <RouterLink to="/portfolio" class="dropdown-item">
                     <span class="nav-icon">💼</span>

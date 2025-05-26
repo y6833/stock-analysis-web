@@ -101,12 +101,17 @@ module.exports = app => {
   });
 
   SystemPage.associate = function () {
+    // 防止重复关联
+    if (SystemPage.associations && Object.keys(SystemPage.associations).length > 0) {
+      return;
+    }
+
     // 自关联 - 父子页面关系
-    this.hasMany(app.model.SystemPage, { foreignKey: 'parentId', as: 'children' });
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'parentId', as: 'parent' });
+    this.hasMany(app.model.SystemPage, { foreignKey: 'parentId', as: 'subPages' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'parentId', as: 'parentPage' });
 
     // 页面权限
-    this.hasMany(app.model.PagePermission, { foreignKey: 'pageId', as: 'permissions' });
+    this.hasMany(app.model.PagePermission, { foreignKey: 'pageId', as: 'pagePermissions' });
 
     // 页面组关联
     this.belongsToMany(app.model.PageGroup, {
