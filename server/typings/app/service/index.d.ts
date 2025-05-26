@@ -28,6 +28,7 @@ import ExportSimulation = require('../../../app/service/simulation');
 import ExportSina = require('../../../app/service/sina');
 import ExportStock = require('../../../app/service/stock');
 import ExportStrategy = require('../../../app/service/strategy');
+import ExportTechnicalIndicators = require('../../../app/service/technicalIndicators');
 import ExportUser = require('../../../app/service/user');
 import ExportWatchlist = require('../../../app/service/watchlist');
 
@@ -54,6 +55,7 @@ declare module 'egg' {
     sina: AutoInstanceType<typeof ExportSina>;
     stock: AutoInstanceType<typeof ExportStock>;
     strategy: AutoInstanceType<typeof ExportStrategy>;
+    technicalIndicators: AutoInstanceType<typeof ExportTechnicalIndicators>;
     user: AutoInstanceType<typeof ExportUser>;
     watchlist: AutoInstanceType<typeof ExportWatchlist>;
   }

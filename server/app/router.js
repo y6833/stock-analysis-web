@@ -58,6 +58,12 @@ module.exports = app => {
   router.get('/api/stocks/:code/quote', controller.stock.getQuote);
   router.get('/api/stocks/:code/history', controller.stock.getHistory);
 
+  // 技术指标相关路由
+  router.post('/api/technical-indicators/:stockCode', controller.technicalIndicators.calculateIndicators);
+  router.get('/api/technical-indicators/:stockCode/realtime', controller.technicalIndicators.getRealTimeSignals);
+  router.post('/api/technical-indicators/scan', controller.technicalIndicators.scanStockSignals);
+  router.get('/api/technical-indicators/:stockCode/history', controller.technicalIndicators.getSignalHistory);
+
   // 测试相关路由
   router.get('/api/test/redis', controller.stock.testRedis);
   router.get('/api/test/store-stock', controller.stock.storeStockData);

@@ -34,7 +34,7 @@ module.exports = {
 
   // 启用 Redis 插件
   redis: {
-    enable: true,
+    enable: true, // 重新启用 Redis，但保持容错配置
     package: 'egg-redis',
   },
 };

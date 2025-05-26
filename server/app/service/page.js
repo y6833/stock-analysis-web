@@ -40,7 +40,7 @@ class PageService extends Service {
       queryOptions.include = [
         {
           model: ctx.model.PagePermission,
-          as: 'permissions',
+          as: 'pagePermissions',
         },
       ];
     }
@@ -63,7 +63,7 @@ class PageService extends Service {
       include: [
         {
           model: ctx.model.PagePermission,
-          as: 'permissions',
+          as: 'pagePermissions',
         },
       ],
     });
@@ -89,7 +89,7 @@ class PageService extends Service {
       include: [
         {
           model: ctx.model.PagePermission,
-          as: 'permissions',
+          as: 'pagePermissions',
         },
       ],
     });
@@ -350,7 +350,7 @@ class PageService extends Service {
         include: [
           {
             model: ctx.model.PagePermission,
-            as: 'permissions',
+            as: 'pagePermissions',
             where: { membershipLevel },
             required: false,
           },
@@ -364,8 +364,8 @@ class PageService extends Service {
       }
 
       // 检查权限
-      if (page.permissions && page.permissions.length > 0) {
-        const hasAccess = page.permissions[0].hasAccess;
+      if (page.pagePermissions && page.pagePermissions.length > 0) {
+        const hasAccess = page.pagePermissions[0].hasAccess;
         ctx.logger.info(`[页面权限] 权限检查结果: ${path} -> ${hasAccess ? '允许' : '拒绝'}`);
         return hasAccess;
       }
@@ -705,7 +705,7 @@ class PageService extends Service {
         include: [
           {
             model: ctx.model.PagePermission,
-            as: 'permissions',
+            as: 'pagePermissions',
             required: false,
           },
         ],
@@ -723,7 +723,7 @@ class PageService extends Service {
         }
 
         // 查找当前会员等级的权限
-        const permission = page.permissions.find(p => p.membershipLevel === membershipLevel);
+        const permission = page.pagePermissions.find(p => p.membershipLevel === membershipLevel);
         return permission ? permission.hasAccess : false;
       });
     }
@@ -941,12 +941,12 @@ class PageService extends Service {
       include: [
         {
           model: ctx.model.SystemPage,
-          as: 'page',
+          as: 'accessPage',
           attributes: ['id', 'name', 'path'],
         },
         {
           model: ctx.model.User,
-          as: 'user',
+          as: 'accessUser',
           attributes: ['id', 'username', 'email'],
         },
       ],
@@ -1019,12 +1019,12 @@ class PageService extends Service {
       include: [
         {
           model: ctx.model.SystemPage,
-          as: 'page',
+          as: 'accessedPage',
           attributes: ['id', 'name', 'path'],
         },
         {
           model: ctx.model.User,
-          as: 'user',
+          as: 'accessUser',
           attributes: ['id', 'username', 'email'],
         },
       ],
@@ -1125,7 +1125,7 @@ class PageService extends Service {
       include: [
         {
           model: ctx.model.SystemPage,
-          as: 'page',
+          as: 'accessPage',
           attributes: ['id', 'name', 'path'],
         },
       ],
@@ -1146,7 +1146,7 @@ class PageService extends Service {
       include: [
         {
           model: ctx.model.User,
-          as: 'user',
+          as: 'accessUser',
           attributes: ['id', 'username', 'email'],
         },
       ],
@@ -1259,7 +1259,7 @@ class PageService extends Service {
       include: [
         {
           model: ctx.model.SystemPage,
-          as: 'pages',
+          as: 'groupSystemPages',
           through: { attributes: [] }, // 不包含中间表字段
         },
       ],
@@ -1284,7 +1284,7 @@ class PageService extends Service {
       include: [
         {
           model: ctx.model.SystemPage,
-          as: 'pages',
+          as: 'groupSystemPages',
           through: { attributes: [] }, // 不包含中间表字段
         },
       ],
@@ -1390,7 +1390,7 @@ class PageService extends Service {
         include: [
           {
             model: ctx.model.SystemPage,
-            as: 'pages',
+            as: 'groupSystemPages',
             through: { attributes: [] }, // 不包含中间表字段
           },
         ],
@@ -1401,7 +1401,7 @@ class PageService extends Service {
       }
 
       // 获取组内所有页面ID
-      const pageIds = group.pages.map(page => page.id);
+      const pageIds = group.groupSystemPages.map(page => page.id);
 
       // 为每个页面设置权限
       for (const pageId of pageIds) {
@@ -1608,7 +1608,7 @@ class PageService extends Service {
         include: [
           {
             model: ctx.model.SystemPage,
-            as: 'pages',
+            as: 'groupSystemPages',
             through: { attributes: [] }, // 不包含中间表字段
           },
         ],
@@ -1619,7 +1619,7 @@ class PageService extends Service {
       }
 
       // 获取组内所有页面ID
-      const pageIds = group.pages.map(page => page.id);
+      const pageIds = group.groupSystemPages.map(page => page.id);
 
       // 为每个页面设置权限
       for (const pageId of pageIds) {

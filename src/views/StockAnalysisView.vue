@@ -100,6 +100,15 @@
           <p>请选择股票以查看图表</p>
         </div>
       </div>
+
+      <!-- 技术信号面板 -->
+      <div class="technical-signals-container">
+        <TechnicalSignals
+          v-if="currentStock"
+          :stock-code="currentStock.symbol"
+          :kline-data="preparedKlineData"
+        />
+      </div>
     </div>
 
     <div v-else class="empty-state">
@@ -109,11 +118,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { stockService } from '@/services/stockService'
 import { dashboardService } from '@/services/dashboardService'
 import { toast } from '@/utils/toast'
 import StockChart from '@/components/charts/StockChart.vue'
+import TechnicalSignals from '@/components/TechnicalSignals.vue'
 import type { Stock, StockQuote } from '@/types/stock'
 import type { DashboardSettings, Watchlist, WatchlistItem } from '@/types/dashboard'
 
@@ -122,6 +132,22 @@ const searchQuery = ref('')
 const searchResults = ref<Stock[]>([])
 const currentStock = ref<StockQuote | null>(null)
 const isLoading = ref(false)
+const klineData = ref<any>({})
+
+// 计算属性 - 为技术指标组件准备K线数据
+const preparedKlineData = computed(() => {
+  if (!currentStock.value) return {}
+
+  // 这里可以从历史数据API获取完整的K线数据
+  // 暂时使用当前股票数据构造简单的K线数据
+  return {
+    open: [currentStock.value.open],
+    high: [currentStock.value.high],
+    low: [currentStock.value.low],
+    close: [currentStock.value.price],
+    volume: [currentStock.value.vol],
+  }
+})
 
 // 搜索股票
 const handleSearch = async () => {
@@ -584,5 +610,9 @@ onMounted(async () => {
   .stock-details {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+.technical-signals-container {
+  margin-top: 20px;
 }
 </style>
