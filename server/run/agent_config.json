@@ -220,23 +220,6 @@
         "database": "stock_analysis"
       }
     },
-    "redis": {
-      "default": {},
-      "app": true,
-      "agent": false,
-      "supportTimeCommand": true,
-      "client": {
-        "port": 6379,
-        "host": "127.0.0.1",
-        "password": "<String len: 0>",
-        "db": 0,
-        "retry_strategy": "<Function retry_strategy>",
-        "connect_timeout": 1000,
-        "lazyConnect": true,
-        "maxRetriesPerRequest": 1
-      },
-      "allowFail": true
-    },
     "env": "local",
     "name": "stock-analysis-server",
     "keys": "<String len: 40>",
@@ -721,7 +704,7 @@
       "version": "3.4.0"
     },
     "redis": {
-      "enable": true,
+      "enable": false,
       "package": "egg-redis",
       "name": "redis",
       "dependencies": [],

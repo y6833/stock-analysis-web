@@ -32,9 +32,9 @@ module.exports = {
     package: 'egg-mysql',
   },
 
-  // 启用 Redis 插件
+  // 启用 Redis 插件 - 暂时禁用
   redis: {
-    enable: true, // 重新启用 Redis，但保持容错配置
+    enable: false, // 暂时禁用 Redis 以解决连接问题
     package: 'egg-redis',
   },
 };

@@ -95,30 +95,30 @@ module.exports = (appInfo) => {
     agent: false,
   }
 
-  // Redis 配置
-  config.redis = {
-    client: {
-      port: 6379,
-      host: '127.0.0.1',
-      password: '', // 暂时不使用密码
-      db: 0,
-      retry_strategy: function (options) {
-        // 如果重试次数超过1次，就不再重试，避免阻塞启动
-        if (options.attempt > 1) {
-          return undefined
-        }
-        // 重试间隔为500毫秒
-        return 500
-      },
-      // 连接超时时间缩短
-      connect_timeout: 1000,
-      // 添加更多容错配置
-      lazyConnect: true,
-      maxRetriesPerRequest: 1,
-    },
-    // 允许 Redis 连接失败，不影响应用启动
-    allowFail: true,
-  }
+  // Redis 配置 - 暂时禁用以解决连接问题
+  // config.redis = {
+  //   client: {
+  //     port: 6379,
+  //     host: '127.0.0.1',
+  //     password: '123456', // Redis 密码
+  //     db: 0,
+  //     retry_strategy: function (options) {
+  //       // 如果重试次数超过3次，就不再重试
+  //       if (options.attempt > 3) {
+  //         return undefined
+  //       }
+  //       // 重试间隔为1000毫秒
+  //       return 1000
+  //     },
+  //     // 连接超时时间
+  //     connect_timeout: 5000,
+  //     // 添加更多容错配置
+  //     lazyConnect: true,
+  //     maxRetriesPerRequest: 3,
+  //   },
+  //   // 允许 Redis 连接失败，不影响应用启动
+  //   allowFail: true,
+  // }
 
   // 认证配置
   config.auth = {

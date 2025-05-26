@@ -7,12 +7,13 @@
           实时监控中心
         </h1>
         <div class="connection-status">
-          <span 
-            class="status-dot" 
-            :class="{ 
+          <span
+            class="status-dot"
+            :class="{
               connected: realtimeService.isConnected.value,
               connecting: realtimeService.isConnecting.value,
-              disconnected: !realtimeService.isConnected.value && !realtimeService.isConnecting.value
+              disconnected:
+                !realtimeService.isConnected.value && !realtimeService.isConnecting.value,
             }"
           ></span>
           <span class="status-text">
@@ -21,17 +22,15 @@
         </div>
       </div>
       <div class="header-right">
-        <el-button 
-          v-if="!realtimeService.isConnected.value" 
-          type="primary" 
+        <el-button
+          v-if="!realtimeService.isConnected.value"
+          type="primary"
           @click="realtimeService.reconnect()"
           :loading="realtimeService.isConnecting.value"
         >
           重新连接
         </el-button>
-        <el-button @click="realtimeService.clearAlerts()">
-          清除警报
-        </el-button>
+        <el-button @click="realtimeService.clearAlerts()"> 清除警报 </el-button>
       </div>
     </div>
 
@@ -40,9 +39,7 @@
       <div class="market-summary-section">
         <div class="section-header">
           <h3>市场概况</h3>
-          <div class="update-time">
-            最后更新: {{ formatTime(lastUpdateTime) }}
-          </div>
+          <div class="update-time">最后更新: {{ formatTime(lastUpdateTime) }}</div>
         </div>
         <div class="summary-cards">
           <div class="summary-card">
@@ -95,8 +92,8 @@
           </div>
         </div>
         <div class="quotes-grid">
-          <div 
-            v-for="(quote, symbol) in realtimeData" 
+          <div
+            v-for="(quote, symbol) in realtimeData"
             :key="symbol"
             class="quote-card"
             :class="getQuoteCardClass(quote)"
@@ -108,8 +105,9 @@
             <div class="quote-price">
               <div class="current-price">¥{{ quote.price.toFixed(2) }}</div>
               <div class="price-change" :class="quote.change >= 0 ? 'positive' : 'negative'">
-                {{ quote.change >= 0 ? '+' : '' }}{{ quote.change.toFixed(2)} 
-                ({{ quote.changePercent.toFixed(2) }}%)
+                {{ quote.change >= 0 ? '+' : '' }}{{ quote.change.toFixed(2) }} ({{
+                  quote.changePercent.toFixed(2)
+                }}%)
               </div>
             </div>
             <div class="quote-details">
@@ -131,9 +129,7 @@
               </div>
             </div>
             <div class="quote-actions">
-              <el-button size="small" @click="removeFromMonitor(symbol)">
-                移除
-              </el-button>
+              <el-button size="small" @click="removeFromMonitor(symbol)"> 移除 </el-button>
             </div>
           </div>
         </div>
@@ -148,8 +144,8 @@
           </div>
         </div>
         <div class="alerts-list">
-          <div 
-            v-for="alert in marketAlerts" 
+          <div
+            v-for="alert in marketAlerts"
             :key="alert.id"
             class="alert-item"
             :class="[alert.type, alert.level]"
@@ -164,11 +160,7 @@
               </div>
             </div>
             <div class="alert-actions">
-              <el-button 
-                size="small" 
-                type="text" 
-                @click="realtimeService.removeAlert(alert.id)"
-              >
+              <el-button size="small" type="text" @click="realtimeService.removeAlert(alert.id)">
                 ✕
               </el-button>
             </div>
@@ -227,7 +219,7 @@ const getAlertIcon = (type: string) => {
     price: '💰',
     volume: '📊',
     technical: '📈',
-    news: '📰'
+    news: '📰',
   }
   return icons[type] || '⚠️'
 }
@@ -246,7 +238,7 @@ const formatVolume = (volume: number) => {
 onMounted(() => {
   // 订阅一些默认股票
   const defaultSymbols = ['000001', '000002', '600036', '600519']
-  defaultSymbols.forEach(symbol => {
+  defaultSymbols.forEach((symbol) => {
     realtimeService.subscribe(symbol)
   })
 
@@ -602,18 +594,19 @@ onMounted(() => {
     flex-direction: column;
     gap: var(--spacing-md);
   }
-  
+
   .summary-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .quotes-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
