@@ -470,6 +470,36 @@ class PortfolioService extends Service {
 
     return true;
   }
+
+  /**
+   * 获取所有用户持仓的股票（用于数据同步）
+   * @return {Array} 所有持仓的股票列表
+   */
+  async getAllPortfolioStocks() {
+    const { ctx } = this;
+
+    try {
+      // 查找所有持仓的股票，去重，只返回持仓数量大于0的股票
+      const holdings = await ctx.model.PortfolioHolding.findAll({
+        attributes: ['stockCode', 'stockName'],
+        where: {
+          quantity: {
+            [ctx.app.Sequelize.Op.gt]: 0
+          }
+        },
+        group: ['stockCode'],
+        order: [['stockCode', 'ASC']],
+      });
+
+      return holdings.map(holding => ({
+        symbol: holding.stockCode,
+        name: holding.stockName,
+      }));
+    } catch (err) {
+      ctx.logger.error('获取所有持仓股票失败:', err);
+      return [];
+    }
+  }
 }
 
 module.exports = PortfolioService;

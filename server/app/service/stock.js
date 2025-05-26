@@ -857,6 +857,327 @@ class StockService extends Service {
       return result;
     }
   }
+
+  // 获取行业列表
+  async getIndustryList() {
+    const { app, ctx } = this;
+    const cacheKey = 'stock:industry_list';
+
+    return this.withCache(cacheKey, 86400, async () => { // 24小时过期
+      try {
+        // 使用Tushare API获取行业分类
+        const response = await axios.post('http://api.tushare.pro', {
+          api_name: 'hs_const',
+          token: app.config.tushare.token,
+          params: {
+            type: 'SW2021',
+          },
+        });
+
+        if (response.data && response.data.data && response.data.data.items) {
+          const industries = response.data.data.items.map(item => ({
+            code: item[1],
+            name: item[2],
+            level: item[3],
+            data_source: 'external_api',
+            data_source_message: '数据来自Tushare API (hs_const)'
+          }));
+
+          return {
+            data: industries,
+            data_source: 'external_api',
+            data_source_message: '数据来自Tushare API (hs_const)'
+          };
+        }
+
+        return {
+          data: [],
+          data_source: 'external_api',
+          data_source_message: '数据来自Tushare API (hs_const)，但未获取到数据'
+        };
+      } catch (err) {
+        ctx.logger.error('获取行业列表失败:', err);
+        // 返回默认行业列表
+        return {
+          data: [
+            { code: 'SW801010', name: '农林牧渔', level: 1 },
+            { code: 'SW801020', name: '采掘', level: 1 },
+            { code: 'SW801030', name: '化工', level: 1 },
+            { code: 'SW801040', name: '钢铁', level: 1 },
+            { code: 'SW801050', name: '有色金属', level: 1 },
+            { code: 'SW801080', name: '电子', level: 1 },
+            { code: 'SW801110', name: '家用电器', level: 1 },
+            { code: 'SW801120', name: '食品饮料', level: 1 },
+            { code: 'SW801130', name: '纺织服装', level: 1 },
+            { code: 'SW801140', name: '轻工制造', level: 1 },
+            { code: 'SW801150', name: '医药生物', level: 1 },
+            { code: 'SW801160', name: '公用事业', level: 1 },
+            { code: 'SW801170', name: '交通运输', level: 1 },
+            { code: 'SW801180', name: '房地产', level: 1 },
+            { code: 'SW801200', name: '商业贸易', level: 1 },
+            { code: 'SW801210', name: '休闲服务', level: 1 },
+            { code: 'SW801230', name: '银行', level: 1 },
+            { code: 'SW801710', name: '建筑材料', level: 1 },
+            { code: 'SW801720', name: '建筑装饰', level: 1 },
+            { code: 'SW801730', name: '电气设备', level: 1 },
+            { code: 'SW801740', name: '国防军工', level: 1 },
+            { code: 'SW801750', name: '计算机', level: 1 },
+            { code: 'SW801760', name: '传媒', level: 1 },
+            { code: 'SW801770', name: '通信', level: 1 },
+            { code: 'SW801780', name: '非银金融', level: 1 },
+            { code: 'SW801790', name: '汽车', level: 1 },
+            { code: 'SW801880', name: '机械设备', level: 1 }
+          ],
+          data_source: 'fallback',
+          data_source_message: '使用默认行业列表（API调用失败）'
+        };
+      }
+    });
+  }
+
+  // 获取热门股票
+  async getHotStocks(limit = 50) {
+    const { app, ctx } = this;
+    const cacheKey = `stock:hot_stocks:${limit}`;
+
+    return this.withCache(cacheKey, 1800, async () => { // 30分钟过期
+      try {
+        // 使用Tushare API获取热门股票（通过成交量排序）
+        const response = await axios.post('http://api.tushare.pro', {
+          api_name: 'daily',
+          token: app.config.tushare.token,
+          params: {
+            trade_date: this.getDateString(0),
+            limit: limit,
+          },
+        });
+
+        if (response.data && response.data.data && response.data.data.items) {
+          const hotStocks = response.data.data.items
+            .filter(item => item[9] > 0) // 过滤掉成交量为0的股票
+            .sort((a, b) => b[9] - a[9]) // 按成交量降序排序
+            .slice(0, limit)
+            .map(item => ({
+              symbol: item[0],
+              name: '', // 需要单独获取股票名称
+              volume: item[9],
+              amount: item[10],
+              price: item[5],
+              change: item[8],
+              data_source: 'external_api',
+              data_source_message: '数据来自Tushare API (daily)'
+            }));
+
+          return {
+            data: hotStocks,
+            data_source: 'external_api',
+            data_source_message: '数据来自Tushare API (daily)'
+          };
+        }
+
+        return {
+          data: [],
+          data_source: 'external_api',
+          data_source_message: '数据来自Tushare API (daily)，但未获取到数据'
+        };
+      } catch (err) {
+        ctx.logger.error('获取热门股票失败:', err);
+        // 返回默认热门股票列表
+        return {
+          data: [
+            { symbol: '000001.SZ', name: '平安银行' },
+            { symbol: '000002.SZ', name: '万科A' },
+            { symbol: '000858.SZ', name: '五粮液' },
+            { symbol: '000876.SZ', name: '新希望' },
+            { symbol: '002415.SZ', name: '海康威视' },
+            { symbol: '002594.SZ', name: '比亚迪' },
+            { symbol: '300059.SZ', name: '东方财富' },
+            { symbol: '300750.SZ', name: '宁德时代' },
+            { symbol: '600000.SH', name: '浦发银行' },
+            { symbol: '600036.SH', name: '招商银行' },
+            { symbol: '600519.SH', name: '贵州茅台' },
+            { symbol: '600887.SH', name: '伊利股份' },
+            { symbol: '601318.SH', name: '中国平安' },
+            { symbol: '601398.SH', name: '工商银行' },
+            { symbol: '601939.SH', name: '建设银行' }
+          ],
+          data_source: 'fallback',
+          data_source_message: '使用默认热门股票列表（API调用失败）'
+        };
+      }
+    });
+  }
+
+  // 获取指数行情
+  async getIndexQuote(indexCode) {
+    const { app, ctx } = this;
+    const cacheKey = `index:quote:${indexCode}`;
+
+    return this.withCache(cacheKey, 300, async () => { // 5分钟过期
+      try {
+        // 使用Tushare API获取指数行情
+        const response = await axios.post('http://api.tushare.pro', {
+          api_name: 'index_daily',
+          token: app.config.tushare.token,
+          params: {
+            ts_code: indexCode,
+            trade_date: this.getDateString(0),
+          },
+        });
+
+        if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
+          const indexData = response.data.data.items[0];
+          const indexName = await this.getIndexName(indexCode);
+
+          const quote = {
+            code: indexCode,
+            name: indexName.name || indexCode,
+            price: indexData[5], // 收盘价
+            open: indexData[2],  // 开盘价
+            high: indexData[3],  // 最高价
+            low: indexData[4],   // 最低价
+            volume: indexData[6], // 成交量
+            amount: indexData[7], // 成交额
+            change: indexData[8], // 涨跌幅
+            date: indexData[1],   // 日期
+            data_source: 'external_api',
+            data_source_message: '数据来自Tushare API (index_daily)'
+          };
+
+          return quote;
+        }
+
+        throw new Error('未找到指数行情数据');
+      } catch (err) {
+        ctx.logger.error(`获取指数 ${indexCode} 行情失败:`, err);
+        throw err;
+      }
+    });
+  }
+
+  // 获取指数名称
+  async getIndexName(indexCode) {
+    const { app, ctx } = this;
+    const cacheKey = `index:name:${indexCode}`;
+
+    return this.withCache(cacheKey, 86400, async () => { // 24小时过期
+      try {
+        // 使用Tushare API获取指数基本信息
+        const response = await axios.post('http://api.tushare.pro', {
+          api_name: 'index_basic',
+          token: app.config.tushare.token,
+          params: {
+            ts_code: indexCode,
+          },
+        });
+
+        if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
+          const indexName = response.data.data.items[0][2]; // 指数名称
+          return {
+            name: indexName,
+            data_source: 'external_api',
+            data_source_message: '数据来自Tushare API (index_basic)'
+          };
+        }
+
+        return {
+          name: indexCode,
+          data_source: 'external_api',
+          data_source_message: '数据来自Tushare API (index_basic)，但未获取到数据'
+        };
+      } catch (err) {
+        ctx.logger.error('获取指数名称失败:', err);
+        return {
+          name: indexCode,
+          data_source: 'error',
+          data_source_message: `获取数据失败: ${err.message}`
+        };
+      }
+    });
+  }
+
+  // 获取用户关注的股票
+  async getUserWatchlistStocks() {
+    const { ctx } = this;
+
+    try {
+      // 从关注列表服务获取所有用户的关注股票
+      const watchlistStocks = await ctx.service.watchlist.getAllWatchlistStocks();
+
+      return watchlistStocks.map(stock => ({
+        symbol: stock.symbol,
+        name: stock.name || stock.symbol,
+        data_source: 'database',
+        data_source_message: '数据来自用户关注列表'
+      }));
+    } catch (err) {
+      ctx.logger.error('获取用户关注股票失败:', err);
+      return [];
+    }
+  }
+
+  // 获取股票数量统计
+  async getStockCount() {
+    const { app, ctx } = this;
+
+    try {
+      // 从数据库获取股票数量
+      const result = await app.mysql.query('SELECT COUNT(*) as count FROM stocks');
+      return result[0]?.count || 0;
+    } catch (err) {
+      ctx.logger.error('获取股票数量失败:', err);
+      return 0;
+    }
+  }
+
+  // 获取行业数据
+  async getIndustryData(industryCode) {
+    const { app, ctx } = this;
+    const cacheKey = `industry:data:${industryCode}`;
+
+    return this.withCache(cacheKey, 3600, async () => { // 1小时过期
+      try {
+        // 使用Tushare API获取行业成分股
+        const response = await axios.post('http://api.tushare.pro', {
+          api_name: 'index_weight',
+          token: app.config.tushare.token,
+          params: {
+            index_code: industryCode,
+            trade_date: this.getDateString(0),
+          },
+        });
+
+        if (response.data && response.data.data && response.data.data.items) {
+          const industryData = {
+            code: industryCode,
+            stocks: response.data.data.items.map(item => ({
+              symbol: item[1],
+              weight: item[2],
+            })),
+            data_source: 'external_api',
+            data_source_message: '数据来自Tushare API (index_weight)'
+          };
+
+          return industryData;
+        }
+
+        return {
+          code: industryCode,
+          stocks: [],
+          data_source: 'external_api',
+          data_source_message: '数据来自Tushare API (index_weight)，但未获取到数据'
+        };
+      } catch (err) {
+        ctx.logger.error(`获取行业 ${industryCode} 数据失败:`, err);
+        return {
+          code: industryCode,
+          stocks: [],
+          data_source: 'error',
+          data_source_message: `获取数据失败: ${err.message}`
+        };
+      }
+    });
+  }
 }
 
 module.exports = StockService;

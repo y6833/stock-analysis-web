@@ -40,9 +40,9 @@ module.exports = app => {
     },
   });
 
-  PagePermission.associate = function() {
+  PagePermission.associate = function () {
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'page' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'systemPage' });
   };
 
   return PagePermission;

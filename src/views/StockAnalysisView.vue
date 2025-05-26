@@ -95,7 +95,10 @@
       </div>
 
       <div class="chart-container">
-        <p>股票图表区域 (待实现)</p>
+        <StockChart v-if="currentStock" :symbol="currentStock.symbol" :name="currentStock.name" />
+        <div v-else class="chart-placeholder">
+          <p>请选择股票以查看图表</p>
+        </div>
       </div>
     </div>
 
@@ -108,7 +111,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { stockService } from '@/services/stockService'
+import { dashboardService } from '@/services/dashboardService'
 import { toast } from '@/utils/toast'
+import StockChart from '@/components/charts/StockChart.vue'
 import type { Stock, StockQuote } from '@/types/stock'
 import type { DashboardSettings, Watchlist, WatchlistItem } from '@/types/dashboard'
 
@@ -177,7 +182,7 @@ const addToWatchlist = async () => {
 
   try {
     // 获取当前用户的关注列表
-    const dashboardSettings = await stockService.getDashboardSettings()
+    const dashboardSettings = await dashboardService.getDashboardSettings()
 
     if (!dashboardSettings || !dashboardSettings.watchlists) {
       toast.error('获取关注列表失败')
@@ -219,7 +224,7 @@ const addToWatchlist = async () => {
     })
 
     // 保存更新后的关注列表
-    await stockService.saveDashboardSettings(dashboardSettings)
+    await dashboardService.saveDashboardSettings(dashboardSettings)
 
     toast.success(`已添加 ${currentStock.value.name} 到关注列表`)
   } catch (error) {
@@ -286,7 +291,7 @@ onMounted(async () => {
     } else {
       // 否则尝试加载默认股票
       try {
-        const dashboardSettings = await stockService.getDashboardSettings()
+        const dashboardSettings = await dashboardService.getDashboardSettings()
         if (dashboardSettings && dashboardSettings.defaultSymbol) {
           await selectStock(dashboardSettings.defaultSymbol)
         } else {
@@ -544,9 +549,13 @@ onMounted(async () => {
   border-radius: 4px;
   padding: 20px;
   min-height: 400px;
+}
+
+.chart-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 400px;
   color: var(--text-secondary);
 }
 

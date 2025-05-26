@@ -10,7 +10,7 @@ class WatchlistService extends Service {
    */
   async getUserWatchlists(userId) {
     const { ctx } = this;
-    
+
     // 查找用户的所有关注分组
     const watchlists = await ctx.model.UserWatchlist.findAll({
       where: { userId },
@@ -42,7 +42,7 @@ class WatchlistService extends Service {
   async createWatchlist(userId, data) {
     const { ctx } = this;
     const { name, description } = data;
-    
+
     // 创建关注分组
     const watchlist = await ctx.model.UserWatchlist.create({
       userId,
@@ -65,7 +65,7 @@ class WatchlistService extends Service {
   async updateWatchlist(userId, watchlistId, data) {
     const { ctx } = this;
     const { name, description } = data;
-    
+
     // 查找分组
     const watchlist = await ctx.model.UserWatchlist.findOne({
       where: { id: watchlistId, userId },
@@ -93,7 +93,7 @@ class WatchlistService extends Service {
    */
   async deleteWatchlist(userId, watchlistId) {
     const { ctx } = this;
-    
+
     // 查找分组
     const watchlist = await ctx.model.UserWatchlist.findOne({
       where: { id: watchlistId, userId },
@@ -117,7 +117,7 @@ class WatchlistService extends Service {
    */
   async getWatchlistItems(userId, watchlistId) {
     const { ctx } = this;
-    
+
     // 查找分组
     const watchlist = await ctx.model.UserWatchlist.findOne({
       where: { id: watchlistId, userId },
@@ -146,7 +146,7 @@ class WatchlistService extends Service {
   async addStockToWatchlist(userId, watchlistId, data) {
     const { ctx } = this;
     const { stockCode, stockName, notes } = data;
-    
+
     // 查找分组
     const watchlist = await ctx.model.UserWatchlist.findOne({
       where: { id: watchlistId, userId },
@@ -178,7 +178,7 @@ class WatchlistService extends Service {
    */
   async removeStockFromWatchlist(userId, watchlistId, itemId) {
     const { ctx } = this;
-    
+
     // 查找分组
     const watchlist = await ctx.model.UserWatchlist.findOne({
       where: { id: watchlistId, userId },
@@ -213,7 +213,7 @@ class WatchlistService extends Service {
    */
   async updateWatchlistItemNotes(userId, watchlistId, itemId, notes) {
     const { ctx } = this;
-    
+
     // 查找分组
     const watchlist = await ctx.model.UserWatchlist.findOne({
       where: { id: watchlistId, userId },
@@ -239,6 +239,31 @@ class WatchlistService extends Service {
     });
 
     return item;
+  }
+
+  /**
+   * 获取所有用户关注的股票（用于数据同步）
+   * @return {Array} 所有关注的股票列表
+   */
+  async getAllWatchlistStocks() {
+    const { ctx } = this;
+
+    try {
+      // 查找所有关注的股票，去重
+      const items = await ctx.model.WatchlistItem.findAll({
+        attributes: ['stockCode', 'stockName'],
+        group: ['stockCode'],
+        order: [['stockCode', 'ASC']],
+      });
+
+      return items.map(item => ({
+        symbol: item.stockCode,
+        name: item.stockName,
+      }));
+    } catch (err) {
+      ctx.logger.error('获取所有关注股票失败:', err);
+      return [];
+    }
   }
 }
 

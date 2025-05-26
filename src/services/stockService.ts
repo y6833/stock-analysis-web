@@ -500,6 +500,18 @@ export const stockService = {
     }
   },
 
+  // 获取仪表盘设置（代理到 dashboardService）
+  async getDashboardSettings() {
+    const { dashboardService } = await import('@/services/dashboardService')
+    return dashboardService.getDashboardSettings()
+  },
+
+  // 保存仪表盘设置（代理到 dashboardService）
+  async saveDashboardSettings(settings: any) {
+    const { dashboardService } = await import('@/services/dashboardService')
+    return dashboardService.saveDashboardSettings(settings)
+  },
+
   // 获取财经新闻
   async getFinancialNews(
     count: number = 5,

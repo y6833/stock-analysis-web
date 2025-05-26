@@ -100,13 +100,21 @@ module.exports = app => {
     },
   });
 
-  SystemPage.associate = function() {
+  SystemPage.associate = function () {
     // 自关联 - 父子页面关系
     this.hasMany(app.model.SystemPage, { foreignKey: 'parentId', as: 'children' });
     this.belongsTo(app.model.SystemPage, { foreignKey: 'parentId', as: 'parent' });
 
     // 页面权限
     this.hasMany(app.model.PagePermission, { foreignKey: 'pageId', as: 'permissions' });
+
+    // 页面组关联
+    this.belongsToMany(app.model.PageGroup, {
+      through: app.model.PageGroupMapping,
+      foreignKey: 'pageId',
+      otherKey: 'groupId',
+      as: 'pageGroups',
+    });
   };
 
   return SystemPage;

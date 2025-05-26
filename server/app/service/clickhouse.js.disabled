@@ -1,7 +1,8 @@
 'use strict';
 
 const Service = require('egg').Service;
-const { ClickHouse } = require('clickhouse');
+// 临时禁用 ClickHouse，等待安装依赖
+// const { ClickHouse } = require('clickhouse');
 
 /**
  * ClickHouse 数据库服务
@@ -10,7 +11,12 @@ const { ClickHouse } = require('clickhouse');
 class ClickHouseService extends Service {
   constructor(ctx) {
     super(ctx);
-    
+
+    // 临时禁用 ClickHouse 初始化
+    this.clickhouse = null;
+
+    // TODO: 安装 ClickHouse 依赖后启用
+    /*
     // 初始化 ClickHouse 客户端
     this.clickhouse = new ClickHouse({
       url: this.config.clickhouse.url || 'http://localhost',
@@ -26,6 +32,7 @@ class ClickHouseService extends Service {
         database: this.config.clickhouse.database || 'stock_data',
       },
     });
+    */
   }
 
   /**
@@ -33,7 +40,12 @@ class ClickHouseService extends Service {
    */
   async initTables() {
     const { ctx } = this;
-    
+
+    // 临时禁用ClickHouse功能
+    ctx.logger.info('ClickHouse 功能已临时禁用，等待依赖安装');
+    return { success: true, message: 'ClickHouse 功能已临时禁用' };
+
+    /*
     try {
       // 创建数据库
       await this.clickhouse.query(`
@@ -147,6 +159,7 @@ class ClickHouseService extends Service {
       ctx.logger.error('ClickHouse 表结构初始化失败:', error);
       throw error;
     }
+    */
   }
 
   /**
@@ -154,14 +167,19 @@ class ClickHouseService extends Service {
    */
   async insertDailyData(dataList) {
     const { ctx } = this;
-    
+
+    // 临时禁用ClickHouse功能
+    ctx.logger.info('ClickHouse insertDailyData 功能已临时禁用');
+    return { success: true, count: dataList ? dataList.length : 0, message: 'ClickHouse 功能已临时禁用' };
+
+    /*
     try {
       if (!dataList || dataList.length === 0) {
         return { success: true, count: 0 };
       }
 
       const query = `
-        INSERT INTO stock_data.daily_data 
+        INSERT INTO stock_data.daily_data
         (symbol, date, datetime, open, high, low, close, volume, amount, change, pct_change, data_source)
         VALUES
       `;
@@ -196,51 +214,51 @@ class ClickHouseService extends Service {
    * 批量插入分钟级数据
    */
   async insertMinuteData(dataList) {
-    const { ctx } = this;
-    
-    try {
-      if (!dataList || dataList.length === 0) {
-        return { success: true, count: 0 };
-      }
+      const { ctx } = this;
 
-      const query = `
-        INSERT INTO stock_data.minute_data 
+      try {
+        if (!dataList || dataList.length === 0) {
+          return { success: true, count: 0 };
+        }
+
+        const query = `
+        INSERT INTO stock_data.minute_data
         (symbol, datetime, open, high, low, close, volume, amount, data_source)
         VALUES
       `;
 
-      const values = dataList.map(data => [
-        data.symbol,
-        data.datetime,
-        data.open,
-        data.high,
-        data.low,
-        data.close,
-        data.volume,
-        data.amount || 0,
-        data.data_source || 'unknown'
-      ]);
+        const values = dataList.map(data => [
+          data.symbol,
+          data.datetime,
+          data.open,
+          data.high,
+          data.low,
+          data.close,
+          data.volume,
+          data.amount || 0,
+          data.data_source || 'unknown'
+        ]);
 
-      await this.clickhouse.insert(query, values).toPromise();
+        await this.clickhouse.insert(query, values).toPromise();
 
-      ctx.logger.info(`成功插入 ${dataList.length} 条分钟数据到 ClickHouse`);
-      return { success: true, count: dataList.length };
+        ctx.logger.info(`成功插入 ${dataList.length} 条分钟数据到 ClickHouse`);
+        return { success: true, count: dataList.length };
 
-    } catch (error) {
-      ctx.logger.error('插入分钟数据到 ClickHouse 失败:', error);
-      throw error;
+      } catch (error) {
+        ctx.logger.error('插入分钟数据到 ClickHouse 失败:', error);
+        throw error;
+      }
     }
-  }
 
   /**
    * 查询日线数据
    */
   async queryDailyData(symbol, startDate, endDate, limit = 1000) {
-    const { ctx } = this;
-    
-    try {
-      const query = `
-        SELECT 
+      const { ctx } = this;
+
+      try {
+        const query = `
+        SELECT
           symbol,
           date,
           datetime,
@@ -261,26 +279,26 @@ class ClickHouseService extends Service {
         LIMIT ${limit}
       `;
 
-      const result = await this.clickhouse.query(query).toPromise();
-      
-      ctx.logger.info(`从 ClickHouse 查询到 ${result.length} 条日线数据`);
-      return result;
+        const result = await this.clickhouse.query(query).toPromise();
 
-    } catch (error) {
-      ctx.logger.error('从 ClickHouse 查询日线数据失败:', error);
-      throw error;
+        ctx.logger.info(`从 ClickHouse 查询到 ${result.length} 条日线数据`);
+        return result;
+
+      } catch (error) {
+        ctx.logger.error('从 ClickHouse 查询日线数据失败:', error);
+        throw error;
+      }
     }
-  }
 
   /**
    * 查询分钟级数据
    */
   async queryMinuteData(symbol, startTime, endTime, limit = 1000) {
-    const { ctx } = this;
-    
-    try {
-      const query = `
-        SELECT 
+      const { ctx } = this;
+
+      try {
+        const query = `
+        SELECT
           symbol,
           datetime,
           open,
@@ -298,27 +316,27 @@ class ClickHouseService extends Service {
         LIMIT ${limit}
       `;
 
-      const result = await this.clickhouse.query(query).toPromise();
-      
-      ctx.logger.info(`从 ClickHouse 查询到 ${result.length} 条分钟数据`);
-      return result;
+        const result = await this.clickhouse.query(query).toPromise();
 
-    } catch (error) {
-      ctx.logger.error('从 ClickHouse 查询分钟数据失败:', error);
-      throw error;
+        ctx.logger.info(`从 ClickHouse 查询到 ${result.length} 条分钟数据`);
+        return result;
+
+      } catch (error) {
+        ctx.logger.error('从 ClickHouse 查询分钟数据失败:', error);
+        throw error;
+      }
     }
-  }
 
   /**
    * 获取数据统计信息
    */
   async getDataStatistics() {
-    const { ctx } = this;
-    
-    try {
-      // 日线数据统计
-      const dailyStats = await this.clickhouse.query(`
-        SELECT 
+      const { ctx } = this;
+
+      try {
+        // 日线数据统计
+        const dailyStats = await this.clickhouse.query(`
+        SELECT
           count() as total_records,
           uniq(symbol) as unique_symbols,
           min(date) as earliest_date,
@@ -326,9 +344,9 @@ class ClickHouseService extends Service {
         FROM stock_data.daily_data
       `).toPromise();
 
-      // 分钟数据统计
-      const minuteStats = await this.clickhouse.query(`
-        SELECT 
+        // 分钟数据统计
+        const minuteStats = await this.clickhouse.query(`
+        SELECT
           count() as total_records,
           uniq(symbol) as unique_symbols,
           min(datetime) as earliest_datetime,
@@ -336,74 +354,74 @@ class ClickHouseService extends Service {
         FROM stock_data.minute_data
       `).toPromise();
 
-      return {
-        daily: dailyStats[0] || {},
-        minute: minuteStats[0] || {}
-      };
+        return {
+          daily: dailyStats[0] || {},
+          minute: minuteStats[0] || {}
+        };
 
-    } catch (error) {
-      ctx.logger.error('获取 ClickHouse 数据统计失败:', error);
-      throw error;
+      } catch (error) {
+        ctx.logger.error('获取 ClickHouse 数据统计失败:', error);
+        throw error;
+      }
     }
-  }
 
   /**
    * 清理过期数据
    */
   async cleanupOldData(daysToKeep = 365) {
-    const { ctx } = this;
-    
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-      const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+      const { ctx } = this;
 
-      // 清理日线数据
-      await this.clickhouse.query(`
-        ALTER TABLE stock_data.daily_data 
+      try {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
+        // 清理日线数据
+        await this.clickhouse.query(`
+        ALTER TABLE stock_data.daily_data
         DELETE WHERE date < '${cutoffDateStr}'
       `).toPromise();
 
-      // 清理分钟数据
-      await this.clickhouse.query(`
-        ALTER TABLE stock_data.minute_data 
+        // 清理分钟数据
+        await this.clickhouse.query(`
+        ALTER TABLE stock_data.minute_data
         DELETE WHERE toDate(datetime) < '${cutoffDateStr}'
       `).toPromise();
 
-      ctx.logger.info(`清理了 ${cutoffDateStr} 之前的历史数据`);
-      return { success: true };
+        ctx.logger.info(`清理了 ${cutoffDateStr} 之前的历史数据`);
+        return { success: true };
 
-    } catch (error) {
-      ctx.logger.error('清理 ClickHouse 历史数据失败:', error);
-      throw error;
+      } catch (error) {
+        ctx.logger.error('清理 ClickHouse 历史数据失败:', error);
+        throw error;
+      }
     }
-  }
 
   /**
    * 优化表性能
    */
   async optimizeTables() {
-    const { ctx } = this;
-    
-    try {
-      // 优化日线数据表
-      await this.clickhouse.query(`
+      const { ctx } = this;
+
+      try {
+        // 优化日线数据表
+        await this.clickhouse.query(`
         OPTIMIZE TABLE stock_data.daily_data FINAL
       `).toPromise();
 
-      // 优化分钟数据表
-      await this.clickhouse.query(`
+        // 优化分钟数据表
+        await this.clickhouse.query(`
         OPTIMIZE TABLE stock_data.minute_data FINAL
       `).toPromise();
 
-      ctx.logger.info('ClickHouse 表优化完成');
-      return { success: true };
+        ctx.logger.info('ClickHouse 表优化完成');
+        return { success: true };
 
-    } catch (error) {
-      ctx.logger.error('ClickHouse 表优化失败:', error);
-      throw error;
+      } catch (error) {
+        ctx.logger.error('ClickHouse 表优化失败:', error);
+        throw error;
+      }
     }
   }
-}
 
 module.exports = ClickHouseService;

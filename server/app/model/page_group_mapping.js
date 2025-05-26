@@ -33,12 +33,12 @@ module.exports = app => {
     },
   });
 
-  PageGroupMapping.associate = function() {
+  PageGroupMapping.associate = function () {
     // 页面组关联
-    this.belongsTo(app.model.PageGroup, { foreignKey: 'groupId', as: 'group' });
-    
+    this.belongsTo(app.model.PageGroup, { foreignKey: 'groupId', as: 'pageGroup' });
+
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'page' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'systemPage' });
   };
 
   return PageGroupMapping;

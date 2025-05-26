@@ -60,10 +60,10 @@ module.exports = app => {
     },
   });
 
-  PageAccessStat.associate = function() {
+  PageAccessStat.associate = function () {
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'page' });
-    
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'systemPage' });
+
     // 用户关联
     this.belongsTo(app.model.User, { foreignKey: 'userId', as: 'user' });
   };
