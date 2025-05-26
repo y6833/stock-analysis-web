@@ -11,9 +11,11 @@ import ExportAdmin = require('../../../app/service/admin');
 import ExportAlert = require('../../../app/service/alert');
 import ExportCache = require('../../../app/service/cache');
 import ExportCacheStats = require('../../../app/service/cacheStats');
+import ExportClickhouse = require('../../../app/service/clickhouse');
 import ExportCoinRecharge = require('../../../app/service/coinRecharge');
 import ExportCoins = require('../../../app/service/coins');
 import ExportData = require('../../../app/service/data');
+import ExportFactorEngine = require('../../../app/service/factorEngine');
 import ExportLogs = require('../../../app/service/logs');
 import ExportMembership = require('../../../app/service/membership');
 import ExportNotification = require('../../../app/service/notification');
@@ -22,6 +24,7 @@ import ExportPortfolio = require('../../../app/service/portfolio');
 import ExportProxy = require('../../../app/service/proxy');
 import ExportSimulation = require('../../../app/service/simulation');
 import ExportStock = require('../../../app/service/stock');
+import ExportStrategy = require('../../../app/service/strategy');
 import ExportUser = require('../../../app/service/user');
 import ExportWatchlist = require('../../../app/service/watchlist');
 
@@ -31,9 +34,11 @@ declare module 'egg' {
     alert: AutoInstanceType<typeof ExportAlert>;
     cache: AutoInstanceType<typeof ExportCache>;
     cacheStats: AutoInstanceType<typeof ExportCacheStats>;
+    clickhouse: AutoInstanceType<typeof ExportClickhouse>;
     coinRecharge: AutoInstanceType<typeof ExportCoinRecharge>;
     coins: AutoInstanceType<typeof ExportCoins>;
     data: AutoInstanceType<typeof ExportData>;
+    factorEngine: AutoInstanceType<typeof ExportFactorEngine>;
     logs: AutoInstanceType<typeof ExportLogs>;
     membership: AutoInstanceType<typeof ExportMembership>;
     notification: AutoInstanceType<typeof ExportNotification>;
@@ -42,6 +47,7 @@ declare module 'egg' {
     proxy: AutoInstanceType<typeof ExportProxy>;
     simulation: AutoInstanceType<typeof ExportSimulation>;
     stock: AutoInstanceType<typeof ExportStock>;
+    strategy: AutoInstanceType<typeof ExportStrategy>;
     user: AutoInstanceType<typeof ExportUser>;
     watchlist: AutoInstanceType<typeof ExportWatchlist>;
   }

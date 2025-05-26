@@ -420,6 +420,90 @@
         "username": "dev_user"
       }
     },
+    "clickhouse": {
+      "url": "http://127.0.0.1",
+      "port": 8123,
+      "database": "stock_data",
+      "debug": false,
+      "basicAuth": null
+    },
+    "io": {
+      "init": {
+        "wsEngine": "ws"
+      },
+      "namespace": {
+        "/": {
+          "connectionMiddleware": [],
+          "packetMiddleware": []
+        },
+        "/realtime": {
+          "connectionMiddleware": [
+            "auth"
+          ],
+          "packetMiddleware": []
+        }
+      }
+    },
+    "dataSources": {
+      "tushare": {
+        "enabled": true,
+        "token": "983b25aa025eee598034c4741dc776ddc53ddcffbb180cf61",
+        "priority": 1,
+        "timeout": 10000,
+        "maxRetries": 3
+      },
+      "akshare": {
+        "enabled": true,
+        "priority": 2,
+        "timeout": 15000,
+        "maxRetries": 3
+      },
+      "joinquant": {
+        "enabled": false,
+        "token": "",
+        "priority": 3,
+        "timeout": 15000,
+        "maxRetries": 3
+      },
+      "sina": {
+        "enabled": true,
+        "priority": 4,
+        "timeout": 8000,
+        "maxRetries": 2
+      },
+      "eastmoney": {
+        "enabled": true,
+        "priority": 5,
+        "timeout": 8000,
+        "maxRetries": 2
+      }
+    },
+    "realtime": {
+      "enabled": true,
+      "pushInterval": {
+        "quote": 5000,
+        "kline": 60000,
+        "trade": 1000,
+        "depth": 3000
+      },
+      "maxSubscriptions": 100,
+      "heartbeatInterval": 30000
+    },
+    "dataSync": {
+      "enabled": true,
+      "batchSize": 20,
+      "batchDelay": 1000,
+      "maxConcurrency": 5,
+      "retryAttempts": 3,
+      "retryDelay": 2000,
+      "cacheExpiry": {
+        "quote": 300,
+        "index": 300,
+        "industry": 600,
+        "news": 900,
+        "financial": 3600
+      }
+    },
     "coreMiddlewares": "~config~coreMiddleware",
     "appMiddlewares": "~config~middleware",
     "appMiddleware": "~config~middleware"

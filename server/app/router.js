@@ -230,4 +230,30 @@ module.exports = app => {
   router.post('/api/cache/clean/time', auth, controller.cache.cleanCacheByTime);
   router.post('/api/cache/clean/capacity', auth, controller.cache.cleanCacheByCapacity);
   router.post('/api/cache/clean/auto', auth, controller.cache.autoCleanCache);
+
+  // 因子分析路由（需要认证）
+  router.post('/api/factor/calculate', auth, controller.factor.calculateFactors);
+  router.post('/api/factor/batch-calculate', auth, controller.factor.batchCalculateFactors);
+  router.get('/api/factor/configs', auth, controller.factor.getFactorConfigs);
+  router.get('/api/factor/correlation', auth, controller.factor.getFactorCorrelation);
+  router.get('/api/factor/importance', auth, controller.factor.getFactorImportance);
+  router.get('/api/factor/statistics', auth, controller.factor.getFactorStatistics);
+  router.post('/api/factor/cache/clear', auth, controller.factor.clearFactorCache);
+  router.get('/api/factor/cache/stats', auth, controller.factor.getFactorCacheStats);
+
+  // 策略管理路由（需要认证）
+  router.post('/api/strategy', auth, controller.strategy.createStrategy);
+  router.get('/api/strategy', auth, controller.strategy.getStrategies);
+  router.get('/api/strategy/templates', auth, controller.strategy.getStrategyTemplates);
+  router.get('/api/strategy/:id', auth, controller.strategy.getStrategy);
+  router.put('/api/strategy/:id', auth, controller.strategy.updateStrategy);
+  router.delete('/api/strategy/:id', auth, controller.strategy.deleteStrategy);
+  router.post('/api/strategy/:id/execute', auth, controller.strategy.executeStrategy);
+  router.post('/api/strategy/:id/optimize', auth, controller.strategy.optimizeStrategy);
+  router.post('/api/strategy/:id/toggle', auth, controller.strategy.toggleStrategy);
+  router.post('/api/strategy/:id/clone', auth, controller.strategy.cloneStrategy);
+  router.get('/api/strategy/:id/history', auth, controller.strategy.getExecutionHistory);
+  router.get('/api/strategy/:id/performance', auth, controller.strategy.getPerformanceAnalysis);
+  router.get('/api/strategy/:id/risk', auth, controller.strategy.getRiskAnalysis);
+  router.post('/api/strategy/batch-execute', auth, controller.strategy.batchExecuteStrategies);
 };

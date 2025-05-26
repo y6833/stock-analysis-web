@@ -159,6 +159,88 @@
       "username": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js"
     }
   },
+  "clickhouse": {
+    "url": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "port": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "database": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "debug": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "basicAuth": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+  },
+  "io": {
+    "init": {
+      "wsEngine": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "namespace": {
+      "/": {
+        "connectionMiddleware": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+        "packetMiddleware": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      },
+      "/realtime": {
+        "connectionMiddleware": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+        "packetMiddleware": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      }
+    }
+  },
+  "dataSources": {
+    "tushare": {
+      "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "token": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "akshare": {
+      "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "joinquant": {
+      "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "token": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "sina": {
+      "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "eastmoney": {
+      "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    }
+  },
+  "realtime": {
+    "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "pushInterval": {
+      "quote": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "kline": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "trade": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "depth": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "maxSubscriptions": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "heartbeatInterval": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+  },
+  "dataSync": {
+    "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "batchSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "batchDelay": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "maxConcurrency": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "retryAttempts": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "retryDelay": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "cacheExpiry": {
+      "quote": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "index": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "industry": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "news": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "financial": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    }
+  },
   "session": {
     "maxAge": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
     "key": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",

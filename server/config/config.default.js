@@ -124,6 +124,98 @@ module.exports = (appInfo) => {
     defaultUser: process.env.NODE_ENV === 'development' ? { id: 1, username: 'dev_user' } : null,
   }
 
+  // ClickHouse配置
+  config.clickhouse = {
+    url: 'http://127.0.0.1',
+    port: 8123,
+    database: 'stock_data',
+    debug: false,
+    basicAuth: null, // 如果需要认证: { username: 'user', password: 'pass' }
+  }
+
+  // WebSocket配置
+  config.io = {
+    init: {
+      wsEngine: 'ws',
+    },
+    namespace: {
+      '/': {
+        connectionMiddleware: [],
+        packetMiddleware: [],
+      },
+      '/realtime': {
+        connectionMiddleware: ['auth'],
+        packetMiddleware: [],
+      },
+    },
+  }
+
+  // 数据源配置
+  config.dataSources = {
+    tushare: {
+      enabled: true,
+      token: '983b25aa025eee598034c4741dc776ddc53ddcffbb180cf61',
+      priority: 1,
+      timeout: 10000,
+      maxRetries: 3,
+    },
+    akshare: {
+      enabled: true,
+      priority: 2,
+      timeout: 15000,
+      maxRetries: 3,
+    },
+    joinquant: {
+      enabled: false, // 需要申请API token
+      token: '',
+      priority: 3,
+      timeout: 15000,
+      maxRetries: 3,
+    },
+    sina: {
+      enabled: true,
+      priority: 4,
+      timeout: 8000,
+      maxRetries: 2,
+    },
+    eastmoney: {
+      enabled: true,
+      priority: 5,
+      timeout: 8000,
+      maxRetries: 2,
+    },
+  }
+
+  // 实时数据推送配置
+  config.realtime = {
+    enabled: true,
+    pushInterval: {
+      quote: 5000,    // 行情推送间隔（毫秒）
+      kline: 60000,   // K线推送间隔
+      trade: 1000,    // 交易推送间隔
+      depth: 3000,    // 深度推送间隔
+    },
+    maxSubscriptions: 100, // 单个客户端最大订阅数
+    heartbeatInterval: 30000, // 心跳间隔
+  }
+
+  // 数据同步配置
+  config.dataSync = {
+    enabled: true,
+    batchSize: 20,           // 批处理大小
+    batchDelay: 1000,        // 批次间延迟
+    maxConcurrency: 5,       // 最大并发数
+    retryAttempts: 3,        // 重试次数
+    retryDelay: 2000,        // 重试延迟
+    cacheExpiry: {
+      quote: 300,            // 行情缓存过期时间（秒）
+      index: 300,            // 指数缓存过期时间
+      industry: 600,         // 行业缓存过期时间
+      news: 900,             // 新闻缓存过期时间
+      financial: 3600,       // 财务数据缓存过期时间
+    },
+  }
+
   return {
     ...config,
   }
