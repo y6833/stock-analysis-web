@@ -10,6 +10,7 @@ type AutoInstanceType<T, U = T extends CanExportFunc ? T : T extends AnyFunc ? R
 import ExportAdmin = require('../../../app/service/admin');
 import ExportAkshare = require('../../../app/service/akshare');
 import ExportAlert = require('../../../app/service/alert');
+import ExportBacktest = require('../../../app/service/backtest');
 import ExportCache = require('../../../app/service/cache');
 import ExportCacheStats = require('../../../app/service/cacheStats');
 import ExportCoinRecharge = require('../../../app/service/coinRecharge');
@@ -24,12 +25,16 @@ import ExportNotification = require('../../../app/service/notification');
 import ExportPage = require('../../../app/service/page');
 import ExportPortfolio = require('../../../app/service/portfolio');
 import ExportProxy = require('../../../app/service/proxy');
+import ExportRiskAlert = require('../../../app/service/riskAlert');
 import ExportSimulation = require('../../../app/service/simulation');
 import ExportSina = require('../../../app/service/sina');
 import ExportStock = require('../../../app/service/stock');
+import ExportStopLossManager = require('../../../app/service/stopLossManager');
 import ExportStrategy = require('../../../app/service/strategy');
+import ExportStressTesting = require('../../../app/service/stressTesting');
 import ExportTechnicalIndicators = require('../../../app/service/technicalIndicators');
 import ExportUser = require('../../../app/service/user');
+import ExportVarCalculation = require('../../../app/service/varCalculation');
 import ExportWatchlist = require('../../../app/service/watchlist');
 
 declare module 'egg' {
@@ -37,6 +42,7 @@ declare module 'egg' {
     admin: AutoInstanceType<typeof ExportAdmin>;
     akshare: AutoInstanceType<typeof ExportAkshare>;
     alert: AutoInstanceType<typeof ExportAlert>;
+    backtest: AutoInstanceType<typeof ExportBacktest>;
     cache: AutoInstanceType<typeof ExportCache>;
     cacheStats: AutoInstanceType<typeof ExportCacheStats>;
     coinRecharge: AutoInstanceType<typeof ExportCoinRecharge>;
@@ -51,12 +57,16 @@ declare module 'egg' {
     page: AutoInstanceType<typeof ExportPage>;
     portfolio: AutoInstanceType<typeof ExportPortfolio>;
     proxy: AutoInstanceType<typeof ExportProxy>;
+    riskAlert: AutoInstanceType<typeof ExportRiskAlert>;
     simulation: AutoInstanceType<typeof ExportSimulation>;
     sina: AutoInstanceType<typeof ExportSina>;
     stock: AutoInstanceType<typeof ExportStock>;
+    stopLossManager: AutoInstanceType<typeof ExportStopLossManager>;
     strategy: AutoInstanceType<typeof ExportStrategy>;
+    stressTesting: AutoInstanceType<typeof ExportStressTesting>;
     technicalIndicators: AutoInstanceType<typeof ExportTechnicalIndicators>;
     user: AutoInstanceType<typeof ExportUser>;
+    varCalculation: AutoInstanceType<typeof ExportVarCalculation>;
     watchlist: AutoInstanceType<typeof ExportWatchlist>;
   }
 }

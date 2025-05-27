@@ -271,4 +271,51 @@ module.exports = app => {
   router.delete('/api/backtest/:id', auth, controller.backtest.deleteBacktest);
   router.post('/api/backtest/compare', auth, controller.backtest.compareBacktests);
   router.get('/api/backtest/templates', auth, controller.backtest.getStrategyTemplates);
+
+  // 风险监控相关路由（需要认证）
+  router.post('/api/risk/config', auth, controller.riskMonitoring.createConfig);
+  router.get('/api/risk/config', auth, controller.riskMonitoring.getConfigs);
+  router.put('/api/risk/config/:id', auth, controller.riskMonitoring.updateConfig);
+  router.delete('/api/risk/config/:id', auth, controller.riskMonitoring.deleteConfig);
+  router.post('/api/risk/var/calculate', auth, controller.riskMonitoring.calculateVaR);
+  router.post('/api/risk/var/batch-calculate', auth, controller.riskMonitoring.batchCalculateVaR);
+  router.get('/api/risk/var/history', auth, controller.riskMonitoring.getVarHistory);
+  router.get('/api/risk/var/:id', auth, controller.riskMonitoring.getVarDetail);
+  router.get('/api/risk/dashboard', auth, controller.riskMonitoring.getRiskDashboard);
+
+  // 压力测试相关路由（需要认证）
+  router.post('/api/stress-test/scenario', auth, controller.stressTesting.createScenario);
+  router.get('/api/stress-test/scenario', auth, controller.stressTesting.getScenarios);
+  router.put('/api/stress-test/scenario/:id', auth, controller.stressTesting.updateScenario);
+  router.delete('/api/stress-test/scenario/:id', auth, controller.stressTesting.deleteScenario);
+  router.post('/api/stress-test/run', auth, controller.stressTesting.runStressTest);
+  router.post('/api/stress-test/batch-run', auth, controller.stressTesting.batchRunStressTest);
+  router.get('/api/stress-test/history', auth, controller.stressTesting.getStressTestHistory);
+  router.get('/api/stress-test/:id', auth, controller.stressTesting.getStressTestDetail);
+  router.get('/api/stress-test/templates', auth, controller.stressTesting.getScenarioTemplates);
+  router.get('/api/stress-test/dashboard', auth, controller.stressTesting.getStressTestDashboard);
+
+  // 风险预警相关路由（需要认证）
+  router.post('/api/risk-alert/rule', auth, controller.riskAlert.createRule);
+  router.get('/api/risk-alert/rule', auth, controller.riskAlert.getRules);
+  router.put('/api/risk-alert/rule/:id', auth, controller.riskAlert.updateRule);
+  router.delete('/api/risk-alert/rule/:id', auth, controller.riskAlert.deleteRule);
+  router.get('/api/risk-alert/monitor', auth, controller.riskAlert.monitorRisks);
+  router.get('/api/risk-alert/history', auth, controller.riskAlert.getAlertHistory);
+  router.put('/api/risk-alert/:id/resolve', auth, controller.riskAlert.resolveAlert);
+  router.post('/api/risk-alert/batch-resolve', auth, controller.riskAlert.batchResolveAlerts);
+  router.get('/api/risk-alert/status', auth, controller.riskAlert.getMonitoringStatus);
+  router.get('/api/risk-alert/dashboard', auth, controller.riskAlert.getAlertDashboard);
+  router.get('/api/risk-alert/templates', auth, controller.riskAlert.getRuleTemplates);
+
+  // 止损止盈管理相关路由（需要认证）
+  router.post('/api/stop-loss/config', auth, controller.stopLossManager.createConfig);
+  router.get('/api/stop-loss/config', auth, controller.stopLossManager.getConfigs);
+  router.put('/api/stop-loss/config/:id', auth, controller.stopLossManager.updateConfig);
+  router.delete('/api/stop-loss/config/:id', auth, controller.stopLossManager.deleteConfig);
+  router.post('/api/stop-loss/order', auth, controller.stopLossManager.createOrder);
+  router.get('/api/stop-loss/order', auth, controller.stopLossManager.getOrders);
+  router.put('/api/stop-loss/order/:id/cancel', auth, controller.stopLossManager.cancelOrder);
+  router.post('/api/stop-loss/check-triggers', auth, controller.stopLossManager.checkTriggers);
+  router.post('/api/stop-loss/order/:id/execute', auth, controller.stopLossManager.executeOrder);
 };

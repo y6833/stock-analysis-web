@@ -37,26 +37,7 @@
 
       <!-- 止损止盈管理 -->
       <div v-show="activeTab === 'stop-loss'" class="tab-content">
-        <div class="feature-placeholder">
-          <div class="placeholder-icon">🛡️</div>
-          <h3>止损止盈管理</h3>
-          <p>智能止损止盈策略设置与执行</p>
-          <div class="feature-list">
-            <div class="feature-item">
-              <span class="feature-icon">📉</span>
-              <span>动态止损线</span>
-            </div>
-            <div class="feature-item">
-              <span class="feature-icon">📈</span>
-              <span>分批止盈策略</span>
-            </div>
-            <div class="feature-item">
-              <span class="feature-icon">⏰</span>
-              <span>时间止损机制</span>
-            </div>
-          </div>
-          <button class="btn btn-primary" @click="showComingSoon">即将推出</button>
-        </div>
+        <StopLossManager />
       </div>
 
       <!-- 风险监控 -->
@@ -120,6 +101,8 @@
 import { ref } from 'vue'
 import KellyPositionCalculator from '@/components/position/KellyPositionCalculator.vue'
 import RiskParityOptimizer from '@/components/risk/RiskParityOptimizer.vue'
+import DynamicPositionAdjuster from '@/components/position/DynamicPositionAdjuster.vue'
+import StopLossManager from '@/components/risk/StopLossManager.vue'
 import { useToast } from '@/composables/useToast'
 
 const { showToast } = useToast()

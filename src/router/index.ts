@@ -187,6 +187,15 @@ const router = createRouter({
         requiredMembershipLevel: MembershipLevel.PREMIUM,
       },
     },
+    {
+      path: '/risk-monitoring',
+      name: 'risk-monitoring',
+      component: () => import('../views/RiskMonitoringView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.PREMIUM,
+      },
+    },
 
     // 用户相关路由
     {

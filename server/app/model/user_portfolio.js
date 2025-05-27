@@ -49,6 +49,15 @@ module.exports = app => {
     this.belongsTo(app.model.User, { foreignKey: 'userId' });
     this.hasMany(app.model.PortfolioHolding, { foreignKey: 'portfolioId' });
     this.hasMany(app.model.TradeRecord, { foreignKey: 'portfolioId' });
+
+    // 风险监控配置
+    this.hasMany(app.model.RiskMonitoringConfig, { foreignKey: 'portfolioId' });
+
+    // VaR计算记录
+    this.hasMany(app.model.VarCalculation, { foreignKey: 'portfolioId' });
+
+    // 投资组合收益率记录
+    this.hasMany(app.model.PortfolioReturn, { foreignKey: 'portfolioId' });
   };
 
   return UserPortfolio;

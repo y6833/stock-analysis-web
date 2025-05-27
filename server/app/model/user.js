@@ -115,6 +115,15 @@ module.exports = app => {
     // 浏览历史
     this.hasMany(app.model.UserBrowsingHistory, { foreignKey: 'userId' });
 
+    // 风险监控配置
+    this.hasMany(app.model.RiskMonitoringConfig, { foreignKey: 'userId' });
+
+    // VaR计算记录
+    this.hasMany(app.model.VarCalculation, { foreignKey: 'userId' });
+
+    // 投资组合收益率记录
+    this.hasMany(app.model.PortfolioReturn, { foreignKey: 'userId' });
+
     // 充值请求关联暂时注释，避免循环依赖
     // TODO: 在解决模型加载顺序问题后重新启用
     /*
