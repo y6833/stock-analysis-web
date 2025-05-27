@@ -51,6 +51,18 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/professional-backtest',
+      name: 'professional-backtest',
+      component: () => import('@/views/ProfessionalBacktestView.vue'),
+      meta: { requiresAuth: true, membershipLevel: 'premium' },
+    },
+    {
+      path: '/position-management',
+      name: 'position-management',
+      component: () => import('@/views/PositionManagementView.vue'),
+      meta: { requiresAuth: true, membershipLevel: 'basic' },
+    },
+    {
       path: '/advanced-dashboard',
       name: 'advanced-dashboard',
       component: () => import('../views/AdvancedDashboardView.vue'),

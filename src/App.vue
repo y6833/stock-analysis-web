@@ -276,7 +276,7 @@ onUnmounted(() => {
                   </div>
                 </template>
                 <template v-if="canAccessBasicFeatures">
-                  <RouterLink to="/portfolio" class="dropdown-item">
+                  <RouterLink to="/position-management" class="dropdown-item">
                     <span class="nav-icon">💼</span>
                     <span class="nav-text">仓位管理</span>
                     <span class="feature-badge basic">基础</span>
@@ -352,6 +352,11 @@ onUnmounted(() => {
                     <span class="nav-text">策略回测</span>
                     <span class="feature-badge premium">高级</span>
                   </RouterLink>
+                  <RouterLink to="/professional-backtest" class="dropdown-item">
+                    <span class="nav-icon">⚡</span>
+                    <span class="nav-text">专业回测</span>
+                    <span class="feature-badge premium">高级</span>
+                  </RouterLink>
                 </template>
                 <template v-else>
                   <div
@@ -360,6 +365,15 @@ onUnmounted(() => {
                   >
                     <span class="nav-icon">🔄</span>
                     <span class="nav-text">策略回测</span>
+                    <span class="feature-badge premium">高级</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                  <div
+                    class="dropdown-item locked"
+                    @click="goToMembership(MembershipLevel.PREMIUM)"
+                  >
+                    <span class="nav-icon">⚡</span>
+                    <span class="nav-text">专业回测</span>
                     <span class="feature-badge premium">高级</span>
                     <span class="lock-icon">🔒</span>
                   </div>

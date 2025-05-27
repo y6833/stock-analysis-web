@@ -262,4 +262,13 @@ module.exports = app => {
   router.get('/api/strategy/:id/performance', auth, controller.strategy.getPerformanceAnalysis);
   router.get('/api/strategy/:id/risk', auth, controller.strategy.getRiskAnalysis);
   router.post('/api/strategy/batch-execute', auth, controller.strategy.batchExecuteStrategies);
+
+  // 专业回测相关路由（需要认证）
+  router.post('/api/backtest/run', auth, controller.backtest.runBacktest);
+  router.post('/api/backtest/batch', auth, controller.backtest.runBatchBacktest);
+  router.get('/api/backtest/history', auth, controller.backtest.getBacktestHistory);
+  router.get('/api/backtest/:id', auth, controller.backtest.getBacktestDetail);
+  router.delete('/api/backtest/:id', auth, controller.backtest.deleteBacktest);
+  router.post('/api/backtest/compare', auth, controller.backtest.compareBacktests);
+  router.get('/api/backtest/templates', auth, controller.backtest.getStrategyTemplates);
 };
