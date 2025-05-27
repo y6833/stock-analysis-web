@@ -172,11 +172,11 @@ module.exports = app => {
     comment: '止损止盈订单表',
   });
 
-  StopLossOrder.associate = function() {
-    // 关联用户
+  StopLossOrder.associate = function () {
+    // 关联用户 - 使用唯一别名
     app.model.StopLossOrder.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user',
+      as: 'orderUser',
     });
 
     // 关联投资组合

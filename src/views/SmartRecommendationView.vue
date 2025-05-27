@@ -56,7 +56,7 @@ const avgReturn = ref(12.3)
 }
 
 .header-content {
-  max-width: 1200px;
+  /* max-width: 1200px; */
   margin: 0 auto;
   text-align: center;
   margin-bottom: var(--spacing-lg);
@@ -124,17 +124,17 @@ const avgReturn = ref(12.3)
   .page-header {
     padding: var(--spacing-lg);
   }
-  
+
   .header-stats {
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-md);
   }
-  
+
   .stat-card {
     min-width: 200px;
   }
-  
+
   .page-content {
     padding: 0 var(--spacing-md);
   }

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>所有数据源API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .api-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            background: #fafafa;
+        }
+        .api-card h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .api-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #bdc3c7;
+        }
+        .api-status.success { background: #27ae60; }
+        .api-status.error { background: #e74c3c; }
+        .api-status.loading { background: #f39c12; }
+        .api-info {
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        .api-key {
+            font-family: monospace;
+            background: #ecf0f1;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .test-button:hover { background: #2980b9; }
+        .test-button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .test-button.small { padding: 6px 12px; font-size: 12px; }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .result.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .result.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .result.loading { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .batch-controls {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #e8f4fd;
+            border-radius: 8px;
+        }
+        .batch-button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+        }
+        .batch-button:hover { background: #229954; }
+        .batch-button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .summary {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 所有数据源API测试中心</h1>
+        
+        <div class="batch-controls">
+            <h3>批量测试控制</h3>
+            <button class="batch-button" onclick="testAllConnections()">测试所有连接</button>
+            <button class="batch-button" onclick="testAllStockLists()">获取所有股票列表</button>
+            <button class="batch-button" onclick="clearAllResults()">清除所有结果</button>
+        </div>
+
+        <div class="api-grid">
+            <!-- 智兔数服 -->
+            <div class="api-card">
+                <h3>
+                    <div class="api-status" id="zhitu-status"></div>
+                    🏢 智兔数服
+                </h3>
+                <div class="api-info">
+                    <strong>类型:</strong> 专业付费API<br>
+                    <strong>特点:</strong> 数据全面，服务稳定<br>
+                    <strong>API Key:</strong> <div class="api-key">D564FC55-057B-4F6F-932C-C115E78BFAE4</div>
+                </div>
+                <button class="test-button" onclick="testDataSource('zhitu', 'connection')">测试连接</button>
+                <button class="test-button" onclick="testDataSource('zhitu', 'stocks')">股票列表</button>
+                <button class="test-button small" onclick="testDataSource('zhitu', 'search', '平安银行')">搜索</button>
+                <div id="zhitu-result" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Yahoo Finance -->
+            <div class="api-card">
+                <h3>
+                    <div class="api-status" id="yahoo_finance-status"></div>
+                    🌐 Yahoo Finance
+                </h3>
+                <div class="api-info">
+                    <strong>类型:</strong> 免费API<br>
+                    <strong>特点:</strong> 美股数据，免费使用<br>
+                    <strong>配置:</strong> 免费版本（无需API密钥）
+                </div>
+                <button class="test-button" onclick="testDataSource('yahoo_finance', 'connection')">测试连接</button>
+                <button class="test-button" onclick="testDataSource('yahoo_finance', 'stocks')">股票列表</button>
+                <button class="test-button small" onclick="testDataSource('yahoo_finance', 'search', 'AAPL')">搜索</button>
+                <div id="yahoo_finance-result" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Google Finance (Alpha Vantage) -->
+            <div class="api-card">
+                <h3>
+                    <div class="api-status" id="google_finance-status"></div>
+                    📊 Google Finance
+                </h3>
+                <div class="api-info">
+                    <strong>类型:</strong> Alpha Vantage替代<br>
+                    <strong>特点:</strong> 全球股票数据<br>
+                    <strong>API Key:</strong> <div class="api-key">f6235795d0b5310a44d87a6a41cd9dfc-c-app</div>
+                </div>
+                <button class="test-button" onclick="testDataSource('google_finance', 'connection')">测试连接</button>
+                <button class="test-button" onclick="testDataSource('google_finance', 'stocks')">股票列表</button>
+                <button class="test-button small" onclick="testDataSource('google_finance', 'search', 'MSFT')">搜索</button>
+                <div id="google_finance-result" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- 聚合数据 -->
+            <div class="api-card">
+                <h3>
+                    <div class="api-status" id="juhe-status"></div>
+                    🔗 聚合数据
+                </h3>
+                <div class="api-info">
+                    <strong>类型:</strong> 免费/付费API<br>
+                    <strong>特点:</strong> A股实时数据<br>
+                    <strong>限制:</strong> 免费50次/天<br>
+                    <strong>API Key:</strong> <div class="api-key">4191aa94e0f3ba88c66b827fbbe56624</div>
+                </div>
+                <button class="test-button" onclick="testDataSource('juhe', 'connection')">测试连接</button>
+                <button class="test-button" onclick="testDataSource('juhe', 'stocks')">股票列表</button>
+                <button class="test-button small" onclick="testDataSource('juhe', 'search', '茅台')">搜索</button>
+                <div id="juhe-result" class="result" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="summary">
+            <h4>📈 测试结果汇总</h4>
+            <div id="summary-content">点击上方按钮开始测试...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:7002';
+        const testResults = {};
+
+        // 显示结果
+        function showResult(source, content, type = 'success') {
+            const element = document.getElementById(`${source}-result`);
+            const statusElement = document.getElementById(`${source}-status`);
+            
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = content;
+            
+            statusElement.className = `api-status ${type}`;
+            
+            // 更新测试结果
+            testResults[source] = { type, content, timestamp: Date.now() };
+            updateSummary();
+        }
+
+        // 显示加载状态
+        function showLoading(source, message = '请求中...') {
+            showResult(source, message, 'loading');
+        }
+
+        // 测试数据源
+        async function testDataSource(source, action, param = '') {
+            showLoading(source, `正在${action === 'connection' ? '测试连接' : action === 'stocks' ? '获取股票列表' : '搜索股票'}...`);
+
+            try {
+                let url = `${API_BASE_URL}/api/data-source/`;
+                
+                switch (action) {
+                    case 'connection':
+                        url += `test?source=${source}`;
+                        break;
+                    case 'stocks':
+                        url += `stocks?source=${source}`;
+                        break;
+                    case 'search':
+                        url += `search?source=${source}&keyword=${encodeURIComponent(param)}`;
+                        break;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    let resultText = `✅ ${action === 'connection' ? '连接' : action === 'stocks' ? '股票列表获取' : '搜索'}成功！\n\n`;
+                    resultText += `数据源: ${data.data_source}\n`;
+                    resultText += `消息: ${data.data_source_message}\n`;
+                    
+                    if (data.data && Array.isArray(data.data)) {
+                        resultText += `数据量: ${data.data.length} 条\n\n`;
+                        resultText += `示例数据:\n${JSON.stringify(data.data.slice(0, 2), null, 2)}`;
+                    } else if (data.data) {
+                        resultText += `\n数据:\n${JSON.stringify(data.data, null, 2)}`;
+                    }
+                    
+                    showResult(source, resultText, 'success');
+                } else {
+                    showResult(source, 
+                        `❌ ${action}失败\n\n错误: ${data.message || data.error}\n\n完整响应:\n${JSON.stringify(data, null, 2)}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult(source, 
+                    `💥 请求异常: ${error.message}\n\n可能原因:\n1. 后端服务未启动\n2. 网络连接问题\n3. API配置错误`, 
+                    'error'
+                );
+            }
+        }
+
+        // 批量测试所有连接
+        async function testAllConnections() {
+            const sources = ['zhitu', 'yahoo_finance', 'google_finance', 'juhe'];
+            const button = event.target;
+            button.disabled = true;
+            
+            for (const source of sources) {
+                await testDataSource(source, 'connection');
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 延迟1秒避免API限制
+            }
+            
+            button.disabled = false;
+        }
+
+        // 批量测试所有股票列表
+        async function testAllStockLists() {
+            const sources = ['zhitu', 'yahoo_finance', 'google_finance', 'juhe'];
+            const button = event.target;
+            button.disabled = true;
+            
+            for (const source of sources) {
+                await testDataSource(source, 'stocks');
+                await new Promise(resolve => setTimeout(resolve, 1500)); // 延迟1.5秒避免API限制
+            }
+            
+            button.disabled = false;
+        }
+
+        // 清除所有结果
+        function clearAllResults() {
+            const sources = ['zhitu', 'yahoo_finance', 'google_finance', 'juhe'];
+            sources.forEach(source => {
+                const element = document.getElementById(`${source}-result`);
+                const statusElement = document.getElementById(`${source}-status`);
+                element.style.display = 'none';
+                statusElement.className = 'api-status';
+                delete testResults[source];
+            });
+            updateSummary();
+        }
+
+        // 更新汇总信息
+        function updateSummary() {
+            const summaryElement = document.getElementById('summary-content');
+            const sources = Object.keys(testResults);
+            
+            if (sources.length === 0) {
+                summaryElement.innerHTML = '点击上方按钮开始测试...';
+                return;
+            }
+            
+            const successCount = sources.filter(s => testResults[s].type === 'success').length;
+            const errorCount = sources.filter(s => testResults[s].type === 'error').length;
+            const loadingCount = sources.filter(s => testResults[s].type === 'loading').length;
+            
+            let summary = `<strong>测试统计:</strong><br>`;
+            summary += `✅ 成功: ${successCount} 个<br>`;
+            summary += `❌ 失败: ${errorCount} 个<br>`;
+            summary += `⏳ 进行中: ${loadingCount} 个<br><br>`;
+            
+            summary += `<strong>详细状态:</strong><br>`;
+            sources.forEach(source => {
+                const result = testResults[source];
+                const icon = result.type === 'success' ? '✅' : result.type === 'error' ? '❌' : '⏳';
+                const time = new Date(result.timestamp).toLocaleTimeString();
+                summary += `${icon} ${source}: ${time}<br>`;
+            });
+            
+            summaryElement.innerHTML = summary;
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('所有数据源API测试页面已加载');
+            console.log('配置的API密钥:');
+            console.log('- 智兔数服: D564FC55-057B-4F6F-932C-C115E78BFAE4');
+            console.log('- Alpha Vantage: f6235795d0b5310a44d87a6a41cd9dfc-c-app');
+            console.log('- 聚合数据: 4191aa94e0f3ba88c66b827fbbe56624');
+        });
+    </script>
+</body>
+</html>

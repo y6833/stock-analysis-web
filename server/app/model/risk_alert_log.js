@@ -95,21 +95,21 @@ module.exports = app => {
     underscored: true,
   });
 
-  RiskAlertLog.associate = function() {
-    // 关联用户
-    RiskAlertLog.belongsTo(app.model.User, { 
+  RiskAlertLog.associate = function () {
+    // 关联用户 - 使用唯一别名
+    RiskAlertLog.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'alertUser'
     });
 
     // 关联投资组合
-    RiskAlertLog.belongsTo(app.model.UserPortfolio, { 
+    RiskAlertLog.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: 'portfolio'
     });
 
     // 关联预警规则
-    RiskAlertLog.belongsTo(app.model.RiskAlertRule, { 
+    RiskAlertLog.belongsTo(app.model.RiskAlertRule, {
       foreignKey: 'ruleId',
       as: 'rule'
     });

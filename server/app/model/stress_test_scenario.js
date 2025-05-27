@@ -74,15 +74,15 @@ module.exports = app => {
     underscored: true,
   });
 
-  StressTestScenario.associate = function() {
-    // 关联用户
-    StressTestScenario.belongsTo(app.model.User, { 
+  StressTestScenario.associate = function () {
+    // 关联用户 - 使用唯一别名
+    StressTestScenario.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'scenarioUser'
     });
 
     // 关联压力测试结果
-    StressTestScenario.hasMany(app.model.StressTestResult, { 
+    StressTestScenario.hasMany(app.model.StressTestResult, {
       foreignKey: 'scenarioId',
       as: 'testResults'
     });

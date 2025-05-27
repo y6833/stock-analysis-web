@@ -723,5 +723,4 @@ export class StrategyOptimizer {
   }
 }
 
-export { StrategyOptimizer }
 export default StrategyOptimizer

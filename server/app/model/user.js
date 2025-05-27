@@ -116,13 +116,70 @@ module.exports = app => {
     this.hasMany(app.model.UserBrowsingHistory, { foreignKey: 'userId' });
 
     // 风险监控配置
-    this.hasMany(app.model.RiskMonitoringConfig, { foreignKey: 'userId' });
+    this.hasMany(app.model.RiskMonitoringConfig, {
+      foreignKey: 'userId',
+      as: 'riskMonitoringConfigs'
+    });
 
     // VaR计算记录
-    this.hasMany(app.model.VarCalculation, { foreignKey: 'userId' });
+    this.hasMany(app.model.VarCalculation, {
+      foreignKey: 'userId',
+      as: 'varCalculations'
+    });
 
     // 投资组合收益率记录
-    this.hasMany(app.model.PortfolioReturn, { foreignKey: 'userId' });
+    this.hasMany(app.model.PortfolioReturn, {
+      foreignKey: 'userId',
+      as: 'portfolioReturns'
+    });
+
+    // 风险预警日志
+    this.hasMany(app.model.RiskAlertLog, {
+      foreignKey: 'userId',
+      as: 'riskAlertLogs'
+    });
+
+    // 风险预警规则
+    this.hasMany(app.model.RiskAlertRule, {
+      foreignKey: 'userId',
+      as: 'riskAlertRules'
+    });
+
+    // 风险监控状态
+    this.hasMany(app.model.RiskMonitoringStatus, {
+      foreignKey: 'userId',
+      as: 'riskMonitoringStatuses'
+    });
+
+    // 止损配置
+    this.hasMany(app.model.StopLossConfig, {
+      foreignKey: 'userId',
+      as: 'stopLossConfigs'
+    });
+
+    // 止损订单
+    this.hasMany(app.model.StopLossOrder, {
+      foreignKey: 'userId',
+      as: 'stopLossOrders'
+    });
+
+    // 止损执行记录
+    this.hasMany(app.model.StopLossExecution, {
+      foreignKey: 'userId',
+      as: 'stopLossExecutions'
+    });
+
+    // 压力测试结果
+    this.hasMany(app.model.StressTestResult, {
+      foreignKey: 'userId',
+      as: 'stressTestResults'
+    });
+
+    // 压力测试场景
+    this.hasMany(app.model.StressTestScenario, {
+      foreignKey: 'userId',
+      as: 'stressTestScenarios'
+    });
 
     // 充值请求关联暂时注释，避免循环依赖
     // TODO: 在解决模型加载顺序问题后重新启用

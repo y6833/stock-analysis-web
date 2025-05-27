@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智兔数服API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .token-info {
+            background: #e8f4fd;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .token-info h3 {
+            margin: 0 0 10px 0;
+            color: #2980b9;
+        }
+        .token-display {
+            font-family: monospace;
+            background: #34495e;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .test-section h3 {
+            margin: 0 0 15px 0;
+            color: #34495e;
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .test-button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .result.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .api-endpoints {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .api-endpoints h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        .endpoint {
+            margin: 5px 0;
+            font-family: monospace;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 智兔数服API测试工具</h1>
+        
+        <div class="token-info">
+            <h3>📋 您的API Token信息</h3>
+            <p><strong>Token:</strong></p>
+            <div class="token-display" id="token-display">D564FC55-057B-4F6F-932C-C115E78BFAE4</div>
+            <p style="margin-top: 10px; color: #7f8c8d; font-size: 14px;">
+                ✅ Token已配置到环境变量 VITE_ZHITU_API_KEY<br>
+                🔒 请确保不要在公开场合泄露此token
+            </p>
+        </div>
+
+        <div class="test-section">
+            <h3>🌐 连接测试</h3>
+            <p>测试与智兔数服API服务器的基本连接</p>
+            <button class="test-button" onclick="testConnection()">测试连接</button>
+            <div id="connection-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 股票列表测试</h3>
+            <p>获取智兔数服提供的股票列表数据</p>
+            <button class="test-button" onclick="testStockList()">获取股票列表</button>
+            <div id="stocklist-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 股票搜索测试</h3>
+            <p>测试股票搜索功能</p>
+            <input type="text" id="search-input" placeholder="输入股票名称或代码，如：平安银行" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <button class="test-button" onclick="testStockSearch()">搜索股票</button>
+            <div id="search-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>💹 股票详情测试</h3>
+            <p>获取特定股票的详细信息</p>
+            <input type="text" id="detail-input" placeholder="输入股票代码，如：000001.SZ" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <button class="test-button" onclick="testStockDetail()">获取股票详情</button>
+            <div id="detail-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="api-endpoints">
+            <h4>📡 测试的API端点</h4>
+            <div class="endpoint">GET /api/data-source/test?source=zhitu</div>
+            <div class="endpoint">GET /api/data-source/stocks?source=zhitu</div>
+            <div class="endpoint">GET /api/data-source/search?source=zhitu&keyword={keyword}</div>
+            <div class="endpoint">GET /api/data-source/stock-data?source=zhitu&symbol={symbol}</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:7002';
+        const TOKEN = 'D564FC55-057B-4F6F-932C-C115E78BFAE4';
+
+        // 显示结果
+        function showResult(elementId, content, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = content;
+        }
+
+        // 显示加载状态
+        function showLoading(elementId, message = '请求中...') {
+            showResult(elementId, message, 'loading');
+        }
+
+        // 测试连接
+        async function testConnection() {
+            const button = event.target;
+            button.disabled = true;
+            showLoading('connection-result', '正在测试连接...');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/data-source/test?source=zhitu`);
+                const data = await response.json();
+
+                if (data.success) {
+                    showResult('connection-result', 
+                        `✅ 连接测试成功！\n\n响应数据：\n${JSON.stringify(data, null, 2)}`, 
+                        'success'
+                    );
+                } else {
+                    showResult('connection-result', 
+                        `❌ 连接测试失败\n\n错误信息：${data.message || data.error}\n\n完整响应：\n${JSON.stringify(data, null, 2)}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('connection-result', 
+                    `💥 请求异常\n\n错误信息：${error.message}\n\n可能原因：\n1. 后端服务未启动\n2. 网络连接问题\n3. API端点不存在`, 
+                    'error'
+                );
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // 测试股票列表
+        async function testStockList() {
+            const button = event.target;
+            button.disabled = true;
+            showLoading('stocklist-result', '正在获取股票列表...');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/data-source/stocks?source=zhitu`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    showResult('stocklist-result', 
+                        `✅ 股票列表获取成功！\n\n数据源：${data.data_source}\n股票数量：${data.data.length}\n\n前5只股票：\n${JSON.stringify(data.data.slice(0, 5), null, 2)}`, 
+                        'success'
+                    );
+                } else {
+                    showResult('stocklist-result', 
+                        `❌ 股票列表获取失败\n\n错误信息：${data.message || data.error}\n\n完整响应：\n${JSON.stringify(data, null, 2)}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('stocklist-result', 
+                    `💥 请求异常：${error.message}`, 
+                    'error'
+                );
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // 测试股票搜索
+        async function testStockSearch() {
+            const keyword = document.getElementById('search-input').value.trim();
+            if (!keyword) {
+                showResult('search-result', '❌ 请输入搜索关键词', 'error');
+                return;
+            }
+
+            const button = event.target;
+            button.disabled = true;
+            showLoading('search-result', `正在搜索"${keyword}"...`);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/data-source/search?source=zhitu&keyword=${encodeURIComponent(keyword)}`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    showResult('search-result', 
+                        `✅ 搜索成功！\n\n搜索关键词：${keyword}\n结果数量：${data.data.length}\n\n搜索结果：\n${JSON.stringify(data.data, null, 2)}`, 
+                        'success'
+                    );
+                } else {
+                    showResult('search-result', 
+                        `❌ 搜索失败\n\n错误信息：${data.message || data.error}\n\n完整响应：\n${JSON.stringify(data, null, 2)}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('search-result', 
+                    `💥 请求异常：${error.message}`, 
+                    'error'
+                );
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // 测试股票详情
+        async function testStockDetail() {
+            const symbol = document.getElementById('detail-input').value.trim();
+            if (!symbol) {
+                showResult('detail-result', '❌ 请输入股票代码', 'error');
+                return;
+            }
+
+            const button = event.target;
+            button.disabled = true;
+            showLoading('detail-result', `正在获取${symbol}的详细信息...`);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/data-source/stock-data?source=zhitu&symbol=${encodeURIComponent(symbol)}`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    showResult('detail-result', 
+                        `✅ 股票详情获取成功！\n\n股票代码：${symbol}\n\n详细信息：\n${JSON.stringify(data.data, null, 2)}`, 
+                        'success'
+                    );
+                } else {
+                    showResult('detail-result', 
+                        `❌ 股票详情获取失败\n\n错误信息：${data.message || data.error}\n\n完整响应：\n${JSON.stringify(data, null, 2)}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('detail-result', 
+                    `💥 请求异常：${error.message}`, 
+                    'error'
+                );
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('智兔数服API测试页面已加载');
+            console.log('Token:', TOKEN);
+            
+            // 设置默认搜索值
+            document.getElementById('search-input').value = '平安银行';
+            document.getElementById('detail-input').value = '000001.SZ';
+        });
+    </script>
+</body>
+</html>

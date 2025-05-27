@@ -99,21 +99,21 @@ module.exports = app => {
     underscored: true,
   });
 
-  StressTestResult.associate = function() {
-    // 关联用户
-    StressTestResult.belongsTo(app.model.User, { 
+  StressTestResult.associate = function () {
+    // 关联用户 - 使用唯一别名
+    StressTestResult.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'stressTestUser'
     });
 
     // 关联投资组合
-    StressTestResult.belongsTo(app.model.UserPortfolio, { 
+    StressTestResult.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: 'portfolio'
     });
 
     // 关联压力测试场景
-    StressTestResult.belongsTo(app.model.StressTestScenario, { 
+    StressTestResult.belongsTo(app.model.StressTestScenario, {
       foreignKey: 'scenarioId',
       as: 'scenario'
     });

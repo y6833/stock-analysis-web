@@ -5,6 +5,10 @@ import { EastMoneyDataSource } from './EastMoneyDataSource'
 import { TencentDataSource } from './TencentDataSource'
 import { NetEaseDataSource } from './NetEaseDataSource'
 import { AKShareDataSource } from './AKShareDataSource'
+import { ZhituDataSource } from './ZhituDataSource'
+import { YahooFinanceDataSource } from './YahooFinanceDataSource'
+import { GoogleFinanceDataSource } from './GoogleFinanceDataSource'
+import { JuheDataSource } from './JuheDataSource'
 
 /**
  * 数据源类型
@@ -17,6 +21,10 @@ export type DataSourceType =
   | 'netease'
   | 'akshare'
   | 'yahoo'
+  | 'zhitu'
+  | 'yahoo_finance'
+  | 'google_finance'
+  | 'juhe'
 
 /**
  * 数据源特性
@@ -74,6 +82,18 @@ export class DataSourceFactory {
       case 'akshare':
         console.log('创建 AKShare 数据源实例')
         return new AKShareDataSource()
+      case 'zhitu':
+        console.log('创建 智兔数服 数据源实例')
+        return new ZhituDataSource()
+      case 'yahoo_finance':
+        console.log('创建 Yahoo Finance 数据源实例')
+        return new YahooFinanceDataSource()
+      case 'google_finance':
+        console.log('创建 Google Finance 数据源实例')
+        return new GoogleFinanceDataSource()
+      case 'juhe':
+        console.log('创建 聚合数据 数据源实例')
+        return new JuheDataSource()
       case 'yahoo':
         // 为了避免混用数据源，使用新浪数据源代替
         console.log(`Yahoo数据源尚未实现，暂时使用新浪财经数据源代替`)
@@ -90,7 +110,19 @@ export class DataSourceFactory {
    * @returns 数据源类型数组
    */
   static getAvailableDataSources(): DataSourceType[] {
-    return ['tushare', 'sina', 'eastmoney', 'tencent', 'netease', 'akshare', 'yahoo']
+    return [
+      'tushare',
+      'sina',
+      'eastmoney',
+      'tencent',
+      'netease',
+      'akshare',
+      'yahoo',
+      'zhitu',
+      'yahoo_finance',
+      'google_finance',
+      'juhe',
+    ]
   }
 
   /**
@@ -98,7 +130,7 @@ export class DataSourceFactory {
    * @returns 推荐的数据源类型数组
    */
   static getRecommendedDataSources(): DataSourceType[] {
-    return ['eastmoney', 'akshare', 'sina']
+    return ['zhitu', 'eastmoney', 'yahoo_finance', 'akshare', 'sina']
   }
 
   /**
@@ -143,6 +175,26 @@ export class DataSourceFactory {
         return {
           name: 'Yahoo财经',
           description: '提供全球市场数据，包括股票、指数等',
+        }
+      case 'zhitu':
+        return {
+          name: '智兔数服',
+          description: '专业股票数据API服务商，提供全面的股票数据接口',
+        }
+      case 'yahoo_finance':
+        return {
+          name: 'Yahoo Finance API',
+          description: '广泛使用的免费股票API，提供美国和加拿大股票市场数据',
+        }
+      case 'google_finance':
+        return {
+          name: 'Google Finance API',
+          description: '谷歌提供的免费股票API，支持全球多个股票市场',
+        }
+      case 'juhe':
+        return {
+          name: '聚合数据',
+          description: '专业数据服务平台，提供实时股票交易数据',
         }
       default:
         return {
@@ -288,6 +340,78 @@ export class DataSourceFactory {
           coverage: 4.5,
           apiLimit: '有API访问限制',
           recommendation: '适合需要全球市场数据的场景，A股数据有限',
+        }
+      case 'zhitu':
+        return {
+          name,
+          description,
+          features: {
+            realtime: true,
+            history: true,
+            fundamental: true,
+            news: false,
+            search: true,
+            global: false,
+          },
+          reliability: 4.5,
+          speed: 4.0,
+          coverage: 4.5,
+          apiLimit: '专业服务，费用在日常运营成本中几乎可以忽略不计',
+          recommendation: '专业数据服务商，数据接口全面，服务稳定，推荐使用',
+        }
+      case 'yahoo_finance':
+        return {
+          name,
+          description,
+          features: {
+            realtime: true,
+            history: true,
+            fundamental: true,
+            news: true,
+            search: true,
+            global: true,
+          },
+          reliability: 4.0,
+          speed: 4.0,
+          coverage: 4.0,
+          apiLimit: '免费使用，支持批量获取和自定义请求',
+          recommendation: '广泛使用的免费API，适合美国和加拿大股票市场数据',
+        }
+      case 'google_finance':
+        return {
+          name,
+          description,
+          features: {
+            realtime: true,
+            history: false,
+            fundamental: false,
+            news: true,
+            search: true,
+            global: true,
+          },
+          reliability: 4.0,
+          speed: 4.5,
+          coverage: 4.0,
+          apiLimit: '免费使用，支持全球多个股票市场',
+          recommendation: '谷歌提供的免费API，适合需要全球市场实时数据的场景',
+        }
+      case 'juhe':
+        return {
+          name,
+          description,
+          features: {
+            realtime: true,
+            history: false,
+            fundamental: false,
+            news: false,
+            search: false,
+            global: false,
+          },
+          reliability: 3.5,
+          speed: 4.0,
+          coverage: 3.0,
+          apiLimit: '每天免费调用50次',
+          recommendation: '专业数据平台，只提供实时交易数据，适合轻量级使用',
         }
       default:
         return {

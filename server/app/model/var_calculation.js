@@ -105,21 +105,21 @@ module.exports = app => {
     underscored: true,
   });
 
-  VarCalculation.associate = function() {
-    // 关联用户
-    VarCalculation.belongsTo(app.model.User, { 
+  VarCalculation.associate = function () {
+    // 关联用户 - 使用唯一别名
+    VarCalculation.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'varUser'
     });
 
     // 关联投资组合
-    VarCalculation.belongsTo(app.model.UserPortfolio, { 
+    VarCalculation.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: 'portfolio'
     });
 
     // 关联风险配置
-    VarCalculation.belongsTo(app.model.RiskMonitoringConfig, { 
+    VarCalculation.belongsTo(app.model.RiskMonitoringConfig, {
       foreignKey: 'configId',
       as: 'config'
     });

@@ -71,21 +71,21 @@ module.exports = app => {
     underscored: true,
   });
 
-  RiskAlertRule.associate = function() {
-    // 关联用户
-    RiskAlertRule.belongsTo(app.model.User, { 
+  RiskAlertRule.associate = function () {
+    // 关联用户 - 使用唯一别名
+    RiskAlertRule.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'ruleUser'
     });
 
     // 关联投资组合
-    RiskAlertRule.belongsTo(app.model.UserPortfolio, { 
+    RiskAlertRule.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: 'portfolio'
     });
 
     // 关联预警记录
-    RiskAlertRule.hasMany(app.model.RiskAlertLog, { 
+    RiskAlertRule.hasMany(app.model.RiskAlertLog, {
       foreignKey: 'ruleId',
       as: 'alertLogs'
     });

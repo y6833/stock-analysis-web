@@ -149,11 +149,11 @@ module.exports = app => {
     comment: '止损止盈执行记录表',
   });
 
-  StopLossExecution.associate = function() {
-    // 关联用户
+  StopLossExecution.associate = function () {
+    // 关联用户 - 使用唯一别名
     app.model.StopLossExecution.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user',
+      as: 'executionUser',
     });
 
     // 关联止损订单

@@ -64,15 +64,15 @@ module.exports = app => {
     underscored: true,
   });
 
-  PortfolioReturn.associate = function() {
-    // 关联用户
-    PortfolioReturn.belongsTo(app.model.User, { 
+  PortfolioReturn.associate = function () {
+    // 关联用户 - 使用唯一别名
+    PortfolioReturn.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'portfolioUser'
     });
 
     // 关联投资组合
-    PortfolioReturn.belongsTo(app.model.UserPortfolio, { 
+    PortfolioReturn.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: 'portfolio'
     });

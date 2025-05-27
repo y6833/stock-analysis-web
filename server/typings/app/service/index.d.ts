@@ -19,6 +19,8 @@ import ExportDashboard = require('../../../app/service/dashboard');
 import ExportData = require('../../../app/service/data');
 import ExportEastmoney = require('../../../app/service/eastmoney');
 import ExportFactorEngine = require('../../../app/service/factorEngine');
+import ExportGoogleFinance = require('../../../app/service/googleFinance');
+import ExportJuhe = require('../../../app/service/juhe');
 import ExportLogs = require('../../../app/service/logs');
 import ExportMembership = require('../../../app/service/membership');
 import ExportNotification = require('../../../app/service/notification');
@@ -36,6 +38,8 @@ import ExportTechnicalIndicators = require('../../../app/service/technicalIndica
 import ExportUser = require('../../../app/service/user');
 import ExportVarCalculation = require('../../../app/service/varCalculation');
 import ExportWatchlist = require('../../../app/service/watchlist');
+import ExportYahooFinance = require('../../../app/service/yahooFinance');
+import ExportZhitu = require('../../../app/service/zhitu');
 
 declare module 'egg' {
   interface IService {
@@ -51,6 +55,8 @@ declare module 'egg' {
     data: AutoInstanceType<typeof ExportData>;
     eastmoney: AutoInstanceType<typeof ExportEastmoney>;
     factorEngine: AutoInstanceType<typeof ExportFactorEngine>;
+    googleFinance: AutoInstanceType<typeof ExportGoogleFinance>;
+    juhe: AutoInstanceType<typeof ExportJuhe>;
     logs: AutoInstanceType<typeof ExportLogs>;
     membership: AutoInstanceType<typeof ExportMembership>;
     notification: AutoInstanceType<typeof ExportNotification>;
@@ -68,5 +74,7 @@ declare module 'egg' {
     user: AutoInstanceType<typeof ExportUser>;
     varCalculation: AutoInstanceType<typeof ExportVarCalculation>;
     watchlist: AutoInstanceType<typeof ExportWatchlist>;
+    yahooFinance: AutoInstanceType<typeof ExportYahooFinance>;
+    zhitu: AutoInstanceType<typeof ExportZhitu>;
   }
 }

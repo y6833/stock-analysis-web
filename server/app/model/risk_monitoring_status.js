@@ -94,15 +94,15 @@ module.exports = app => {
     underscored: true,
   });
 
-  RiskMonitoringStatus.associate = function() {
-    // 关联用户
-    RiskMonitoringStatus.belongsTo(app.model.User, { 
+  RiskMonitoringStatus.associate = function () {
+    // 关联用户 - 使用唯一别名
+    RiskMonitoringStatus.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'statusUser'
     });
 
     // 关联投资组合
-    RiskMonitoringStatus.belongsTo(app.model.UserPortfolio, { 
+    RiskMonitoringStatus.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: 'portfolio'
     });

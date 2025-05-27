@@ -8,6 +8,10 @@ import { TushareDataSource } from './TushareDataSource'
 import { AKShareDataSource } from './AKShareDataSource'
 import { SinaDataSource } from './SinaDataSource'
 import { EastMoneyDataSource } from './EastMoneyDataSource'
+import { ZhituDataSource } from './ZhituDataSource'
+import { YahooFinanceDataSource } from './YahooFinanceDataSource'
+import { GoogleFinanceDataSource } from './GoogleFinanceDataSource'
+import { JuheDataSource } from './JuheDataSource'
 import type { DataSourceType } from './DataSourceFactory'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 
@@ -57,6 +61,10 @@ export class DataSourceManager {
     this.dataSources.set('akshare', new AKShareDataSource())
     this.dataSources.set('sina', new SinaDataSource())
     this.dataSources.set('eastmoney', new EastMoneyDataSource())
+    this.dataSources.set('zhitu', new ZhituDataSource())
+    this.dataSources.set('yahoo_finance', new YahooFinanceDataSource())
+    this.dataSources.set('google_finance', new GoogleFinanceDataSource())
+    this.dataSources.set('juhe', new JuheDataSource())
   }
 
   /**
@@ -65,7 +73,7 @@ export class DataSourceManager {
   private initializeConfigs() {
     const defaultConfigs: DataSourceConfig[] = [
       {
-        type: 'tushare',
+        type: 'zhitu',
         priority: 1,
         enabled: true,
         maxRetries: 3,
@@ -73,20 +81,20 @@ export class DataSourceManager {
         healthCheckInterval: 60000, // 1分钟
       },
       {
-        type: 'akshare',
+        type: 'tushare',
         priority: 2,
         enabled: true,
         maxRetries: 3,
-        timeout: 15000,
+        timeout: 10000,
         healthCheckInterval: 60000,
       },
       {
-        type: 'sina',
+        type: 'yahoo_finance',
         priority: 3,
         enabled: true,
-        maxRetries: 2,
-        timeout: 8000,
-        healthCheckInterval: 30000, // 30秒
+        maxRetries: 3,
+        timeout: 12000,
+        healthCheckInterval: 60000,
       },
       {
         type: 'eastmoney',
@@ -96,9 +104,41 @@ export class DataSourceManager {
         timeout: 8000,
         healthCheckInterval: 30000,
       },
+      {
+        type: 'akshare',
+        priority: 5,
+        enabled: true,
+        maxRetries: 3,
+        timeout: 15000,
+        healthCheckInterval: 60000,
+      },
+      {
+        type: 'google_finance',
+        priority: 6,
+        enabled: true,
+        maxRetries: 2,
+        timeout: 10000,
+        healthCheckInterval: 45000,
+      },
+      {
+        type: 'sina',
+        priority: 7,
+        enabled: true,
+        maxRetries: 2,
+        timeout: 8000,
+        healthCheckInterval: 30000, // 30秒
+      },
+      {
+        type: 'juhe',
+        priority: 8,
+        enabled: true,
+        maxRetries: 2,
+        timeout: 8000,
+        healthCheckInterval: 30000,
+      },
     ]
 
-    defaultConfigs.forEach(config => {
+    defaultConfigs.forEach((config) => {
       this.configs.set(config.type, config)
       this.healthStatus.set(config.type, {
         isHealthy: true,
@@ -118,9 +158,9 @@ export class DataSourceManager {
         const timer = setInterval(() => {
           this.performHealthCheck(sourceType)
         }, config.healthCheckInterval)
-        
+
         this.healthCheckTimers.set(sourceType, timer)
-        
+
         // 立即执行一次健康检查
         this.performHealthCheck(sourceType)
       }
@@ -133,38 +173,37 @@ export class DataSourceManager {
   private async performHealthCheck(sourceType: DataSourceType) {
     const source = this.dataSources.get(sourceType)
     const health = this.healthStatus.get(sourceType)
-    
+
     if (!source || !health) return
 
     const startTime = Date.now()
-    
+
     try {
       // 执行简单的健康检查（获取股票列表的前几条）
       await Promise.race([
-        source.getStocks().then(stocks => stocks.slice(0, 5)),
-        new Promise((_, reject) => 
+        source.getStocks().then((stocks) => stocks.slice(0, 5)),
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Health check timeout')), 5000)
-        )
+        ),
       ])
-      
+
       const responseTime = Date.now() - startTime
-      
+
       // 更新健康状态
       health.isHealthy = true
       health.lastCheckTime = Date.now()
       health.responseTime = responseTime
       health.errorCount = Math.max(0, health.errorCount - 1) // 成功时减少错误计数
-      
+
       console.log(`数据源 ${sourceType} 健康检查通过，响应时间: ${responseTime}ms`)
-      
     } catch (error) {
       health.isHealthy = false
       health.lastCheckTime = Date.now()
       health.errorCount += 1
       health.lastError = error instanceof Error ? error.message : String(error)
-      
+
       console.warn(`数据源 ${sourceType} 健康检查失败:`, error)
-      
+
       // 如果错误次数过多，暂时禁用该数据源
       if (health.errorCount >= 5) {
         const config = this.configs.get(sourceType)
@@ -181,22 +220,22 @@ export class DataSourceManager {
    */
   private getAvailableDataSources(preferredSource?: DataSourceType): DataSourceType[] {
     const availableSources: Array<{ type: DataSourceType; priority: number }> = []
-    
+
     this.configs.forEach((config, sourceType) => {
       const health = this.healthStatus.get(sourceType)
-      
+
       if (config.enabled && health?.isHealthy) {
         availableSources.push({
           type: sourceType,
-          priority: preferredSource === sourceType ? -1 : config.priority // 首选数据源优先级最高
+          priority: preferredSource === sourceType ? -1 : config.priority, // 首选数据源优先级最高
         })
       }
     })
-    
+
     // 按优先级排序
     availableSources.sort((a, b) => a.priority - b.priority)
-    
-    return availableSources.map(item => item.type)
+
+    return availableSources.map((item) => item.type)
   }
 
   /**
@@ -208,34 +247,33 @@ export class DataSourceManager {
     operationName = 'unknown'
   ): Promise<T> {
     const availableSources = this.getAvailableDataSources(preferredSource)
-    
+
     if (availableSources.length === 0) {
       throw new Error('没有可用的数据源')
     }
-    
+
     let lastError: Error | null = null
-    
+
     for (const sourceType of availableSources) {
       const source = this.dataSources.get(sourceType)
       const config = this.configs.get(sourceType)
-      
+
       if (!source || !config) continue
-      
+
       try {
         console.log(`尝试使用数据源 ${sourceType} 执行操作: ${operationName}`)
-        
+
         const result = await Promise.race([
           operation(source),
-          new Promise<never>((_, reject) => 
+          new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error(`操作超时: ${config.timeout}ms`)), config.timeout)
-          )
+          ),
         ])
-        
+
         this.recordSuccess(sourceType, operationName)
         console.log(`数据源 ${sourceType} 成功完成操作: ${operationName}`)
-        
+
         return result
-        
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error))
         this.recordFailure(sourceType, lastError, operationName)
@@ -243,7 +281,7 @@ export class DataSourceManager {
         continue
       }
     }
-    
+
     throw new Error(`所有数据源都无法完成操作 ${operationName}: ${lastError?.message}`)
   }
 
@@ -265,7 +303,7 @@ export class DataSourceManager {
     if (health) {
       health.errorCount += 1
       health.lastError = `${operationName}: ${error.message}`
-      
+
       // 如果错误过多，标记为不健康
       if (health.errorCount >= 3) {
         health.isHealthy = false
@@ -277,11 +315,7 @@ export class DataSourceManager {
    * 获取股票列表
    */
   async getStocks(preferredSource?: DataSourceType): Promise<Stock[]> {
-    return this.getDataWithFallback(
-      (source) => source.getStocks(),
-      preferredSource,
-      'getStocks'
-    )
+    return this.getDataWithFallback((source) => source.getStocks(), preferredSource, 'getStocks')
   }
 
   /**
@@ -342,7 +376,7 @@ export class DataSourceManager {
     const config = this.configs.get(sourceType)
     if (config) {
       config.enabled = enabled
-      
+
       if (enabled) {
         // 重新启动健康检查
         this.performHealthCheck(sourceType)
@@ -354,7 +388,7 @@ export class DataSourceManager {
    * 销毁管理器，清理定时器
    */
   destroy() {
-    this.healthCheckTimers.forEach(timer => clearInterval(timer))
+    this.healthCheckTimers.forEach((timer) => clearInterval(timer))
     this.healthCheckTimers.clear()
   }
 }

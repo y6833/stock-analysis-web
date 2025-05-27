@@ -130,11 +130,11 @@ module.exports = app => {
     comment: '止损止盈配置表',
   });
 
-  StopLossConfig.associate = function() {
-    // 关联用户
+  StopLossConfig.associate = function () {
+    // 关联用户 - 使用唯一别名
     app.model.StopLossConfig.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user',
+      as: 'stopLossUser',
     });
 
     // 关联投资组合

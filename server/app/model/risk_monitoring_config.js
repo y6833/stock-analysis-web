@@ -90,21 +90,21 @@ module.exports = app => {
     underscored: true,
   });
 
-  RiskMonitoringConfig.associate = function() {
-    // 关联用户
-    RiskMonitoringConfig.belongsTo(app.model.User, { 
+  RiskMonitoringConfig.associate = function () {
+    // 关联用户 - 使用唯一别名
+    RiskMonitoringConfig.belongsTo(app.model.User, {
       foreignKey: 'userId',
-      as: 'user'
+      as: 'configUser'
     });
 
     // 关联投资组合
-    RiskMonitoringConfig.belongsTo(app.model.UserPortfolio, { 
+    RiskMonitoringConfig.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: 'portfolio'
     });
 
     // 关联VaR计算记录
-    RiskMonitoringConfig.hasMany(app.model.VarCalculation, { 
+    RiskMonitoringConfig.hasMany(app.model.VarCalculation, {
       foreignKey: 'configId',
       as: 'varCalculations'
     });
