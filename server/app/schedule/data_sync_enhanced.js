@@ -375,15 +375,15 @@ class DataSyncEnhancedTask extends Subscription {
       let news = [];
 
       switch (source) {
-        case 'akshare':
-          news = await ctx.service.akshare.getFinancialNews(20);
-          break;
-        case 'sina':
-          news = await ctx.service.sina.getFinancialNews(20);
-          break;
-        case 'eastmoney':
-          news = await ctx.service.eastmoney.getFinancialNews(20);
-          break;
+      case 'akshare':
+        news = await ctx.service.akshare.getFinancialNews(20);
+        break;
+      case 'sina':
+        news = await ctx.service.sina.getFinancialNews(20);
+        break;
+      case 'eastmoney':
+        news = await ctx.service.eastmoney.getFinancialNews(20);
+        break;
       }
 
       return news.map(item => ({ ...item, source }));

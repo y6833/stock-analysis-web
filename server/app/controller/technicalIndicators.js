@@ -14,7 +14,7 @@ class TechnicalIndicatorsController extends Controller {
   async calculateIndicators() {
     const { ctx, service } = this;
     const { stockCode } = ctx.params;
-    const { klineData, enabledSignals, period = '1d' } = ctx.request.body;
+    const { klineData, enabledSignals, period = '1d', turtleParams } = ctx.request.body;
 
     try {
       // 参数验证
@@ -33,8 +33,11 @@ class TechnicalIndicatorsController extends Controller {
         finalKlineData = await service.stock.getKlineData(stockCode, period, 200);
       }
 
-      // 计算技术指标
-      const indicators = await service.technicalIndicators.calculateComprehensiveSignals(finalKlineData);
+      // 计算技术指标（传递海龟交易参数）
+      const indicators = await service.technicalIndicators.calculateComprehensiveSignals(
+        finalKlineData,
+        turtleParams
+      );
 
       // 过滤启用的信号
       if (enabledSignals) {
@@ -55,7 +58,8 @@ class TechnicalIndicatorsController extends Controller {
           timestamp: new Date().toISOString(),
           ...indicators,
           tradingAdvice,
-          marketCondition: this.assessMarketCondition(indicators)
+          marketCondition: this.assessMarketCondition(indicators),
+          turtleParams: turtleParams || { period: 20 } // 返回使用的参数
         }
       };
 
@@ -79,10 +83,10 @@ class TechnicalIndicatorsController extends Controller {
     try {
       // 获取最新K线数据
       const klineData = await service.stock.getKlineData(stockCode, '1m', 100);
-      
+
       // 计算最新信号
       const indicators = await service.technicalIndicators.calculateComprehensiveSignals(klineData);
-      
+
       // 获取最近的信号
       const recentSignals = this.getRecentSignals(indicators.signals, 10);
 
@@ -129,16 +133,16 @@ class TechnicalIndicatorsController extends Controller {
       }
 
       const results = [];
-      
+
       // 并发处理多只股票
       const promises = stockCodes.map(async (stockCode) => {
         try {
           const klineData = await service.stock.getKlineData(stockCode, '1d', 100);
           const indicators = await service.technicalIndicators.calculateComprehensiveSignals(klineData);
-          
+
           // 筛选指定类型的信号
           const filteredSignals = this.filterSignalsByType(indicators.signals, signalTypes);
-          
+
           if (filteredSignals.length > 0) {
             return {
               stockCode,
@@ -221,7 +225,7 @@ class TechnicalIndicatorsController extends Controller {
    */
   filterEnabledSignals(signals, enabledSignals) {
     const filtered = {};
-    
+
     if (enabledSignals.d2 && signals.d2Signals) {
       filtered.d2Signals = signals.d2Signals;
     }
@@ -234,6 +238,9 @@ class TechnicalIndicatorsController extends Controller {
     if (enabledSignals.sell && signals.sellSignals) {
       filtered.sellSignals = signals.sellSignals;
     }
+    if (enabledSignals.turtle && signals.turtleSignals) {
+      filtered.turtleSignals = signals.turtleSignals;
+    }
 
     return filtered;
   }
@@ -243,7 +250,7 @@ class TechnicalIndicatorsController extends Controller {
    */
   addSignalStrength(signals, klineData) {
     const enhancedSignals = {};
-    
+
     Object.keys(signals).forEach(signalType => {
       enhancedSignals[signalType] = signals[signalType].map(signal => ({
         ...signal,
@@ -274,7 +281,7 @@ class TechnicalIndicatorsController extends Controller {
     const recentHigh = Math.max(...klineData.high.slice(-20));
     const recentLow = Math.min(...klineData.low.slice(-20));
     const pricePosition = (signal.price - recentLow) / (recentHigh - recentLow);
-    
+
     if (signal.type === 'buy' && pricePosition < 0.3) strength += 15;
     if (signal.type === 'sell' && pricePosition > 0.7) strength += 15;
 
@@ -314,12 +321,14 @@ class TechnicalIndicatorsController extends Controller {
     const buySignals = [
       ...(indicators.signals.d2Signals || []),
       ...(indicators.signals.huntingSignals || []),
-      ...(indicators.signals.pivotSignals || [])
+      ...(indicators.signals.pivotSignals || []),
+      ...(indicators.signals.turtleSignals?.filter(s => s.type === 'buy') || [])
     ];
 
     // 分析卖出信号
     const sellSignals = [
-      ...(indicators.signals.sellSignals || [])
+      ...(indicators.signals.sellSignals || []),
+      ...(indicators.signals.turtleSignals?.filter(s => s.type === 'sell') || [])
     ];
 
     if (buySignals.length > sellSignals.length) {
@@ -344,7 +353,7 @@ class TechnicalIndicatorsController extends Controller {
     // 基于移动平均线排列判断趋势
     const mas = indicators.movingAverages;
     const lastIndex = mas.ma5.length - 1;
-    
+
     if (lastIndex < 0) return 'unknown';
 
     const ma5 = mas.ma5[lastIndex];
@@ -365,7 +374,7 @@ class TechnicalIndicatorsController extends Controller {
    */
   getRecentSignals(signals, limit = 10) {
     const allSignals = [];
-    
+
     Object.values(signals).forEach(signalArray => {
       if (Array.isArray(signalArray)) {
         allSignals.push(...signalArray);
@@ -388,7 +397,7 @@ class TechnicalIndicatorsController extends Controller {
    */
   calculatePriceChange(prices) {
     if (prices.length < 2) return { change: 0, changePercent: 0 };
-    
+
     const current = prices[prices.length - 1];
     const previous = prices[prices.length - 2];
     const change = current - previous;
@@ -405,7 +414,7 @@ class TechnicalIndicatorsController extends Controller {
    */
   filterSignalsByType(signals, signalTypes) {
     const filtered = [];
-    
+
     signalTypes.forEach(type => {
       const signalKey = `${type}Signals`;
       if (signals[signalKey]) {

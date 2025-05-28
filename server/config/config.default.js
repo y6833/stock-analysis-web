@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 /**
  * @param {Egg.EggAppInfo} appInfo app info
@@ -8,18 +8,18 @@ module.exports = (appInfo) => {
    * built-in config
    * @type {Egg.EggAppConfig}
    **/
-  const config = (exports = {})
+  const config = (exports = {});
 
   // 使用 appInfo.name 作为 cookie 签名的 key
-  config.keys = appInfo.name + '_1682323267123_3344'
+  config.keys = appInfo.name + '_1682323267123_3344';
 
   // 添加中间件
-  config.middleware = ['auth', 'errorHandler']
+  config.middleware = ['auth', 'errorHandler'];
 
   // 错误处理中间件配置
   config.errorHandler = {
     match: '/api',
-  }
+  };
 
   // 安全配置
   config.security = {
@@ -27,20 +27,20 @@ module.exports = (appInfo) => {
       enable: false, // 关闭 CSRF，前后端分离项目通常不需要
     },
     domainWhiteList: ['http://localhost:5173'], // 允许的域名白名单
-  }
+  };
 
   // CORS 配置
   config.cors = {
     origin: '*', // 允许所有域名访问
     allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH,OPTIONS',
     credentials: true, // 允许发送 Cookie
-  }
+  };
 
   // JWT 配置
   config.jwt = {
     secret: 'your-secret-key', // JWT 密钥，与模拟认证服务器使用的密钥相同
     expiresIn: '24h', // 令牌过期时间
-  }
+  };
 
   // 数据库配置
   config.sequelize = {
@@ -60,27 +60,27 @@ module.exports = (appInfo) => {
       },
       timestamps: true, // 自动添加 createdAt 和 updatedAt 字段
     },
-  }
+  };
 
   // 参数验证配置
   config.validate = {
     convert: true, // 自动转换类型
     validateRoot: true, // 验证根对象
-  }
+  };
 
   // 日志配置
   config.logger = {
     dir: require('path').join(appInfo.root, 'logs'),
     level: 'INFO',
     consoleLevel: 'INFO',
-  }
+  };
 
   // Tushare API 配置
   config.tushare = {
     token: process.env.TUSHARE_TOKEN || '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61', // 使用用户提供的 token
     api_url: 'http://api.tushare.pro',
     enableAutoRefresh: false, // 默认禁用自动刷新缓存，避免频繁的后台API调用
-  }
+  };
 
   // MySQL 客户端配置（用于直接操作 MySQL）
   config.mysql = {
@@ -93,7 +93,7 @@ module.exports = (appInfo) => {
     },
     app: true,
     agent: false,
-  }
+  };
 
   // Redis 配置 - 暂时禁用以解决连接问题
   // config.redis = {
@@ -125,7 +125,7 @@ module.exports = (appInfo) => {
     enable: true, // 默认启用认证
     // 只在开发环境中提供默认用户
     defaultUser: process.env.NODE_ENV === 'development' ? { id: 1, username: 'dev_user' } : null,
-  }
+  };
 
   // ClickHouse配置
   config.clickhouse = {
@@ -134,7 +134,7 @@ module.exports = (appInfo) => {
     database: 'stock_data',
     debug: false,
     basicAuth: null, // 如果需要认证: { username: 'user', password: 'pass' }
-  }
+  };
 
   // WebSocket配置
   config.io = {
@@ -151,7 +151,7 @@ module.exports = (appInfo) => {
         packetMiddleware: [],
       },
     },
-  }
+  };
 
   // 数据源配置
   config.dataSources = {
@@ -187,7 +187,7 @@ module.exports = (appInfo) => {
       timeout: 8000,
       maxRetries: 2,
     },
-  }
+  };
 
   // 实时数据推送配置
   config.realtime = {
@@ -200,7 +200,7 @@ module.exports = (appInfo) => {
     },
     maxSubscriptions: 100, // 单个客户端最大订阅数
     heartbeatInterval: 30000, // 心跳间隔
-  }
+  };
 
   // 数据同步配置
   config.dataSync = {
@@ -217,9 +217,9 @@ module.exports = (appInfo) => {
       news: 900,             // 新闻缓存过期时间
       financial: 3600,       // 财务数据缓存过期时间
     },
-  }
+  };
 
   return {
     ...config,
-  }
-}
+  };
+};

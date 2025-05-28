@@ -174,7 +174,7 @@ class JuheService extends Service {
       return {
         success: true,
         data: filteredStocks,
-        message: `搜索结果（聚合数据不支持搜索，返回匹配的常用股票）`
+        message: '搜索结果（聚合数据不支持搜索，返回匹配的常用股票）'
       };
     } catch (error) {
       this.ctx.logger.error(`聚合数据搜索股票"${keyword}"失败:`, error);

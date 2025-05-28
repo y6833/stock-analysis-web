@@ -402,8 +402,8 @@ class CoinsService extends Service {
             // 如果普通会员有效，延长相同的天数
             const basicExpiresAt = new Date(userMembership.basicMembershipExpires);
             basicExpiresAt.setDate(basicExpiresAt.getDate() + days);
-            console.log(`原普通会员过期时间:`, userMembership.basicMembershipExpires);
-            console.log(`新普通会员过期时间:`, basicExpiresAt);
+            console.log('原普通会员过期时间:', userMembership.basicMembershipExpires);
+            console.log('新普通会员过期时间:', basicExpiresAt);
             console.log(`延长天数: ${days}天`);
 
             // 更新普通会员过期时间
@@ -481,8 +481,8 @@ class CoinsService extends Service {
           // 保存原普通会员过期时间，用于后续处理
           const basicExpiresAt = new Date(user.membershipExpires);
           basicExpiresAt.setDate(basicExpiresAt.getDate() + days); // 延长相同的天数
-          console.log(`原普通会员过期时间:`, user.membershipExpires);
-          console.log(`新普通会员过期时间:`, basicExpiresAt);
+          console.log('原普通会员过期时间:', user.membershipExpires);
+          console.log('新普通会员过期时间:', basicExpiresAt);
           console.log(`延长天数: ${days}天`);
 
           // 在用户表中，我们只能设置一个会员级别和过期时间

@@ -302,118 +302,118 @@ class MembershipService extends Service {
 
     // 根据功能和会员等级判断权限
     switch (feature) {
-      // 数据刷新相关
-      case 'data_refresh':
-        // 所有用户都可以刷新数据，但频率不同
-        return true;
+    // 数据刷新相关
+    case 'data_refresh':
+      // 所有用户都可以刷新数据，但频率不同
+      return true;
 
-      case 'refresh_interval':
-        // 检查是否满足刷新间隔要求
-        const lastRefresh = params.lastRefresh ? new Date(params.lastRefresh) : null;
-        if (!lastRefresh) return true;
+    case 'refresh_interval':
+      // 检查是否满足刷新间隔要求
+      const lastRefresh = params.lastRefresh ? new Date(params.lastRefresh) : null;
+      if (!lastRefresh) return true;
 
-        const now = new Date();
-        const diffMs = now.getTime() - lastRefresh.getTime();
-        return diffMs >= membership.dataRefreshInterval;
+      const now = new Date();
+      const diffMs = now.getTime() - lastRefresh.getTime();
+      return diffMs >= membership.dataRefreshInterval;
 
       // 数据源相关
-      case 'multiple_data_sources':
-        // 基础会员及以上可以使用多数据源
-        return ['basic', 'premium', 'enterprise'].includes(membership.effectiveLevel);
+    case 'multiple_data_sources':
+      // 基础会员及以上可以使用多数据源
+      return ['basic', 'premium', 'enterprise'].includes(membership.effectiveLevel);
 
-      case 'use_data_source':
-        // 检查是否可以使用指定的数据源
-        if (membership.dataSourceLimit === -1) return true;
-        if (!params.dataSourceCount) return true;
-        return params.dataSourceCount <= membership.dataSourceLimit;
+    case 'use_data_source':
+      // 检查是否可以使用指定的数据源
+      if (membership.dataSourceLimit === -1) return true;
+      if (!params.dataSourceCount) return true;
+      return params.dataSourceCount <= membership.dataSourceLimit;
 
       // 技术指标相关
-      case 'advanced_indicators':
-        // 基础会员及以上可以使用高级指标
-        return ['basic', 'premium', 'enterprise'].includes(membership.effectiveLevel);
+    case 'advanced_indicators':
+      // 基础会员及以上可以使用高级指标
+      return ['basic', 'premium', 'enterprise'].includes(membership.effectiveLevel);
 
-      case 'use_indicator':
-        // 检查是否可以使用指定的技术指标
-        const indicator = params.indicator;
-        if (!indicator) return true;
+    case 'use_indicator':
+      // 检查是否可以使用指定的技术指标
+      const indicator = params.indicator;
+      if (!indicator) return true;
 
-        // 空数组表示无限制
-        if (membership.allowedIndicators.length === 0) return true;
+      // 空数组表示无限制
+      if (membership.allowedIndicators.length === 0) return true;
 
-        return membership.allowedIndicators.includes(indicator);
+      return membership.allowedIndicators.includes(indicator);
 
       // 数据导出相关
-      case 'export_data':
-        // 高级会员及以上可以导出数据
-        return membership.allowExport;
+    case 'export_data':
+      // 高级会员及以上可以导出数据
+      return membership.allowExport;
 
       // API访问相关
-      case 'api_access':
-        // 只有企业版可以使用API
-        return membership.effectiveLevel === 'enterprise';
+    case 'api_access':
+      // 只有企业版可以使用API
+      return membership.effectiveLevel === 'enterprise';
 
       // 关注列表相关
-      case 'add_watchlist_item':
-        // 检查是否超过关注股票数量限制
-        if (membership.maxWatchlistItems === -1) return true;
-        if (!params.currentCount) return true;
-        return params.currentCount < membership.maxWatchlistItems;
+    case 'add_watchlist_item':
+      // 检查是否超过关注股票数量限制
+      if (membership.maxWatchlistItems === -1) return true;
+      if (!params.currentCount) return true;
+      return params.currentCount < membership.maxWatchlistItems;
 
       // 提醒相关
-      case 'add_alert':
-        // 检查是否超过提醒数量限制
-        if (membership.maxAlerts === -1) return true;
-        if (!params.currentCount) return true;
-        return params.currentCount < membership.maxAlerts;
+    case 'add_alert':
+      // 检查是否超过提醒数量限制
+      if (membership.maxAlerts === -1) return true;
+      if (!params.currentCount) return true;
+      return params.currentCount < membership.maxAlerts;
 
       // 投资组合相关
-      case 'add_portfolio':
-        // 检查是否超过投资组合数量限制
-        if (membership.maxPortfolios === -1) return true;
-        if (!params.currentCount) return true;
-        return params.currentCount < membership.maxPortfolios;
+    case 'add_portfolio':
+      // 检查是否超过投资组合数量限制
+      if (membership.maxPortfolios === -1) return true;
+      if (!params.currentCount) return true;
+      return params.currentCount < membership.maxPortfolios;
 
-      case 'add_portfolio_item':
-        // 检查是否超过投资组合股票数量限制
-        if (membership.maxPortfolioItems === -1) return true;
-        if (!params.currentCount) return true;
-        return params.currentCount < membership.maxPortfolioItems;
+    case 'add_portfolio_item':
+      // 检查是否超过投资组合股票数量限制
+      if (membership.maxPortfolioItems === -1) return true;
+      if (!params.currentCount) return true;
+      return params.currentCount < membership.maxPortfolioItems;
 
       // 历史数据相关
-      case 'history_data_access':
-        // 检查是否可以访问指定天数的历史数据
-        if (membership.maxHistoryDays === -1) return true;
-        if (!params.days) return true;
-        return params.days <= membership.maxHistoryDays;
+    case 'history_data_access':
+      // 检查是否可以访问指定天数的历史数据
+      if (membership.maxHistoryDays === -1) return true;
+      if (!params.days) return true;
+      return params.days <= membership.maxHistoryDays;
 
       // 回测相关
-      case 'backtest_period':
-        // 检查是否可以进行指定时间段的回测
-        if (membership.maxBacktestPeriod === -1) return true;
-        if (!params.days) return true;
-        return params.days <= membership.maxBacktestPeriod;
+    case 'backtest_period':
+      // 检查是否可以进行指定时间段的回测
+      if (membership.maxBacktestPeriod === -1) return true;
+      if (!params.days) return true;
+      return params.days <= membership.maxBacktestPeriod;
 
       // 批量操作相关
-      case 'batch_operations':
-        return membership.allowBatchOperations;
+    case 'batch_operations':
+      return membership.allowBatchOperations;
 
       // 自定义看板相关
-      case 'custom_dashboard':
-        return membership.allowCustomDashboard;
+    case 'custom_dashboard':
+      return membership.allowCustomDashboard;
 
       // 高级图表相关
-      case 'advanced_charts':
-        return membership.allowAdvancedCharts;
+    case 'advanced_charts':
+      return membership.allowAdvancedCharts;
 
       // 并发请求相关
-      case 'concurrent_requests':
-        if (membership.maxConcurrentRequests === -1) return true;
-        if (!params.currentCount) return true;
-        return params.currentCount <= membership.maxConcurrentRequests;
+    case 'concurrent_requests':
+      if (membership.maxConcurrentRequests === -1) return true;
+      if (!params.currentCount) return true;
+      return params.currentCount <= membership.maxConcurrentRequests;
 
-      default:
-        // 默认允许访问
-        return true;
+    default:
+      // 默认允许访问
+      return true;
     }
   }
 

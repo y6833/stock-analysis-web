@@ -128,51 +128,51 @@ class RiskAlertService extends Service {
     let data = {};
 
     switch (rule.ruleType) {
-      case 'var_threshold':
-        currentValue = riskMetrics.currentVar;
-        thresholdValue = config.threshold;
-        triggered = currentValue > thresholdValue;
-        message = triggered ? 
-          `VaR风险值 ${currentValue.toFixed(2)} 超过阈值 ${thresholdValue.toFixed(2)}` :
-          '';
-        break;
+    case 'var_threshold':
+      currentValue = riskMetrics.currentVar;
+      thresholdValue = config.threshold;
+      triggered = currentValue > thresholdValue;
+      message = triggered ? 
+        `VaR风险值 ${currentValue.toFixed(2)} 超过阈值 ${thresholdValue.toFixed(2)}` :
+        '';
+      break;
 
-      case 'loss_threshold':
-        currentValue = riskMetrics.dailyPnlPercentage;
-        thresholdValue = config.threshold;
-        triggered = currentValue < -Math.abs(thresholdValue);
-        message = triggered ? 
-          `日损失 ${(currentValue * 100).toFixed(2)}% 超过阈值 ${(thresholdValue * 100).toFixed(2)}%` :
-          '';
-        break;
+    case 'loss_threshold':
+      currentValue = riskMetrics.dailyPnlPercentage;
+      thresholdValue = config.threshold;
+      triggered = currentValue < -Math.abs(thresholdValue);
+      message = triggered ? 
+        `日损失 ${(currentValue * 100).toFixed(2)}% 超过阈值 ${(thresholdValue * 100).toFixed(2)}%` :
+        '';
+      break;
 
-      case 'volatility_threshold':
-        currentValue = riskMetrics.volatility;
-        thresholdValue = config.threshold;
-        triggered = currentValue > thresholdValue;
-        message = triggered ? 
-          `波动率 ${(currentValue * 100).toFixed(2)}% 超过阈值 ${(thresholdValue * 100).toFixed(2)}%` :
-          '';
-        break;
+    case 'volatility_threshold':
+      currentValue = riskMetrics.volatility;
+      thresholdValue = config.threshold;
+      triggered = currentValue > thresholdValue;
+      message = triggered ? 
+        `波动率 ${(currentValue * 100).toFixed(2)}% 超过阈值 ${(thresholdValue * 100).toFixed(2)}%` :
+        '';
+      break;
 
-      case 'concentration_risk':
-        currentValue = riskMetrics.concentrationRisk;
-        thresholdValue = config.threshold;
-        triggered = currentValue > thresholdValue;
-        message = triggered ? 
-          `集中度风险 ${(currentValue * 100).toFixed(2)}% 超过阈值 ${(thresholdValue * 100).toFixed(2)}%` :
-          '';
-        break;
+    case 'concentration_risk':
+      currentValue = riskMetrics.concentrationRisk;
+      thresholdValue = config.threshold;
+      triggered = currentValue > thresholdValue;
+      message = triggered ? 
+        `集中度风险 ${(currentValue * 100).toFixed(2)}% 超过阈值 ${(thresholdValue * 100).toFixed(2)}%` :
+        '';
+      break;
 
-      case 'custom':
-        // 自定义规则评估
-        const customResult = await this.evaluateCustomRule(config, riskMetrics);
-        triggered = customResult.triggered;
-        currentValue = customResult.currentValue;
-        thresholdValue = customResult.thresholdValue;
-        message = customResult.message;
-        data = customResult.data;
-        break;
+    case 'custom':
+      // 自定义规则评估
+      const customResult = await this.evaluateCustomRule(config, riskMetrics);
+      triggered = customResult.triggered;
+      currentValue = customResult.currentValue;
+      thresholdValue = customResult.thresholdValue;
+      message = customResult.message;
+      data = customResult.data;
+      break;
     }
 
     return {
@@ -204,21 +204,21 @@ class RiskAlertService extends Service {
         let conditionMet = false;
         
         switch (operator) {
-          case '>':
-            conditionMet = currentValue > value;
-            break;
-          case '<':
-            conditionMet = currentValue < value;
-            break;
-          case '>=':
-            conditionMet = currentValue >= value;
-            break;
-          case '<=':
-            conditionMet = currentValue <= value;
-            break;
-          case '==':
-            conditionMet = Math.abs(currentValue - value) < 0.0001;
-            break;
+        case '>':
+          conditionMet = currentValue > value;
+          break;
+        case '<':
+          conditionMet = currentValue < value;
+          break;
+        case '>=':
+          conditionMet = currentValue >= value;
+          break;
+        case '<=':
+          conditionMet = currentValue <= value;
+          break;
+        case '==':
+          conditionMet = Math.abs(currentValue - value) < 0.0001;
+          break;
         }
 
         if (conditionMet) {

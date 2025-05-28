@@ -278,16 +278,16 @@ class BacktestService extends Service {
     
     // 根据策略类型生成不同的信号
     switch (params.strategyType) {
-      case 'technical':
-        return this.generateTechnicalSignals(params, currentData, historicalData);
-      case 'factor':
-        return this.generateFactorSignals(params, currentData, historicalData);
-      case 'ml':
-        return this.generateMLSignals(params, currentData, historicalData);
-      case 'timing':
-        return this.generateTimingSignals(params, currentData, historicalData);
-      default:
-        return signals;
+    case 'technical':
+      return this.generateTechnicalSignals(params, currentData, historicalData);
+    case 'factor':
+      return this.generateFactorSignals(params, currentData, historicalData);
+    case 'ml':
+      return this.generateMLSignals(params, currentData, historicalData);
+    case 'timing':
+      return this.generateTimingSignals(params, currentData, historicalData);
+    default:
+      return signals;
     }
   }
 

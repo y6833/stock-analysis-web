@@ -381,6 +381,124 @@ export function calculateATR(
   return atr
 }
 
+/**
+ * 检测高低点
+ * 基于MA5和MA10的金叉死叉信号识别高低点
+ * @param prices 价格数组
+ * @param shortPeriod 短期均线周期 (默认5)
+ * @param longPeriod 长期均线周期 (默认10)
+ * @returns 包含高低点标记的数组
+ */
+export function detectHighLowPoints(
+  prices: number[],
+  shortPeriod: number = 5,
+  longPeriod: number = 10
+): {
+  highs: number[]
+  lows: number[]
+} {
+  const highs: number[] = new Array(prices.length).fill(0)
+  const lows: number[] = new Array(prices.length).fill(0)
+  
+  const shortMA = calculateSMA(prices, shortPeriod)
+  const longMA = calculateSMA(prices, longPeriod)
+  
+  // 检测金叉死叉点
+  for (let i = 1; i < prices.length; i++) {
+    const isCrossUp = shortMA[i] > longMA[i] && shortMA[i-1] <= longMA[i-1]
+    const isCrossDown = shortMA[i] < longMA[i] && shortMA[i-1] >= longMA[i-1]
+    
+    if (isCrossUp) {
+      // 从金叉点向前寻找最高点
+      let highest = prices[i]
+      let highestIdx = i
+      for (let j = i-1; j >= 0; j--) {
+        if (lows[j] === 1) break
+        if (prices[j] > highest) {
+          highest = prices[j]
+          highestIdx = j
+        }
+      }
+      highs[highestIdx] = 1
+    }
+    
+    if (isCrossDown) {
+      // 从死叉点向前寻找最低点
+      let lowest = prices[i]
+      let lowestIdx = i
+      for (let j = i-1; j >= 0; j--) {
+        if (highs[j] === 1) break
+        if (prices[j] < lowest) {
+          lowest = prices[j]
+          lowestIdx = j
+        }
+      }
+      lows[lowestIdx] = 1
+    }
+  }
+  
+  return { highs, lows }
+}
+
+/**
+ * 绘制趋势线
+ * 根据高低点标记绘制连接线
+ * @param prices 价格数组
+ * @param dates 日期数组
+ * @param highs 高点标记数组
+ * @param lows 低点标记数组
+ * @returns 趋势线数组
+ */
+export function drawTrendLines(
+  prices: number[],
+  dates: string[],
+  highs: number[],
+  lows: number[]
+): {
+  lines: Array<{
+    from: { date: string; value: number }
+    to: { date: string; value: number }
+    color: string
+  }>
+} {
+  const lines: Array<{
+    from: { date: string; value: number }
+    to: { date: string; value: number }
+    color: string
+  }> = []
+  
+  let lastHighIdx = -1
+  let lastLowIdx = -1
+  
+  for (let i = 0; i < prices.length; i++) {
+    if (highs[i] === 1) {
+      if (lastLowIdx >= 0) {
+        // 从低点到高点的上升趋势线 (绿色)
+        lines.push({
+          from: { date: dates[lastLowIdx], value: prices[lastLowIdx] },
+          to: { date: dates[i], value: prices[i] },
+          color: '#00FF00'
+        })
+      }
+      lastHighIdx = i
+    }
+    
+    if (lows[i] === 1) {
+      if (lastHighIdx >= 0) {
+        // 从高点到低点的下降趋势线 (红色)
+        lines.push({
+          from: { date: dates[lastHighIdx], value: prices[lastHighIdx] },
+          to: { date: dates[i], value: prices[i] },
+          color: '#FF0000'
+        })
+      }
+      lastLowIdx = i
+    }
+  }
+  
+  return { lines }
+}
+
 // 成交量加权平均价格 (VWAP)
 export function calculateVWAP(prices: number[], volumes: number[]): number[] {
   const vwap: number[] = []
@@ -560,6 +678,54 @@ export function detectDoubleTopBottom(
 }
 
 /**
+ * KDJ+MACD双优化指标计算
+ * 结合KDJ和MACD指标信号生成优化后的交易信号
+ */
+export function calculateKDJMACDOptimized(
+  highPrices: number[],
+  lowPrices: number[],
+  closePrices: number[],
+  period: number = 9,
+  kPeriod: number = 3,
+  dPeriod: number = 3,
+  fastPeriod: number = 12,
+  slowPeriod: number = 26,
+  signalPeriod: number = 9
+): {
+  kdjK: number[]
+  kdjD: number[]
+  kdjJ: number[]
+  macdLine: number[]
+  signalLine: number[]
+  histogram: number[]
+  optimizedSignal: number[]
+} {
+  // Calculate KDJ
+  const { k, d, j } = calculateKDJ(highPrices, lowPrices, closePrices, period, kPeriod, dPeriod)
+  
+  // Calculate MACD
+  const { macdLine, signalLine, histogram } = calculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+
+  // Calculate optimized signal
+  const optimizedSignal: number[] = []
+  for (let i = 0; i < closePrices.length; i++) {
+    const kdjSignal = k[i] > d[i] ? 1 : -1
+    const macdSignal = macdLine[i] > signalLine[i] ? 1 : -1
+    optimizedSignal.push((kdjSignal + macdSignal) / 2)
+  }
+
+  return {
+    kdjK: k,
+    kdjD: d,
+    kdjJ: j,
+    macdLine,
+    signalLine,
+    histogram,
+    optimizedSignal
+  }
+}
+
+/**
  * 批量计算多个指标
  * 优先使用 Web Worker，如果 Worker 不可用则回退到主线程计算
  */
@@ -669,6 +835,7 @@ export const technicalIndicatorService = {
   calculateVWAP,
   detectHeadAndShoulders,
   detectDoubleTopBottom,
+  calculateKDJMACDOptimized,
   calculateIndicators,
 }
 

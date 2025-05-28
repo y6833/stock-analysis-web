@@ -81,23 +81,23 @@ class RealtimeController extends Controller {
       
       // 根据订阅类型启动数据推送
       switch (type) {
-        case 'quote':
-          await this.startQuotePush(symbol);
-          break;
-        case 'kline':
-          await this.startKlinePush(symbol, interval);
-          break;
-        case 'trade':
-          await this.startTradePush(symbol);
-          break;
-        case 'depth':
-          await this.startDepthPush(symbol);
-          break;
-        default:
-          ctx.socket.emit('error', {
-            error: `不支持的订阅类型: ${type}`,
-            timestamp: Date.now()
-          });
+      case 'quote':
+        await this.startQuotePush(symbol);
+        break;
+      case 'kline':
+        await this.startKlinePush(symbol, interval);
+        break;
+      case 'trade':
+        await this.startTradePush(symbol);
+        break;
+      case 'depth':
+        await this.startDepthPush(symbol);
+        break;
+      default:
+        ctx.socket.emit('error', {
+          error: `不支持的订阅类型: ${type}`,
+          timestamp: Date.now()
+        });
       }
       
     } catch (error) {

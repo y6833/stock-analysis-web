@@ -463,20 +463,20 @@ class FactorController extends Controller {
       let score = 0;
       
       switch (method) {
-        case 'variance':
-          const mean = validValues.reduce((sum, v) => sum + v, 0) / validValues.length;
-          const variance = validValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / validValues.length;
-          score = Math.sqrt(variance);
-          break;
+      case 'variance':
+        const mean = validValues.reduce((sum, v) => sum + v, 0) / validValues.length;
+        const variance = validValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / validValues.length;
+        score = Math.sqrt(variance);
+        break;
           
-        case 'range':
-          const min = Math.min(...validValues);
-          const max = Math.max(...validValues);
-          score = max - min;
-          break;
+      case 'range':
+        const min = Math.min(...validValues);
+        const max = Math.max(...validValues);
+        score = max - min;
+        break;
           
-        default:
-          score = Math.abs(validValues[validValues.length - 1] || 0);
+      default:
+        score = Math.abs(validValues[validValues.length - 1] || 0);
       }
       
       importance.push({

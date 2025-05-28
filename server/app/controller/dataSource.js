@@ -20,10 +20,10 @@ class DataSourceController extends Controller {
 
     // 完全禁止测试Tushare数据源
     if (dataSource === 'tushare') {
-      this.ctx.logger.warn(`禁止测试Tushare数据源，系统已配置为使用其他数据源`);
+      this.ctx.logger.warn('禁止测试Tushare数据源，系统已配置为使用其他数据源');
       ctx.body = {
         success: true,
-        message: `系统已配置为不使用Tushare数据源，跳过测试`,
+        message: '系统已配置为不使用Tushare数据源，跳过测试',
         data_source: dataSource,
         skipped: true
       };
@@ -44,24 +44,24 @@ class DataSourceController extends Controller {
 
     // 根据数据源类型调用不同的测试方法
     switch (dataSource) {
-      case 'tushare':
-        return await this.testTushare();
-      case 'sina':
-        return await this.testSina();
-      case 'eastmoney':
-        return await this.testEastMoney();
-      case 'akshare':
-        return await this.testAKShare();
-      case 'netease':
-        return await this.testNetEase();
-      case 'tencent':
-        return await this.testTencent();
-      default:
-        ctx.body = {
-          success: false,
-          message: `未知数据源类型: ${dataSource}`,
-          data_source: dataSource
-        };
+    case 'tushare':
+      return await this.testTushare();
+    case 'sina':
+      return await this.testSina();
+    case 'eastmoney':
+      return await this.testEastMoney();
+    case 'akshare':
+      return await this.testAKShare();
+    case 'netease':
+      return await this.testNetEase();
+    case 'tencent':
+      return await this.testTencent();
+    default:
+      ctx.body = {
+        success: false,
+        message: `未知数据源类型: ${dataSource}`,
+        data_source: dataSource
+      };
     }
   }
 
@@ -219,120 +219,120 @@ class DataSourceController extends Controller {
 
     // 根据数据源类型调用不同的方法
     switch (dataSource) {
-      case 'tushare':
-        // 调用tushare控制器的方法
-        return await ctx.service.proxy.callController('tushare', 'getStockBasic');
-      case 'zhitu':
-        // 智兔数服数据源 - 调用真实API
-        try {
-          const zhituResult = await ctx.service.zhitu.getStockList();
-          ctx.body = {
-            success: true,
-            message: '智兔数服股票列表获取成功',
-            data: zhituResult.data || [],
-            data_source: 'zhitu',
-            data_source_message: '数据来自智兔数服专业股票数据API'
-          };
-        } catch (error) {
-          ctx.body = {
-            success: false,
-            message: `智兔数服API调用失败: ${error.message}`,
-            error: error.message,
-            data_source: 'zhitu',
-            data_source_message: '智兔数服API暂时不可用，请检查API配置'
-          };
-        }
-        return;
-      case 'yahoo_finance':
-        // Yahoo Finance API数据源 - 调用真实API
-        try {
-          const yahooResult = await ctx.service.yahooFinance.getStockList();
-          ctx.body = {
-            success: true,
-            message: 'Yahoo Finance股票列表获取成功',
-            data: yahooResult.data || [],
-            data_source: 'yahoo_finance',
-            data_source_message: '数据来自Yahoo Finance API'
-          };
-        } catch (error) {
-          ctx.body = {
-            success: false,
-            message: `Yahoo Finance API调用失败: ${error.message}`,
-            error: error.message,
-            data_source: 'yahoo_finance',
-            data_source_message: 'Yahoo Finance API暂时不可用，请检查网络连接'
-          };
-        }
-        return;
-      case 'google_finance':
-        // Google Finance API数据源 - 调用真实API（使用Alpha Vantage）
-        try {
-          const googleResult = await ctx.service.googleFinance.getStockList();
-          ctx.body = {
-            success: true,
-            message: 'Google Finance股票列表获取成功',
-            data: googleResult.data || [],
-            data_source: 'google_finance',
-            data_source_message: '数据来自Alpha Vantage API（Google Finance替代）'
-          };
-        } catch (error) {
-          ctx.body = {
-            success: false,
-            message: `Alpha Vantage API调用失败: ${error.message}`,
-            error: error.message,
-            data_source: 'google_finance',
-            data_source_message: 'Alpha Vantage API暂时不可用，请检查API密钥配置'
-          };
-        }
-        return;
-      case 'juhe':
-        // 聚合数据源 - 调用真实API
-        try {
-          const juheResult = await ctx.service.juhe.getStockList();
-          ctx.body = {
-            success: true,
-            message: '聚合数据股票列表获取成功',
-            data: juheResult.data || [],
-            data_source: 'juhe',
-            data_source_message: '数据来自聚合数据平台（每天免费50次调用）'
-          };
-        } catch (error) {
-          ctx.body = {
-            success: false,
-            message: `聚合数据API调用失败: ${error.message}`,
-            error: error.message,
-            data_source: 'juhe',
-            data_source_message: '聚合数据API暂时不可用，请检查API密钥配置或调用次数限制'
-          };
-        }
-        return;
-      case 'sina':
-      case 'eastmoney':
-      case 'akshare':
-      case 'netease':
-      case 'tencent':
-        // 这里可以实现其他数据源的股票列表获取逻辑
-        // 暂时重定向到tushare
-        const result = await ctx.service.proxy.callController('tushare', 'getStockBasic');
-
-        // 如果结果中没有明确的数据来源信息，添加数据来源信息
-        if (result && result.body) {
-          if (!result.body.data_source) {
-            result.body.data_source = dataSource;
-          }
-          if (!result.body.data_source_message) {
-            result.body.data_source_message = `数据来自${dataSource.toUpperCase()}数据源`;
-          }
-        }
-
-        return result;
-      default:
+    case 'tushare':
+      // 调用tushare控制器的方法
+      return await ctx.service.proxy.callController('tushare', 'getStockBasic');
+    case 'zhitu':
+      // 智兔数服数据源 - 调用真实API
+      try {
+        const zhituResult = await ctx.service.zhitu.getStockList();
+        ctx.body = {
+          success: true,
+          message: '智兔数服股票列表获取成功',
+          data: zhituResult.data || [],
+          data_source: 'zhitu',
+          data_source_message: '数据来自智兔数服专业股票数据API'
+        };
+      } catch (error) {
         ctx.body = {
           success: false,
-          message: `未知数据源类型: ${dataSource}`,
-          data_source: dataSource,
-          data_source_message: `未知数据源: ${dataSource}`
+          message: `智兔数服API调用失败: ${error.message}`,
+          error: error.message,
+          data_source: 'zhitu',
+          data_source_message: '智兔数服API暂时不可用，请检查API配置'
         };
+      }
+      return;
+    case 'yahoo_finance':
+      // Yahoo Finance API数据源 - 调用真实API
+      try {
+        const yahooResult = await ctx.service.yahooFinance.getStockList();
+        ctx.body = {
+          success: true,
+          message: 'Yahoo Finance股票列表获取成功',
+          data: yahooResult.data || [],
+          data_source: 'yahoo_finance',
+          data_source_message: '数据来自Yahoo Finance API'
+        };
+      } catch (error) {
+        ctx.body = {
+          success: false,
+          message: `Yahoo Finance API调用失败: ${error.message}`,
+          error: error.message,
+          data_source: 'yahoo_finance',
+          data_source_message: 'Yahoo Finance API暂时不可用，请检查网络连接'
+        };
+      }
+      return;
+    case 'google_finance':
+      // Google Finance API数据源 - 调用真实API（使用Alpha Vantage）
+      try {
+        const googleResult = await ctx.service.googleFinance.getStockList();
+        ctx.body = {
+          success: true,
+          message: 'Google Finance股票列表获取成功',
+          data: googleResult.data || [],
+          data_source: 'google_finance',
+          data_source_message: '数据来自Alpha Vantage API（Google Finance替代）'
+        };
+      } catch (error) {
+        ctx.body = {
+          success: false,
+          message: `Alpha Vantage API调用失败: ${error.message}`,
+          error: error.message,
+          data_source: 'google_finance',
+          data_source_message: 'Alpha Vantage API暂时不可用，请检查API密钥配置'
+        };
+      }
+      return;
+    case 'juhe':
+      // 聚合数据源 - 调用真实API
+      try {
+        const juheResult = await ctx.service.juhe.getStockList();
+        ctx.body = {
+          success: true,
+          message: '聚合数据股票列表获取成功',
+          data: juheResult.data || [],
+          data_source: 'juhe',
+          data_source_message: '数据来自聚合数据平台（每天免费50次调用）'
+        };
+      } catch (error) {
+        ctx.body = {
+          success: false,
+          message: `聚合数据API调用失败: ${error.message}`,
+          error: error.message,
+          data_source: 'juhe',
+          data_source_message: '聚合数据API暂时不可用，请检查API密钥配置或调用次数限制'
+        };
+      }
+      return;
+    case 'sina':
+    case 'eastmoney':
+    case 'akshare':
+    case 'netease':
+    case 'tencent':
+      // 这里可以实现其他数据源的股票列表获取逻辑
+      // 暂时重定向到tushare
+      const result = await ctx.service.proxy.callController('tushare', 'getStockBasic');
+
+      // 如果结果中没有明确的数据来源信息，添加数据来源信息
+      if (result && result.body) {
+        if (!result.body.data_source) {
+          result.body.data_source = dataSource;
+        }
+        if (!result.body.data_source_message) {
+          result.body.data_source_message = `数据来自${dataSource.toUpperCase()}数据源`;
+        }
+      }
+
+      return result;
+    default:
+      ctx.body = {
+        success: false,
+        message: `未知数据源类型: ${dataSource}`,
+        data_source: dataSource,
+        data_source_message: `未知数据源: ${dataSource}`
+      };
     }
   }
 

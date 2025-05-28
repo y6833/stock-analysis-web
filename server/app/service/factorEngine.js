@@ -222,22 +222,22 @@ class FactorEngineService extends Service {
     const { ctx } = this;
     
     switch (factorName) {
-      case 'sma_cross':
-        return this.calculateSMACross(stockData, params);
-      case 'rsi_divergence':
-        return this.calculateRSIDivergence(stockData, params);
-      case 'macd_signal':
-        return this.calculateMACDSignal(stockData, params);
-      case 'bollinger_position':
-        return this.calculateBollingerPosition(stockData, params);
-      case 'volume_price_trend':
-        return this.calculateVolumePriceTrend(stockData, params);
-      case 'momentum':
-        return this.calculateMomentum(stockData, params);
-      case 'volatility':
-        return this.calculateVolatility(stockData, params);
-      default:
-        throw new Error(`未知的技术因子: ${factorName}`);
+    case 'sma_cross':
+      return this.calculateSMACross(stockData, params);
+    case 'rsi_divergence':
+      return this.calculateRSIDivergence(stockData, params);
+    case 'macd_signal':
+      return this.calculateMACDSignal(stockData, params);
+    case 'bollinger_position':
+      return this.calculateBollingerPosition(stockData, params);
+    case 'volume_price_trend':
+      return this.calculateVolumePriceTrend(stockData, params);
+    case 'momentum':
+      return this.calculateMomentum(stockData, params);
+    case 'volatility':
+      return this.calculateVolatility(stockData, params);
+    default:
+      throw new Error(`未知的技术因子: ${factorName}`);
     }
   }
 
@@ -251,18 +251,18 @@ class FactorEngineService extends Service {
     const financialData = await this.getFinancialData(symbol);
     
     switch (factorName) {
-      case 'roe_trend':
-        return this.calculateROETrend(symbol, stockData, financialData, params);
-      case 'pe_relative':
-        return this.calculatePERelative(symbol, stockData, financialData, params);
-      case 'debt_ratio':
-        return this.calculateDebtRatio(symbol, stockData, financialData, params);
-      case 'revenue_growth':
-        return this.calculateRevenueGrowth(symbol, stockData, financialData, params);
-      case 'profit_margin':
-        return this.calculateProfitMargin(symbol, stockData, financialData, params);
-      default:
-        throw new Error(`未知的基本面因子: ${factorName}`);
+    case 'roe_trend':
+      return this.calculateROETrend(symbol, stockData, financialData, params);
+    case 'pe_relative':
+      return this.calculatePERelative(symbol, stockData, financialData, params);
+    case 'debt_ratio':
+      return this.calculateDebtRatio(symbol, stockData, financialData, params);
+    case 'revenue_growth':
+      return this.calculateRevenueGrowth(symbol, stockData, financialData, params);
+    case 'profit_margin':
+      return this.calculateProfitMargin(symbol, stockData, financialData, params);
+    default:
+      throw new Error(`未知的基本面因子: ${factorName}`);
     }
   }
 
@@ -273,16 +273,16 @@ class FactorEngineService extends Service {
     const { ctx } = this;
     
     switch (factorName) {
-      case 'sentiment_score':
-        return this.calculateSentimentScore(symbol, stockData, params);
-      case 'money_flow':
-        return this.calculateMoneyFlow(symbol, stockData, params);
-      case 'correlation_factor':
-        return this.calculateCorrelationFactor(symbol, stockData, params);
-      case 'volatility_regime':
-        return this.calculateVolatilityRegime(symbol, stockData, params);
-      default:
-        throw new Error(`未知的另类因子: ${factorName}`);
+    case 'sentiment_score':
+      return this.calculateSentimentScore(symbol, stockData, params);
+    case 'money_flow':
+      return this.calculateMoneyFlow(symbol, stockData, params);
+    case 'correlation_factor':
+      return this.calculateCorrelationFactor(symbol, stockData, params);
+    case 'volatility_regime':
+      return this.calculateVolatilityRegime(symbol, stockData, params);
+    default:
+      throw new Error(`未知的另类因子: ${factorName}`);
     }
   }
 

@@ -245,6 +245,10 @@ onUnmounted(() => {
                   <span class="nav-icon">📈</span>
                   <span class="nav-text">股票分析</span>
                 </RouterLink>
+                <RouterLink to="/turtle-trading" class="dropdown-item">
+                  <span class="nav-icon">🐢</span>
+                  <span class="nav-text">海龟交易法则</span>
+                </RouterLink>
                 <template v-if="canAccessBasicFeatures">
                   <RouterLink to="/smart-recommendation" class="dropdown-item">
                     <span class="nav-icon">🤖</span>

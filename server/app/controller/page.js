@@ -539,7 +539,7 @@ class PageController extends Controller {
         };
       } catch (error) {
         // 检查是否是数据库表不存在的错误
-        if (error.message && (error.message.includes("doesn't exist") || error.message.includes("no such table"))) {
+        if (error.message && (error.message.includes('doesn\'t exist') || error.message.includes('no such table'))) {
           ctx.logger.warn('页面管理表不存在，默认允许访问:', path);
           // 表不存在时，默认允许访问
           ctx.body = {

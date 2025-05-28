@@ -64,6 +64,97 @@
           <input type="checkbox" v-model="enabledSignals.sell" @change="updateSignalConfig" />
           卖出信号
         </label>
+        <label>
+          <input type="checkbox" v-model="enabledSignals.turtle" @change="updateSignalConfig" />
+          🐢 海龟交易信号
+        </label>
+        <label>
+          <input type="checkbox" v-model="enabledSignals.ma" @change="updateSignalConfig" />
+          📈 单均线策略
+        </label>
+      </div>
+
+      <!-- 海龟交易参数配置 -->
+      <!-- 单均线策略配置 -->
+      <div v-if="enabledSignals.ma" class="ma-config">
+        <h5>📈 单均线策略参数</h5>
+        <div class="param-group">
+          <label>
+            均线周期:
+            <select v-model="maParams.period" @change="updateSignalConfig">
+              <option value="5">5天</option>
+              <option value="10">10天</option>
+              <option value="20">20天</option>
+              <option value="30">30天</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <!-- 海龟交易参数配置 -->
+      <div v-if="enabledSignals.turtle" class="turtle-config">
+        <h5>🐢 海龟交易参数</h5>
+        <div class="param-group">
+          <label>
+            突破周期:
+            <select v-model="turtleParams.period" @change="updateSignalConfig">
+              <option value="10">10天</option>
+              <option value="20">20天</option>
+              <option value="30">30天</option>
+              <option value="55">55天</option>
+            </select>
+          </label>
+          <label>
+            账户资金:
+            <input
+              type="number"
+              v-model="turtleParams.riskManagement.accountValue"
+              @change="updateSignalConfig"
+              placeholder="100000"
+              min="10000"
+              step="10000"
+            />
+          </label>
+          <label>
+            风险比例:
+            <select v-model="turtleParams.riskManagement.riskPercent" @change="updateSignalConfig">
+              <option value="0.01">1%</option>
+              <option value="0.02">2%</option>
+              <option value="0.03">3%</option>
+              <option value="0.05">5%</option>
+            </select>
+          </label>
+          <label>
+            ATR倍数:
+            <select v-model="turtleParams.riskManagement.atrMultiplier" @change="updateSignalConfig">
+              <option value="1">1倍</option>
+              <option value="2">2倍</option>
+              <option value="3">3倍</option>
+            </select>
+          </label>
+          <label>
+            ATR周期:
+            <input
+              type="number"
+              v-model.number="turtleParams.riskManagement.atrPeriod"
+              @change="updateSignalConfig"
+              min="5"
+              max="30"
+              step="1"
+            />
+          </label>
+          <label>
+            最大仓位(%):
+            <input
+              type="number"
+              v-model.number="turtleParams.riskManagement.maxPositionPercent"
+              @change="updateSignalConfig"
+              min="1"
+              max="50"
+              step="1"
+            />
+          </label>
+        </div>
       </div>
     </div>
 
@@ -107,6 +198,51 @@
               {{ getSignalSuggestion(selectedSignal) }}
             </div>
           </div>
+
+          <!-- 海龟交易风险管理信息 -->
+          <div v-if="selectedSignal?.riskManagement" class="risk-management-section">
+            <h4>🛡️ 风险管理</h4>
+            <div class="risk-grid">
+              <div class="risk-item">
+                <label>建议仓位:</label>
+                <span>{{ selectedSignal.riskManagement.positionSize?.shares || 0 }} 股</span>
+              </div>
+              <div class="risk-item">
+                <label>仓位价值:</label>
+                <span
+                  >¥{{
+                    (selectedSignal.riskManagement.positionSize?.positionValue || 0).toFixed(2)
+                  }}</span
+                >
+              </div>
+              <div class="risk-item">
+                <label>止损价格:</label>
+                <span
+                  >¥{{ (selectedSignal.riskManagement.stopLoss?.stopPrice || 0).toFixed(2) }}</span
+                >
+              </div>
+              <div class="risk-item">
+                <label>风险金额:</label>
+                <span
+                  >¥{{
+                    (selectedSignal.riskManagement.positionSize?.dollarRisk || 0).toFixed(2)
+                  }}</span
+                >
+              </div>
+              <div class="risk-item">
+                <label>ATR值:</label>
+                <span>¥{{ (selectedSignal.atr || 0).toFixed(3) }}</span>
+              </div>
+              <div class="risk-item">
+                <label>风险比例:</label>
+                <span
+                  >{{
+                    (selectedSignal.riskManagement.stopLoss?.riskPercent || 0).toFixed(2)
+                  }}%</span
+                >
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </el-dialog>
@@ -142,6 +278,23 @@ const enabledSignals = reactive({
   hunting: true,
   reversal: true,
   sell: true,
+  turtle: true, // 默认启用海龟交易信号
+})
+
+// 海龟交易参数
+const turtleParams = reactive({
+  period: 20, // 默认20天突破周期
+  riskManagement: {
+    enabled: true,
+    accountValue: 100000,
+    riskPercent: 0.02,
+    atrMultiplier: 2,
+    atrPeriod: 14,
+    maxPositionPercent: 20,
+  },
+  accountValue: 100000, // 账户资金
+  riskPercent: 0.02, // 风险比例2%
+  atrMultiplier: 2, // ATR倍数
 })
 
 const { showToast } = useToast()
@@ -166,6 +319,8 @@ const getSignalIcon = (signal) => {
     '抛↓': '🔴',
     D: '📍',
     D1: '📌',
+    海龟买入: '🐢',
+    海龟卖出: '🔻',
   }
   return icons[signal] || '📊'
 }
@@ -178,6 +333,8 @@ const getSignalDescription = (signal) => {
     '抛↓': '技术指标超买，建议减仓',
     D: '趋势转折买点',
     D1: '拐点买入信号',
+    海龟买入: '价格突破唐奇安通道上轨，趋势跟踪买入',
+    海龟卖出: '价格跌破唐奇安通道下轨，趋势跟踪卖出',
   }
   return descriptions[signal] || '技术信号'
 }
@@ -185,6 +342,18 @@ const getSignalDescription = (signal) => {
 const getSignalSuggestion = (signal) => {
   if (!signal) return ''
 
+  // 海龟交易信号的专门建议
+  if (signal.signal === '海龟买入') {
+    return `海龟交易法则买入信号：建议在 ¥${signal.price.toFixed(
+      2
+    )} 附近买入，设置止损位为前期低点，目标位为通道宽度的2倍。${signal.reason || ''}`
+  } else if (signal.signal === '海龟卖出') {
+    return `海龟交易法则卖出信号：建议在 ¥${signal.price.toFixed(
+      2
+    )} 附近卖出或止损，注意趋势反转。${signal.reason || ''}`
+  }
+
+  // 其他信号的通用建议
   if (signal.type === 'buy') {
     return `建议在 ¥${signal.price.toFixed(2)} 附近分批买入，设置止损位 ¥${(
       signal.price * 0.95
@@ -270,6 +439,7 @@ const calculateTechnicalSignals = async () => {
       body: JSON.stringify({
         klineData: props.klineData,
         enabledSignals: enabledSignals,
+        turtleParams: turtleParams, // 传递海龟交易参数
       }),
     })
 
@@ -296,8 +466,17 @@ const calculateTechnicalSignals = async () => {
         }
       })
 
+      // 按时间戳排序，最新的在前面
+      allSignals.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+
       recentSignals.value = allSignals
       updateChart(result.data)
+
+      console.log('技术指标计算成功，信号数量:', allSignals.length)
+      console.log(
+        '海龟交易信号:',
+        allSignals.filter((s) => s.signal?.includes('海龟'))
+      )
     } else {
       console.warn('API 返回失败:', result.message)
       // 如果 API 失败，生成一些模拟信号用于演示
@@ -314,9 +493,82 @@ const calculateTechnicalSignals = async () => {
 const updateChart = (data) => {
   if (!chart.value) return
 
+  // 构建图例数据
+  const legendData = ['MA5', 'MA10', 'MA30', 'MA60', '分水岭']
+  const series = [
+    {
+      name: 'MA5',
+      type: 'line',
+      data: data.movingAverages?.ma5 || [],
+      lineStyle: { color: '#FFFF00' },
+      symbol: 'none',
+    },
+    {
+      name: 'MA10',
+      type: 'line',
+      data: data.movingAverages?.ma10 || [],
+      lineStyle: { color: '#FFFFFF' },
+      symbol: 'none',
+    },
+    {
+      name: 'MA30',
+      type: 'line',
+      data: data.movingAverages?.ma30 || [],
+      lineStyle: { color: '#FF0000' },
+      symbol: 'none',
+    },
+    {
+      name: 'MA60',
+      type: 'line',
+      data: data.movingAverages?.ma60 || [],
+      lineStyle: { color: '#FF0000' },
+      symbol: 'none',
+    },
+    {
+      name: '分水岭',
+      type: 'line',
+      data: data.watershed || [],
+      lineStyle: {
+        color: '#FF00FF',
+        width: 2,
+      },
+      symbol: 'none',
+    },
+  ]
+
+  // 如果启用了海龟交易信号，添加唐奇安通道
+  if (enabledSignals.turtle && data.donchianChannel) {
+    legendData.push('唐奇安上轨', '唐奇安下轨')
+
+    series.push(
+      {
+        name: '唐奇安上轨',
+        type: 'line',
+        data: data.donchianChannel.upband || [],
+        lineStyle: {
+          color: '#00FF00',
+          width: 2,
+          type: 'dashed',
+        },
+        symbol: 'none',
+      },
+      {
+        name: '唐奇安下轨',
+        type: 'line',
+        data: data.donchianChannel.dnband || [],
+        lineStyle: {
+          color: '#FF6600',
+          width: 2,
+          type: 'dashed',
+        },
+        symbol: 'none',
+      }
+    )
+  }
+
   const option = {
     title: {
-      text: '技术指标分析',
+      text: '技术指标分析 🐢',
       left: 'center',
     },
     tooltip: {
@@ -324,9 +576,20 @@ const updateChart = (data) => {
       axisPointer: {
         type: 'cross',
       },
+      formatter: function (params) {
+        let result = `时间: ${params[0].axisValue}<br/>`
+        params.forEach((param) => {
+          if (param.seriesName.includes('唐奇安')) {
+            result += `${param.seriesName}: ¥${param.value?.toFixed(2) || 'N/A'}<br/>`
+          } else {
+            result += `${param.seriesName}: ${param.value?.toFixed(2) || 'N/A'}<br/>`
+          }
+        })
+        return result
+      },
     },
     legend: {
-      data: ['MA5', 'MA10', 'MA30', 'MA60', '分水岭'],
+      data: legendData,
       top: 30,
     },
     grid: {
@@ -343,46 +606,7 @@ const updateChart = (data) => {
       type: 'value',
       scale: true,
     },
-    series: [
-      {
-        name: 'MA5',
-        type: 'line',
-        data: data.movingAverages?.ma5 || [],
-        lineStyle: { color: '#FFFF00' },
-        symbol: 'none',
-      },
-      {
-        name: 'MA10',
-        type: 'line',
-        data: data.movingAverages?.ma10 || [],
-        lineStyle: { color: '#FFFFFF' },
-        symbol: 'none',
-      },
-      {
-        name: 'MA30',
-        type: 'line',
-        data: data.movingAverages?.ma30 || [],
-        lineStyle: { color: '#FF0000' },
-        symbol: 'none',
-      },
-      {
-        name: 'MA60',
-        type: 'line',
-        data: data.movingAverages?.ma60 || [],
-        lineStyle: { color: '#FF0000' },
-        symbol: 'none',
-      },
-      {
-        name: '分水岭',
-        type: 'line',
-        data: data.watershed || [],
-        lineStyle: {
-          color: '#FF00FF',
-          width: 2,
-        },
-        symbol: 'none',
-      },
-    ],
+    series: series,
   }
 
   chart.value.setOption(option)
@@ -546,6 +770,89 @@ watch(
 
 .config-options input {
   margin-right: 8px;
+}
+
+/* 海龟交易配置样式 */
+.turtle-config {
+  margin-top: 16px;
+  padding: 12px;
+  background: linear-gradient(135deg, #e8f5e8, #f0f9f0);
+  border-radius: 6px;
+  border-left: 4px solid #52c41a;
+}
+
+.turtle-config h5 {
+  margin: 0 0 12px 0;
+  color: #52c41a;
+  font-weight: 600;
+}
+
+.param-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.param-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.param-group select,
+.param-group input {
+  padding: 4px 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: white;
+  font-size: 14px;
+}
+
+.param-group input[type='number'] {
+  width: 120px;
+}
+
+/* 风险管理样式 */
+.risk-management-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #fff7e6, #fff2e6);
+  border-radius: 8px;
+  border-left: 4px solid #fa8c16;
+}
+
+.risk-management-section h4 {
+  margin: 0 0 16px 0;
+  color: #fa8c16;
+  font-weight: 600;
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.risk-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #ffd591;
+}
+
+.risk-item label {
+  font-size: 12px;
+  color: #8c4a00;
+  font-weight: 500;
+}
+
+.risk-item span {
+  font-weight: bold;
+  color: #d46b08;
 }
 
 .signal-detail {

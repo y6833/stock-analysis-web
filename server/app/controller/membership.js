@@ -125,40 +125,40 @@ class MembershipController extends Controller {
 
       // 根据不同功能提取相应参数
       switch (feature) {
-        case 'refresh_interval':
-          if (ctx.query.lastRefresh) {
-            params.lastRefresh = ctx.query.lastRefresh;
-          }
-          break;
+      case 'refresh_interval':
+        if (ctx.query.lastRefresh) {
+          params.lastRefresh = ctx.query.lastRefresh;
+        }
+        break;
 
-        case 'use_data_source':
-          if (ctx.query.dataSourceCount) {
-            params.dataSourceCount = parseInt(ctx.query.dataSourceCount, 10);
-          }
-          break;
+      case 'use_data_source':
+        if (ctx.query.dataSourceCount) {
+          params.dataSourceCount = parseInt(ctx.query.dataSourceCount, 10);
+        }
+        break;
 
-        case 'use_indicator':
-          if (ctx.query.indicator) {
-            params.indicator = ctx.query.indicator;
-          }
-          break;
+      case 'use_indicator':
+        if (ctx.query.indicator) {
+          params.indicator = ctx.query.indicator;
+        }
+        break;
 
-        case 'add_watchlist_item':
-        case 'add_alert':
-        case 'add_portfolio':
-        case 'add_portfolio_item':
-        case 'concurrent_requests':
-          if (ctx.query.currentCount) {
-            params.currentCount = parseInt(ctx.query.currentCount, 10);
-          }
-          break;
+      case 'add_watchlist_item':
+      case 'add_alert':
+      case 'add_portfolio':
+      case 'add_portfolio_item':
+      case 'concurrent_requests':
+        if (ctx.query.currentCount) {
+          params.currentCount = parseInt(ctx.query.currentCount, 10);
+        }
+        break;
 
-        case 'history_data_access':
-        case 'backtest_period':
-          if (ctx.query.days) {
-            params.days = parseInt(ctx.query.days, 10);
-          }
-          break;
+      case 'history_data_access':
+      case 'backtest_period':
+        if (ctx.query.days) {
+          params.days = parseInt(ctx.query.days, 10);
+        }
+        break;
       }
 
       // 检查功能访问权限

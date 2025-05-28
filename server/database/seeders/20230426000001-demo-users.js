@@ -44,12 +44,12 @@ module.exports = {
     
     // 获取插入的用户ID
     const adminUser = await queryInterface.sequelize.query(
-      `SELECT id FROM users WHERE username = 'admin'`,
+      'SELECT id FROM users WHERE username = \'admin\'',
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
     
     const normalUser = await queryInterface.sequelize.query(
-      `SELECT id FROM users WHERE username = 'user'`,
+      'SELECT id FROM users WHERE username = \'user\'',
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
     

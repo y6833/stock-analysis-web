@@ -30,29 +30,29 @@ class VarCalculationService extends Service {
       // 3. 根据方法计算VaR
       let varResult;
       switch (config.varMethod) {
-        case 'historical':
-          varResult = await this.calculateHistoricalVaR(
-            portfolioData,
-            historicalReturns,
-            config
-          );
-          break;
-        case 'parametric':
-          varResult = await this.calculateParametricVaR(
-            portfolioData,
-            historicalReturns,
-            config
-          );
-          break;
-        case 'monte_carlo':
-          varResult = await this.calculateMonteCarloVaR(
-            portfolioData,
-            historicalReturns,
-            config
-          );
-          break;
-        default:
-          throw new Error(`不支持的VaR计算方法: ${config.varMethod}`);
+      case 'historical':
+        varResult = await this.calculateHistoricalVaR(
+          portfolioData,
+          historicalReturns,
+          config
+        );
+        break;
+      case 'parametric':
+        varResult = await this.calculateParametricVaR(
+          portfolioData,
+          historicalReturns,
+          config
+        );
+        break;
+      case 'monte_carlo':
+        varResult = await this.calculateMonteCarloVaR(
+          portfolioData,
+          historicalReturns,
+          config
+        );
+        break;
+      default:
+        throw new Error(`不支持的VaR计算方法: ${config.varMethod}`);
       }
 
       // 4. 计算成分VaR

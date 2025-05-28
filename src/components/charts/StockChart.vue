@@ -142,6 +142,19 @@ const renderCandlestickChart = (data: StockData) => {
   // 计算技术指标
   const sma5 = technicalIndicatorService.calculateSMA(data.prices, 5)
   const sma20 = technicalIndicatorService.calculateSMA(data.prices, 20)
+  const ema12 = technicalIndicatorService.calculateEMA(data.prices, 12)
+  const ema50 = technicalIndicatorService.calculateEMA(data.prices, 50)
+  
+  // 计算KDJ+MACD双优化指标
+  const kdjMacd = technicalIndicatorService.calculateKDJMACDOptimized(
+    data.highs || data.prices,
+    data.lows || data.prices,
+    data.closes || data.prices
+  )
+
+  // 检测高低点和绘制趋势线
+  const { highs, lows } = technicalIndicatorService.detectHighLowPoints(data.prices)
+  const { lines } = technicalIndicatorService.drawTrendLines(data.prices, data.dates, highs, lows)
 
   // 准备K线数据
   const candlestickData = []
@@ -185,8 +198,12 @@ const renderCandlestickChart = (data: StockData) => {
       }
     },
     legend: {
-      data: ['K线', 'MA5', 'MA20'],
-      bottom: 10
+      data: ['K线', 'MA5', 'MA20', 'EMA12', 'EMA50', 'KDJ+MACD', '上升趋势', '下降趋势'],
+      bottom: 10,
+      itemGap: 10,
+      textStyle: {
+        color: '#333'
+      }
     },
     grid: {
       left: '3%',
@@ -264,7 +281,91 @@ const renderCandlestickChart = (data: StockData) => {
           color: '#9b59b6'
         },
         symbol: 'none'
-      }
+      },
+      {
+        name: 'EMA12',
+        type: 'line',
+        data: ema12,
+        smooth: true,
+        lineStyle: {
+          width: 2,
+          color: '#FFD700'
+        },
+        symbol: 'none'
+      },
+      {
+        name: 'EMA50',
+        type: 'line',
+        data: ema50,
+        smooth: true,
+        lineStyle: {
+          width: 2,
+          color: '#1E90FF'
+        },
+        symbol: 'none'
+      },
+      // KDJ+MACD指标
+      {
+        name: 'KDJ+MACD',
+        type: 'line',
+        data: kdjMacd.optimizedSignal,
+        smooth: true,
+        lineStyle: {
+          width: 2,
+          color: '#FF00FF'
+        },
+        symbol: 'none',
+        markLine: {
+          silent: true,
+          data: [
+            {
+              yAxis: 0,
+              lineStyle: {
+                color: '#888',
+                type: 'dashed'
+              }
+            }
+          ]
+        }
+      },
+      // 趋势线
+      ...lines.map((line, idx) => ({
+        name: line.color === '#00FF00' ? '上升趋势' : '下降趋势',
+        type: 'line',
+        data: [
+          { value: line.from.value, coord: [line.from.date, line.from.value] },
+          { value: line.to.value, coord: [line.to.date, line.to.value] }
+        ],
+        symbol: ['none', 'none'],
+        lineStyle: {
+          color: line.color,
+          width: 2,
+          type: 'dashed'
+        },
+        markLine: {
+          silent: true,
+          symbol: 'none',
+          lineStyle: {
+            color: line.color,
+            width: 2,
+            type: 'dashed'
+          },
+          data: [
+            {
+              coord: [line.from.date, line.from.value],
+              label: {
+                show: false
+              }
+            },
+            {
+              coord: [line.to.date, line.to.value],
+              label: {
+                show: false
+              }
+            }
+          ]
+        }
+      }))
     ]
   }
 

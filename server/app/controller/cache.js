@@ -312,29 +312,29 @@ class CacheController extends Controller {
         let size = 0;
 
         switch (type) {
-          case 'string':
-            value = await redis.get(key);
-            size = Buffer.byteLength(value, 'utf8');
-            break;
-          case 'hash':
-            value = await redis.hgetall(key);
-            size = Buffer.byteLength(JSON.stringify(value), 'utf8');
-            break;
-          case 'list':
-            const listLength = await redis.llen(key);
-            value = await redis.lrange(key, 0, listLength - 1);
-            size = Buffer.byteLength(JSON.stringify(value), 'utf8');
-            break;
-          case 'set':
-            value = await redis.smembers(key);
-            size = Buffer.byteLength(JSON.stringify(value), 'utf8');
-            break;
-          case 'zset':
-            value = await redis.zrange(key, 0, -1, 'WITHSCORES');
-            size = Buffer.byteLength(JSON.stringify(value), 'utf8');
-            break;
-          default:
-            value = null;
+        case 'string':
+          value = await redis.get(key);
+          size = Buffer.byteLength(value, 'utf8');
+          break;
+        case 'hash':
+          value = await redis.hgetall(key);
+          size = Buffer.byteLength(JSON.stringify(value), 'utf8');
+          break;
+        case 'list':
+          const listLength = await redis.llen(key);
+          value = await redis.lrange(key, 0, listLength - 1);
+          size = Buffer.byteLength(JSON.stringify(value), 'utf8');
+          break;
+        case 'set':
+          value = await redis.smembers(key);
+          size = Buffer.byteLength(JSON.stringify(value), 'utf8');
+          break;
+        case 'zset':
+          value = await redis.zrange(key, 0, -1, 'WITHSCORES');
+          size = Buffer.byteLength(JSON.stringify(value), 'utf8');
+          break;
+        default:
+          value = null;
         }
 
         // 获取过期时间（TTL）

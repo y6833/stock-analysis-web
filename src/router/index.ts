@@ -105,6 +105,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/turtle-trading',
+      name: 'turtle-trading',
+      component: () => import('../views/TurtleTradingView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/portfolio',
       name: 'portfolio',
       component: () => import('../views/PortfolioView.vue'),

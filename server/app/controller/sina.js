@@ -71,7 +71,7 @@ class SinaController extends Controller {
 
         // 将二进制响应转换为GBK编码的字符串
         const data = iconv.decode(response.data, 'GBK');
-        const match = data.match(/var hq_str_[^=]+=("[^"]+")/)
+        const match = data.match(/var hq_str_[^=]+=("[^"]+")/);
 
         if (!match) {
           ctx.status = 500;
@@ -252,7 +252,7 @@ class SinaController extends Controller {
 
       // 解析行情数据
       const data = iconv.decode(quoteResponse.data, 'GBK');
-      const match = data.match(/var hq_str_[^=]+=("[^"]+")/)
+      const match = data.match(/var hq_str_[^=]+=("[^"]+")/);
 
       if (!match) {
         ctx.status = 500;

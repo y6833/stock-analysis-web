@@ -234,7 +234,7 @@ class TushareController extends Controller {
             ctx.service.cacheStats.recordHit(data_source, api_name);
 
             // 添加明确的数据来源信息
-            const dataSourceName = "Redis缓存";
+            const dataSourceName = 'Redis缓存';
             const cacheTime = parsedData.cache_time || new Date().toISOString();
             const timeDiff = Math.round((new Date() - new Date(cacheTime)) / 1000 / 60); // 分钟
 

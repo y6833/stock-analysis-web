@@ -3,7 +3,36 @@
 const Service = require('egg').Service;
 const axios = require('axios');
 
+/**
+ * 股票服务 - 订单簿相关扩展
+ * 1. 获取股票订单簿深度数据
+ * 2. 增强行情数据包含订单簿信息
+ */
+
 class StockService extends Service {
+  /**
+   * 获取股票订单簿深度
+   * @param {string} stockCode - 股票代码
+   * @param {number} depth - 深度级别(默认5档)
+   */
+  async getStockOrderBook(stockCode, depth = 5) {
+    const { ctx } = this;
+    try {
+      // 获取基础行情数据
+      const quote = await this.getStockQuote(stockCode);
+      
+      // 获取订单簿数据
+      const orderBook = await ctx.service.orderBook.getDepth(depth);
+      
+      return {
+        ...quote,
+        orderBook
+      };
+    } catch (err) {
+      ctx.logger.error(`获取股票订单簿失败: ${stockCode}`, err);
+      throw err;
+    }
+  }
   // 通用的缓存包装器，用于包装任何 API 调用并自动缓存结果
   async withCache(cacheKey, ttl, fetchDataFn) {
     const { app, ctx } = this;
@@ -30,7 +59,7 @@ class StockService extends Service {
               data_source_message: '数据来自Redis缓存'
             };
           } catch (parseErr) {
-            ctx.logger.warn(`解析 Redis 缓存数据失败:`, parseErr);
+            ctx.logger.warn('解析 Redis 缓存数据失败:', parseErr);
             // 继续尝试从 API 获取
           }
         }
@@ -60,7 +89,7 @@ class StockService extends Service {
       // 记录缓存未命中
       await ctx.service.cache.recordCacheMiss(dataSource);
     } catch (cacheErr) {
-      ctx.logger.warn(`获取缓存数据失败:`, cacheErr);
+      ctx.logger.warn('获取缓存数据失败:', cacheErr);
       // 继续尝试从 API 获取
     }
 
@@ -90,7 +119,7 @@ class StockService extends Service {
         }
         global.stockCache[cacheKey] = dataToCache;
       } catch (cacheErr) {
-        ctx.logger.warn(`保存数据到缓存失败:`, cacheErr);
+        ctx.logger.warn('保存数据到缓存失败:', cacheErr);
         // 继续返回数据，不影响主流程
       }
 
@@ -133,7 +162,7 @@ class StockService extends Service {
         // 如果没有缓存数据，记录缓存未命中
         await ctx.service.cache.recordCacheMiss(dataSource);
       } catch (cacheErr) {
-        ctx.logger.warn(`获取缓存数据失败:`, cacheErr);
+        ctx.logger.warn('获取缓存数据失败:', cacheErr);
 
         // 记录缓存未命中
         await ctx.service.cache.recordCacheMiss(dataSource);
@@ -254,13 +283,13 @@ class StockService extends Service {
               data_source_message: '数据来自Redis缓存'
             };
           } catch (parseErr) {
-            ctx.logger.warn(`解析 Redis 缓存数据失败:`, parseErr);
+            ctx.logger.warn('解析 Redis 缓存数据失败:', parseErr);
             // Redis 数据解析失败，继续尝试内存缓存
             redisError = true;
           }
         }
       } catch (redisErr) {
-        ctx.logger.warn(`Redis 获取失败:`, redisErr);
+        ctx.logger.warn('Redis 获取失败:', redisErr);
         redisError = true;
         // Redis 出错，继续尝试内存缓存
       }
@@ -282,7 +311,7 @@ class StockService extends Service {
           };
         }
       } catch (memErr) {
-        ctx.logger.warn(`内存缓存获取失败:`, memErr);
+        ctx.logger.warn('内存缓存获取失败:', memErr);
       }
     }
 
@@ -365,7 +394,7 @@ class StockService extends Service {
         };
         ctx.logger.info(`股票 ${stockCode} 行情数据已保存到内存缓存（Redis 失败）`);
       } catch (e) {
-        ctx.logger.error(`保存到内存缓存也失败:`, e);
+        ctx.logger.error('保存到内存缓存也失败:', e);
       }
     }
   }
@@ -956,20 +985,43 @@ class StockService extends Service {
           const hotStocks = response.data.data.items
             .filter(item => item[9] > 0) // 过滤掉成交量为0的股票
             .sort((a, b) => b[9] - a[9]) // 按成交量降序排序
-            .slice(0, limit)
-            .map(item => ({
-              symbol: item[0],
-              name: '', // 需要单独获取股票名称
-              volume: item[9],
-              amount: item[10],
-              price: item[5],
-              change: item[8],
-              data_source: 'external_api',
-              data_source_message: '数据来自Tushare API (daily)'
-            }));
+            .slice(0, limit);
+
+          // 获取每只股票的订单簿数据
+          const stocksWithOrderBook = await Promise.all(
+            hotStocks.map(async item => {
+              try {
+                const orderBook = await ctx.service.orderBook.getDepth(3);
+                return {
+                  symbol: item[0],
+                  name: '', // 需要单独获取股票名称
+                  volume: item[9],
+                  amount: item[10],
+                  price: item[5],
+                  change: item[8],
+                  orderBook, // 添加订单簿数据
+                  data_source: 'external_api',
+                  data_source_message: '数据来自Tushare API (daily)'
+                };
+              } catch (err) {
+                ctx.logger.warn(`获取股票 ${item[0]} 订单簿失败:`, err);
+                return {
+                  symbol: item[0],
+                  name: '',
+                  volume: item[9],
+                  amount: item[10],
+                  price: item[5],
+                  change: item[8],
+                  orderBook: null, // 订单簿获取失败
+                  data_source: 'external_api',
+                  data_source_message: '数据来自Tushare API (daily)'
+                };
+              }
+            })
+          );
 
           return {
-            data: hotStocks,
+            data: stocksWithOrderBook,
             data_source: 'external_api',
             data_source_message: '数据来自Tushare API (daily)'
           };

@@ -175,49 +175,49 @@ class AKShareController extends Controller {
     let stockName = '';
 
     switch (symbol) {
-      case '000001.SH':
-        basePrice = 3000;
-        stockName = '上证指数';
-        break;
-      case '399001.SZ':
-        basePrice = 10000;
-        stockName = '深证成指';
-        break;
-      case '600519.SH':
-        basePrice = 1800;
-        stockName = '贵州茅台';
-        break;
-      case '601318.SH':
-        basePrice = 60;
-        stockName = '中国平安';
-        break;
-      case '600036.SH':
-        basePrice = 40;
-        stockName = '招商银行';
-        break;
-      case '000858.SZ':
-        basePrice = 150;
-        stockName = '五粮液';
-        break;
-      case '000333.SZ':
-        basePrice = 80;
-        stockName = '美的集团';
-        break;
-      case '601166.SH':
-        basePrice = 20;
-        stockName = '兴业银行';
-        break;
-      case '002415.SZ':
-        basePrice = 35;
-        stockName = '海康威视';
-        break;
-      case '600276.SH':
-        basePrice = 50;
-        stockName = '恒瑞医药';
-        break;
-      default:
-        basePrice = 100;
-        stockName = '未知股票';
+    case '000001.SH':
+      basePrice = 3000;
+      stockName = '上证指数';
+      break;
+    case '399001.SZ':
+      basePrice = 10000;
+      stockName = '深证成指';
+      break;
+    case '600519.SH':
+      basePrice = 1800;
+      stockName = '贵州茅台';
+      break;
+    case '601318.SH':
+      basePrice = 60;
+      stockName = '中国平安';
+      break;
+    case '600036.SH':
+      basePrice = 40;
+      stockName = '招商银行';
+      break;
+    case '000858.SZ':
+      basePrice = 150;
+      stockName = '五粮液';
+      break;
+    case '000333.SZ':
+      basePrice = 80;
+      stockName = '美的集团';
+      break;
+    case '601166.SH':
+      basePrice = 20;
+      stockName = '兴业银行';
+      break;
+    case '002415.SZ':
+      basePrice = 35;
+      stockName = '海康威视';
+      break;
+    case '600276.SH':
+      basePrice = 50;
+      stockName = '恒瑞医药';
+      break;
+    default:
+      basePrice = 100;
+      stockName = '未知股票';
     }
 
     // 生成当前价格（基于随机波动）
@@ -304,38 +304,38 @@ class AKShareController extends Controller {
     let basePrice = 0;
 
     switch (symbol) {
-      case '000001.SH':
-        basePrice = 3000;
-        break;
-      case '399001.SZ':
-        basePrice = 10000;
-        break;
-      case '600519.SH':
-        basePrice = 1800;
-        break;
-      case '601318.SH':
-        basePrice = 60;
-        break;
-      case '600036.SH':
-        basePrice = 40;
-        break;
-      case '000858.SZ':
-        basePrice = 150;
-        break;
-      case '000333.SZ':
-        basePrice = 80;
-        break;
-      case '601166.SH':
-        basePrice = 20;
-        break;
-      case '002415.SZ':
-        basePrice = 35;
-        break;
-      case '600276.SH':
-        basePrice = 50;
-        break;
-      default:
-        basePrice = 100;
+    case '000001.SH':
+      basePrice = 3000;
+      break;
+    case '399001.SZ':
+      basePrice = 10000;
+      break;
+    case '600519.SH':
+      basePrice = 1800;
+      break;
+    case '601318.SH':
+      basePrice = 60;
+      break;
+    case '600036.SH':
+      basePrice = 40;
+      break;
+    case '000858.SZ':
+      basePrice = 150;
+      break;
+    case '000333.SZ':
+      basePrice = 80;
+      break;
+    case '601166.SH':
+      basePrice = 20;
+      break;
+    case '002415.SZ':
+      basePrice = 35;
+      break;
+    case '600276.SH':
+      basePrice = 50;
+      break;
+    default:
+      basePrice = 100;
     }
 
     // 生成历史数据

@@ -236,26 +236,26 @@ class AlertService extends Service {
 
         // 根据条件判断是否触发提醒
         switch (alert.condition) {
-          case 'price_above':
-            triggered = currentPrice > alert.value;
-            triggeredValue = currentPrice;
-            break;
-          case 'price_below':
-            triggered = currentPrice < alert.value;
-            triggeredValue = currentPrice;
-            break;
-          case 'volume_above':
-            triggered = currentVolume > alert.value;
-            triggeredValue = currentVolume;
-            break;
-          case 'change_above':
-            triggered = currentChange > alert.value;
-            triggeredValue = currentChange;
-            break;
-          case 'change_below':
-            triggered = -currentChange > alert.value;
-            triggeredValue = -currentChange;
-            break;
+        case 'price_above':
+          triggered = currentPrice > alert.value;
+          triggeredValue = currentPrice;
+          break;
+        case 'price_below':
+          triggered = currentPrice < alert.value;
+          triggeredValue = currentPrice;
+          break;
+        case 'volume_above':
+          triggered = currentVolume > alert.value;
+          triggeredValue = currentVolume;
+          break;
+        case 'change_above':
+          triggered = currentChange > alert.value;
+          triggeredValue = currentChange;
+          break;
+        case 'change_below':
+          triggered = -currentChange > alert.value;
+          triggeredValue = -currentChange;
+          break;
         }
 
         if (triggered) {
@@ -426,26 +426,26 @@ class AlertService extends Service {
 
         // 根据条件判断是否触发提醒
         switch (alert.condition) {
-          case 'price_above':
-            triggered = currentPrice > alert.value;
-            triggeredValue = currentPrice;
-            break;
-          case 'price_below':
-            triggered = currentPrice < alert.value;
-            triggeredValue = currentPrice;
-            break;
-          case 'volume_above':
-            triggered = currentVolume > alert.value;
-            triggeredValue = currentVolume;
-            break;
-          case 'change_above':
-            triggered = currentChange > alert.value;
-            triggeredValue = currentChange;
-            break;
-          case 'change_below':
-            triggered = -currentChange > alert.value;
-            triggeredValue = -currentChange;
-            break;
+        case 'price_above':
+          triggered = currentPrice > alert.value;
+          triggeredValue = currentPrice;
+          break;
+        case 'price_below':
+          triggered = currentPrice < alert.value;
+          triggeredValue = currentPrice;
+          break;
+        case 'volume_above':
+          triggered = currentVolume > alert.value;
+          triggeredValue = currentVolume;
+          break;
+        case 'change_above':
+          triggered = currentChange > alert.value;
+          triggeredValue = currentChange;
+          break;
+        case 'change_below':
+          triggered = -currentChange > alert.value;
+          triggeredValue = -currentChange;
+          break;
         }
 
         if (triggered) {

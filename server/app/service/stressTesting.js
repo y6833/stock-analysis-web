@@ -33,17 +33,17 @@ class StressTestingService extends Service {
       // 3. 根据场景类型执行不同的压力测试
       let testResult;
       switch (scenario.scenarioType) {
-        case 'historical':
-          testResult = await this.runHistoricalStressTest(portfolioData, scenario);
-          break;
-        case 'hypothetical':
-          testResult = await this.runHypotheticalStressTest(portfolioData, scenario);
-          break;
-        case 'monte_carlo':
-          testResult = await this.runMonteCarloStressTest(portfolioData, scenario);
-          break;
-        default:
-          throw new Error(`不支持的压力测试类型: ${scenario.scenarioType}`);
+      case 'historical':
+        testResult = await this.runHistoricalStressTest(portfolioData, scenario);
+        break;
+      case 'hypothetical':
+        testResult = await this.runHypotheticalStressTest(portfolioData, scenario);
+        break;
+      case 'monte_carlo':
+        testResult = await this.runMonteCarloStressTest(portfolioData, scenario);
+        break;
+      default:
+        throw new Error(`不支持的压力测试类型: ${scenario.scenarioType}`);
       }
 
       // 4. 计算敏感性分析

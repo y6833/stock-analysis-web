@@ -116,4 +116,62 @@ describe('测试 stock service', () => {
     assert(result.code === '000001');
     assert(result.name === '平安银行');
   });
+
+  it('应该获取带订单簿的股票数据', async () => {
+    // 获取 ctx
+    const ctx = app.mockContext();
+    
+    // 模拟股票行情数据
+    app.mockService('stock', 'getStockQuote', () => {
+      return {
+        code: '000001',
+        name: '平安银行',
+        price: 10.5
+      };
+    });
+
+    // 模拟订单簿数据
+    app.mockService('orderBook', 'getDepth', () => {
+      return {
+        bids: [[10.4, 100], [10.3, 200]],
+        asks: [[10.6, 150], [10.7, 300]]
+      };
+    });
+
+    // 调用服务
+    const result = await ctx.service.stock.getStockOrderBook('000001');
+
+    // 验证结果
+    assert(result.code === '000001');
+    assert(result.price === 10.5);
+    assert.deepEqual(result.orderBook.bids, [[10.4, 100], [10.3, 200]]);
+    assert.deepEqual(result.orderBook.asks, [[10.6, 150], [10.7, 300]]);
+  });
+
+  it('应该处理订单簿服务错误', async () => {
+    // 获取 ctx
+    const ctx = app.mockContext();
+    
+    // 模拟股票行情数据
+    app.mockService('stock', 'getStockQuote', () => {
+      return {
+        code: '000001',
+        name: '平安银行',
+        price: 10.5
+      };
+    });
+
+    // 模拟订单簿服务抛出错误
+    app.mockService('orderBook', 'getDepth', () => {
+      throw new Error('订单簿服务不可用');
+    });
+
+    try {
+      await ctx.service.stock.getStockOrderBook('000001');
+      assert(false, '应该抛出错误');
+    } catch (err) {
+      assert(err.message.includes('获取股票订单簿失败'));
+      assert(err.message.includes('000001'));
+    }
+  });
 });

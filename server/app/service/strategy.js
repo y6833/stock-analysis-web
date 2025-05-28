@@ -59,7 +59,7 @@ class StrategyService extends Service {
       return strategyConfig;
       
     } catch (error) {
-      ctx.logger.error(`创建策略失败:`, error);
+      ctx.logger.error('创建策略失败:', error);
       throw error;
     }
   }
@@ -169,20 +169,20 @@ class StrategyService extends Service {
       let executionResult;
       
       switch (strategy.type) {
-        case 'factor':
-          executionResult = await this.executeFactorStrategy(strategy, marketData, featureMatrix);
-          break;
-        case 'ml':
-          executionResult = await this.executeMLStrategy(strategy, marketData, featureMatrix);
-          break;
-        case 'timing':
-          executionResult = await this.executeTimingStrategy(strategy, marketData, featureMatrix);
-          break;
-        case 'portfolio':
-          executionResult = await this.executePortfolioStrategy(strategy, marketData, featureMatrix);
-          break;
-        default:
-          throw new Error(`不支持的策略类型: ${strategy.type}`);
+      case 'factor':
+        executionResult = await this.executeFactorStrategy(strategy, marketData, featureMatrix);
+        break;
+      case 'ml':
+        executionResult = await this.executeMLStrategy(strategy, marketData, featureMatrix);
+        break;
+      case 'timing':
+        executionResult = await this.executeTimingStrategy(strategy, marketData, featureMatrix);
+        break;
+      case 'portfolio':
+        executionResult = await this.executePortfolioStrategy(strategy, marketData, featureMatrix);
+        break;
+      default:
+        throw new Error(`不支持的策略类型: ${strategy.type}`);
       }
       
       // 保存执行结果
