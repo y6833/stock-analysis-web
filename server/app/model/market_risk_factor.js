@@ -74,7 +74,10 @@ module.exports = app => {
     underscored: true,
   });
 
-  MarketRiskFactor.associate = function() {
+  MarketRiskFactor.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 这个模型主要用于存储市场风险因子数据
     // 可以根据需要添加与其他模型的关联
   };

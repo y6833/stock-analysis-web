@@ -80,7 +80,10 @@ module.exports = app => {
   });
 
   // 使用 associate 方法建立关联关系
-  CoinRechargeRequest.associate = function () {
+  CoinRechargeRequest.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 防止重复关联
     if (CoinRechargeRequest.associations && Object.keys(CoinRechargeRequest.associations).length > 0) {
       return;
@@ -89,13 +92,13 @@ module.exports = app => {
     // 建立 CoinRechargeRequest 与 User 的关联关系
     // 申请人关联
     CoinRechargeRequest.belongsTo(app.model.User, {
-      as: 'applicantUser',  // 保持这个别名不变，因为前端代码中使用了这个别名
+      as: `${prefix}_${prefix}_applicantUser`,  // 保持这个别名不变，因为前端代码中使用了这个别名
       foreignKey: 'userId',
     });
 
     // 处理人关联
     CoinRechargeRequest.belongsTo(app.model.User, {
-      as: 'adminUser',  // 保持这个别名不变，因为前端代码中使用了这个别名
+      as: `${prefix}_${prefix}_adminUser`,  // 保持这个别名不变，因为前端代码中使用了这个别名
       foreignKey: 'processedBy',
     });
   };

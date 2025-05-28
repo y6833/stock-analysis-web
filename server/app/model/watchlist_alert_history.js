@@ -44,7 +44,10 @@ module.exports = app => {
     underscored: true,
   });
 
-  WatchlistAlertHistory.associate = function () {
+  WatchlistAlertHistory.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     this.belongsTo(app.model.WatchlistAlert, { foreignKey: 'alertId' });
   };
 

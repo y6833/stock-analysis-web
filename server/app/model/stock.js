@@ -103,7 +103,10 @@ module.exports = app => {
     },
   });
 
-  Stock.associate = function () {
+  Stock.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 防止重复关联
     if (Stock.associations && Object.keys(Stock.associations).length > 0) {
       return;
@@ -113,14 +116,14 @@ module.exports = app => {
     this.hasMany(app.model.PortfolioHolding, {
       foreignKey: 'stockCode',
       sourceKey: 'symbol',
-      as: 'stockHoldings'
+      as: `${prefix}_${prefix}_stockHoldings`
     });
 
     // 交易记录
     this.hasMany(app.model.TradeRecord, {
       foreignKey: 'stockCode',
       sourceKey: 'symbol',
-      as: 'stockTrades'
+      as: `${prefix}_${prefix}_stockTrades`
     });
   };
 

@@ -73,7 +73,10 @@ module.exports = app => {
     underscored: true,
   });
 
-  UserStrategy.associate = function () {
+  UserStrategy.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 使用 this 而不是 app.model.UserStrategy
     this.belongsTo(app.model.User, { foreignKey: 'userId' });
     this.hasMany(app.model.StrategyExecution, { foreignKey: 'strategyId' });

@@ -24,6 +24,7 @@ import ExportJuhe = require('../../../app/service/juhe');
 import ExportLogs = require('../../../app/service/logs');
 import ExportMembership = require('../../../app/service/membership');
 import ExportNotification = require('../../../app/service/notification');
+import ExportOrderBook = require('../../../app/service/orderBook');
 import ExportPage = require('../../../app/service/page');
 import ExportPortfolio = require('../../../app/service/portfolio');
 import ExportProxy = require('../../../app/service/proxy');
@@ -60,6 +61,7 @@ declare module 'egg' {
     logs: AutoInstanceType<typeof ExportLogs>;
     membership: AutoInstanceType<typeof ExportMembership>;
     notification: AutoInstanceType<typeof ExportNotification>;
+    orderBook: AutoInstanceType<typeof ExportOrderBook>;
     page: AutoInstanceType<typeof ExportPage>;
     portfolio: AutoInstanceType<typeof ExportPortfolio>;
     proxy: AutoInstanceType<typeof ExportProxy>;

@@ -52,7 +52,10 @@ module.exports = app => {
     timestamps: false,
   });
 
-  SimulationTransaction.associate = function() {
+  SimulationTransaction.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     app.model.SimulationTransaction.belongsTo(app.model.SimulationAccount, { foreignKey: 'accountId' });
   };
 

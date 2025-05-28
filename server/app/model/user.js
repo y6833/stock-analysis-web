@@ -1,7 +1,7 @@
-'use strict';
+'use strict'
 
-module.exports = app => {
-  const { STRING, INTEGER, DATE, BOOLEAN, TEXT } = app.Sequelize;
+module.exports = (app) => {
+  const { STRING, INTEGER, DATE, BOOLEAN, TEXT } = app.Sequelize
 
   const User = app.model.define('user', {
     id: {
@@ -87,116 +87,147 @@ module.exports = app => {
       type: DATE,
       allowNull: false,
     },
-  });
+  })
 
   User.associate = function () {
+    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || ''
+
     // 使用 this 而不是 app.model.User
-    this.hasOne(app.model.UserPreference, { foreignKey: 'userId' });
+    this.hasOne(app.model.UserPreference, {
+      foreignKey: 'userId',
+      as: `${prefix}_userPreference`,
+    })
 
     // 会员信息
-    this.hasOne(app.model.UserMembership, { foreignKey: 'userId' });
+    this.hasOne(app.model.UserMembership, {
+      foreignKey: 'userId',
+      as: `${prefix}_userMembership`,
+    })
 
     // 关注的股票
-    this.hasMany(app.model.UserWatchlist, { foreignKey: 'userId' });
+    this.hasMany(app.model.UserWatchlist, {
+      foreignKey: 'userId',
+      as: `${prefix}_userWatchlists`,
+    })
 
     // 投资组合
-    this.hasMany(app.model.UserPortfolio, { foreignKey: 'userId' });
-    this.hasMany(app.model.TradeRecord, { foreignKey: 'userId' });
+    this.hasMany(app.model.UserPortfolio, {
+      foreignKey: 'userId',
+      as: `${prefix}_userPortfolios`,
+    })
+
+    this.hasMany(app.model.TradeRecord, {
+      foreignKey: 'userId',
+      as: `${prefix}_tradeRecords`,
+    })
 
     // 自定义看板
-    this.hasMany(app.model.UserDashboard, { foreignKey: 'userId' });
+    this.hasMany(app.model.UserDashboard, {
+      foreignKey: 'userId',
+      as: `${prefix}_userDashboards`,
+    })
 
     // 提醒设置
-    this.hasMany(app.model.UserAlert, { foreignKey: 'userId' });
+    this.hasMany(app.model.UserAlert, {
+      foreignKey: 'userId',
+      as: `${prefix}_userAlerts`,
+    })
 
     // 自定义策略
-    this.hasMany(app.model.UserStrategy, { foreignKey: 'userId' });
+    this.hasMany(app.model.UserStrategy, {
+      foreignKey: 'userId',
+      as: `${prefix}_userStrategies`,
+    })
 
     // 浏览历史
-    this.hasMany(app.model.UserBrowsingHistory, { foreignKey: 'userId' });
+    this.hasMany(app.model.UserBrowsingHistory, {
+      foreignKey: 'userId',
+      as: `${prefix}_userBrowsingHistories`,
+    })
 
-    // 风险监控配置
+    // 风险监控配置 - 确保别名唯一性
     this.hasMany(app.model.RiskMonitoringConfig, {
       foreignKey: 'userId',
-      as: 'riskMonitoringConfigs'
-    });
+      as: `${prefix}_userHasManyRiskMonitoringConfigs`,
+    })
 
     // VaR计算记录
     this.hasMany(app.model.VarCalculation, {
       foreignKey: 'userId',
-      as: 'varCalculations'
-    });
+      as: `${prefix}_userHasManyVarCalculations`,
+    })
 
     // 投资组合收益率记录
     this.hasMany(app.model.PortfolioReturn, {
       foreignKey: 'userId',
-      as: 'portfolioReturns'
-    });
+      as: `${prefix}_userHasManyPortfolioReturns`,
+    })
 
     // 风险预警日志
     this.hasMany(app.model.RiskAlertLog, {
       foreignKey: 'userId',
-      as: 'riskAlertLogs'
-    });
+      as: `${prefix}_userHasManyRiskAlertLogs`,
+    })
 
     // 风险预警规则
     this.hasMany(app.model.RiskAlertRule, {
       foreignKey: 'userId',
-      as: 'riskAlertRules'
-    });
+      as: `${prefix}_userHasManyRiskAlertRules`,
+    })
 
     // 风险监控状态
     this.hasMany(app.model.RiskMonitoringStatus, {
       foreignKey: 'userId',
-      as: 'riskMonitoringStatuses'
-    });
+      as: `${prefix}_userHasManyRiskMonitoringStatuses`,
+    })
 
     // 止损配置
     this.hasMany(app.model.StopLossConfig, {
       foreignKey: 'userId',
-      as: 'stopLossConfigs'
-    });
+      as: `${prefix}_userHasManyStopLossConfigs`,
+    })
 
     // 止损订单
     this.hasMany(app.model.StopLossOrder, {
       foreignKey: 'userId',
-      as: 'stopLossOrders'
-    });
+      as: `${prefix}_userHasManyStopLossOrders`,
+    })
 
     // 止损执行记录
     this.hasMany(app.model.StopLossExecution, {
       foreignKey: 'userId',
-      as: 'stopLossExecutions'
-    });
+      as: `${prefix}_userHasManyStopLossExecutions`,
+    })
 
     // 压力测试结果
     this.hasMany(app.model.StressTestResult, {
       foreignKey: 'userId',
-      as: 'stressTestResults'
-    });
+      as: `${prefix}_userHasManyStressTestResults`,
+    })
 
     // 压力测试场景
     this.hasMany(app.model.StressTestScenario, {
       foreignKey: 'userId',
-      as: 'stressTestScenarios'
-    });
+      as: `${prefix}_userHasManyStressTestScenarios`,
+    })
 
     // 充值请求关联暂时注释，避免循环依赖
     // TODO: 在解决模型加载顺序问题后重新启用
     /*
     // 充值请求 - 用户发起的充值请求
     this.hasMany(app.model.CoinRechargeRequest, {
-      as: 'coinRechargeRequests',  // 修改别名，避免冲突
+      as: `${prefix}_userHasManyCoinRechargeRequests`,
       foreignKey: 'userId'
     });
 
     // 处理的充值请求（管理员）- 管理员处理的充值请求
     this.hasMany(app.model.CoinRechargeRequest, {
-      as: 'processedRechargeRequests',  // 修改别名，避免冲突
+      as: `${prefix}_userHasManyProcessedRechargeRequests`,
       foreignKey: 'processedBy'
     });
     */
-  };
+  }
 
-  return User;
-};
+  return User
+}

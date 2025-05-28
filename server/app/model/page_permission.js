@@ -40,14 +40,17 @@ module.exports = app => {
     },
   });
 
-  PagePermission.associate = function () {
+  PagePermission.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 防止重复关联
     if (PagePermission.associations && Object.keys(PagePermission.associations).length > 0) {
       return;
     }
 
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'permissionPage' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: `${prefix}_${prefix}_permissionPage` });
   };
 
   return PagePermission;

@@ -53,7 +53,10 @@ module.exports = app => {
     underscored: true,
   });
 
-  UserMembership.associate = function() {
+  UserMembership.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 与用户表关联
     this.belongsTo(app.model.User, { foreignKey: 'userId' });
   };

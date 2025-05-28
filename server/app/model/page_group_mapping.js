@@ -33,17 +33,20 @@ module.exports = app => {
     },
   });
 
-  PageGroupMapping.associate = function () {
+  PageGroupMapping.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 防止重复关联
     if (PageGroupMapping.associations && Object.keys(PageGroupMapping.associations).length > 0) {
       return;
     }
 
     // 页面组关联
-    this.belongsTo(app.model.PageGroup, { foreignKey: 'groupId', as: 'group' });
+    this.belongsTo(app.model.PageGroup, { foreignKey: 'groupId', as: `${prefix}_${prefix}_group` });
 
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'mappedPage' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: `${prefix}_${prefix}_mappedPage` });
   };
 
   return PageGroupMapping;

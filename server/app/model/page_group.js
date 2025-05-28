@@ -31,7 +31,10 @@ module.exports = app => {
     },
   });
 
-  PageGroup.associate = function () {
+  PageGroup.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 防止重复关联
     if (PageGroup.associations && Object.keys(PageGroup.associations).length > 0) {
       return;
@@ -42,7 +45,7 @@ module.exports = app => {
       through: app.model.PageGroupMapping,
       foreignKey: 'groupId',
       otherKey: 'pageId',
-      as: 'groupSystemPages',
+      as: `${prefix}_${prefix}_groupSystemPages`,
     });
   };
 

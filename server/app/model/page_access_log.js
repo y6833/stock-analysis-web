@@ -81,17 +81,20 @@ module.exports = app => {
     },
   });
 
-  PageAccessLog.associate = function () {
+  PageAccessLog.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     // 防止重复关联
     if (PageAccessLog.associations && Object.keys(PageAccessLog.associations).length > 0) {
       return;
     }
 
     // 页面关联
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: 'accessedPage' });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'pageId', as: `${prefix}_${prefix}_accessedPage` });
 
     // 用户关联
-    this.belongsTo(app.model.User, { foreignKey: 'userId', as: 'accessUser' });
+    this.belongsTo(app.model.User, { foreignKey: 'userId', as: `${prefix}_${prefix}_accessUser` });
   };
 
   return PageAccessLog;

@@ -36,7 +36,10 @@ module.exports = app => {
     underscored: true,
   });
 
-  SimulationAccount.associate = function() {
+  SimulationAccount.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+
     app.model.SimulationAccount.belongsTo(app.model.User, { foreignKey: 'userId' });
     app.model.SimulationAccount.hasMany(app.model.SimulationPosition, { foreignKey: 'accountId' });
     app.model.SimulationAccount.hasMany(app.model.SimulationTransaction, { foreignKey: 'accountId' });
