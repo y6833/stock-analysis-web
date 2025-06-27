@@ -368,14 +368,25 @@ class CacheService extends Service {
    * @param {string} dataSource - 数据源
    */
   async recordCacheHit(dataSource) {
-    const { app } = this;
-    const redis = app.redis;
+    const { app, ctx } = this;
 
     try {
-      // 增加命中计数
-      await redis.incr(`${dataSource}:hit_count`);
+      if (app.redis) {
+        // 增加命中计数
+        await app.redis.incr(`${dataSource}:hit_count`);
+      } else {
+        // Redis不可用时，使用内存统计
+        if (!global.cacheStats) {
+          global.cacheStats = {};
+        }
+        if (!global.cacheStats[dataSource]) {
+          global.cacheStats[dataSource] = { hits: 0, misses: 0 };
+        }
+        global.cacheStats[dataSource].hits++;
+        ctx.logger.debug(`内存缓存统计 - ${dataSource} 命中: ${global.cacheStats[dataSource].hits}`);
+      }
     } catch (error) {
-      this.ctx.logger.error('记录缓存命中失败:', error);
+      ctx.logger.warn('记录缓存命中失败:', error);
     }
   }
 
@@ -384,14 +395,25 @@ class CacheService extends Service {
    * @param {string} dataSource - 数据源
    */
   async recordCacheMiss(dataSource) {
-    const { app } = this;
-    const redis = app.redis;
+    const { app, ctx } = this;
 
     try {
-      // 增加未命中计数
-      await redis.incr(`${dataSource}:miss_count`);
+      if (app.redis) {
+        // 增加未命中计数
+        await app.redis.incr(`${dataSource}:miss_count`);
+      } else {
+        // Redis不可用时，使用内存统计
+        if (!global.cacheStats) {
+          global.cacheStats = {};
+        }
+        if (!global.cacheStats[dataSource]) {
+          global.cacheStats[dataSource] = { hits: 0, misses: 0 };
+        }
+        global.cacheStats[dataSource].misses++;
+        ctx.logger.debug(`内存缓存统计 - ${dataSource} 未命中: ${global.cacheStats[dataSource].misses}`);
+      }
     } catch (error) {
-      this.ctx.logger.error('记录缓存未命中失败:', error);
+      ctx.logger.warn('记录缓存未命中失败:', error);
     }
   }
 

@@ -86,13 +86,13 @@ VITE_ALPHA_VANTAGE_BASE_URL=https://www.alphavantage.co
 
 # 聚合数据配置
 VITE_JUHE_API_KEY=4191aa94e0f3ba88c66b827fbbe56624
-VITE_JUHE_BASE_URL=http://apis.juhe.cn
+VITE_JUHE_BASE_URL=http://web.juhe.cn/finance
 
 # 后端配置（与前端保持一致）
 ALPHA_VANTAGE_API_KEY=f6235795d0b5310a44d87a6a41cd9dfc-c-app
 ALPHA_VANTAGE_BASE_URL=https://www.alphavantage.co
 JUHE_API_KEY=4191aa94e0f3ba88c66b827fbbe56624
-JUHE_BASE_URL=http://apis.juhe.cn
+JUHE_BASE_URL=http://web.juhe.cn/finance
 
 # 通用API配置
 VITE_API_REQUEST_TIMEOUT=10000

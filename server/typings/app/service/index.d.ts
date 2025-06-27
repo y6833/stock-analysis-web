@@ -31,6 +31,7 @@ import ExportProxy = require('../../../app/service/proxy');
 import ExportRiskAlert = require('../../../app/service/riskAlert');
 import ExportSimulation = require('../../../app/service/simulation');
 import ExportSina = require('../../../app/service/sina');
+import ExportSmartRecommendation = require('../../../app/service/smartRecommendation');
 import ExportStock = require('../../../app/service/stock');
 import ExportStopLossManager = require('../../../app/service/stopLossManager');
 import ExportStrategy = require('../../../app/service/strategy');
@@ -68,6 +69,7 @@ declare module 'egg' {
     riskAlert: AutoInstanceType<typeof ExportRiskAlert>;
     simulation: AutoInstanceType<typeof ExportSimulation>;
     sina: AutoInstanceType<typeof ExportSina>;
+    smartRecommendation: AutoInstanceType<typeof ExportSmartRecommendation>;
     stock: AutoInstanceType<typeof ExportStock>;
     stopLossManager: AutoInstanceType<typeof ExportStopLossManager>;
     strategy: AutoInstanceType<typeof ExportStrategy>;

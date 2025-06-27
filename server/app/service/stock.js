@@ -20,10 +20,10 @@ class StockService extends Service {
     try {
       // 获取基础行情数据
       const quote = await this.getStockQuote(stockCode);
-      
+
       // 获取订单簿数据
       const orderBook = await ctx.service.orderBook.getDepth(depth);
-      
+
       return {
         ...quote,
         orderBook
@@ -1237,6 +1237,162 @@ class StockService extends Service {
         };
       }
     });
+  }
+
+  // 获取涨停股票
+  async getLimitUpStocks(limit = 50) {
+    const { ctx } = this;
+    const cacheKey = `tushare:limit_up_stocks:${this.getDateString(0)}`;
+
+    return this.withCache(cacheKey, 1800, async () => { // 30分钟过期
+      try {
+        ctx.logger.info('获取涨停股票数据...');
+
+        // 这里应该调用实际的涨停股票API
+        // 由于API复杂性，返回模拟数据
+        const mockData = this.generateMockLimitUpStocks(limit);
+
+        return {
+          data: mockData,
+          data_source: 'mock_api',
+          data_source_message: '模拟涨停股票数据'
+        };
+      } catch (error) {
+        ctx.logger.error('获取涨停股票失败:', error);
+        return {
+          data: [],
+          data_source: 'error',
+          data_source_message: '获取涨停股票数据失败'
+        };
+      }
+    });
+  }
+
+  // 获取跌停股票
+  async getLimitDownStocks(limit = 50) {
+    const { ctx } = this;
+    const cacheKey = `tushare:limit_down_stocks:${this.getDateString(0)}`;
+
+    return this.withCache(cacheKey, 1800, async () => { // 30分钟过期
+      try {
+        ctx.logger.info('获取跌停股票数据...');
+
+        // 这里应该调用实际的跌停股票API
+        // 由于API复杂性，返回模拟数据
+        const mockData = this.generateMockLimitDownStocks(limit);
+
+        return {
+          data: mockData,
+          data_source: 'mock_api',
+          data_source_message: '模拟跌停股票数据'
+        };
+      } catch (error) {
+        ctx.logger.error('获取跌停股票失败:', error);
+        return {
+          data: [],
+          data_source: 'error',
+          data_source_message: '获取跌停股票数据失败'
+        };
+      }
+    });
+  }
+
+  // 获取资金流向数据
+  async getMoneyFlow(limit = 100) {
+    const { ctx } = this;
+    const cacheKey = `tushare:money_flow:${this.getDateString(0)}`;
+
+    return this.withCache(cacheKey, 1800, async () => { // 30分钟过期
+      try {
+        ctx.logger.info('获取资金流向数据...');
+
+        // 这里应该调用实际的资金流向API
+        // 由于API复杂性，返回模拟数据
+        const mockData = this.generateMockMoneyFlow(limit);
+
+        return {
+          data: mockData,
+          data_source: 'mock_api',
+          data_source_message: '模拟资金流向数据'
+        };
+      } catch (error) {
+        ctx.logger.error('获取资金流向数据失败:', error);
+        return {
+          data: [],
+          data_source: 'error',
+          data_source_message: '获取资金流向数据失败'
+        };
+      }
+    });
+  }
+
+  // 生成模拟涨停股票数据
+  generateMockLimitUpStocks(limit) {
+    const stocks = [];
+    const stockCodes = [
+      '000001.SZ', '000002.SZ', '000858.SZ', '002415.SZ', '002594.SZ',
+      '600000.SH', '600036.SH', '600519.SH', '600887.SH', '601318.SH'
+    ];
+
+    for (let i = 0; i < Math.min(limit, stockCodes.length); i++) {
+      stocks.push({
+        ts_code: stockCodes[i],
+        name: `股票${i + 1}`,
+        close: (Math.random() * 50 + 10).toFixed(2),
+        pct_chg: (9.5 + Math.random() * 0.5).toFixed(2), // 接近涨停
+        amount: (Math.random() * 1000000000).toFixed(0),
+        vol: (Math.random() * 100000000).toFixed(0),
+        turnover_rate: (Math.random() * 10).toFixed(2)
+      });
+    }
+
+    return stocks;
+  }
+
+  // 生成模拟跌停股票数据
+  generateMockLimitDownStocks(limit) {
+    const stocks = [];
+    const stockCodes = [
+      '000003.SZ', '000004.SZ', '000859.SZ', '002416.SZ', '002595.SZ',
+      '600001.SH', '600037.SH', '600520.SH', '600888.SH', '601319.SH'
+    ];
+
+    for (let i = 0; i < Math.min(limit, stockCodes.length); i++) {
+      stocks.push({
+        ts_code: stockCodes[i],
+        name: `股票${i + 1}`,
+        close: (Math.random() * 50 + 10).toFixed(2),
+        pct_chg: (-9.5 - Math.random() * 0.5).toFixed(2), // 接近跌停
+        amount: (Math.random() * 1000000000).toFixed(0),
+        vol: (Math.random() * 100000000).toFixed(0),
+        turnover_rate: (Math.random() * 10).toFixed(2)
+      });
+    }
+
+    return stocks;
+  }
+
+  // 生成模拟资金流向数据
+  generateMockMoneyFlow(limit) {
+    const flows = [];
+    const stockCodes = [
+      '000001.SZ', '000002.SZ', '000858.SZ', '002415.SZ', '002594.SZ',
+      '600000.SH', '600036.SH', '600519.SH', '600887.SH', '601318.SH'
+    ];
+
+    for (let i = 0; i < Math.min(limit, stockCodes.length); i++) {
+      const netInflow = (Math.random() - 0.5) * 1000000000; // -500M到500M
+      flows.push({
+        ts_code: stockCodes[i],
+        name: `股票${i + 1}`,
+        net_inflow: netInflow.toFixed(0),
+        main_net_inflow: (netInflow * 0.6).toFixed(0),
+        retail_net_inflow: (netInflow * 0.4).toFixed(0),
+        net_inflow_rate: ((netInflow / 10000000000) * 100).toFixed(2) // 转换为百分比
+      });
+    }
+
+    return flows;
   }
 }
 

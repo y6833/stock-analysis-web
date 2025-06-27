@@ -50,6 +50,27 @@
           <el-option label="按数据量排序" value="dataVolume"></el-option>
         </el-select>
       </div>
+      <div class="test-controls">
+        <el-button
+          type="primary"
+          size="default"
+          :loading="testingAllSources"
+          @click="testAllDataSources"
+          :disabled="testingSource !== null"
+        >
+          <el-icon><Connection /></el-icon>
+          {{ testingAllSources ? '测试中...' : '一键测试所有数据源' }}
+        </el-button>
+        <el-button
+          v-if="lastTestResults.length > 0"
+          type="info"
+          size="default"
+          @click="showTestResultsDialog = true"
+        >
+          <el-icon><Document /></el-icon>
+          查看测试结果
+        </el-button>
+      </div>
     </div>
 
     <div class="source-list">
@@ -146,6 +167,168 @@
     <!-- 数据源状态监控组件 -->
     <el-divider content-position="center">数据源状态监控</el-divider>
     <DataSourceStatus :current-source="currentSource" @switch-source="changeDataSource" />
+
+    <!-- 测试结果对话框 -->
+    <el-dialog
+      v-model="showTestResultsDialog"
+      title="数据源测试结果"
+      width="800px"
+      :close-on-click-modal="false"
+    >
+      <div class="test-results-container">
+        <!-- 测试摘要 -->
+        <div class="test-summary">
+          <div class="summary-stats">
+            <div class="stat-item success">
+              <div class="stat-number">{{ successfulTests.length }}</div>
+              <div class="stat-label">连接成功</div>
+            </div>
+            <div class="stat-item failed">
+              <div class="stat-number">{{ failedTests.length }}</div>
+              <div class="stat-label">连接失败</div>
+            </div>
+            <div class="stat-item total">
+              <div class="stat-number">{{ lastTestResults.length }}</div>
+              <div class="stat-label">总计测试</div>
+            </div>
+            <div class="stat-item rate">
+              <div class="stat-number">{{ successRate }}%</div>
+              <div class="stat-label">成功率</div>
+            </div>
+          </div>
+          <div class="test-time">
+            <span>测试时间: {{ lastTestTime }}</span>
+            <span>总耗时: {{ totalTestDuration }}ms</span>
+          </div>
+        </div>
+
+        <!-- 测试详情 -->
+        <div class="test-details">
+          <el-tabs v-model="activeTab" type="border-card">
+            <el-tab-pane label="成功连接" name="success">
+              <div class="test-list">
+                <div
+                  v-for="result in successfulTests"
+                  :key="result.source"
+                  class="test-item success-item"
+                >
+                  <div class="test-info">
+                    <div class="source-name">
+                      <el-icon class="success-icon"><SuccessFilled /></el-icon>
+                      {{ result.sourceName }}
+                    </div>
+                    <div class="test-meta">
+                      <span class="response-time">响应时间: {{ result.responseTime }}ms</span>
+                      <span class="test-timestamp">{{ result.timestamp }}</span>
+                    </div>
+                  </div>
+                  <div class="test-actions">
+                    <el-button
+                      size="small"
+                      type="primary"
+                      @click="switchToSource(result.source)"
+                      :disabled="result.source === currentSource"
+                    >
+                      {{ result.source === currentSource ? '当前使用' : '切换使用' }}
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <el-tab-pane label="连接失败" name="failed">
+              <div class="test-list">
+                <div
+                  v-for="result in failedTests"
+                  :key="result.source"
+                  class="test-item failed-item"
+                >
+                  <div class="test-info">
+                    <div class="source-name">
+                      <el-icon class="failed-icon"><CircleCloseFilled /></el-icon>
+                      {{ result.sourceName }}
+                    </div>
+                    <div class="error-message">{{ result.error }}</div>
+                    <div class="test-meta">
+                      <span class="test-timestamp">{{ result.timestamp }}</span>
+                    </div>
+                  </div>
+                  <div class="test-actions">
+                    <el-button
+                      size="small"
+                      type="warning"
+                      @click="retestSingleSource(result.source)"
+                      :loading="testingSource === result.source"
+                    >
+                      重新测试
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showTestResultsDialog = false">关闭</el-button>
+          <el-button
+            type="primary"
+            @click="testAllDataSources"
+            :loading="testingAllSources"
+          >
+            重新测试所有
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 测试进度对话框 -->
+    <el-dialog
+      v-model="showTestProgressDialog"
+      title="正在测试数据源连接"
+      width="600px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="false"
+    >
+      <div class="test-progress-container">
+        <div class="progress-header">
+          <div class="progress-title">测试进度</div>
+          <div class="progress-stats">{{ completedTests }} / {{ totalTests }}</div>
+        </div>
+
+        <el-progress
+          :percentage="testProgress"
+          :stroke-width="8"
+          :show-text="false"
+          class="main-progress"
+        />
+
+        <div class="current-test">
+          <div v-if="currentTestingSource" class="testing-source">
+            <el-icon class="loading-icon"><Loading /></el-icon>
+            正在测试: {{ getSourceInfo(currentTestingSource).name }}
+          </div>
+        </div>
+
+        <div class="test-log">
+          <div
+            v-for="log in testLogs"
+            :key="log.id"
+            class="log-item"
+            :class="log.type"
+          >
+            <el-icon v-if="log.type === 'success'" class="log-icon"><SuccessFilled /></el-icon>
+            <el-icon v-else-if="log.type === 'error'" class="log-icon"><CircleCloseFilled /></el-icon>
+            <el-icon v-else class="log-icon"><InfoFilled /></el-icon>
+            <span class="log-message">{{ log.message }}</span>
+            <span class="log-time">{{ log.time }}</span>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -153,11 +336,37 @@
 import { ref, onMounted, computed } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
+import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'
 import { ElMessage } from 'element-plus'
+import {
+  Connection,
+  Document,
+  Loading,
+  SuccessFilled,
+  CircleCloseFilled,
+  InfoFilled
+} from '@element-plus/icons-vue'
 import DataSourceComparison from '@/components/settings/DataSourceComparison.vue'
 import DataSourceStatus from '@/components/settings/DataSourceStatus.vue'
 import DataSourceSelector from '@/components/common/DataSourceSelector.vue'
 import { useUserStore } from '@/stores/userStore'
+
+// 测试结果接口定义
+interface TestResult {
+  source: DataSourceType
+  sourceName: string
+  success: boolean
+  responseTime: number
+  error?: string
+  timestamp: string
+}
+
+interface TestLog {
+  id: number
+  type: 'info' | 'success' | 'error'
+  message: string
+  time: string
+}
 
 // 当前数据源
 const currentSource = ref<DataSourceType>('tushare')
@@ -173,6 +382,20 @@ const clearingCache = ref<DataSourceType | null>(null)
 const searchQuery = ref('')
 // 排序方式
 const sortBy = ref('default')
+
+// 一键测试相关状态
+const testingAllSources = ref(false)
+const showTestResultsDialog = ref(false)
+const showTestProgressDialog = ref(false)
+const lastTestResults = ref<TestResult[]>([])
+const lastTestTime = ref('')
+const totalTestDuration = ref(0)
+const currentTestingSource = ref<DataSourceType | null>(null)
+const completedTests = ref(0)
+const totalTests = ref(0)
+const testLogs = ref<TestLog[]>([])
+const activeTab = ref('success')
+let logIdCounter = 0
 
 // 数据源元数据
 const sourceMetadata = ref<
@@ -227,6 +450,25 @@ const currentSourceInfo = computed(() => {
   return getSourceInfo(currentSource.value)
 })
 
+// 测试结果计算属性
+const successfulTests = computed(() => {
+  return lastTestResults.value.filter(result => result.success)
+})
+
+const failedTests = computed(() => {
+  return lastTestResults.value.filter(result => !result.success)
+})
+
+const successRate = computed(() => {
+  if (lastTestResults.value.length === 0) return 0
+  return Math.round((successfulTests.value.length / lastTestResults.value.length) * 100)
+})
+
+const testProgress = computed(() => {
+  if (totalTests.value === 0) return 0
+  return Math.round((completedTests.value / totalTests.value) * 100)
+})
+
 // 测试数据源连接
 const testDataSource = async (source: DataSourceType) => {
   // 完全禁止测试Tushare数据源
@@ -250,6 +492,193 @@ const testDataSource = async (source: DataSourceType) => {
     await stockService.testDataSource(source, currentSource.value)
   } finally {
     testingSource.value = null
+  }
+}
+
+// 添加测试日志
+const addTestLog = (type: 'info' | 'success' | 'error', message: string) => {
+  testLogs.value.push({
+    id: ++logIdCounter,
+    type,
+    message,
+    time: new Date().toLocaleTimeString()
+  })
+
+  // 限制日志数量，保持最新的20条
+  if (testLogs.value.length > 20) {
+    testLogs.value = testLogs.value.slice(-20)
+  }
+}
+
+// 测试单个数据源（内部方法）
+const testSingleDataSource = async (source: DataSourceType): Promise<TestResult> => {
+  const startTime = Date.now()
+  const sourceInfo = getSourceInfo(source)
+
+  try {
+    addTestLog('info', `开始测试 ${sourceInfo.name}...`)
+
+    // 创建数据源实例并测试连接
+    const dataSource = DataSourceFactory.createDataSource(source)
+    const success = await Promise.race([
+      dataSource.testConnection(),
+      new Promise<boolean>((_, reject) =>
+        setTimeout(() => reject(new Error('测试超时')), 15000)
+      )
+    ])
+
+    const responseTime = Date.now() - startTime
+
+    const result: TestResult = {
+      source,
+      sourceName: sourceInfo.name,
+      success,
+      responseTime,
+      timestamp: new Date().toLocaleString()
+    }
+
+    if (success) {
+      addTestLog('success', `${sourceInfo.name} 连接成功 (${responseTime}ms)`)
+    } else {
+      result.error = '连接失败'
+      addTestLog('error', `${sourceInfo.name} 连接失败`)
+    }
+
+    return result
+  } catch (error) {
+    const responseTime = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : '未知错误'
+
+    addTestLog('error', `${sourceInfo.name} 测试异常: ${errorMessage}`)
+
+    return {
+      source,
+      sourceName: sourceInfo.name,
+      success: false,
+      responseTime,
+      error: errorMessage,
+      timestamp: new Date().toLocaleString()
+    }
+  }
+}
+
+// 一键测试所有数据源
+const testAllDataSources = async () => {
+  if (testingAllSources.value) return
+
+  testingAllSources.value = true
+  showTestProgressDialog.value = true
+
+  // 重置状态
+  lastTestResults.value = []
+  testLogs.value = []
+  completedTests.value = 0
+  logIdCounter = 0
+
+  // 获取所有可用数据源（排除禁用的）
+  const sourcesToTest = availableSources.value.filter(source => {
+    // 排除tushare等禁用的数据源
+    return source !== 'tushare'
+  })
+
+  totalTests.value = sourcesToTest.length
+  const testStartTime = Date.now()
+
+  addTestLog('info', `开始测试 ${totalTests.value} 个数据源...`)
+
+  try {
+    // 并发测试，但限制并发数量以避免API限制
+    const concurrencyLimit = 3
+    const results: TestResult[] = []
+
+    for (let i = 0; i < sourcesToTest.length; i += concurrencyLimit) {
+      const batch = sourcesToTest.slice(i, i + concurrencyLimit)
+
+      // 并发测试当前批次
+      const batchPromises = batch.map(async (source) => {
+        currentTestingSource.value = source
+        const result = await testSingleDataSource(source)
+        completedTests.value++
+        return result
+      })
+
+      const batchResults = await Promise.all(batchPromises)
+      results.push(...batchResults)
+
+      // 批次间添加短暂延迟，避免API调用过于频繁
+      if (i + concurrencyLimit < sourcesToTest.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    }
+
+    // 保存测试结果
+    lastTestResults.value = results
+    totalTestDuration.value = Date.now() - testStartTime
+    lastTestTime.value = new Date().toLocaleString()
+
+    // 显示测试完成消息
+    const successCount = results.filter(r => r.success).length
+    const failedCount = results.length - successCount
+
+    addTestLog('info', `测试完成！成功: ${successCount}, 失败: ${failedCount}`)
+
+    ElMessage.success(
+      `数据源测试完成！成功连接 ${successCount} 个，失败 ${failedCount} 个`
+    )
+
+    // 延迟关闭进度对话框并显示结果
+    setTimeout(() => {
+      showTestProgressDialog.value = false
+      showTestResultsDialog.value = true
+      activeTab.value = successCount > 0 ? 'success' : 'failed'
+    }, 1000)
+
+  } catch (error) {
+    console.error('测试所有数据源时发生错误:', error)
+    addTestLog('error', `测试过程发生错误: ${error instanceof Error ? error.message : '未知错误'}`)
+    ElMessage.error('测试过程中发生错误，请查看详细日志')
+  } finally {
+    testingAllSources.value = false
+    currentTestingSource.value = null
+  }
+}
+
+// 重新测试单个数据源
+const retestSingleSource = async (source: DataSourceType) => {
+  if (testingSource.value) return
+
+  testingSource.value = source
+  try {
+    const result = await testSingleDataSource(source)
+
+    // 更新测试结果中的对应项
+    const index = lastTestResults.value.findIndex(r => r.source === source)
+    if (index !== -1) {
+      lastTestResults.value[index] = result
+    } else {
+      lastTestResults.value.push(result)
+    }
+
+    if (result.success) {
+      ElMessage.success(`${result.sourceName} 重新测试成功`)
+    } else {
+      ElMessage.error(`${result.sourceName} 重新测试失败: ${result.error}`)
+    }
+  } finally {
+    testingSource.value = null
+  }
+}
+
+// 切换到指定数据源
+const switchToSource = async (source: DataSourceType) => {
+  if (source === currentSource.value) return
+
+  try {
+    await changeDataSource(source)
+    ElMessage.success(`已切换到 ${getSourceInfo(source).name}`)
+    showTestResultsDialog.value = false
+  } catch (error) {
+    ElMessage.error(`切换数据源失败: ${error instanceof Error ? error.message : '未知错误'}`)
   }
 }
 
@@ -461,6 +890,13 @@ onMounted(() => {
   color: var(--el-text-color-regular);
 }
 
+.test-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .source-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -519,6 +955,270 @@ onMounted(() => {
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 30px;
+}
+
+/* 测试结果对话框样式 */
+.test-results-container {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.test-summary {
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item.success {
+  border-left: 4px solid #67c23a;
+}
+
+.stat-item.failed {
+  border-left: 4px solid #f56c6c;
+}
+
+.stat-item.total {
+  border-left: 4px solid #409eff;
+}
+
+.stat-item.rate {
+  border-left: 4px solid #e6a23c;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.test-time {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+}
+
+.test-details {
+  margin-top: 20px;
+}
+
+.test-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.test-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.test-item.success-item {
+  border-left: 4px solid #67c23a;
+}
+
+.test-item.failed-item {
+  border-left: 4px solid #f56c6c;
+}
+
+.test-info {
+  flex: 1;
+}
+
+.source-name {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.success-icon {
+  color: #67c23a;
+  margin-right: 8px;
+}
+
+.failed-icon {
+  color: #f56c6c;
+  margin-right: 8px;
+}
+
+.test-meta {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.error-message {
+  color: #f56c6c;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.test-actions {
+  margin-left: 15px;
+}
+
+/* 测试进度对话框样式 */
+.test-progress-container {
+  padding: 10px 0;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.progress-title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.progress-stats {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+}
+
+.main-progress {
+  margin-bottom: 20px;
+}
+
+.current-test {
+  margin-bottom: 20px;
+  min-height: 30px;
+}
+
+.testing-source {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--el-color-primary);
+}
+
+.loading-icon {
+  margin-right: 8px;
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.test-log {
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.log-item {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 13px;
+  border-bottom: 1px solid #eee;
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+.log-item.success {
+  color: #67c23a;
+}
+
+.log-item.error {
+  color: #f56c6c;
+}
+
+.log-item.info {
+  color: var(--el-text-color-regular);
+}
+
+.log-icon {
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.log-message {
+  flex: 1;
+}
+
+.log-time {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+  margin-left: 10px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .source-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    max-width: none;
+  }
+
+  .test-controls {
+    justify-content: center;
+  }
+
+  .summary-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .test-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .test-actions {
+    margin-left: 0;
+    align-self: flex-end;
+  }
 }
 
 .comparison-title {

@@ -108,7 +108,7 @@ export const googleFinanceConfig: ApiConfig = {
  * 聚合数据API配置
  */
 export const juheConfig: ApiConfig = {
-  baseUrl: getEnvVar('JUHE_BASE_URL', 'http://apis.juhe.cn'),
+  baseUrl: getEnvVar('JUHE_BASE_URL', 'http://web.juhe.cn/finance'),
   apiKey: getEnvVar('JUHE_API_KEY'),
   timeout: getEnvNumber('API_REQUEST_TIMEOUT', 10000),
   retryCount: getEnvNumber('API_RETRY_COUNT', 3),

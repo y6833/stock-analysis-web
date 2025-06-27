@@ -13,13 +13,47 @@ class CacheStatsController extends Controller {
   async getStats() {
     const { ctx, service } = this;
     const { dataSource } = ctx.query;
-    
+
     try {
-      const stats = service.cacheStats.getStats(dataSource || null);
-      ctx.body = {
-        success: true,
-        ...stats,
-      };
+      // 确保全局缓存统计已初始化
+      if (!global.cacheStats) {
+        global.cacheStats = {
+          hits: 0,
+          misses: 0,
+          requests: 0,
+          apiCalls: 0,
+          errors: 0,
+          lastReset: new Date().toISOString(),
+          dataSourceStats: {},
+          apiStats: {},
+        };
+      }
+
+      // 如果指定了数据源，返回该数据源的统计
+      if (dataSource) {
+        const sourceStats = global.cacheStats.dataSourceStats[dataSource] || {
+          hits: 0,
+          misses: 0,
+          requests: 0,
+          apiCalls: 0,
+          errors: 0,
+        };
+
+        ctx.body = {
+          success: true,
+          dataSource: dataSource,
+          ...sourceStats,
+          hitRate: sourceStats.requests > 0 ?
+            ((sourceStats.hits / sourceStats.requests) * 100).toFixed(2) : '0.00'
+        };
+      } else {
+        // 返回全局统计
+        const stats = service.cacheStats.getStats(null);
+        ctx.body = {
+          success: true,
+          ...stats,
+        };
+      }
     } catch (error) {
       ctx.status = 500;
       ctx.body = {
@@ -30,17 +64,17 @@ class CacheStatsController extends Controller {
       ctx.logger.error('获取缓存统计信息失败:', error);
     }
   }
-  
+
   /**
    * 重置缓存统计信息
    */
   async resetStats() {
     const { ctx, service } = this;
     const { dataSource } = ctx.request.body;
-    
+
     try {
       const result = service.cacheStats.resetStats(dataSource || null);
-      
+
       if (result.success) {
         ctx.body = result;
       } else {

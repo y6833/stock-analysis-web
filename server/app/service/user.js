@@ -86,12 +86,38 @@ class UserService extends Service {
   async findById(id) {
     const { ctx } = this;
 
-    // 查找用户
-    const user = await ctx.model.User.findByPk(id, {
-      include: [{ model: ctx.model.UserPreference }],
-    });
+    try {
+      // 查找用户，不包含关联数据以避免别名冲突
+      const user = await ctx.model.User.findByPk(id);
 
-    if (!user) {
+      if (!user) {
+        return null;
+      }
+
+      // 单独查询用户偏好
+      let userPreference = null;
+      try {
+        userPreference = await ctx.model.UserPreference.findOne({
+          where: { userId: id }
+        });
+      } catch (error) {
+        ctx.logger.warn('查询用户偏好失败:', error);
+        // 如果查询失败，创建默认偏好
+        userPreference = {
+          theme: 'light',
+          language: 'zh-CN',
+          emailNotifications: true,
+          pushNotifications: true
+        };
+      }
+
+      // 手动组合数据
+      const userData = user.toJSON();
+      userData.userPreference = userPreference;
+
+      return userData;
+    } catch (error) {
+      ctx.logger.error('查询用户失败:', error);
       return null;
     }
 

@@ -121,7 +121,7 @@ ALPHA_VANTAGE_API_KEY=f6235795d0b5310a44d87a6a41cd9dfc-c-app
 
 ```bash
 JUHE_API_KEY=4191aa94e0f3ba88c66b827fbbe56624
-JUHE_BASE_URL=http://apis.juhe.cn
+JUHE_BASE_URL=http://web.juhe.cn/finance
 ```
 
 **✅ 已配置状态**: 您的聚合数据 API 密钥已成功配置
@@ -143,7 +143,7 @@ JUHE_BASE_URL=http://apis.juhe.cn
 
 ```bash
 # 智兔数服
-ZHITU_API_KEY=your_zhitu_api_key
+ZHITU_API_KEY=D564FC55-057B-4F6F-932C-C115E78BFAE4
 ZHITU_API_SECRET=your_zhitu_api_secret
 ZHITU_BASE_URL=https://api.zhitudata.com
 
@@ -156,7 +156,7 @@ ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
 
 # 聚合数据
 JUHE_API_KEY=your_juhe_appkey
-JUHE_BASE_URL=http://apis.juhe.cn
+JUHE_BASE_URL=http://web.juhe.cn/finance
 
 # 通用配置
 API_REQUEST_TIMEOUT=10000
@@ -170,7 +170,7 @@ CACHE_DURATION=300000
 在服务器上设置环境变量或使用配置管理工具：
 
 ```bash
-export ZHITU_API_KEY="your_production_zhitu_key"
+export ZHITU_API_KEY="D564FC55-057B-4F6F-932C-C115E78BFAE4"
 export JUHE_API_KEY="your_production_juhe_key"
 # ... 其他环境变量
 ```

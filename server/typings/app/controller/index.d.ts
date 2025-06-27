@@ -6,6 +6,7 @@ import 'egg';
 import ExportAdmin = require('../../../app/controller/admin');
 import ExportAkshare = require('../../../app/controller/akshare');
 import ExportAlert = require('../../../app/controller/alert');
+import ExportAlphavantage = require('../../../app/controller/alphavantage');
 import ExportBacktest = require('../../../app/controller/backtest');
 import ExportCache = require('../../../app/controller/cache');
 import ExportCacheStats = require('../../../app/controller/cacheStats');
@@ -17,7 +18,10 @@ import ExportEastmoney = require('../../../app/controller/eastmoney');
 import ExportEnv = require('../../../app/controller/env');
 import ExportFactor = require('../../../app/controller/factor');
 import ExportFundamental = require('../../../app/controller/fundamental');
+import ExportGoogleFinance = require('../../../app/controller/googleFinance');
+import ExportHealth = require('../../../app/controller/health');
 import ExportHome = require('../../../app/controller/home');
+import ExportJuhe = require('../../../app/controller/juhe');
 import ExportLogs = require('../../../app/controller/logs');
 import ExportMembership = require('../../../app/controller/membership');
 import ExportNetease = require('../../../app/controller/netease');
@@ -31,6 +35,7 @@ import ExportRiskAlert = require('../../../app/controller/riskAlert');
 import ExportRiskMonitoring = require('../../../app/controller/riskMonitoring');
 import ExportSimulation = require('../../../app/controller/simulation');
 import ExportSina = require('../../../app/controller/sina');
+import ExportSmartRecommendation = require('../../../app/controller/smartRecommendation');
 import ExportStock = require('../../../app/controller/stock');
 import ExportStopLossManager = require('../../../app/controller/stopLossManager');
 import ExportStrategy = require('../../../app/controller/strategy');
@@ -40,12 +45,15 @@ import ExportTencent = require('../../../app/controller/tencent');
 import ExportTushare = require('../../../app/controller/tushare');
 import ExportUser = require('../../../app/controller/user');
 import ExportWatchlist = require('../../../app/controller/watchlist');
+import ExportYahooFinance = require('../../../app/controller/yahooFinance');
+import ExportZhitu = require('../../../app/controller/zhitu');
 
 declare module 'egg' {
   interface IController {
     admin: ExportAdmin;
     akshare: ExportAkshare;
     alert: ExportAlert;
+    alphavantage: ExportAlphavantage;
     backtest: ExportBacktest;
     cache: ExportCache;
     cacheStats: ExportCacheStats;
@@ -57,7 +65,10 @@ declare module 'egg' {
     env: ExportEnv;
     factor: ExportFactor;
     fundamental: ExportFundamental;
+    googleFinance: ExportGoogleFinance;
+    health: ExportHealth;
     home: ExportHome;
+    juhe: ExportJuhe;
     logs: ExportLogs;
     membership: ExportMembership;
     netease: ExportNetease;
@@ -71,6 +82,7 @@ declare module 'egg' {
     riskMonitoring: ExportRiskMonitoring;
     simulation: ExportSimulation;
     sina: ExportSina;
+    smartRecommendation: ExportSmartRecommendation;
     stock: ExportStock;
     stopLossManager: ExportStopLossManager;
     strategy: ExportStrategy;
@@ -80,5 +92,7 @@ declare module 'egg' {
     tushare: ExportTushare;
     user: ExportUser;
     watchlist: ExportWatchlist;
+    yahooFinance: ExportYahooFinance;
+    zhitu: ExportZhitu;
   }
 }

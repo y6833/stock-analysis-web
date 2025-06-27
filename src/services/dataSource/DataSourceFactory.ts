@@ -9,6 +9,10 @@ import { ZhituDataSource } from './ZhituDataSource'
 import { YahooFinanceDataSource } from './YahooFinanceDataSource'
 import { GoogleFinanceDataSource } from './GoogleFinanceDataSource'
 import { JuheDataSource } from './JuheDataSource'
+// 新增的增强版数据源
+import TencentEnhancedDataSource from './TencentEnhancedDataSource'
+import NetEaseEnhancedDataSource from './NetEaseEnhancedDataSource'
+import AlphaVantageDataSource from './AlphaVantageDataSource'
 
 /**
  * 数据源类型
@@ -25,6 +29,10 @@ export type DataSourceType =
   | 'yahoo_finance'
   | 'google_finance'
   | 'juhe'
+  // 新增的增强版数据源
+  | 'tencent_enhanced'
+  | 'netease_enhanced'
+  | 'alphavantage'
 
 /**
  * 数据源特性
@@ -94,6 +102,16 @@ export class DataSourceFactory {
       case 'juhe':
         console.log('创建 聚合数据 数据源实例')
         return new JuheDataSource()
+      // 新增的增强版数据源
+      case 'tencent_enhanced':
+        console.log('创建 腾讯财经增强版 数据源实例')
+        return new TencentEnhancedDataSource()
+      case 'netease_enhanced':
+        console.log('创建 网易财经增强版 数据源实例')
+        return new NetEaseEnhancedDataSource()
+      case 'alphavantage':
+        console.log('创建 Alpha Vantage 数据源实例')
+        return new AlphaVantageDataSource()
       case 'yahoo':
         // 为了避免混用数据源，使用新浪数据源代替
         console.log(`Yahoo数据源尚未实现，暂时使用新浪财经数据源代替`)
@@ -195,6 +213,22 @@ export class DataSourceFactory {
         return {
           name: '聚合数据',
           description: '专业数据服务平台，提供实时股票交易数据',
+        }
+      // 新增的增强版数据源
+      case 'tencent_enhanced':
+        return {
+          name: '腾讯财经(增强版)',
+          description: '直接调用腾讯财经API，无需后端代理，稳定可靠',
+        }
+      case 'netease_enhanced':
+        return {
+          name: '网易财经(增强版)',
+          description: '专注于高质量历史数据，支持完整的复权数据',
+        }
+      case 'alphavantage':
+        return {
+          name: 'Alpha Vantage',
+          description: '官方API，支持全球市场，包含A股和美股数据',
         }
       default:
         return {
@@ -412,6 +446,61 @@ export class DataSourceFactory {
           coverage: 3.0,
           apiLimit: '每天免费调用50次',
           recommendation: '专业数据平台，只提供实时交易数据，适合轻量级使用',
+        }
+      // 新增的增强版数据源
+      case 'tencent_enhanced':
+        return {
+          name,
+          description,
+          features: {
+            realtime: true,
+            history: true,
+            fundamental: false,
+            news: false,
+            search: true,
+            global: false,
+          },
+          reliability: 4.8,
+          speed: 4.9,
+          coverage: 4.0,
+          apiLimit: '完全免费，每秒可调用数十次',
+          recommendation: '最推荐的免费数据源，腾讯大厂背景，稳定性极高',
+        }
+      case 'netease_enhanced':
+        return {
+          name,
+          description,
+          features: {
+            realtime: true,
+            history: true,
+            fundamental: false,
+            news: false,
+            search: true,
+            global: false,
+          },
+          reliability: 4.5,
+          speed: 4.0,
+          coverage: 4.5,
+          apiLimit: '完全免费，调用限制宽松',
+          recommendation: '历史数据专家，数据完整性和质量极高，支持长期历史数据',
+        }
+      case 'alphavantage':
+        return {
+          name,
+          description,
+          features: {
+            realtime: true,
+            history: true,
+            fundamental: false,
+            news: true,
+            search: true,
+            global: true,
+          },
+          reliability: 4.2,
+          speed: 3.5,
+          coverage: 4.8,
+          apiLimit: '免费版每天500次调用，每分钟5次',
+          recommendation: '官方API，支持全球市场，适合需要国际化数据的场景',
         }
       default:
         return {

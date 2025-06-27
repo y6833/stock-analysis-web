@@ -1,0 +1,34 @@
+# 股票分析Web应用 - Python依赖包
+# Stock Analysis Web Application - Python Dependencies
+
+# 数据获取库 - Data Acquisition Libraries
+tushare>=1.2.89          # Tushare金融数据接口
+akshare>=1.17.8          # AKShare金融数据接口
+
+# 数据处理库 - Data Processing Libraries  
+pandas>=2.0.0            # 数据分析和处理
+numpy>=1.24.0            # 数值计算
+requests>=2.28.0         # HTTP请求库
+
+# 数据库相关 - Database Related
+sqlalchemy>=2.0.0        # SQL工具包和对象关系映射
+pymysql>=1.0.0           # MySQL数据库连接器
+
+# 网页解析 - Web Scraping
+lxml>=4.9.0              # XML和HTML解析器
+beautifulsoup4>=4.11.0   # HTML/XML解析库
+
+# 可选依赖 - Optional Dependencies
+matplotlib>=3.6.0        # 图表绘制（可选）
+seaborn>=0.12.0          # 统计图表（可选）
+plotly>=5.15.0           # 交互式图表（可选）
+
+# 开发和测试 - Development and Testing
+pytest>=7.0.0           # 测试框架（开发用）
+jupyter>=1.0.0          # Jupyter笔记本（开发用）
+
+# 注意事项 - Notes:
+# 1. 使用国内镜像安装: pip install -i https://pypi.tuna.tsinghua.edu.cn/simple/ -r requirements.txt
+# 2. 建议使用虚拟环境: python -m venv venv && venv\Scripts\activate
+# 3. 核心依赖（必需）: tushare, akshare, pandas, numpy, requests, sqlalchemy, pymysql
+# 4. 可选依赖可以根据需要安装

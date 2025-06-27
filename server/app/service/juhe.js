@@ -12,7 +12,7 @@ class JuheService extends Service {
     
     // 从环境变量获取配置
     this.apiKey = process.env.JUHE_API_KEY;
-    this.baseURL = process.env.JUHE_BASE_URL || 'http://apis.juhe.cn';
+    this.baseURL = process.env.JUHE_BASE_URL || 'http://web.juhe.cn/finance';
     
     // 创建axios实例
     this.client = axios.create({

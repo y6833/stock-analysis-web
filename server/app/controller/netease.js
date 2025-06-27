@@ -7,42 +7,66 @@ class NetEaseController extends Controller {
   // 测试连接
   async test() {
     const { ctx } = this;
-    
+
     try {
-      // 尝试获取上证指数行情，如果成功则连接正常
-      const response = await axios.get('https://api.money.126.net/data/feed/0000001,money.api', {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      // 尝试多个网易财经API端点
+      const testUrls = [
+        'http://quotes.money.163.com/service/chddata.html?code=0000001&start=20240101&end=20240102&fields=TCLOSE',
+        'http://api.money.126.net/data/feed/0000001,money.api',
+        'https://money.163.com/api/data/feed/0000001'
+      ];
+
+      let lastError = null;
+
+      for (const url of testUrls) {
+        try {
+          const response = await axios.get(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Referer': 'http://quotes.money.163.com/'
+            },
+            timeout: 10000
+          });
+
+          if (response.status === 200 && response.data) {
+            ctx.body = {
+              success: true,
+              message: '网易财经API连接成功',
+              activeEndpoint: url
+            };
+            return;
+          }
+        } catch (error) {
+          lastError = error;
+          console.warn(`网易财经API端点 ${url} 测试失败:`, error.message);
+          continue;
         }
-      });
-      
-      if (response.status === 200 && response.data) {
-        ctx.body = {
-          success: true,
-          message: '网易财经API连接成功'
-        };
-      } else {
-        ctx.status = 500;
-        ctx.body = {
-          success: false,
-          message: '网易财经API连接失败'
-        };
       }
+
+      // 所有端点都失败
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '网易财经API所有端点均连接失败',
+        error: lastError?.message || '未知错误',
+        testedEndpoints: testUrls
+      };
+
     } catch (error) {
       ctx.status = 500;
       ctx.body = {
         success: false,
-        message: '网易财经API连接失败',
+        message: '网易财经API连接测试异常',
         error: error.message
       };
     }
   }
-  
+
   // 获取股票行情
   async quote() {
     const { ctx } = this;
     const { symbol } = ctx.query;
-    
+
     if (!symbol) {
       ctx.status = 400;
       ctx.body = {
@@ -51,28 +75,28 @@ class NetEaseController extends Controller {
       };
       return;
     }
-    
+
     try {
       // 确保股票代码格式正确
       const formattedSymbol = this.formatSymbol(symbol);
-      
+
       // 请求网易财经API
       const response = await axios.get(`https://api.money.126.net/data/feed/${formattedSymbol},money.api`, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
       });
-      
+
       if (response.status === 200 && response.data) {
         // 解析响应数据
         // 网易财经API返回格式：_ntes_quote_callback({"0000001":{"code": "0000001", "name": "上证指数", "price": 3429.35, ...}});
         const data = response.data;
         const jsonStr = data.replace(/^_ntes_quote_callback\(|\);$/g, '');
         const jsonData = JSON.parse(jsonStr);
-        
+
         if (jsonData[formattedSymbol]) {
           const stockData = jsonData[formattedSymbol];
-          
+
           // 解析股票数据
           const stockName = stockData.name;
           const price = parseFloat(stockData.price);
@@ -82,11 +106,11 @@ class NetEaseController extends Controller {
           const preClose = parseFloat(stockData.yestclose);
           const volume = parseInt(stockData.volume);
           const turnover = parseFloat(stockData.turnover);
-          
+
           // 计算涨跌幅
           const change = price - preClose;
           const pctChg = (change / preClose) * 100;
-          
+
           ctx.body = {
             success: true,
             data: {
@@ -127,11 +151,11 @@ class NetEaseController extends Controller {
       };
     }
   }
-  
+
   // 获取股票列表
   async stockList() {
     const { ctx } = this;
-    
+
     try {
       // 由于网易财经API不提供完整的股票列表，我们使用预定义的主要股票列表
       const mainStocks = [
@@ -150,7 +174,7 @@ class NetEaseController extends Controller {
         { symbol: '1000001', name: '平安银行', market: '深圳', industry: '银行' },
         // 可以添加更多股票
       ];
-      
+
       ctx.body = {
         success: true,
         data: mainStocks
@@ -164,12 +188,12 @@ class NetEaseController extends Controller {
       };
     }
   }
-  
+
   // 搜索股票
   async search() {
     const { ctx } = this;
     const { keyword } = ctx.query;
-    
+
     if (!keyword) {
       ctx.status = 400;
       ctx.body = {
@@ -178,7 +202,7 @@ class NetEaseController extends Controller {
       };
       return;
     }
-    
+
     try {
       // 获取股票列表
       const mainStocks = [
@@ -196,14 +220,14 @@ class NetEaseController extends Controller {
         { symbol: '0600000', name: '浦发银行', market: '上海', industry: '银行' },
         { symbol: '1000001', name: '平安银行', market: '深圳', industry: '银行' },
       ];
-      
+
       // 在本地过滤
       const results = mainStocks.filter(
         (stock) =>
           stock.symbol.toLowerCase().includes(keyword.toLowerCase()) ||
           stock.name.toLowerCase().includes(keyword.toLowerCase())
       );
-      
+
       ctx.body = {
         success: true,
         data: results
@@ -217,12 +241,12 @@ class NetEaseController extends Controller {
       };
     }
   }
-  
+
   // 获取历史数据
   async history() {
     const { ctx } = this;
     const { symbol, period, count } = ctx.query;
-    
+
     if (!symbol) {
       ctx.status = 400;
       ctx.body = {
@@ -231,18 +255,18 @@ class NetEaseController extends Controller {
       };
       return;
     }
-    
+
     try {
       // 确保股票代码格式正确
       const formattedSymbol = this.formatSymbol(symbol);
-      
+
       // 获取实时行情作为基准
       const quoteResponse = await axios.get(`https://api.money.126.net/data/feed/${formattedSymbol},money.api`, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
       });
-      
+
       if (quoteResponse.status !== 200 || !quoteResponse.data) {
         ctx.status = 500;
         ctx.body = {
@@ -251,12 +275,12 @@ class NetEaseController extends Controller {
         };
         return;
       }
-      
+
       // 解析响应数据
       const data = quoteResponse.data;
       const jsonStr = data.replace(/^_ntes_quote_callback\(|\);$/g, '');
       const jsonData = JSON.parse(jsonStr);
-      
+
       if (!jsonData[formattedSymbol]) {
         ctx.status = 404;
         ctx.body = {
@@ -265,20 +289,20 @@ class NetEaseController extends Controller {
         };
         return;
       }
-      
+
       const stockData = jsonData[formattedSymbol];
       const basePrice = parseFloat(stockData.price); // 当前价格
-      
+
       // 生成模拟历史数据
       const days = parseInt(count) || 180;
       const today = new Date();
       const historyData = [];
-      
+
       for (let i = days; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         // 生成价格（基于随机波动）
         let price;
         if (i === days) {
@@ -290,16 +314,16 @@ class NetEaseController extends Controller {
           const change = prevPrice * (Math.random() * 0.06 - 0.03); // -3% 到 +3% 的随机波动
           price = Math.max(prevPrice + change, 1); // 确保价格不会低于1
         }
-        
+
         // 生成开盘价、最高价、最低价
         const open = price * (1 + (Math.random() * 0.02 - 0.01));
         const high = Math.max(price, open) * (1 + Math.random() * 0.01);
         const low = Math.min(price, open) * (1 - Math.random() * 0.01);
         const close = price;
-        
+
         // 生成成交量
         const volume = Math.floor(Math.random() * 10000000) + 1000000;
-        
+
         historyData.push({
           date: dateStr,
           open: parseFloat(open.toFixed(2)),
@@ -309,7 +333,7 @@ class NetEaseController extends Controller {
           volume
         });
       }
-      
+
       ctx.body = {
         success: true,
         data: historyData
@@ -323,12 +347,12 @@ class NetEaseController extends Controller {
       };
     }
   }
-  
+
   // 获取财经新闻
   async news() {
     const { ctx } = this;
     const { count } = ctx.query;
-    
+
     try {
       // 网易财经不提供直接的新闻API，这里我们使用模拟数据
       const mockNews = [
@@ -389,13 +413,13 @@ class NetEaseController extends Controller {
           content: '财政部、工信部联合发文，要求加大对先进制造业的支持力度，优化融资环境。文件提出，将通过财政贴息、融资担保、风险补偿等方式，引导金融机构加大对先进制造业企业的信贷支持，降低企业融资成本。'
         }
       ];
-      
+
       // 随机打乱新闻顺序
       const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5);
-      
+
       // 返回指定数量的新闻
       const newsCount = parseInt(count) || 5;
-      
+
       ctx.body = {
         success: true,
         data: shuffledNews.slice(0, newsCount)
@@ -409,14 +433,14 @@ class NetEaseController extends Controller {
       };
     }
   }
-  
+
   // 辅助方法：格式化股票代码
   formatSymbol(symbol) {
     // 如果已经是网易财经格式（0开头上海，1开头深圳），直接返回
     if (/^[01]\d{6}$/.test(symbol)) {
       return symbol;
     }
-    
+
     // 如果是sh或sz前缀，转换为网易财经格式
     if (symbol.startsWith('sh')) {
       return '0' + symbol.slice(2);
@@ -424,7 +448,7 @@ class NetEaseController extends Controller {
     if (symbol.startsWith('sz')) {
       return '1' + symbol.slice(2);
     }
-    
+
     // 如果是.SH或.SZ后缀，转换为网易财经格式
     if (symbol.endsWith('.SH')) {
       return '0' + symbol.slice(0, -3);
@@ -432,7 +456,7 @@ class NetEaseController extends Controller {
     if (symbol.endsWith('.SZ')) {
       return '1' + symbol.slice(0, -3);
     }
-    
+
     // 根据股票代码规则添加前缀
     if (symbol.startsWith('6')) {
       return '0' + symbol;
@@ -441,7 +465,7 @@ class NetEaseController extends Controller {
     } else if (symbol.startsWith('4') || symbol.startsWith('8')) {
       return '2' + symbol; // 北交所
     }
-    
+
     // 默认返回原始代码
     return symbol;
   }

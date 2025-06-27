@@ -12,6 +12,10 @@ import { ZhituDataSource } from './ZhituDataSource'
 import { YahooFinanceDataSource } from './YahooFinanceDataSource'
 import { GoogleFinanceDataSource } from './GoogleFinanceDataSource'
 import { JuheDataSource } from './JuheDataSource'
+// 新增的增强版数据源
+import TencentEnhancedDataSource from './TencentEnhancedDataSource'
+import NetEaseEnhancedDataSource from './NetEaseEnhancedDataSource'
+import AlphaVantageDataSource from './AlphaVantageDataSource'
 import type { DataSourceType } from './DataSourceFactory'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 

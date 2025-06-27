@@ -1,4 +1,5 @@
 import type DataSourceInterface from './DataSourceInterface'
+import type { DataSourceType } from './DataSourceFactory'
 import axios from 'axios'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 
@@ -283,6 +284,13 @@ export class JuheDataSource implements DataSourceInterface {
       console.error('聚合数据连接测试失败:', error)
       return false
     }
+  }
+
+  /**
+   * 获取数据源类型
+   */
+  getType(): DataSourceType {
+    return 'juhe'
   }
 
   /**

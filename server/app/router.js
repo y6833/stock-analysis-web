@@ -10,6 +10,14 @@ module.exports = app => {
   // 首页
   router.get('/', controller.home.index);
 
+  // 健康检查路由
+  router.get('/api/health/database', controller.health.database);
+  router.get('/api/health/user-table', controller.health.userTable);
+  router.get('/api/health/jwt', controller.health.jwt);
+  router.get('/api/health/system', controller.health.system);
+  router.post('/api/health/create-test-user', controller.health.createTestUser);
+  router.post('/api/health/reset-test-passwords', controller.health.resetTestPasswords);
+
   // 认证相关路由
   router.post('/api/auth/register', controller.user.register);
   router.post('/api/auth/login', controller.user.login);
@@ -122,6 +130,46 @@ module.exports = app => {
   router.get('/api/data-source/test', controller.dataSource.test);
   router.get('/api/data-source/stocks', controller.dataSource.getStockList);
 
+  // Yahoo Finance API代理路由
+  router.get('/api/yahoo_finance/test', controller.yahooFinance.test);
+  router.get('/api/yahoo_finance/quote', controller.yahooFinance.quote);
+  router.get('/api/yahoo_finance/stock-list', controller.yahooFinance.stockList);
+  router.get('/api/yahoo_finance/search', controller.yahooFinance.search);
+  router.get('/api/yahoo_finance/history', controller.yahooFinance.history);
+  router.get('/api/yahoo_finance/news', controller.yahooFinance.news);
+
+  // Google Finance API代理路由
+  router.get('/api/google_finance/test', controller.googleFinance.test);
+  router.get('/api/google_finance/quote', controller.googleFinance.quote);
+  router.get('/api/google_finance/stock-list', controller.googleFinance.stockList);
+  router.get('/api/google_finance/search', controller.googleFinance.search);
+  router.get('/api/google_finance/history', controller.googleFinance.history);
+  router.get('/api/google_finance/news', controller.googleFinance.news);
+
+  // 聚合数据API代理路由
+  router.get('/api/juhe/test', controller.juhe.test);
+  router.get('/api/juhe/quote', controller.juhe.quote);
+  router.get('/api/juhe/stock-list', controller.juhe.stockList);
+  router.get('/api/juhe/search', controller.juhe.search);
+  router.get('/api/juhe/history', controller.juhe.history);
+  router.get('/api/juhe/news', controller.juhe.news);
+
+  // 智兔数服API代理路由
+  router.get('/api/zhitu/test', controller.zhitu.test);
+  router.get('/api/zhitu/quote', controller.zhitu.quote);
+  router.get('/api/zhitu/stock-list', controller.zhitu.stockList);
+  router.get('/api/zhitu/search', controller.zhitu.search);
+  router.get('/api/zhitu/history', controller.zhitu.history);
+  router.get('/api/zhitu/news', controller.zhitu.news);
+
+  // Alpha Vantage API代理路由
+  router.get('/api/alphavantage/test', controller.alphavantage.test);
+  router.get('/api/alphavantage/quote', controller.alphavantage.quote);
+  router.get('/api/alphavantage/stock-list', controller.alphavantage.stockList);
+  router.get('/api/alphavantage/search', controller.alphavantage.search);
+  router.get('/api/alphavantage/history', controller.alphavantage.history);
+  router.get('/api/alphavantage/news', controller.alphavantage.news);
+
   // 提醒相关路由（需要认证）
   router.get('/api/alerts', auth, controller.alert.getAlerts);
   router.post('/api/alerts', auth, controller.alert.createAlert);
@@ -146,8 +194,18 @@ module.exports = app => {
   router.get('/api/cache-stats', auth, controller.cacheStats.getStats);
   router.post('/api/cache-stats/reset', auth, controller.cacheStats.resetStats);
 
+  // 公开的缓存统计路由（不需要认证，用于前端监控）
+  router.get('/api/public/cache-stats', controller.cacheStats.getStats);
+
   // 数据刷新相关路由（需要认证）
   router.post('/api/refresh-data', auth, controller.data.refreshData);
+
+  // 智能推荐相关路由
+  router.get('/api/smart-recommendation', controller.smartRecommendation.getRecommendations);
+  router.get('/api/smart-recommendation/stats', controller.smartRecommendation.getRecommendationStats);
+  router.get('/api/smart-recommendation/config', controller.smartRecommendation.getRecommendationConfig);
+  router.get('/api/smart-recommendation/analyze/:symbol', controller.smartRecommendation.analyzeStock);
+  router.post('/api/smart-recommendation/refresh', auth, controller.smartRecommendation.refreshRecommendations);
   router.get('/api/refresh-status', auth, controller.data.getRefreshStatus);
 
   // 会员相关路由
