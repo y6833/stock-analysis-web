@@ -84,7 +84,7 @@ export class AlternativeFactorEngine {
     params: any
   ): FactorResult {
     const sentimentData = await this.getSentimentData(symbol)
-    
+
     if (sentimentData.length === 0) {
       return this.createEmptyFactorResult('sentiment_score', '无情绪数据', stockData.dates)
     }
@@ -92,17 +92,17 @@ export class AlternativeFactorEngine {
     const values = stockData.dates.map(date => {
       const sentiment = sentimentData.find(s => s.date === date)
       if (!sentiment) return 0
-      
+
       // 综合情绪评分
-      const newsScore = (sentiment.positiveRatio - sentiment.negativeRatio) * 
+      const newsScore = (sentiment.positiveRatio - sentiment.negativeRatio) *
                        Math.log(1 + sentiment.newsCount)
-      const socialScore = Math.tanh(sentiment.socialMediaMentions / 1000) * 
+      const socialScore = Math.tanh(sentiment.socialMediaMentions / 1000) *
                          (sentiment.positiveRatio - sentiment.negativeRatio)
       const analystScore = (sentiment.analystRatings - 3) / 2 // 标准化到[-1,1]
-      
+
       return (newsScore + socialScore + analystScore) / 3
     })
-    
+
     return {
       factorName: 'sentiment_score',
       factorType: 'alternative',
@@ -129,23 +129,23 @@ export class AlternativeFactorEngine {
   ): FactorResult {
     const period = params.period || 20
     const moneyFlowData = await this.getMoneyFlowData(symbol)
-    
+
     if (moneyFlowData.length === 0) {
       return this.createEmptyFactorResult('money_flow', '无资金流数据', stockData.dates)
     }
 
     const values: number[] = []
-    
+
     for (let i = 0; i < stockData.dates.length; i++) {
       if (i < period - 1) {
         values.push(NaN)
         continue
       }
-      
+
       // 计算过去period天的资金流净额
       let totalNetFlow = 0
       let validDays = 0
-      
+
       for (let j = i - period + 1; j <= i; j++) {
         const date = stockData.dates[j]
         const flow = moneyFlowData.find(f => f.date === date)
@@ -154,16 +154,16 @@ export class AlternativeFactorEngine {
           validDays++
         }
       }
-      
+
       const avgNetFlow = validDays > 0 ? totalNetFlow / validDays : 0
-      
+
       // 标准化资金流
       const currentPrice = stockData.prices[i]
       const normalizedFlow = avgNetFlow / (currentPrice * 1000000) // 假设以百万为单位
-      
+
       values.push(normalizedFlow)
     }
-    
+
     return {
       factorName: 'money_flow',
       factorType: 'alternative',
@@ -189,36 +189,36 @@ export class AlternativeFactorEngine {
   ): FactorResult {
     const period = params.period || 60
     const benchmarkSymbol = params.benchmark || '000001' // 上证指数
-    
+
     // 获取基准数据（这里使用模拟数据）
     const benchmarkData = this.generateMockBenchmarkData(stockData.dates)
-    
+
     const values: number[] = []
-    
+
     for (let i = 0; i < stockData.dates.length; i++) {
       if (i < period - 1) {
         values.push(NaN)
         continue
       }
-      
+
       // 计算与基准的滚动相关性
       const stockReturns = []
       const benchmarkReturns = []
-      
+
       for (let j = i - period + 1; j <= i; j++) {
         if (j > 0) {
           const stockReturn = (stockData.prices[j] - stockData.prices[j - 1]) / stockData.prices[j - 1]
           const benchmarkReturn = (benchmarkData[j] - benchmarkData[j - 1]) / benchmarkData[j - 1]
-          
+
           stockReturns.push(stockReturn)
           benchmarkReturns.push(benchmarkReturn)
         }
       }
-      
+
       const correlation = this.calculateCorrelation(stockReturns, benchmarkReturns)
       values.push(correlation)
     }
-    
+
     return {
       factorName: 'correlation_factor',
       factorType: 'alternative',
@@ -245,19 +245,19 @@ export class AlternativeFactorEngine {
   ): FactorResult {
     const shortPeriod = params.shortPeriod || 10
     const longPeriod = params.longPeriod || 60
-    
+
     // 计算短期和长期波动率
     const shortVolatility = this.calculateRollingVolatility(stockData.prices, shortPeriod)
     const longVolatility = this.calculateRollingVolatility(stockData.prices, longPeriod)
-    
+
     const values = shortVolatility.map((shortVol, i) => {
       const longVol = longVolatility[i]
       if (isNaN(shortVol) || isNaN(longVol) || longVol === 0) return NaN
-      
+
       // 波动率状态：短期波动率相对长期波动率的比值
       return (shortVol - longVol) / longVol
     })
-    
+
     return {
       factorName: 'volatility_regime',
       factorType: 'alternative',
@@ -282,18 +282,18 @@ export class AlternativeFactorEngine {
     params: any
   ): FactorResult {
     const sentimentData = await this.getSentimentData(symbol)
-    
+
     const values = stockData.dates.map(date => {
       const sentiment = sentimentData.find(s => s.date === date)
       if (!sentiment) return 0
-      
+
       // 新闻情绪评分
       const newsWeight = Math.log(1 + sentiment.newsCount) / 10
       const sentimentScore = sentiment.positiveRatio - sentiment.negativeRatio
-      
+
       return sentimentScore * newsWeight
     })
-    
+
     return {
       factorName: 'news_sentiment',
       factorType: 'alternative',
@@ -319,18 +319,18 @@ export class AlternativeFactorEngine {
     params: any
   ): FactorResult {
     const sentimentData = await this.getSentimentData(symbol)
-    
+
     const values = stockData.dates.map(date => {
       const sentiment = sentimentData.find(s => s.date === date)
       if (!sentiment) return 0
-      
+
       // 社交媒体情绪评分
       const socialWeight = Math.tanh(sentiment.socialMediaMentions / 1000)
       const sentimentScore = sentiment.positiveRatio - sentiment.negativeRatio
-      
+
       return sentimentScore * socialWeight
     })
-    
+
     return {
       factorName: 'social_sentiment',
       factorType: 'alternative',
@@ -356,15 +356,15 @@ export class AlternativeFactorEngine {
     params: any
   ): FactorResult {
     const sentimentData = await this.getSentimentData(symbol)
-    
+
     const values = stockData.dates.map(date => {
       const sentiment = sentimentData.find(s => s.date === date)
       if (!sentiment) return 0
-      
+
       // 分析师评级标准化
       return (sentiment.analystRatings - 3) / 2 // 1-5评级标准化到[-1,1]
     })
-    
+
     return {
       factorName: 'analyst_consensus',
       factorType: 'alternative',
@@ -390,15 +390,15 @@ export class AlternativeFactorEngine {
     params: any
   ): FactorResult {
     const sentimentData = await this.getSentimentData(symbol)
-    
+
     const values = stockData.dates.map(date => {
       const sentiment = sentimentData.find(s => s.date === date)
       if (!sentiment) return 0
-      
+
       // 机构活动度标准化
       return Math.tanh(sentiment.institutionalActivity / 100)
     })
-    
+
     return {
       factorName: 'institutional_activity',
       factorType: 'alternative',
@@ -424,41 +424,41 @@ export class AlternativeFactorEngine {
     params: any
   ): FactorResult {
     const period = params.period || 20
-    
+
     if (!stockData.volumes || stockData.volumes.length === 0) {
       return this.createEmptyFactorResult('market_microstructure', '无成交量数据', stockData.dates)
     }
 
     const values: number[] = []
-    
+
     for (let i = 0; i < stockData.dates.length; i++) {
       if (i < period - 1) {
         values.push(NaN)
         continue
       }
-      
+
       // 计算价格冲击成本（简化版）
       const priceChanges = []
       const volumeRatios = []
-      
+
       for (let j = i - period + 1; j <= i; j++) {
         if (j > 0) {
           const priceChange = Math.abs((stockData.prices[j] - stockData.prices[j - 1]) / stockData.prices[j - 1])
           const volumeRatio = stockData.volumes![j] / stockData.volumes![j - 1]
-          
+
           priceChanges.push(priceChange)
           volumeRatios.push(volumeRatio)
         }
       }
-      
+
       // 市场冲击系数
       const avgPriceChange = priceChanges.reduce((sum, change) => sum + change, 0) / priceChanges.length
       const avgVolumeRatio = volumeRatios.reduce((sum, ratio) => sum + ratio, 0) / volumeRatios.length
-      
+
       const microstructure = avgVolumeRatio > 0 ? avgPriceChange / avgVolumeRatio : 0
       values.push(microstructure)
     }
-    
+
     return {
       factorName: 'market_microstructure',
       factorType: 'alternative',
@@ -483,39 +483,39 @@ export class AlternativeFactorEngine {
     params: any
   ): FactorResult {
     const period = params.period || 20
-    
+
     if (!stockData.volumes || stockData.volumes.length === 0) {
       return this.createEmptyFactorResult('liquidity_factor', '无成交量数据', stockData.dates)
     }
 
     const values: number[] = []
-    
+
     for (let i = 0; i < stockData.dates.length; i++) {
       if (i < period - 1) {
         values.push(NaN)
         continue
       }
-      
+
       // 计算流动性指标（成交量加权平均价格偏差）
       let totalVolume = 0
       let weightedPriceSum = 0
-      
+
       for (let j = i - period + 1; j <= i; j++) {
         const volume = stockData.volumes![j]
         const price = stockData.prices[j]
-        
+
         totalVolume += volume
         weightedPriceSum += price * volume
       }
-      
+
       const vwap = totalVolume > 0 ? weightedPriceSum / totalVolume : stockData.prices[i]
       const currentPrice = stockData.prices[i]
-      
+
       // 流动性指标：价格偏离VWAP的程度
       const liquidity = Math.abs(currentPrice - vwap) / vwap
       values.push(-liquidity) // 负值表示流动性好
     }
-    
+
     return {
       factorName: 'liquidity_factor',
       factorType: 'alternative',
@@ -542,7 +542,7 @@ export class AlternativeFactorEngine {
     // 生成模拟情绪数据
     const data = this.generateMockSentimentData(symbol)
     this.sentimentCache.set(symbol, data)
-    
+
     return data
   }
 
@@ -557,78 +557,83 @@ export class AlternativeFactorEngine {
     // 生成模拟资金流数据
     const data = this.generateMockMoneyFlowData(symbol)
     this.moneyFlowCache.set(symbol, data)
-    
+
     return data
   }
 
   /**
-   * 生成模拟情绪数据
+   * 获取真实情绪数据
+   * 模拟数据生成函数已移除
    */
-  private generateMockSentimentData(symbol: string): SentimentData[] {
-    const data: SentimentData[] = []
-    const startDate = new Date('2023-01-01')
-    
-    for (let i = 0; i < 365; i++) {
-      const date = new Date(startDate)
-      date.setDate(date.getDate() + i)
-      
-      const positiveRatio = 0.3 + Math.random() * 0.4
-      const negativeRatio = 0.1 + Math.random() * 0.3
-      const neutralRatio = 1 - positiveRatio - negativeRatio
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        newsCount: Math.floor(Math.random() * 20),
-        positiveRatio,
-        negativeRatio,
-        neutralRatio,
-        socialMediaMentions: Math.floor(Math.random() * 1000),
-        analystRatings: 2 + Math.random() * 3, // 2-5评级
-        institutionalActivity: Math.random() * 100
-      })
+  private async getRealSentimentData(symbol: string): Promise<SentimentData[]> {
+    try {
+      const response = await fetch(`/api/sentiment/${symbol}`)
+
+      if (!response.ok) {
+        throw new Error(`获取情绪数据失败: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || '获取情绪数据失败')
+      }
+
+      return data.data
+    } catch (error) {
+      console.error('获取情绪数据失败:', error)
+      throw new Error(`无法获取股票${symbol}的情绪数据，请检查数据源配置`)
     }
-    
-    return data
   }
 
   /**
-   * 生成模拟资金流数据
+   * 获取真实资金流数据
+   * 模拟数据生成函数已移除
    */
-  private generateMockMoneyFlowData(symbol: string): MoneyFlowData[] {
-    const data: MoneyFlowData[] = []
-    const startDate = new Date('2023-01-01')
-    
-    for (let i = 0; i < 365; i++) {
-      const date = new Date(startDate)
-      date.setDate(date.getDate() + i)
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        netInflow: (Math.random() - 0.5) * 10000000, // -5M到5M
-        largeOrderRatio: 0.2 + Math.random() * 0.6,
-        retailFlow: (Math.random() - 0.5) * 5000000,
-        institutionalFlow: (Math.random() - 0.5) * 8000000,
-        foreignFlow: (Math.random() - 0.5) * 2000000
-      })
+  private async getRealMoneyFlowData(symbol: string): Promise<MoneyFlowData[]> {
+    try {
+      const response = await fetch(`/api/money-flow/${symbol}`)
+
+      if (!response.ok) {
+        throw new Error(`获取资金流数据失败: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || '获取资金流数据失败')
+      }
+
+      return data.data
+    } catch (error) {
+      console.error('获取资金流数据失败:', error)
+      throw new Error(`无法获取股票${symbol}的资金流数据，请检查数据源配置`)
     }
-    
-    return data
   }
 
   /**
-   * 生成模拟基准数据
+   * 获取真实基准数据
+   * 模拟数据生成函数已移除
    */
-  private generateMockBenchmarkData(dates: string[]): number[] {
-    const data: number[] = []
-    let price = 3000 // 起始价格
-    
-    for (let i = 0; i < dates.length; i++) {
-      const change = (Math.random() - 0.5) * 0.02 // ±1%的随机变化
-      price *= (1 + change)
-      data.push(price)
+  private async getRealBenchmarkData(dates: string[]): Promise<number[]> {
+    try {
+      const response = await fetch(`/api/benchmark?dates=${dates.join(',')}`)
+
+      if (!response.ok) {
+        throw new Error(`获取基准数据失败: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || '获取基准数据失败')
+      }
+
+      return data.data
+    } catch (error) {
+      console.error('获取基准数据失败:', error)
+      throw new Error('无法获取基准数据，请检查数据源配置')
     }
-    
-    return data
   }
 
   /**
@@ -636,13 +641,13 @@ export class AlternativeFactorEngine {
    */
   private calculateRollingVolatility(prices: number[], period: number): number[] {
     const values: number[] = []
-    
+
     for (let i = 0; i < prices.length; i++) {
       if (i < period - 1) {
         values.push(NaN)
         continue
       }
-      
+
       const returns = []
       for (let j = i - period + 1; j <= i; j++) {
         if (j > 0) {
@@ -650,19 +655,19 @@ export class AlternativeFactorEngine {
           returns.push(ret)
         }
       }
-      
+
       if (returns.length === 0) {
         values.push(NaN)
         continue
       }
-      
+
       const mean = returns.reduce((sum, ret) => sum + ret, 0) / returns.length
       const variance = returns.reduce((sum, ret) => sum + Math.pow(ret - mean, 2), 0) / returns.length
       const volatility = Math.sqrt(variance * 252) // 年化波动率
-      
+
       values.push(volatility)
     }
-    
+
     return values
   }
 
@@ -671,17 +676,17 @@ export class AlternativeFactorEngine {
    */
   private calculateCorrelation(x: number[], y: number[]): number {
     if (x.length !== y.length || x.length === 0) return 0
-    
+
     const n = x.length
     const sumX = x.reduce((sum, val) => sum + val, 0)
     const sumY = y.reduce((sum, val) => sum + val, 0)
     const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0)
     const sumX2 = x.reduce((sum, val) => sum + val * val, 0)
     const sumY2 = y.reduce((sum, val) => sum + val * val, 0)
-    
+
     const numerator = n * sumXY - sumX * sumY
     const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY))
-    
+
     return denominator === 0 ? 0 : numerator / denominator
   }
 

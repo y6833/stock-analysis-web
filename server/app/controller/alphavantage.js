@@ -7,11 +7,11 @@ class AlphaVantageController extends Controller {
   // 测试连接
   async test() {
     const { ctx } = this;
-    
+
     try {
       // 检查Alpha Vantage API配置
       const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
-      
+
       if (!apiKey) {
         ctx.status = 400;
         ctx.body = {
@@ -27,7 +27,7 @@ class AlphaVantageController extends Controller {
         };
         return;
       }
-      
+
       // 测试Alpha Vantage API连接
       try {
         const response = await axios.get('https://www.alphavantage.co/query', {
@@ -41,10 +41,10 @@ class AlphaVantageController extends Controller {
           },
           timeout: 15000
         });
-        
+
         if (response.status === 200) {
           const data = response.data;
-          
+
           // 检查API响应
           if (data['Global Quote']) {
             ctx.body = {
@@ -91,7 +91,7 @@ class AlphaVantageController extends Controller {
             httpStatus: response.status
           };
         }
-        
+
       } catch (apiError) {
         ctx.status = 500;
         ctx.body = {
@@ -101,7 +101,7 @@ class AlphaVantageController extends Controller {
           suggestion: '请检查网络连接和API配置'
         };
       }
-      
+
     } catch (error) {
       ctx.status = 500;
       ctx.body = {
@@ -111,12 +111,12 @@ class AlphaVantageController extends Controller {
       };
     }
   }
-  
+
   // 获取股票行情
   async quote() {
     const { ctx } = this;
     const { symbol } = ctx.query;
-    
+
     if (!symbol) {
       ctx.status = 400;
       ctx.body = {
@@ -125,8 +125,9 @@ class AlphaVantageController extends Controller {
       };
       return;
     }
-    
-    const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+
+    // 从.env文件或配置中获取API Key
+    const apiKey = process.env.ALPHA_VANTAGE_API_KEY || 'UZMT16NQOTELC1O7';
     if (!apiKey) {
       ctx.status = 400;
       ctx.body = {
@@ -135,7 +136,7 @@ class AlphaVantageController extends Controller {
       };
       return;
     }
-    
+
     try {
       const response = await axios.get('https://www.alphavantage.co/query', {
         params: {
@@ -145,7 +146,7 @@ class AlphaVantageController extends Controller {
         },
         timeout: 15000
       });
-      
+
       if (response.data['Global Quote']) {
         const quote = response.data['Global Quote'];
         ctx.body = {
@@ -180,12 +181,12 @@ class AlphaVantageController extends Controller {
       };
     }
   }
-  
+
   // 获取历史数据
   async history() {
     const { ctx } = this;
     const { symbol, interval = 'daily' } = ctx.query;
-    
+
     if (!symbol) {
       ctx.status = 400;
       ctx.body = {
@@ -194,7 +195,7 @@ class AlphaVantageController extends Controller {
       };
       return;
     }
-    
+
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
     if (!apiKey) {
       ctx.status = 400;
@@ -204,7 +205,7 @@ class AlphaVantageController extends Controller {
       };
       return;
     }
-    
+
     try {
       const functionMap = {
         '1min': 'TIME_SERIES_INTRADAY',
@@ -216,25 +217,25 @@ class AlphaVantageController extends Controller {
         'weekly': 'TIME_SERIES_WEEKLY',
         'monthly': 'TIME_SERIES_MONTHLY'
       };
-      
+
       const params = {
         function: functionMap[interval] || 'TIME_SERIES_DAILY',
         symbol: symbol,
         apikey: apiKey
       };
-      
+
       if (functionMap[interval] === 'TIME_SERIES_INTRADAY') {
         params.interval = interval;
       }
-      
+
       const response = await axios.get('https://www.alphavantage.co/query', {
         params: params,
         timeout: 20000
       });
-      
+
       const data = response.data;
       const timeSeriesKey = Object.keys(data).find(key => key.includes('Time Series'));
-      
+
       if (timeSeriesKey && data[timeSeriesKey]) {
         const timeSeries = data[timeSeriesKey];
         const history = Object.entries(timeSeries).map(([date, values]) => ({
@@ -245,7 +246,7 @@ class AlphaVantageController extends Controller {
           close: parseFloat(values['4. close']),
           volume: parseInt(values['5. volume'])
         }));
-        
+
         ctx.body = {
           success: true,
           data: history,
@@ -267,12 +268,12 @@ class AlphaVantageController extends Controller {
       };
     }
   }
-  
+
   // 搜索股票
   async search() {
     const { ctx } = this;
     const { keyword } = ctx.query;
-    
+
     if (!keyword) {
       ctx.status = 400;
       ctx.body = {
@@ -281,7 +282,7 @@ class AlphaVantageController extends Controller {
       };
       return;
     }
-    
+
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
     if (!apiKey) {
       ctx.status = 400;
@@ -291,7 +292,7 @@ class AlphaVantageController extends Controller {
       };
       return;
     }
-    
+
     try {
       const response = await axios.get('https://www.alphavantage.co/query', {
         params: {
@@ -301,7 +302,7 @@ class AlphaVantageController extends Controller {
         },
         timeout: 15000
       });
-      
+
       if (response.data.bestMatches) {
         ctx.body = {
           success: true,
@@ -333,11 +334,11 @@ class AlphaVantageController extends Controller {
       };
     }
   }
-  
+
   // 获取股票列表
   async stockList() {
     const { ctx } = this;
-    
+
     ctx.status = 501;
     ctx.body = {
       success: false,
@@ -345,11 +346,11 @@ class AlphaVantageController extends Controller {
       recommendation: '请使用搜索功能查找特定股票'
     };
   }
-  
+
   // 获取新闻
   async news() {
     const { ctx } = this;
-    
+
     ctx.status = 501;
     ctx.body = {
       success: false,

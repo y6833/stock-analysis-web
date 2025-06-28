@@ -125,6 +125,8 @@ export interface FinancialNews {
   url: string
   important: boolean
   content?: string
+  data_source?: string
+  source_type?: string
 }
 
 // 股票分析结果

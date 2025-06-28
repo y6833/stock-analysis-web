@@ -74,8 +74,8 @@ class RealtimeService {
 
     try {
       // 在实际环境中，这里应该是真实的WebSocket服务器地址
-      const wsUrl = process.env.NODE_ENV === 'production' 
-        ? 'wss://api.yourstock.com/ws' 
+      const wsUrl = process.env.NODE_ENV === 'production'
+        ? 'wss://api.yourstock.com/ws'
         : 'ws://localhost:8080/ws'
 
       this.ws = new WebSocket(wsUrl)
@@ -119,7 +119,7 @@ class RealtimeService {
   private onMessage(event: MessageEvent) {
     try {
       const data = JSON.parse(event.data)
-      
+
       switch (data.type) {
         case 'quote':
           this.handleQuoteUpdate(data.payload)
@@ -171,10 +171,10 @@ class RealtimeService {
    */
   private handleQuoteUpdate(quote: RealtimeData) {
     this.realtimeData.set(quote.symbol, quote)
-    
+
     // 触发股票数据更新事件
     eventBus.emit('stock-quote-updated', quote)
-    
+
     // 执行订阅回调
     const callbacks = this.callbacks.get(quote.symbol)
     if (callbacks) {
@@ -187,7 +187,7 @@ class RealtimeService {
    */
   private handleMarketAlert(alert: MarketAlert) {
     this.marketAlerts.value.unshift(alert)
-    
+
     // 保持最多100条警报
     if (this.marketAlerts.value.length > 100) {
       this.marketAlerts.value = this.marketAlerts.value.slice(0, 100)
@@ -252,7 +252,7 @@ class RealtimeService {
     // 如果没有回调了，取消订阅
     if (!this.callbacks.has(symbol)) {
       this.subscriptions.delete(symbol)
-      
+
       if (this.isConnected.value && this.ws) {
         this.ws.send(JSON.stringify({
           type: 'unsubscribe',
@@ -313,7 +313,7 @@ class RealtimeService {
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1) // 指数退避
 
     console.log(`${delay}ms后尝试第${this.reconnectAttempts}次重连`)
-    
+
     this.reconnectTimer = setTimeout(() => {
       this.initializeConnection()
     }, delay) as unknown as number
@@ -327,10 +327,10 @@ class RealtimeService {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
-    
+
     this.reconnectAttempts = 0
     this.disconnect()
-    
+
     setTimeout(() => {
       this.initializeConnection()
     }, 1000)
@@ -344,12 +344,12 @@ class RealtimeService {
       this.ws.close(1000, '用户主动断开')
       this.ws = null
     }
-    
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
-    
+
     this.isConnected.value = false
     this.isConnecting.value = false
   }
@@ -378,55 +378,15 @@ export const realtimeService = new RealtimeService()
 // 模拟数据生成器（用于开发环境）
 export class MockRealtimeService {
   private intervals: number[] = []
-  
+
   constructor() {
     this.startMockData()
   }
 
   private startMockData() {
-    // 模拟股票数据更新
-    const mockStocks = ['000001', '000002', '600036', '600519', '000858']
-    
-    mockStocks.forEach(symbol => {
-      const interval = setInterval(() => {
-        const basePrice = 10 + Math.random() * 100
-        const change = (Math.random() - 0.5) * 2
-        const quote: RealtimeData = {
-          symbol,
-          price: basePrice + change,
-          change: change,
-          changePercent: (change / basePrice) * 100,
-          volume: Math.floor(Math.random() * 1000000),
-          timestamp: Date.now(),
-          high: basePrice + Math.abs(change) + Math.random(),
-          low: basePrice - Math.abs(change) - Math.random(),
-          open: basePrice + (Math.random() - 0.5)
-        }
-        
-        realtimeService.realtimeData.set(symbol, quote)
-        eventBus.emit('stock-quote-updated', quote)
-      }, 2000 + Math.random() * 3000)
-      
-      this.intervals.push(interval as unknown as number)
-    })
-
-    // 模拟市场警报
-    const alertInterval = setInterval(() => {
-      const alert: MarketAlert = {
-        id: Date.now().toString(),
-        type: ['price', 'volume', 'technical'][Math.floor(Math.random() * 3)] as any,
-        level: ['info', 'warning', 'critical'][Math.floor(Math.random() * 3)] as any,
-        symbol: mockStocks[Math.floor(Math.random() * mockStocks.length)],
-        title: '价格突破警报',
-        message: '股价突破重要阻力位',
-        timestamp: Date.now()
-      }
-      
-      realtimeService.marketAlerts.value.unshift(alert)
-      eventBus.emit('market-alert', alert)
-    }, 10000)
-    
-    this.intervals.push(alertInterval as unknown as number)
+    // 模拟数据推送已完全禁用
+    console.warn('模拟实时数据推送已禁用，请配置真实数据源')
+    // 不再生成任何模拟数据或警报
   }
 
   public destroy() {
@@ -435,7 +395,5 @@ export class MockRealtimeService {
   }
 }
 
-// 在开发环境启用模拟数据
-if (process.env.NODE_ENV === 'development') {
-  new MockRealtimeService()
-}
+// 模拟数据已禁用 - 现在只使用真实数据源
+// 如果需要测试，请配置真实的数据源或使用专门的测试环境

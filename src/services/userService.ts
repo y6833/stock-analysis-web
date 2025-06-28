@@ -17,8 +17,8 @@ import type {
   PreferencesUpdateRequest,
 } from '@/types/user'
 
-// API基础URL
-const API_URL = 'http://localhost:7001/api'
+// API基础URL - 使用相对路径以利用Vite代理
+const API_URL = '/api'
 
 // 本地存储键
 const TOKEN_KEY = 'auth_token'

@@ -18,58 +18,8 @@ const USE_MOCK_DATA = false // 使用真实数据
  */
 export async function getIndexInfo(indexCode: string, forceRefresh = true): Promise<any> {
   try {
-    if (!USE_MOCK_DATA) {
-      // 这里应该调用 tushareService 获取真实数据，传递 forceRefresh 参数
-      return await tushareService.getIndexInfo(indexCode, forceRefresh)
-    }
-
-    // 使用模拟数据
-    const mockIndices: Record<string, any> = {
-      '000001.SH': {
-        name: '上证指数',
-        market: '上海',
-        publisher: '上交所',
-        category: '综合指数',
-        components: 1800,
-      },
-      '399001.SZ': {
-        name: '深证成指',
-        market: '深圳',
-        publisher: '深交所',
-        category: '综合指数',
-        components: 500,
-      },
-      '399006.SZ': {
-        name: '创业板指',
-        market: '深圳',
-        publisher: '深交所',
-        category: '综合指数',
-        components: 100,
-      },
-      '000016.SH': {
-        name: '上证50',
-        market: '上海',
-        publisher: '上交所',
-        category: '规模指数',
-        components: 50,
-      },
-      '000300.SH': {
-        name: '沪深300',
-        market: '沪深',
-        publisher: '中证指数公司',
-        category: '规模指数',
-        components: 300,
-      },
-      '000905.SH': {
-        name: '中证500',
-        market: '沪深',
-        publisher: '中证指数公司',
-        category: '规模指数',
-        components: 500,
-      },
-    }
-
-    return mockIndices[indexCode] || null
+    // 直接调用 tushareService 获取真实数据
+    return await tushareService.getIndexInfo(indexCode, forceRefresh)
   } catch (error) {
     console.error(`获取指数 ${indexCode} 信息失败:`, error)
     return null
@@ -440,77 +390,13 @@ export async function getStockQuote(
         }
       } catch (error) {
         console.error(`获取股票 ${symbol} 真实行情失败:`, error)
-        console.warn(`将使用模拟数据显示 ${symbol} 的行情`)
-        // 如果获取真实数据失败，回退到模拟数据
+        // 不使用模拟数据，直接抛出错误
         throw error
       }
     }
 
-    // 使用模拟数据
-    // 查找股票基本信息
-    const stockInfo = {
-      '000001.SZ': { name: '平安银行', market: '深交所', industry: '银行' },
-      '600000.SH': { name: '浦发银行', market: '上交所', industry: '银行' },
-      '601318.SH': { name: '中国平安', market: '上交所', industry: '保险' },
-      '000858.SZ': { name: '五粮液', market: '深交所', industry: '白酒' },
-      '600519.SH': { name: '贵州茅台', market: '上交所', industry: '白酒' },
-    }[symbol] || { name: '未知股票', market: '未知', industry: '未知' }
-
-    // 生成基础价格
-    let basePrice = 0
-    switch (symbol) {
-      case '000001.SZ':
-        basePrice = 15
-        break
-      case '600000.SH':
-        basePrice = 10
-        break
-      case '601318.SH':
-        basePrice = 60
-        break
-      case '000858.SZ':
-        basePrice = 150
-        break
-      case '600519.SH':
-        basePrice = 1800
-        break
-      default:
-        basePrice = 100
-    }
-
-    // 生成当前价格（基于随机波动）
-    const price = basePrice * (1 + (Math.random() * 0.1 - 0.05)) // -5% 到 +5% 的随机波动
-    const preClose = basePrice * (1 + (Math.random() * 0.05 - 0.025)) // 昨收价
-    const open = preClose * (1 + (Math.random() * 0.03 - 0.015)) // 开盘价
-    const high = Math.max(price, open) * (1 + Math.random() * 0.02) // 最高价
-    const low = Math.min(price, open) * (1 - Math.random() * 0.02) // 最低价
-    const volume = Math.floor(Math.random() * 10000000) + 1000000 // 成交量
-    const amount = price * volume // 成交额
-
-    // 计算涨跌幅
-    const change = price - preClose
-    const pctChg = (change / preClose) * 100
-
-    return {
-      symbol,
-      name: stockInfo.name,
-      price,
-      open,
-      high,
-      low,
-      close: price,
-      pre_close: preClose,
-      change,
-      pct_chg: pctChg,
-      vol: volume,
-      amount,
-      turnover_rate: Math.random() * 5, // 换手率
-      pe: Math.random() * 30 + 5, // 市盈率
-      pb: Math.random() * 5 + 0.5, // 市净率
-      total_mv: price * (Math.random() * 10000000000 + 1000000000), // 总市值
-      circ_mv: price * (Math.random() * 5000000000 + 500000000), // 流通市值
-      update_time: new Date().toISOString(),
-    }
+    // 不使用模拟数据，如果真实数据获取失败就返回null
+    return null
   } catch (error) {
     console.error(`获取股票 ${symbol} 行情失败:`, error)
     return null

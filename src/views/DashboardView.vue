@@ -8,8 +8,14 @@ import type { DashboardSettings, Watchlist, WatchlistItem, MarketOverview } from
 import * as echarts from 'echarts'
 import WatchlistManager from '@/components/dashboard/WatchlistManager.vue'
 import AddStockDialog from '@/components/dashboard/AddStockDialog.vue'
+import EnhancedMarketOverviewWidget from '@/components/dashboard/EnhancedMarketOverviewWidget.vue'
+import EnhancedPopularStocksWidget from '@/components/dashboard/EnhancedPopularStocksWidget.vue'
+import EnhancedNewsWidget from '@/components/dashboard/EnhancedNewsWidget.vue'
+import ThemeToggle from '@/components/dashboard/ThemeToggle.vue'
+import QuickSearchWidget from '@/components/dashboard/QuickSearchWidget.vue'
 import eventBus from '@/utils/eventBus'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
+import { performanceMonitor } from '@/utils/performanceMonitor'
 
 // 导入消息服务类型
 declare global {
@@ -46,60 +52,170 @@ const showWatchlistManager = ref(false)
 const showAddStockDialog = ref(false)
 // 数据刷新定时器
 let refreshTimer: number | null = null
+// 布局模式
+const layoutMode = ref<'grid' | 'enhanced'>('enhanced')
+// 是否显示设置面板
+const showSettings = ref(false)
+// 主题设置
+const currentTheme = ref('auto')
 
-// 获取市场数据
+// 获取市场数据 - 优化版本：并行加载和渐进式显示
 onMounted(async () => {
-  try {
-    // 加载仪表盘设置（包括从数据库获取的关注列表）
-    await loadDashboardSettings()
+  await performanceMonitor.measure('dashboard-total-load', async () => {
+    console.log('[Dashboard] 开始加载仪表盘数据...')
 
-    // 获取所有股票并取前10个作为热门股票
-    const stocks = await stockService.getStocks()
-    popularStocks.value = stocks.slice(0, 10)
+    try {
+      // 第一阶段：立即显示缓存数据（如果有）
+      await performanceMonitor.measure('load-cached-data', loadCachedDataFirst)
 
-    // 获取市场概览数据
-    await refreshMarketData()
+      // 第二阶段：并行加载核心数据
+      const coreDataPromises = [
+        performanceMonitor.measure('load-dashboard-settings', loadDashboardSettings),
+        performanceMonitor.measure('load-popular-stocks', loadPopularStocksOptimized),
+        performanceMonitor.measure('refresh-market-data', () => refreshMarketData(false)) // 优先使用缓存
+      ]
 
-    // 初始化市场概览图表
-    initMarketOverviewChart()
+      // 等待核心数据加载完成
+      await Promise.allSettled(coreDataPromises)
 
-    // 设置定时刷新
-    setupRefreshTimer()
+      // 第三阶段：初始化图表和设置
+      performanceMonitor.measureSync('init-chart', initMarketOverviewChart)
+      performanceMonitor.measureSync('setup-refresh-timer', setupRefreshTimer)
 
-    // 监听数据源变化事件
-    eventBus.on('data-source-changed', async (type: DataSourceType) => {
-      console.log(`数据源已切换到: ${type}，正在更新仪表盘数据...`)
+      // 第四阶段：后台刷新数据（如果需要）
+      refreshDataInBackground()
 
-      // 强制刷新数据
-      await refreshMarketData(true)
+      // 监听数据源变化事件
+      eventBus.on('data-source-changed', async (type: DataSourceType) => {
+        console.log(`数据源已切换到: ${type}，正在更新仪表盘数据...`)
 
-      // 更新图表
-      if (chart.value) {
-        updateMarketOverviewChart()
-      }
+        // 强制刷新数据
+        await refreshMarketData(true)
 
-      // 显示提示
+        // 更新图表
+        if (chart.value) {
+          updateMarketOverviewChart()
+        }
+
+        // 显示提示
+        if (window.$message) {
+          window.$message.success(`数据源已切换到: ${type}，仪表盘数据已更新`)
+        }
+      })
+
+      console.log('[Dashboard] 仪表盘核心数据加载完成')
+
+    } catch (error) {
+      console.error('获取数据失败:', error)
+
+      // 显示错误提示
       if (window.$message) {
-        window.$message.success(`数据源已切换到: ${type}，仪表盘数据已更新`)
+        window.$message.error(
+          '加载仪表盘数据失败: ' + (error instanceof Error ? error.message : String(error))
+        )
       }
-    })
-  } catch (error) {
-    console.error('获取数据失败:', error)
+    } finally {
+      isLoading.value = false
 
-    // 显示错误提示
-    if (window.$message) {
-      window.$message.error(
-        '加载仪表盘数据失败: ' + (error instanceof Error ? error.message : String(error))
-      )
+      // 打印性能报告
+      setTimeout(() => {
+        performanceMonitor.printReport()
+      }, 1000)
     }
-  } finally {
-    isLoading.value = false
-  }
+  })
 })
+
+// 优化：立即加载缓存数据
+const loadCachedDataFirst = async () => {
+  try {
+    // 尝试从缓存加载市场概览数据
+    const cachedMarketData = localStorage.getItem('market_overview_data')
+    if (cachedMarketData) {
+      try {
+        const { data, timestamp } = JSON.parse(cachedMarketData)
+        const isRecent = Date.now() - timestamp < 10 * 60 * 1000 // 10分钟内的数据
+        if (isRecent) {
+          console.log('[Dashboard] 使用缓存的市场概览数据')
+          // 立即显示缓存数据
+          marketIndices.value = data.indices || []
+          dataSourceInfo.value = {
+            type: 'cache',
+            message: '显示缓存数据，正在后台更新...'
+          }
+        }
+      } catch (e) {
+        console.warn('解析缓存的市场数据失败:', e)
+      }
+    }
+
+    // 尝试从缓存加载股票列表
+    const cachedStocks = localStorage.getItem('tushare_stock_basic_cache')
+    if (cachedStocks) {
+      try {
+        const { data, timestamp } = JSON.parse(cachedStocks)
+        const isRecent = Date.now() - timestamp < 24 * 60 * 60 * 1000 // 24小时内的数据
+        if (isRecent && data && data.length > 0) {
+          console.log('[Dashboard] 使用缓存的股票列表数据')
+          popularStocks.value = data.slice(0, 10)
+        }
+      } catch (e) {
+        console.warn('解析缓存的股票数据失败:', e)
+      }
+    }
+  } catch (error) {
+    console.warn('加载缓存数据失败:', error)
+  }
+}
+
+// 优化：加载热门股票（减少API调用）
+const loadPopularStocksOptimized = async () => {
+  try {
+    console.log('[Dashboard] 开始加载热门股票数据...')
+    const stocks = await stockService.getStocks()
+
+    // 只取前10个，避免加载过多数据
+    popularStocks.value = stocks.slice(0, 10)
+    console.log('[Dashboard] 热门股票数据加载完成')
+  } catch (error) {
+    console.error('加载热门股票失败:', error)
+    // 如果已有缓存数据，保持不变；否则显示空数组
+    if (popularStocks.value.length === 0) {
+      popularStocks.value = []
+    }
+  }
+}
+
+// 优化：后台刷新数据
+const refreshDataInBackground = async () => {
+  try {
+    console.log('[Dashboard] 开始后台刷新数据...')
+
+    // 延迟执行，避免阻塞UI
+    setTimeout(async () => {
+      try {
+        // 强制刷新市场数据
+        await refreshMarketData(true)
+
+        // 更新图表
+        if (chart.value) {
+          updateMarketOverviewChart()
+        }
+
+        console.log('[Dashboard] 后台数据刷新完成')
+      } catch (error) {
+        console.warn('后台刷新数据失败:', error)
+      }
+    }, 1000) // 1秒后开始后台刷新
+  } catch (error) {
+    console.warn('启动后台刷新失败:', error)
+  }
+}
 
 // 加载仪表盘设置
 const loadDashboardSettings = async () => {
   try {
+    console.log('[Dashboard] 开始加载仪表盘设置...')
+
     // 获取仪表盘设置（包括从数据库获取的关注列表）
     const settings = await dashboardService.getDashboardSettings()
     dashboardSettings.value = settings
@@ -113,21 +229,13 @@ const loadDashboardSettings = async () => {
       watchlistStocks.value = watchlist.items
     }
 
-    // 显示数据来源提示
-    if (window.$message && watchlist && watchlist.items.length > 0) {
-      window.$message.success('已从数据库加载关注列表数据')
-    }
+    console.log('[Dashboard] 仪表盘设置加载完成')
   } catch (error) {
     console.error('加载仪表盘设置失败:', error)
     // 使用默认设置
     dashboardSettings.value = dashboardService.createDefaultDashboardSettings()
     activeWatchlist.value = dashboardSettings.value.watchlists[0]
     watchlistStocks.value = activeWatchlist.value.items
-
-    // 显示错误提示
-    if (window.$message) {
-      window.$message.error('加载关注列表数据失败，使用默认数据')
-    }
   }
 }
 
@@ -252,74 +360,24 @@ const refreshMarketData = async (forceRefresh = true) => {
           data_source: item.data_source || item.source_type || 'unknown',
         }))
       } else {
-        console.log('未获取到新闻数据，使用模拟数据')
-        // 如果没有获取到新闻，使用模拟数据
-        newsItems.value = [
-          {
-            title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
-            time: '10分钟前',
-            source: '财经日报',
-            url: '#',
-            important: true,
-            data_source: 'mock',
-          },
-          {
-            title: '科技板块全线上涨，半导体行业领涨',
-            time: '30分钟前',
-            source: '证券时报',
-            url: '#',
-            data_source: 'mock',
-          },
-          {
-            title: '多家券商上调A股目标位，看好下半年行情',
-            time: '1小时前',
-            source: '上海证券报',
-            url: '#',
-            data_source: 'mock',
-          },
-          {
-            title: '外资连续三日净流入，北向资金今日净买入超50亿',
-            time: '2小时前',
-            source: '中国证券报',
-            url: '#',
-            data_source: 'mock',
-          },
-          {
-            title: '新能源汽车销量创新高，相关概念股受关注',
-            time: '3小时前',
-            source: '第一财经',
-            url: '#',
-            data_source: 'mock',
-          },
-        ]
+        console.log('未获取到新闻数据')
+        // 如果没有获取到新闻，显示空状态而不是模拟数据
+        newsItems.value = []
+
+        // 显示友好的错误提示
+        if (window.$message) {
+          window.$message.warning('暂时无法获取新闻数据，请稍后重试')
+        }
       }
     } catch (error) {
       console.error('获取财经新闻失败:', error)
-      // 使用模拟数据作为备份
-      newsItems.value = [
-        {
-          title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
-          time: '10分钟前',
-          source: '财经日报',
-          url: '#',
-          important: true,
-          data_source: 'mock (error)',
-        },
-        {
-          title: '科技板块全线上涨，半导体行业领涨',
-          time: '30分钟前',
-          source: '证券时报',
-          url: '#',
-          data_source: 'mock (error)',
-        },
-        {
-          title: '多家券商上调A股目标位，看好下半年行情',
-          time: '1小时前',
-          source: '上海证券报',
-          url: '#',
-          data_source: 'mock (error)',
-        },
-      ]
+      // 显示空状态而不是模拟数据
+      newsItems.value = []
+
+      // 显示友好的错误提示
+      if (window.$message) {
+        window.$message.error('获取新闻数据失败: ' + (error instanceof Error ? error.message : String(error)))
+      }
     }
   } catch (error) {
     console.error('刷新市场数据失败:', error)
@@ -686,6 +744,49 @@ const showMobileApp = () => {
   // 后续可以实现二维码扫描下载移动端应用
 }
 
+// 切换布局模式
+const toggleLayoutMode = () => {
+  layoutMode.value = layoutMode.value === 'grid' ? 'enhanced' : 'grid'
+
+  if (window.$message) {
+    window.$message.success(`已切换到${layoutMode.value === 'enhanced' ? '增强' : '网格'}布局`)
+  }
+}
+
+// 处理主题变化
+const handleThemeChange = (theme: string) => {
+  currentTheme.value = theme
+
+  if (window.$message) {
+    window.$message.success(`主题已切换到: ${theme}`)
+  }
+}
+
+// 处理股票点击
+const handleStockClick = (stock: any) => {
+  goToStockAnalysis(stock.symbol)
+}
+
+// 处理指数点击
+const handleIndexClick = (index: any) => {
+  goToIndexAnalysis(index.symbol)
+}
+
+// 处理新闻点击
+const handleNewsClick = (news: any) => {
+  openNewsDetail(news)
+}
+
+// 查看全部新闻
+const handleViewAllNews = () => {
+  router.push('/news')
+}
+
+// 显示设置面板
+const toggleSettings = () => {
+  showSettings.value = !showSettings.value
+}
+
 // 获取数据源类名
 const getDataSourceClass = (dataSource: string): string => {
   if (!dataSource) return ''
@@ -794,23 +895,58 @@ onUnmounted(() => {
 <template>
   <div class="dashboard-view">
     <div class="dashboard-header">
-      <h1>市场仪表盘</h1>
-      <div class="data-source-indicator" v-if="dataSourceInfo">
-        <span class="data-source-icon" :class="dataSourceInfo.type">
-          {{ dataSourceInfo.type === 'api' ? '🔄' : dataSourceInfo.type === 'cache' ? '💾' : '📊' }}
-        </span>
-        <span class="data-source-text">{{ dataSourceInfo.message }}</span>
+      <div class="header-left">
+        <h1>市场仪表盘</h1>
+        <div class="data-source-indicator" v-if="dataSourceInfo">
+          <span class="data-source-icon" :class="dataSourceInfo.type">
+            {{ dataSourceInfo.type === 'api' ? '🔄' : dataSourceInfo.type === 'cache' ? '💾' : '📊' }}
+          </span>
+          <span class="data-source-text">{{ dataSourceInfo.message }}</span>
+        </div>
+
+        <!-- 快速搜索 -->
+        <div class="quick-search-container">
+          <QuickSearchWidget
+            :max-results="8"
+            @stock-selected="handleStockClick"
+            @add-to-watchlist="addToWatchlist"
+          />
+        </div>
       </div>
-      <div class="dashboard-actions">
-        <button class="btn btn-outline" @click="refreshData" :disabled="isLoading">
-          <span class="btn-icon" v-if="!isLoading">🔄</span>
-          <span class="loading-spinner-small" v-else></span>
-          <span>刷新数据</span>
-        </button>
-        <button class="btn btn-outline" @click="openWatchlistManager">
-          <span class="btn-icon">⭐</span>
-          <span>管理关注列表</span>
-        </button>
+
+      <div class="header-right">
+        <div class="dashboard-controls">
+          <button
+            class="btn btn-outline btn-sm"
+            @click="toggleLayoutMode"
+            :title="layoutMode === 'enhanced' ? '切换到网格布局' : '切换到增强布局'"
+          >
+            <span class="btn-icon">{{ layoutMode === 'enhanced' ? '⊞' : '⊟' }}</span>
+            <span>{{ layoutMode === 'enhanced' ? '网格' : '增强' }}</span>
+          </button>
+
+          <ThemeToggle
+            :show-dropdown="true"
+            @theme-changed="handleThemeChange"
+          />
+
+          <button class="btn btn-outline btn-sm" @click="toggleSettings">
+            <span class="btn-icon">⚙️</span>
+            <span>设置</span>
+          </button>
+        </div>
+
+        <div class="dashboard-actions">
+          <button class="btn btn-outline" @click="refreshData" :disabled="isLoading">
+            <span class="btn-icon" v-if="!isLoading">🔄</span>
+            <span class="loading-spinner-small" v-else></span>
+            <span>刷新数据</span>
+          </button>
+          <button class="btn btn-outline" @click="openWatchlistManager">
+            <span class="btn-icon">⭐</span>
+            <span>管理关注列表</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -819,6 +955,143 @@ onUnmounted(() => {
       <p>正在加载市场数据...</p>
     </div>
 
+    <!-- 增强版布局 -->
+    <div v-else-if="layoutMode === 'enhanced'" class="enhanced-dashboard">
+      <div class="enhanced-grid">
+        <!-- 市场概览 -->
+        <div class="widget-container market-overview-container">
+          <EnhancedMarketOverviewWidget
+            :refresh-interval="60000"
+            @index-click="handleIndexClick"
+          />
+        </div>
+
+        <!-- 热门股票 -->
+        <div class="widget-container popular-stocks-container">
+          <EnhancedPopularStocksWidget
+            :refresh-interval="300000"
+            @stock-click="handleStockClick"
+            @add-to-watchlist="addToWatchlist"
+            @view-detail="handleStockClick"
+          />
+        </div>
+
+        <!-- 我的关注 -->
+        <div class="widget-container watchlist-container">
+          <div class="dashboard-card watchlist">
+            <div class="card-header">
+              <h2>我的关注</h2>
+              <div class="card-actions">
+                <button class="btn-icon-only" @click="openAddStockDialog" title="添加股票">
+                  <span>➕</span>
+                </button>
+                <button class="btn-icon-only" @click="openWatchlistManager" title="管理关注列表">
+                  <span>⚙️</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="watchlist-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>代码</th>
+                    <th>名称</th>
+                    <th>最新价</th>
+                    <th>涨跌幅</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="stock in watchlistStocks" :key="stock.symbol">
+                    <td>
+                      {{ stock.symbol }}
+                      <span
+                        v-if="stock.data_source"
+                        class="stock-data-source"
+                        :class="getDataSourceClass(stock.data_source)"
+                        :title="'数据来源: ' + stock.data_source"
+                      >
+                        {{ getDataSourceIcon(stock.data_source) }}
+                      </span>
+                    </td>
+                    <td>{{ stock.name }}</td>
+                    <td>
+                      {{ typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price }}
+                    </td>
+                    <td :class="stock.changePercent > 0 ? 'up' : 'down'">
+                      {{
+                        stock.changePercent > 0
+                          ? '+' + stock.changePercent.toFixed(2)
+                          : stock.changePercent.toFixed(2)
+                      }}%
+                    </td>
+                    <td>
+                      <button class="btn-icon-only" @click="goToStockAnalysis(stock.symbol)">
+                        <span>📊</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card-footer">
+              <button class="btn btn-outline btn-sm" @click="openWatchlistManager">管理关注列表</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 财经资讯 -->
+        <div class="widget-container news-container">
+          <EnhancedNewsWidget
+            :max-items="10"
+            :refresh-interval="300000"
+            :show-summary="true"
+            @news-click="handleNewsClick"
+            @view-all="handleViewAllNews"
+          />
+        </div>
+
+        <!-- 功能快捷入口 -->
+        <div class="widget-container quick-actions-container">
+          <div class="dashboard-card quick-actions">
+            <div class="card-header">
+              <h2>功能入口</h2>
+            </div>
+
+            <div class="action-grid">
+              <div class="action-card" @click="router.push('/stock')">
+                <div class="action-icon">📈</div>
+                <div class="action-name">股票分析</div>
+              </div>
+              <div class="action-card" @click="router.push('/portfolio')">
+                <div class="action-icon">💼</div>
+                <div class="action-name">仓位管理</div>
+              </div>
+              <div class="action-card" @click="router.push('/market-heatmap')">
+                <div class="action-icon">🌎</div>
+                <div class="action-name">大盘云图</div>
+              </div>
+              <div class="action-card" @click="router.push('/industry-analysis')">
+                <div class="action-icon">📊</div>
+                <div class="action-name">行业分析</div>
+              </div>
+              <div class="action-card" @click="handleViewAllNews">
+                <div class="action-icon">📰</div>
+                <div class="action-name">新闻资讯</div>
+              </div>
+              <div class="action-card" @click="showMobileApp">
+                <div class="action-icon">📱</div>
+                <div class="action-name">移动端</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 传统网格布局 -->
     <div v-else class="dashboard-grid">
       <!-- 市场概览 -->
       <div class="dashboard-card market-overview">
@@ -1095,6 +1368,33 @@ onUnmounted(() => {
   align-items: center;
   margin: var(--spacing-lg) 0;
   flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.dashboard-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.quick-search-container {
+  margin-left: var(--spacing-lg);
+  flex: 1;
+  max-width: 400px;
 }
 
 .dashboard-header h1 {
@@ -1583,8 +1883,87 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
+/* 增强版布局样式 */
+.enhanced-dashboard {
+  width: 100%;
+}
+
+.enhanced-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: auto;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.widget-container {
+  background: transparent;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  height: fit-content;
+}
+
+.market-overview-container {
+  grid-column: 1 / 9;
+  grid-row: 1;
+  min-height: 400px;
+}
+
+.popular-stocks-container {
+  grid-column: 9 / 13;
+  grid-row: 1 / 3;
+  min-height: 500px;
+}
+
+.watchlist-container {
+  grid-column: 1 / 5;
+  grid-row: 2;
+  min-height: 300px;
+}
+
+.news-container {
+  grid-column: 5 / 9;
+  grid-row: 2;
+  min-height: 300px;
+}
+
+.quick-actions-container {
+  grid-column: 1 / 13;
+  grid-row: 3;
+  min-height: 200px;
+}
+
 /* 响应式设计 */
 @media (max-width: 1200px) {
+  .enhanced-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .market-overview-container {
+    grid-column: 1 / 9;
+    grid-row: 1;
+  }
+
+  .popular-stocks-container {
+    grid-column: 1 / 5;
+    grid-row: 2;
+  }
+
+  .watchlist-container {
+    grid-column: 5 / 9;
+    grid-row: 2;
+  }
+
+  .news-container {
+    grid-column: 1 / 9;
+    grid-row: 3;
+  }
+
+  .quick-actions-container {
+    grid-column: 1 / 9;
+    grid-row: 4;
+  }
+
   .dashboard-grid {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
@@ -1596,6 +1975,20 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
+  .enhanced-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .market-overview-container,
+  .popular-stocks-container,
+  .watchlist-container,
+  .news-container,
+  .quick-actions-container {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
   .dashboard-grid {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -1612,12 +2005,58 @@ onUnmounted(() => {
     gap: var(--spacing-md);
   }
 
+  .header-left,
+  .header-right {
+    width: 100%;
+  }
+
+  .header-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-controls {
+    justify-content: space-between;
+    width: 100%;
+  }
+
   .dashboard-actions {
     width: 100%;
+    justify-content: space-between;
   }
 
   .market-indices {
     justify-content: center;
+  }
+}
+
+/* 小屏幕优化 */
+@media (max-width: 480px) {
+  .dashboard-view {
+    padding: 0 var(--spacing-md);
+  }
+
+  .enhanced-grid {
+    gap: var(--spacing-sm);
+  }
+
+  .dashboard-header {
+    margin: var(--spacing-md) 0;
+  }
+
+  .dashboard-controls {
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+
+  .btn {
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .btn-sm {
+    font-size: var(--font-size-xs);
+    padding: 4px var(--spacing-xs);
   }
 }
 </style>

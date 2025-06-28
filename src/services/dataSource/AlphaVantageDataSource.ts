@@ -12,7 +12,7 @@ export class AlphaVantageDataSource implements DataSourceInterface {
 
   // Alpha Vantage API配置
   private readonly BASE_URL = 'https://www.alphavantage.co/query'
-  private readonly API_KEY = process.env.ALPHA_VANTAGE_API_KEY || 'demo' // 需要配置API Key
+  private readonly API_KEY = 'UZMT16NQOTELC1O7' // 提供的API Key
 
   // 请求配置
   private readonly timeout = 15000

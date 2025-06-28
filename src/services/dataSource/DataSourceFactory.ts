@@ -13,6 +13,8 @@ import { JuheDataSource } from './JuheDataSource'
 import TencentEnhancedDataSource from './TencentEnhancedDataSource'
 import NetEaseEnhancedDataSource from './NetEaseEnhancedDataSource'
 import AlphaVantageDataSource from './AlphaVantageDataSource'
+import AlltickDataSource from './AlltickDataSource'
+import FutuDataSource from './FutuDataSource'
 
 /**
  * 数据源类型
@@ -33,6 +35,8 @@ export type DataSourceType =
   | 'tencent_enhanced'
   | 'netease_enhanced'
   | 'alphavantage'
+  | 'alltick'
+  | 'futu'
 
 /**
  * 数据源特性
@@ -112,6 +116,12 @@ export class DataSourceFactory {
       case 'alphavantage':
         console.log('创建 Alpha Vantage 数据源实例')
         return new AlphaVantageDataSource()
+      case 'alltick':
+        console.log('创建 AllTick 数据源实例')
+        return new AlltickDataSource()
+      case 'futu':
+        console.log('创建 富途 数据源实例')
+        return new FutuDataSource()
       case 'yahoo':
         // 为了避免混用数据源，使用新浪数据源代替
         console.log(`Yahoo数据源尚未实现，暂时使用新浪财经数据源代替`)
@@ -140,6 +150,9 @@ export class DataSourceFactory {
       'yahoo_finance',
       'google_finance',
       'juhe',
+      'alphavantage',
+      'alltick',
+      'futu',
     ]
   }
 
@@ -229,6 +242,11 @@ export class DataSourceFactory {
         return {
           name: 'Alpha Vantage',
           description: '官方API，支持全球市场，包含A股和美股数据',
+        }
+      case 'alltick':
+        return {
+          name: 'AllTick',
+          description: '全球金融市场实时数据提供商，支持股票、外汇、加密货币等',
         }
       default:
         return {
@@ -501,6 +519,24 @@ export class DataSourceFactory {
           coverage: 4.8,
           apiLimit: '免费版每天500次调用，每分钟5次',
           recommendation: '官方API，支持全球市场，适合需要国际化数据的场景',
+        }
+      case 'alltick':
+        return {
+          name,
+          description,
+          features: {
+            realtime: true,
+            history: true,
+            fundamental: false,
+            news: false,
+            search: true,
+            global: true,
+          },
+          reliability: 4.5,
+          speed: 4.2,
+          coverage: 4.9,
+          apiLimit: '免费版有限制，付费版支持高频调用',
+          recommendation: '专业金融数据提供商，支持全球多种资产类型，适合专业交易应用',
         }
       default:
         return {

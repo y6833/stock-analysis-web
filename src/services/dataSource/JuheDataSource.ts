@@ -124,27 +124,8 @@ export class JuheDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取股票数据失败，使用模拟数据:', proxyError)
       }
 
-      // 如果API调用失败，返回模拟数据
-      const mockData: StockData = {
-        symbol,
-        name: '聚合数据-模拟数据',
-        price: 10.00 + Math.random() * 50,
-        change: (Math.random() - 0.5) * 2,
-        changePercent: (Math.random() - 0.5) * 10,
-        volume: Math.floor(Math.random() * 1000000),
-        turnover: Math.floor(Math.random() * 100000000),
-        high: 10.00 + Math.random() * 50,
-        low: 10.00 + Math.random() * 50,
-        open: 10.00 + Math.random() * 50,
-        close: 10.00 + Math.random() * 50,
-        marketCap: 0, // 聚合数据不提供
-        pe: 0, // 聚合数据不提供
-        pb: 0, // 聚合数据不提供
-        timestamp: Date.now(),
-      }
-
-      console.log('使用模拟股票数据')
-      return mockData
+      // 不再返回模拟数据，直接抛出错误
+      throw new Error(`聚合数据API调用失败，无法获取股票${symbol}的数据`)
     } catch (error) {
       console.error(`聚合数据获取股票${symbol}数据失败:`, error)
       throw error
@@ -214,19 +195,8 @@ export class JuheDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取实时行情失败，使用模拟数据:', proxyError)
       }
 
-      // 如果API调用失败，返回模拟数据
-      const mockQuote: StockQuote = {
-        symbol,
-        name: '聚合数据-模拟行情',
-        price: 10.00 + Math.random() * 50,
-        change: (Math.random() - 0.5) * 2,
-        changePercent: (Math.random() - 0.5) * 10,
-        volume: Math.floor(Math.random() * 1000000),
-        timestamp: Date.now(),
-      }
-
-      console.log('使用模拟实时行情数据')
-      return mockQuote
+      // 不返回模拟数据，抛出错误
+      throw new Error(`聚合数据源获取股票${symbol}实时行情失败，API不可用`)
     } catch (error) {
       console.error(`聚合数据获取股票${symbol}实时行情失败:`, error)
       throw error

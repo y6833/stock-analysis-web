@@ -42,7 +42,7 @@ class StockService extends Service {
 
     // 首先尝试从缓存获取数据
     try {
-      if (app.redis) {
+      if (app.redis && typeof app.redis.get === 'function') {
         const cachedData = await app.redis.get(cacheKey);
         if (cachedData) {
           try {
@@ -108,7 +108,7 @@ class StockService extends Service {
 
       // 保存到 Redis 缓存
       try {
-        if (app.redis) {
+        if (app.redis && typeof app.redis.set === 'function') {
           await app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', ttl);
           ctx.logger.info(`数据已保存到 Redis 缓存: ${cacheKey}`);
         }
@@ -129,7 +129,7 @@ class StockService extends Service {
 
       // 再次尝试从缓存获取（可能第一次尝试时缓存还未准备好）
       try {
-        if (app.redis) {
+        if (app.redis && typeof app.redis.get === 'function') {
           const cachedData = await app.redis.get(cacheKey);
           if (cachedData) {
             const parsedData = JSON.parse(cachedData);
@@ -180,39 +180,86 @@ class StockService extends Service {
 
     // 使用缓存包装器
     return this.withCache(cacheKey, 3600, async () => {
-      // 使用Tushare API获取实时行情
-      // 首先尝试使用 daily_basic 接口获取最新交易日数据
-      const response = await axios.post('http://api.tushare.pro', {
-        api_name: 'daily_basic',
-        token: app.config.tushare.token,
-        params: {
-          ts_code: stockCode,
-          trade_date: this.getDateString(0), // 今天
-        },
-      });
+      try {
+        ctx.logger.info(`开始获取股票 ${stockCode} 行情...`);
 
-      // 如果今天没有数据，尝试获取最近一个交易日的数据
-      if (!response.data || !response.data.data || !response.data.data.items || response.data.data.items.length === 0) {
-        const fallbackResponse = await axios.post('http://api.tushare.pro', {
-          api_name: 'daily',
+        // 使用Tushare API获取实时行情
+        // 首先尝试使用 daily_basic 接口获取最新交易日数据
+        const response = await axios.post('http://api.tushare.pro', {
+          api_name: 'daily_basic',
           token: app.config.tushare.token,
           params: {
             ts_code: stockCode,
-            start_date: this.getDateString(-10), // 10天前
-            end_date: this.getDateString(0),     // 今天
-            limit: 1,                           // 只获取最新的一条记录
+            trade_date: this.getDateString(0), // 今天
           },
         });
 
-        return this.processStockData(fallbackResponse, stockCode, 'daily');
-      }
+        // 输出调试信息
+        ctx.logger.info(`股票 ${stockCode} Tushare API响应: ${JSON.stringify(response.data)}`);
 
-      return this.processStockData(response, stockCode, 'daily_basic');
+        // 检查API权限错误
+        if (response.data && response.data.msg && (response.data.msg.includes('积分') || response.data.msg.includes('权限'))) {
+          ctx.logger.warn(`Tushare API权限不足: ${response.data.msg}，返回默认股票数据`);
+          return this.getDefaultStockQuote(stockCode);
+        }
+
+        // 如果今天没有数据，尝试获取最近一个交易日的数据
+        if (!response.data || !response.data.data || !response.data.data.items || response.data.data.items.length === 0) {
+          try {
+            const fallbackResponse = await axios.post('http://api.tushare.pro', {
+              api_name: 'daily',
+              token: app.config.tushare.token,
+              params: {
+                ts_code: stockCode,
+                start_date: this.getDateString(-10), // 10天前
+                end_date: this.getDateString(0),     // 今天
+                limit: 1,                           // 只获取最新的一条记录
+              },
+            });
+
+            // 检查fallback API权限错误
+            if (fallbackResponse.data && fallbackResponse.data.msg && (fallbackResponse.data.msg.includes('积分') || fallbackResponse.data.msg.includes('权限'))) {
+              ctx.logger.warn(`Tushare API权限不足: ${fallbackResponse.data.msg}，返回默认股票数据`);
+              return this.getDefaultStockQuote(stockCode);
+            }
+
+            return this.processStockData(fallbackResponse, stockCode, 'daily');
+          } catch (fallbackErr) {
+            ctx.logger.warn(`获取股票 ${stockCode} fallback数据失败: ${fallbackErr.message}，返回默认数据`);
+            return this.getDefaultStockQuote(stockCode);
+          }
+        }
+
+        return this.processStockData(response, stockCode, 'daily_basic');
+      } catch (err) {
+        ctx.logger.error(`获取股票 ${stockCode} 行情失败:`, err);
+
+        // 如果是积分不足或权限问题，返回默认数据
+        if (err.response && err.response.data) {
+          const errorMsg = err.response.data.msg || err.message;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            ctx.logger.warn(`Tushare API权限不足: ${errorMsg}，返回默认股票数据`);
+            return this.getDefaultStockQuote(stockCode);
+          }
+        }
+
+        // 其他错误也返回默认数据，避免整个定时任务失败
+        ctx.logger.warn(`股票 ${stockCode} 获取失败，返回默认数据: ${err.message}`);
+        return this.getDefaultStockQuote(stockCode);
+      }
     });
   }
 
   // 处理股票数据
   async processStockData(response, stockCode, apiType) {
+    const { ctx } = this;
+
+    // 检查API权限错误
+    if (response.data && response.data.msg && (response.data.msg.includes('积分') || response.data.msg.includes('权限'))) {
+      ctx.logger.warn(`Tushare API权限不足: ${response.data.msg}，返回默认股票数据`);
+      return this.getDefaultStockQuote(stockCode);
+    }
+
     if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
       const latestData = response.data.data.items[0];
       const stockName = await this.getStockName(stockCode);
@@ -259,8 +306,47 @@ class StockService extends Service {
       return quote;
     }
 
-    // 如果没有获取到数据，抛出错误
-    throw new Error('未找到股票行情数据');
+    // 如果没有获取到数据，返回默认数据而不是抛出错误
+    ctx.logger.warn(`股票 ${stockCode} 未获取到数据，返回默认数据`);
+    return this.getDefaultStockQuote(stockCode);
+  }
+
+  // 获取默认股票数据
+  getDefaultStockQuote(stockCode) {
+    const stockNames = {
+      '600519.SH': '贵州茅台',
+      '000858.SZ': '五粮液',
+      '000001.SZ': '平安银行',
+      '600036.SH': '招商银行',
+      '000002.SZ': '万科A',
+      '600000.SH': '浦发银行',
+      '000166.SZ': '申万宏源',
+      '600276.SH': '恒瑞医药',
+      '300015.SZ': '爱尔眼科',
+      '002415.SZ': '海康威视'
+    };
+
+    // 从stockCode中提取纯数字代码
+    const pureCode = stockCode.replace(/\.(SH|SZ)$/, '');
+    const name = stockNames[stockCode] || stockNames[pureCode] || stockCode;
+
+    return {
+      code: stockCode,
+      name: name,
+      price: 100.00,
+      open: 98.50,
+      high: 102.00,
+      low: 97.80,
+      volume: 1000000,
+      amount: 100000000,
+      change: 1.52,
+      date: this.getDateString(0),
+      pe: 25.5,
+      pb: 3.2,
+      total_mv: 1000000000,
+      data_source: 'fallback',
+      data_source_message: '使用默认股票数据，因为Tushare API不可用'
+    };
   }
 
   // 获取股票缓存数据 (如果有)
@@ -270,7 +356,7 @@ class StockService extends Service {
     let redisError = false;
 
     // 尝试从 Redis 获取缓存数据
-    if (app.redis) {
+    if (app.redis && typeof app.redis.get === 'function') {
       try {
         const cachedData = await app.redis.get(cacheKey);
         if (cachedData) {
@@ -362,7 +448,7 @@ class StockService extends Service {
       };
 
       // 保存到 Redis 缓存
-      if (app.redis) {
+      if (app.redis && typeof app.redis.set === 'function') {
         await app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', 3600); // 1小时过期
         ctx.logger.info(`股票 ${stockCode} 行情数据已保存到 Redis 缓存`);
       }
@@ -504,97 +590,63 @@ class StockService extends Service {
     return `${year}${month}${day}`;
   }
 
-  // 获取股票列表
+  // 获取股票列表 - 优先从数据库获取
   async getStockList() {
     const { app, ctx } = this;
-    const cacheKey = 'stock:list';
+    const cacheKey = 'stock:list:db';
 
     // 使用缓存包装器
-    return this.withCache(cacheKey, 86400, async () => { // 24小时过期
+    return this.withCache(cacheKey, 3600, async () => { // 1小时过期，因为数据库数据更稳定
       try {
-        ctx.logger.info('开始获取股票列表...');
-        ctx.logger.info(`使用 Tushare API: ${app.config.tushare.api_url}`);
-        ctx.logger.info(`Token 是否设置: ${app.config.tushare.token ? '是' : '否'}`);
+        ctx.logger.info('开始获取股票列表（优先从数据库）...');
 
-        // 构建请求数据
-        const requestData = {
-          api_name: 'stock_basic',
-          token: app.config.tushare.token,
-          params: {
-            exchange: '',
-            list_status: 'L',
-            fields: 'ts_code,symbol,name,area,industry,list_date',
-          },
-        };
+        // 直接从 stock_basic 表获取数据
+        try {
+          ctx.logger.info('从stock_basic表获取股票数据...');
 
-        ctx.logger.info(`请求数据: ${JSON.stringify(requestData)}`);
+          const rawQuery = `
+            SELECT ts_code as tsCode, symbol, name, area, industry, market, list_date as listDate
+            FROM stock_basic
+            WHERE list_status = 'L' OR list_status IS NULL
+            ORDER BY symbol ASC
+            LIMIT 5000
+          `;
 
-        // 使用Tushare API获取股票列表
-        const response = await axios.post(app.config.tushare.api_url || 'http://api.tushare.pro', requestData, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
-          },
-          timeout: 30000 // 30秒超时
-        });
+          const [results] = await app.model.query(rawQuery, {
+            type: app.model.QueryTypes.SELECT
+          });
 
-        ctx.logger.info(`响应状态码: ${response.status}`);
+          if (results && results.length > 0) {
+            ctx.logger.info(`从stock_basic表获取到 ${results.length} 条股票数据`);
 
-        // 检查响应数据
-        if (!response.data) {
-          ctx.logger.error('Tushare API 响应数据为空');
-          throw new Error('获取股票列表失败: 响应数据为空');
+            const stocks = results.map(stock => ({
+              symbol: stock.symbol || stock.tsCode,
+              tsCode: stock.tsCode,
+              name: stock.name,
+              area: stock.area,
+              industry: stock.industry || '未知',
+              market: stock.market,
+              listDate: stock.listDate
+            }));
+
+            return {
+              data: stocks,
+              count: stocks.length,
+              data_source: 'database_stock_basic',
+              data_source_message: `数据来自stock_basic表，共 ${stocks.length} 条股票信息`
+            };
+          } else {
+            ctx.logger.warn('stock_basic表中没有股票数据，尝试从API获取并同步到数据库');
+          }
+        } catch (dbError) {
+          ctx.logger.error('从stock_basic表获取股票列表失败:', dbError);
+          ctx.logger.warn('数据库查询失败，尝试从API获取');
         }
 
-        if (response.data.code !== 0) {
-          ctx.logger.error(`Tushare API 返回错误码: ${response.data.code}, 错误信息: ${response.data.msg || '未知错误'}`);
-          throw new Error(`获取股票列表失败: ${response.data.msg || '未知错误'}`);
-        }
-
-        if (!response.data.data || !response.data.data.items) {
-          ctx.logger.error('Tushare API 响应数据格式不正确');
-          throw new Error('获取股票列表失败: 响应数据格式不正确');
-        }
-
-        const { fields, items } = response.data.data;
-        ctx.logger.info(`获取到 ${items.length} 条股票数据`);
-
-        const tsCodeIndex = fields.indexOf('ts_code');
-        const nameIndex = fields.indexOf('name');
-        const industryIndex = fields.indexOf('industry');
-
-        if (tsCodeIndex === -1 || nameIndex === -1) {
-          ctx.logger.error(`字段索引错误: ts_code=${tsCodeIndex}, name=${nameIndex}, industry=${industryIndex}`);
-          throw new Error('获取股票列表失败: 响应数据字段不完整');
-        }
-
-        // 转换为应用所需格式
-        const stocks = items.map(item => ({
-          symbol: item[tsCodeIndex],
-          name: item[nameIndex],
-          industry: industryIndex !== -1 && item[industryIndex] ? item[industryIndex] : '未知',
-        }));
-
-        ctx.logger.info(`股票列表处理完成，共 ${stocks.length} 条数据`);
-
-        // 添加数据来源信息
-        return {
-          data: stocks,
-          count: stocks.length,
-          data_source: 'external_api',
-          data_source_message: '数据来自Tushare API (stock_basic)'
-        };
+        // 数据库没有数据或查询失败，从API获取并同步到数据库
+        return await this.fetchAndSyncStockList();
       } catch (error) {
-        ctx.logger.error('获取股票列表过程中发生错误:', error);
-
-        if (error.response) {
-          ctx.logger.error(`HTTP 错误: ${error.response.status}`);
-          ctx.logger.error(`响应数据: ${JSON.stringify(error.response.data)}`);
-        } else if (error.request) {
-          ctx.logger.error('未收到响应，可能是网络问题或服务器超时');
-        }
-
+        ctx.logger.error('获取股票列表失败:', error);
         throw new Error(`获取股票列表失败: ${error.message}`);
       }
     }).catch(err => {
@@ -607,6 +659,238 @@ class StockService extends Service {
         data_source_message: `获取数据失败: ${err.message}`
       };
     });
+  }
+
+  // 从API获取股票列表并同步到数据库
+  async fetchAndSyncStockList() {
+    const { ctx, app } = this;
+
+    try {
+      ctx.logger.info('从Tushare API获取股票列表并同步到数据库...');
+
+      // 构建请求数据
+      const requestData = {
+        api_name: 'stock_basic',
+        token: app.config.tushare.token,
+        params: {
+          exchange: '',
+          list_status: 'L',
+          fields: 'ts_code,symbol,name,area,industry,market,list_date,fullname,enname,cnspell,curr_type,list_status,delist_date,is_hs',
+        },
+      };
+
+      // 发送请求
+      const response = await axios.post(app.config.tushare.api_url || 'http://api.tushare.pro', requestData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        },
+        timeout: 30000 // 30秒超时
+      });
+
+      // 检查响应
+      if (!response.data || response.data.code !== 0 || !response.data.data) {
+        ctx.logger.warn('API响应数据为空或错误，返回默认股票数据');
+        return this.getDefaultStockList();
+      }
+
+      const { fields, items } = response.data.data;
+
+      if (!fields || !items || items.length === 0) {
+        ctx.logger.warn('API响应数据格式不正确，返回默认股票数据');
+        return this.getDefaultStockList();
+      }
+
+      // 解析字段索引
+      const fieldIndexes = {
+        tsCode: fields.indexOf('ts_code'),
+        symbol: fields.indexOf('symbol'),
+        name: fields.indexOf('name'),
+        area: fields.indexOf('area'),
+        industry: fields.indexOf('industry'),
+        market: fields.indexOf('market'),
+        listDate: fields.indexOf('list_date'),
+        fullname: fields.indexOf('fullname'),
+        enname: fields.indexOf('enname'),
+        cnspell: fields.indexOf('cnspell'),
+        currType: fields.indexOf('curr_type'),
+        listStatus: fields.indexOf('list_status'),
+        delistDate: fields.indexOf('delist_date'),
+        isHs: fields.indexOf('is_hs')
+      };
+
+      ctx.logger.info(`准备同步 ${items.length} 条股票数据到数据库`);
+
+      // 批量同步到数据库
+      const stocksToSync = items.map(item => ({
+        symbol: item[fieldIndexes.symbol] || '',
+        tsCode: item[fieldIndexes.tsCode] || '',
+        name: item[fieldIndexes.name] || '',
+        area: item[fieldIndexes.area] || null,
+        industry: item[fieldIndexes.industry] || null,
+        market: item[fieldIndexes.market] || null,
+        listDate: item[fieldIndexes.listDate] || null,
+        fullname: item[fieldIndexes.fullname] || null,
+        enname: item[fieldIndexes.enname] || null,
+        cnspell: item[fieldIndexes.cnspell] || null,
+        currType: item[fieldIndexes.currType] || null,
+        listStatus: item[fieldIndexes.listStatus] || 'L',
+        delistDate: item[fieldIndexes.delistDate] || null,
+        isHs: item[fieldIndexes.isHs] || null
+      })).filter(stock => stock.symbol && stock.name); // 过滤掉无效数据
+
+      // 使用事务批量插入或更新到 stock_basic 表
+      const transaction = await app.model.transaction();
+      try {
+        // 先清空 stock_basic 表
+        await app.model.query('DELETE FROM stock_basic', { transaction });
+
+        // 批量插入到 stock_basic 表
+        const stockBasicData = stocksToSync.map(stock => [
+          stock.tsCode,
+          stock.symbol,
+          stock.name,
+          stock.area,
+          stock.industry,
+          stock.market,
+          stock.listDate,
+          stock.fullname,
+          stock.enname,
+          stock.cnspell,
+          stock.currType,
+          stock.listStatus,
+          stock.delistDate,
+          stock.isHs
+        ]);
+
+        if (stockBasicData.length > 0) {
+          const insertQuery = `
+            INSERT INTO stock_basic
+            (ts_code, symbol, name, area, industry, market, list_date, fullname, enname, cnspell, curr_type, list_status, delist_date, is_hs)
+            VALUES ?
+          `;
+
+          await app.model.query(insertQuery, {
+            replacements: [stockBasicData],
+            transaction
+          });
+
+          ctx.logger.info(`成功同步 ${stockBasicData.length} 条数据到stock_basic表`);
+        }
+
+        await transaction.commit();
+        ctx.logger.info(`成功同步 ${stocksToSync.length} 条股票数据到stock_basic表`);
+
+        // 返回格式化的数据
+        const stocks = stocksToSync.map(stock => ({
+          symbol: stock.symbol,
+          tsCode: stock.tsCode,
+          name: stock.name,
+          area: stock.area,
+          industry: stock.industry || '未知',
+          market: stock.market,
+          listDate: stock.listDate
+        }));
+
+        return {
+          data: stocks,
+          count: stocks.length,
+          data_source: 'api_synced_to_stock_basic',
+          data_source_message: `从Tushare API获取并同步到stock_basic表，共 ${stocks.length} 条股票信息`
+        };
+
+      } catch (dbError) {
+        await transaction.rollback();
+        ctx.logger.error('同步股票数据到stock_basic表失败:', dbError);
+
+        // 数据库同步失败，但API数据可用，直接返回API数据
+        const stocks = stocksToSync.map(stock => ({
+          symbol: stock.symbol,
+          tsCode: stock.tsCode,
+          name: stock.name,
+          area: stock.area,
+          industry: stock.industry || '未知',
+          market: stock.market,
+          listDate: stock.listDate
+        }));
+
+        return {
+          data: stocks,
+          count: stocks.length,
+          data_source: 'api_only',
+          data_source_message: `从Tushare API获取（stock_basic表同步失败），共 ${stocks.length} 条股票信息`
+        };
+      }
+
+    } catch (apiError) {
+      ctx.logger.error('从API获取股票列表失败:', apiError);
+
+      // API也失败了，尝试返回stock_basic表中的任何现有数据
+      try {
+        const rawQuery = `
+          SELECT ts_code as tsCode, symbol, name, area, industry, market, list_date as listDate
+          FROM stock_basic
+          ORDER BY symbol ASC
+          LIMIT 5000
+        `;
+
+        const [results] = await app.model.query(rawQuery, {
+          type: app.model.QueryTypes.SELECT
+        });
+
+        if (results && results.length > 0) {
+          ctx.logger.info(`API失败，使用stock_basic表中的 ${results.length} 条历史数据`);
+
+          const stocks = results.map(stock => ({
+            symbol: stock.symbol || stock.tsCode,
+            tsCode: stock.tsCode,
+            name: stock.name,
+            area: stock.area,
+            industry: stock.industry || '未知',
+            market: stock.market,
+            listDate: stock.listDate
+          }));
+
+          return {
+            data: stocks,
+            count: stocks.length,
+            data_source: 'stock_basic_fallback',
+            data_source_message: `API获取失败，使用stock_basic表历史数据，共 ${stocks.length} 条股票信息`
+          };
+        }
+      } catch (fallbackError) {
+        ctx.logger.error('stock_basic表回退也失败:', fallbackError);
+      }
+
+      // 最后的回退：返回默认数据
+      ctx.logger.warn('所有数据源都失败，返回默认股票数据');
+      return this.getDefaultStockList();
+    }
+  }
+
+  // 获取默认股票列表（当所有数据源都失败时使用）
+  getDefaultStockList() {
+    const { ctx } = this;
+
+    ctx.logger.info('返回默认股票列表数据');
+
+    // 返回一些主要的股票作为默认数据
+    const defaultStocks = [
+      { symbol: '000001.SZ', tsCode: '000001.SZ', name: '平安银行', area: '深圳', industry: '银行', market: '深圳', listDate: '19910403' },
+      { symbol: '000002.SZ', tsCode: '000002.SZ', name: '万科A', area: '深圳', industry: '房地产开发', market: '深圳', listDate: '19910129' },
+      { symbol: '600000.SH', tsCode: '600000.SH', name: '浦发银行', area: '上海', industry: '银行', market: '上海', listDate: '19991110' },
+      { symbol: '600036.SH', tsCode: '600036.SH', name: '招商银行', area: '深圳', industry: '银行', market: '上海', listDate: '20020409' },
+      { symbol: '600519.SH', tsCode: '600519.SH', name: '贵州茅台', area: '贵州', industry: '白酒', market: '上海', listDate: '20010827' },
+      { symbol: '000858.SZ', tsCode: '000858.SZ', name: '五粮液', area: '四川', industry: '白酒', market: '深圳', listDate: '19980427' }
+    ];
+
+    return {
+      data: defaultStocks,
+      count: defaultStocks.length,
+      data_source: 'default',
+      data_source_message: '所有数据源失败，使用默认股票数据'
+    };
   }
 
   // 测试 Redis 连接和数据存储
@@ -631,8 +915,14 @@ class StockService extends Service {
 
       // 测试 Redis 连接
       try {
-        await app.redis.ping();
-        result.redisAvailable = true;
+        if (typeof app.redis.ping === 'function') {
+          await app.redis.ping();
+          result.redisAvailable = true;
+        } else {
+          result.error = 'Redis ping 方法不可用';
+          result.data_source_message = 'Redis ping方法不存在';
+          return result;
+        }
       } catch (pingErr) {
         result.error = `Redis 连接测试失败: ${pingErr.message}`;
         result.data_source_message = 'Redis缓存连接失败';
@@ -649,10 +939,23 @@ class StockService extends Service {
 
       // 存储测试数据到 Redis
       const testKey = 'stock:test:redis-connection';
-      await app.redis.set(testKey, JSON.stringify(testData), 'EX', 300); // 5分钟过期
+      if (typeof app.redis.set === 'function') {
+        await app.redis.set(testKey, JSON.stringify(testData), 'EX', 300); // 5分钟过期
+      } else {
+        result.error = 'Redis set 方法不可用';
+        result.data_source_message = 'Redis set方法不存在';
+        return result;
+      }
 
       // 从 Redis 读取测试数据
-      const storedData = await app.redis.get(testKey);
+      let storedData = null;
+      if (typeof app.redis.get === 'function') {
+        storedData = await app.redis.get(testKey);
+      } else {
+        result.error = 'Redis get 方法不可用';
+        result.data_source_message = 'Redis get方法不存在';
+        return result;
+      }
       if (storedData) {
         result.testData = JSON.parse(storedData);
         result.success = true;
@@ -663,8 +966,13 @@ class StockService extends Service {
       }
 
       // 获取所有与股票相关的键
-      const stockKeys = await app.redis.keys('stock:*');
-      result.existingKeys = stockKeys;
+      if (typeof app.redis.keys === 'function') {
+        const stockKeys = await app.redis.keys('stock:*');
+        result.existingKeys = stockKeys;
+      } else {
+        result.existingKeys = [];
+        ctx.logger.warn('Redis keys 方法不可用');
+      }
 
       return result;
     } catch (err) {
@@ -718,8 +1026,10 @@ class StockService extends Service {
             data_source_message: quoteData.data_source_message || '数据来自外部API'
           };
 
-          await app.redis.set(quoteKey, JSON.stringify(dataToCache), 'EX', 3600); // 1小时过期
-          ctx.logger.info(`股票 ${stockCode} 行情数据已手动保存到 Redis 缓存`);
+          if (app.redis && typeof app.redis.set === 'function') {
+            await app.redis.set(quoteKey, JSON.stringify(dataToCache), 'EX', 3600); // 1小时过期
+            ctx.logger.info(`股票 ${stockCode} 行情数据已手动保存到 Redis 缓存`);
+          }
 
           // 获取股票历史数据（最近30天）
           const historyData = await this.getStockHistory(
@@ -747,7 +1057,10 @@ class StockService extends Service {
           }
 
           // 获取所有与该股票相关的键
-          const stockKeys = await app.redis.keys(`stock:*:${stockCode}*`);
+          let stockKeys = [];
+          if (app.redis && typeof app.redis.keys === 'function') {
+            stockKeys = await app.redis.keys(`stock:*:${stockCode}*`);
+          }
 
           result.success = true;
           result.data = {
@@ -894,71 +1207,147 @@ class StockService extends Service {
 
     return this.withCache(cacheKey, 86400, async () => { // 24小时过期
       try {
-        // 使用Tushare API获取行业分类
+        // 使用Tushare API获取申万行业分类
+        ctx.logger.info('开始获取行业列表...');
         const response = await axios.post('http://api.tushare.pro', {
-          api_name: 'hs_const',
+          api_name: 'index_classify',
           token: app.config.tushare.token,
           params: {
-            type: 'SW2021',
+            level: 'L1', // 一级行业
+            src: 'SW2021', // 申万2021版本
           },
         });
 
+        // 输出调试信息
+        ctx.logger.info(`Tushare API响应: ${JSON.stringify(response.data)}`);
+
         if (response.data && response.data.data && response.data.data.items) {
-          const industries = response.data.data.items.map(item => ({
-            code: item[1],
-            name: item[2],
-            level: item[3],
-            data_source: 'external_api',
-            data_source_message: '数据来自Tushare API (hs_const)'
-          }));
+          const items = response.data.data.items;
+          const fields = response.data.data.fields;
+
+          const industries = items.map(item => {
+            const record = {};
+            fields.forEach((field, index) => {
+              record[field] = item[index];
+            });
+
+            return {
+              code: record.index_code,
+              name: record.industry_name,
+              level: record.level,
+              parent_code: record.parent_code,
+              industry_code: record.industry_code,
+              is_pub: record.is_pub,
+              data_source: 'external_api',
+              data_source_message: '数据来自Tushare API (index_classify)'
+            };
+          });
 
           return {
             data: industries,
             data_source: 'external_api',
-            data_source_message: '数据来自Tushare API (hs_const)'
+            data_source_message: '数据来自Tushare API (index_classify)'
           };
+        }
+
+        // 如果API返回数据但没有items，可能是权限问题，检查错误信息
+        if (response.data && response.data.msg) {
+          const errorMsg = response.data.msg;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            ctx.logger.warn(`Tushare API权限不足: ${errorMsg}，使用默认行业列表`);
+            // 直接返回默认行业列表
+            return {
+              data: [
+                { code: '801010.SI', name: '农林牧渔', level: 'L1' },
+                { code: '801030.SI', name: '基础化工', level: 'L1' },
+                { code: '801040.SI', name: '钢铁', level: 'L1' },
+                { code: '801050.SI', name: '有色金属', level: 'L1' },
+                { code: '801080.SI', name: '电子', level: 'L1' },
+                { code: '801110.SI', name: '家用电器', level: 'L1' },
+                { code: '801120.SI', name: '食品饮料', level: 'L1' },
+                { code: '801130.SI', name: '纺织服饰', level: 'L1' },
+                { code: '801140.SI', name: '轻工制造', level: 'L1' },
+                { code: '801150.SI', name: '医药生物', level: 'L1' },
+                { code: '801160.SI', name: '公用事业', level: 'L1' },
+                { code: '801170.SI', name: '交通运输', level: 'L1' },
+                { code: '801180.SI', name: '房地产', level: 'L1' },
+                { code: '801200.SI', name: '商贸零售', level: 'L1' },
+                { code: '801210.SI', name: '社会服务', level: 'L1' },
+                { code: '801710.SI', name: '建筑材料', level: 'L1' },
+                { code: '801720.SI', name: '建筑装饰', level: 'L1' },
+                { code: '801730.SI', name: '电力设备', level: 'L1' },
+                { code: '801750.SI', name: '计算机', level: 'L1' },
+                { code: '801760.SI', name: '传媒', level: 'L1' },
+                { code: '801770.SI', name: '通信', level: 'L1' },
+                { code: '801780.SI', name: '银行', level: 'L1' },
+                { code: '801790.SI', name: '非银金融', level: 'L1' },
+                { code: '801880.SI', name: '汽车', level: 'L1' },
+                { code: '801890.SI', name: '机械设备', level: 'L1' },
+                { code: '801740.SI', name: '国防军工', level: 'L1' },
+                { code: '801950.SI', name: '煤炭', level: 'L1' },
+                { code: '801960.SI', name: '石油石化', level: 'L1' },
+                { code: '801970.SI', name: '环保', level: 'L1' },
+                { code: '801980.SI', name: '美容护理', level: 'L1' },
+                { code: '801230.SI', name: '综合', level: 'L1' },
+              ],
+              data_source: 'fallback',
+              data_source_message: `Tushare API权限不足: ${errorMsg}，使用默认申万2021版一级行业列表`
+            };
+          }
         }
 
         return {
           data: [],
           data_source: 'external_api',
-          data_source_message: '数据来自Tushare API (hs_const)，但未获取到数据'
+          data_source_message: '数据来自Tushare API (index_classify)，但未获取到数据'
         };
       } catch (err) {
         ctx.logger.error('获取行业列表失败:', err);
-        // 返回默认行业列表
+
+        // 如果是积分不足或权限问题，返回更详细的错误信息
+        if (err.response && err.response.data) {
+          const errorMsg = err.response.data.msg || err.message;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            ctx.logger.warn(`Tushare API权限不足: ${errorMsg}，使用默认行业列表`);
+          }
+        }
+        // 返回默认申万2021版一级行业列表
         return {
           data: [
-            { code: 'SW801010', name: '农林牧渔', level: 1 },
-            { code: 'SW801020', name: '采掘', level: 1 },
-            { code: 'SW801030', name: '化工', level: 1 },
-            { code: 'SW801040', name: '钢铁', level: 1 },
-            { code: 'SW801050', name: '有色金属', level: 1 },
-            { code: 'SW801080', name: '电子', level: 1 },
-            { code: 'SW801110', name: '家用电器', level: 1 },
-            { code: 'SW801120', name: '食品饮料', level: 1 },
-            { code: 'SW801130', name: '纺织服装', level: 1 },
-            { code: 'SW801140', name: '轻工制造', level: 1 },
-            { code: 'SW801150', name: '医药生物', level: 1 },
-            { code: 'SW801160', name: '公用事业', level: 1 },
-            { code: 'SW801170', name: '交通运输', level: 1 },
-            { code: 'SW801180', name: '房地产', level: 1 },
-            { code: 'SW801200', name: '商业贸易', level: 1 },
-            { code: 'SW801210', name: '休闲服务', level: 1 },
-            { code: 'SW801230', name: '银行', level: 1 },
-            { code: 'SW801710', name: '建筑材料', level: 1 },
-            { code: 'SW801720', name: '建筑装饰', level: 1 },
-            { code: 'SW801730', name: '电气设备', level: 1 },
-            { code: 'SW801740', name: '国防军工', level: 1 },
-            { code: 'SW801750', name: '计算机', level: 1 },
-            { code: 'SW801760', name: '传媒', level: 1 },
-            { code: 'SW801770', name: '通信', level: 1 },
-            { code: 'SW801780', name: '非银金融', level: 1 },
-            { code: 'SW801790', name: '汽车', level: 1 },
-            { code: 'SW801880', name: '机械设备', level: 1 }
+            { code: '801010.SI', name: '农林牧渔', level: 'L1' },
+            { code: '801030.SI', name: '基础化工', level: 'L1' },
+            { code: '801040.SI', name: '钢铁', level: 'L1' },
+            { code: '801050.SI', name: '有色金属', level: 'L1' },
+            { code: '801080.SI', name: '电子', level: 'L1' },
+            { code: '801110.SI', name: '家用电器', level: 'L1' },
+            { code: '801120.SI', name: '食品饮料', level: 'L1' },
+            { code: '801130.SI', name: '纺织服饰', level: 'L1' },
+            { code: '801140.SI', name: '轻工制造', level: 'L1' },
+            { code: '801150.SI', name: '医药生物', level: 'L1' },
+            { code: '801160.SI', name: '公用事业', level: 'L1' },
+            { code: '801170.SI', name: '交通运输', level: 'L1' },
+            { code: '801180.SI', name: '房地产', level: 'L1' },
+            { code: '801200.SI', name: '商贸零售', level: 'L1' },
+            { code: '801210.SI', name: '社会服务', level: 'L1' },
+            { code: '801710.SI', name: '建筑材料', level: 'L1' },
+            { code: '801720.SI', name: '建筑装饰', level: 'L1' },
+            { code: '801730.SI', name: '电力设备', level: 'L1' },
+            { code: '801750.SI', name: '计算机', level: 'L1' },
+            { code: '801760.SI', name: '传媒', level: 'L1' },
+            { code: '801770.SI', name: '通信', level: 'L1' },
+            { code: '801780.SI', name: '银行', level: 'L1' },
+            { code: '801790.SI', name: '非银金融', level: 'L1' },
+            { code: '801880.SI', name: '汽车', level: 'L1' },
+            { code: '801890.SI', name: '机械设备', level: 'L1' },
+            { code: '801740.SI', name: '国防军工', level: 'L1' },
+            { code: '801950.SI', name: '煤炭', level: 'L1' },
+            { code: '801960.SI', name: '石油石化', level: 'L1' },
+            { code: '801970.SI', name: '环保', level: 'L1' },
+            { code: '801980.SI', name: '美容护理', level: 'L1' },
+            { code: '801230.SI', name: '综合', level: 'L1' },
           ],
           data_source: 'fallback',
-          data_source_message: '使用默认行业列表（API调用失败）'
+          data_source_message: `使用默认申万2021版一级行业列表，因为API调用失败: ${err.message}`
         };
       }
     });
@@ -1067,6 +1456,8 @@ class StockService extends Service {
 
     return this.withCache(cacheKey, 300, async () => { // 5分钟过期
       try {
+        ctx.logger.info(`开始获取指数 ${indexCode} 行情...`);
+
         // 使用Tushare API获取指数行情
         const response = await axios.post('http://api.tushare.pro', {
           api_name: 'index_daily',
@@ -1076,6 +1467,15 @@ class StockService extends Service {
             trade_date: this.getDateString(0),
           },
         });
+
+        // 输出调试信息
+        ctx.logger.info(`指数 ${indexCode} Tushare API响应: ${JSON.stringify(response.data)}`);
+
+        // 检查API权限错误
+        if (response.data && response.data.msg && (response.data.msg.includes('积分') || response.data.msg.includes('权限'))) {
+          ctx.logger.warn(`Tushare API权限不足: ${response.data.msg}，返回默认指数数据`);
+          return this.getDefaultIndexQuote(indexCode);
+        }
 
         if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
           const indexData = response.data.data.items[0];
@@ -1099,12 +1499,57 @@ class StockService extends Service {
           return quote;
         }
 
-        throw new Error('未找到指数行情数据');
+        // 如果没有数据，返回默认数据而不是抛出错误
+        ctx.logger.warn(`指数 ${indexCode} 未获取到数据，返回默认数据`);
+        return this.getDefaultIndexQuote(indexCode);
+
       } catch (err) {
         ctx.logger.error(`获取指数 ${indexCode} 行情失败:`, err);
-        throw err;
+
+        // 如果是积分不足或权限问题，返回默认数据
+        if (err.response && err.response.data) {
+          const errorMsg = err.response.data.msg || err.message;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            ctx.logger.warn(`Tushare API权限不足: ${errorMsg}，返回默认指数数据`);
+            return this.getDefaultIndexQuote(indexCode);
+          }
+        }
+
+        // 其他错误也返回默认数据，避免整个定时任务失败
+        ctx.logger.warn(`指数 ${indexCode} 获取失败，返回默认数据: ${err.message}`);
+        return this.getDefaultIndexQuote(indexCode);
       }
     });
+  }
+
+  // 获取默认指数数据
+  getDefaultIndexQuote(indexCode) {
+    const indexNames = {
+      '000001.SH': '上证指数',
+      '399001.SZ': '深证成指',
+      '399006.SZ': '创业板指',
+      '000300.SH': '沪深300',
+      '000852.SH': '中证1000',
+      '000905.SH': '中证500',
+      '000016.SH': '上证50',
+      '399905.SZ': '中证500',
+      '000688.SH': '科创50'
+    };
+
+    return {
+      code: indexCode,
+      name: indexNames[indexCode] || indexCode,
+      price: 3000.00,
+      open: 2980.00,
+      high: 3020.00,
+      low: 2970.00,
+      volume: 1000000,
+      amount: 50000000000,
+      change: 0.67,
+      date: this.getDateString(0),
+      data_source: 'fallback',
+      data_source_message: `使用默认指数数据，因为Tushare API不可用`
+    };
   }
 
   // 获取指数名称
@@ -1123,6 +1568,12 @@ class StockService extends Service {
           },
         });
 
+        // 检查API权限错误
+        if (response.data && response.data.msg && (response.data.msg.includes('积分') || response.data.msg.includes('权限'))) {
+          ctx.logger.warn(`Tushare API权限不足: ${response.data.msg}，使用默认指数名称`);
+          return this.getDefaultIndexName(indexCode);
+        }
+
         if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
           const indexName = response.data.data.items[0][2]; // 指数名称
           return {
@@ -1132,20 +1583,45 @@ class StockService extends Service {
           };
         }
 
-        return {
-          name: indexCode,
-          data_source: 'external_api',
-          data_source_message: '数据来自Tushare API (index_basic)，但未获取到数据'
-        };
+        // 如果没有数据，使用默认名称
+        return this.getDefaultIndexName(indexCode);
       } catch (err) {
         ctx.logger.error('获取指数名称失败:', err);
-        return {
-          name: indexCode,
-          data_source: 'error',
-          data_source_message: `获取数据失败: ${err.message}`
-        };
+
+        // 如果是积分不足或权限问题，使用默认名称
+        if (err.response && err.response.data) {
+          const errorMsg = err.response.data.msg || err.message;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            ctx.logger.warn(`Tushare API权限不足: ${errorMsg}，使用默认指数名称`);
+            return this.getDefaultIndexName(indexCode);
+          }
+        }
+
+        // 其他错误也使用默认名称
+        return this.getDefaultIndexName(indexCode);
       }
     });
+  }
+
+  // 获取默认指数名称
+  getDefaultIndexName(indexCode) {
+    const indexNames = {
+      '000001.SH': '上证指数',
+      '399001.SZ': '深证成指',
+      '399006.SZ': '创业板指',
+      '000300.SH': '沪深300',
+      '000852.SH': '中证1000',
+      '000905.SH': '中证500',
+      '000016.SH': '上证50',
+      '399905.SZ': '中证500',
+      '000688.SH': '科创50'
+    };
+
+    return {
+      name: indexNames[indexCode] || indexCode,
+      data_source: 'fallback',
+      data_source_message: '使用默认指数名称，因为Tushare API不可用'
+    };
   }
 
   // 获取用户关注的股票
@@ -1197,25 +1673,45 @@ class StockService extends Service {
 
     return this.withCache(cacheKey, 3600, async () => { // 1小时过期
       try {
-        // 使用Tushare API获取行业成分股
+        // 使用Tushare API获取申万行业指数日行情
         const response = await axios.post('http://api.tushare.pro', {
-          api_name: 'index_weight',
+          api_name: 'sw_daily',
           token: app.config.tushare.token,
           params: {
-            index_code: industryCode,
-            trade_date: this.getDateString(0),
+            ts_code: industryCode,
+            trade_date: this.getDateString(0), // 今天
           },
         });
 
-        if (response.data && response.data.data && response.data.data.items) {
+        if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
+          const item = response.data.data.items[0];
+          const fields = response.data.data.fields;
+
+          // 构建字段映射
+          const record = {};
+          fields.forEach((field, index) => {
+            record[field] = item[index];
+          });
+
           const industryData = {
             code: industryCode,
-            stocks: response.data.data.items.map(item => ({
-              symbol: item[1],
-              weight: item[2],
-            })),
+            name: record.name || industryCode,
+            change: record.change || 0,
+            changePercent: record.pct_change || 0,
+            volume: record.vol || 0,
+            turnover: record.amount || 0,
+            open: record.open || 0,
+            close: record.close || 0,
+            high: record.high || 0,
+            low: record.low || 0,
+            pe: record.pe || 0,
+            pb: record.pb || 0,
+            total_mv: record.total_mv || 0,
+            float_mv: record.float_mv || 0,
+            leadingStocks: [], // 申万行业指数API不提供成分股信息
+            laggingStocks: [],
             data_source: 'external_api',
-            data_source_message: '数据来自Tushare API (index_weight)'
+            data_source_message: '数据来自Tushare API (sw_daily)'
           };
 
           return industryData;
@@ -1223,15 +1719,47 @@ class StockService extends Service {
 
         return {
           code: industryCode,
-          stocks: [],
+          name: industryCode,
+          change: 0,
+          changePercent: 0,
+          volume: 0,
+          turnover: 0,
+          leadingStocks: [],
+          laggingStocks: [],
           data_source: 'external_api',
-          data_source_message: '数据来自Tushare API (index_weight)，但未获取到数据'
+          data_source_message: '数据来自Tushare API (sw_daily)，但未获取到数据'
         };
       } catch (err) {
         ctx.logger.error(`获取行业 ${industryCode} 数据失败:`, err);
+
+        // 如果是积分不足或权限问题，返回更详细的错误信息
+        if (err.response && err.response.data) {
+          const errorMsg = err.response.data.msg || err.message;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            return {
+              code: industryCode,
+              name: industryCode,
+              change: 0,
+              changePercent: 0,
+              volume: 0,
+              turnover: 0,
+              leadingStocks: [],
+              laggingStocks: [],
+              data_source: 'tushare_error',
+              data_source_message: `Tushare API权限不足: ${errorMsg}，需要至少5000积分才能调用申万行业指数接口`
+            };
+          }
+        }
+
         return {
           code: industryCode,
-          stocks: [],
+          name: industryCode,
+          change: 0,
+          changePercent: 0,
+          volume: 0,
+          turnover: 0,
+          leadingStocks: [],
+          laggingStocks: [],
           data_source: 'error',
           data_source_message: `获取数据失败: ${err.message}`
         };
@@ -1241,28 +1769,67 @@ class StockService extends Service {
 
   // 获取涨停股票
   async getLimitUpStocks(limit = 50) {
-    const { ctx } = this;
+    const { ctx, app } = this;
     const cacheKey = `tushare:limit_up_stocks:${this.getDateString(0)}`;
 
     return this.withCache(cacheKey, 1800, async () => { // 30分钟过期
       try {
         ctx.logger.info('获取涨停股票数据...');
 
-        // 这里应该调用实际的涨停股票API
-        // 由于API复杂性，返回模拟数据
-        const mockData = this.generateMockLimitUpStocks(limit);
+        // 调用Tushare涨跌停列表API
+        const response = await axios.post('http://api.tushare.pro', {
+          api_name: 'limit_list_d',
+          token: app.config.tushare.token,
+          params: {
+            trade_date: this.getDateString(0), // 今天
+            limit_type: 'U', // U表示涨停
+          },
+        });
 
-        return {
-          data: mockData,
-          data_source: 'mock_api',
-          data_source_message: '模拟涨停股票数据'
-        };
+        if (response.data && response.data.data && response.data.data.items) {
+          const items = response.data.data.items;
+          const fields = response.data.data.fields;
+
+          const limitUpStocks = items.map(item => {
+            const record = {};
+            fields.forEach((field, index) => {
+              record[field] = item[index];
+            });
+            return record;
+          }).slice(0, limit); // 限制返回数量
+
+          return {
+            data: limitUpStocks,
+            data_source: 'tushare',
+            data_source_message: `数据来自Tushare API (limit_list_d)，共${limitUpStocks.length}只涨停股票`
+          };
+        } else {
+          return {
+            data: [],
+            data_source: 'tushare',
+            data_source_message: 'Tushare API返回数据格式异常'
+          };
+        }
+
       } catch (error) {
         ctx.logger.error('获取涨停股票失败:', error);
+
+        // 如果是积分不足或权限问题，返回更详细的错误信息
+        if (error.response && error.response.data) {
+          const errorMsg = error.response.data.msg || error.message;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            return {
+              data: [],
+              data_source: 'tushare_error',
+              data_source_message: `Tushare API权限不足: ${errorMsg}，需要至少5000积分才能调用涨跌停接口`
+            };
+          }
+        }
+
         return {
           data: [],
           data_source: 'error',
-          data_source_message: '获取涨停股票数据失败'
+          data_source_message: `获取涨停股票数据失败: ${error.message}`
         };
       }
     });
@@ -1270,28 +1837,67 @@ class StockService extends Service {
 
   // 获取跌停股票
   async getLimitDownStocks(limit = 50) {
-    const { ctx } = this;
+    const { ctx, app } = this;
     const cacheKey = `tushare:limit_down_stocks:${this.getDateString(0)}`;
 
     return this.withCache(cacheKey, 1800, async () => { // 30分钟过期
       try {
         ctx.logger.info('获取跌停股票数据...');
 
-        // 这里应该调用实际的跌停股票API
-        // 由于API复杂性，返回模拟数据
-        const mockData = this.generateMockLimitDownStocks(limit);
+        // 调用Tushare涨跌停列表API
+        const response = await axios.post('http://api.tushare.pro', {
+          api_name: 'limit_list_d',
+          token: app.config.tushare.token,
+          params: {
+            trade_date: this.getDateString(0), // 今天
+            limit_type: 'D', // D表示跌停
+          },
+        });
 
-        return {
-          data: mockData,
-          data_source: 'mock_api',
-          data_source_message: '模拟跌停股票数据'
-        };
+        if (response.data && response.data.data && response.data.data.items) {
+          const items = response.data.data.items;
+          const fields = response.data.data.fields;
+
+          const limitDownStocks = items.map(item => {
+            const record = {};
+            fields.forEach((field, index) => {
+              record[field] = item[index];
+            });
+            return record;
+          }).slice(0, limit); // 限制返回数量
+
+          return {
+            data: limitDownStocks,
+            data_source: 'tushare',
+            data_source_message: `数据来自Tushare API (limit_list_d)，共${limitDownStocks.length}只跌停股票`
+          };
+        } else {
+          return {
+            data: [],
+            data_source: 'tushare',
+            data_source_message: 'Tushare API返回数据格式异常'
+          };
+        }
+
       } catch (error) {
         ctx.logger.error('获取跌停股票失败:', error);
+
+        // 如果是积分不足或权限问题，返回更详细的错误信息
+        if (error.response && error.response.data) {
+          const errorMsg = error.response.data.msg || error.message;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            return {
+              data: [],
+              data_source: 'tushare_error',
+              data_source_message: `Tushare API权限不足: ${errorMsg}，需要至少5000积分才能调用涨跌停接口`
+            };
+          }
+        }
+
         return {
           data: [],
           data_source: 'error',
-          data_source_message: '获取跌停股票数据失败'
+          data_source_message: `获取跌停股票数据失败: ${error.message}`
         };
       }
     });
@@ -1299,101 +1905,115 @@ class StockService extends Service {
 
   // 获取资金流向数据
   async getMoneyFlow(limit = 100) {
-    const { ctx } = this;
+    const { ctx, app } = this;
     const cacheKey = `tushare:money_flow:${this.getDateString(0)}`;
 
     return this.withCache(cacheKey, 1800, async () => { // 30分钟过期
       try {
         ctx.logger.info('获取资金流向数据...');
 
-        // 这里应该调用实际的资金流向API
-        // 由于API复杂性，返回模拟数据
-        const mockData = this.generateMockMoneyFlow(limit);
+        // 获取沪深港通资金流向数据
+        const hsgtResponse = await axios.post('http://api.tushare.pro', {
+          api_name: 'moneyflow_hsgt',
+          token: app.config.tushare.token,
+          params: {
+            trade_date: this.getDateString(0), // 今天
+          },
+        });
+
+        let hsgtData = [];
+        if (hsgtResponse.data && hsgtResponse.data.data && hsgtResponse.data.data.items) {
+          const items = hsgtResponse.data.data.items;
+          if (items.length > 0) {
+            const item = items[0]; // 取最新一条数据
+            hsgtData = [{
+              type: 'hsgt',
+              name: '沪深港通资金流向',
+              trade_date: item[0],
+              north_money: item[5] || 0, // 北向资金
+              south_money: item[6] || 0, // 南向资金
+              hgt: item[3] || 0, // 沪股通
+              sgt: item[4] || 0, // 深股通
+              ggt_ss: item[1] || 0, // 港股通(上海)
+              ggt_sz: item[2] || 0, // 港股通(深圳)
+            }];
+          }
+        }
+
+        // 获取热门股票的资金流向数据
+        const hotStocks = ['000001.SZ', '000002.SZ', '600036.SH', '600519.SH', '000858.SZ'];
+        const stockMoneyFlow = [];
+
+        for (const stock of hotStocks.slice(0, Math.min(limit - hsgtData.length, 10))) {
+          try {
+            const stockResponse = await axios.post('http://api.tushare.pro', {
+              api_name: 'moneyflow',
+              token: app.config.tushare.token,
+              params: {
+                ts_code: stock,
+                trade_date: this.getDateString(0),
+              },
+            });
+
+            if (stockResponse.data && stockResponse.data.data && stockResponse.data.data.items) {
+              const items = stockResponse.data.data.items;
+              if (items.length > 0) {
+                const item = items[0];
+                stockMoneyFlow.push({
+                  type: 'stock',
+                  ts_code: item[0],
+                  name: stock,
+                  trade_date: item[1],
+                  net_mf_amount: item[18] || 0, // 净流入额(万元)
+                  buy_lg_amount: item[10] || 0, // 大单买入金额
+                  sell_lg_amount: item[12] || 0, // 大单卖出金额
+                  buy_elg_amount: item[14] || 0, // 特大单买入金额
+                  sell_elg_amount: item[16] || 0, // 特大单卖出金额
+                });
+              }
+            }
+          } catch (stockError) {
+            ctx.logger.warn(`获取股票${stock}资金流向失败:`, stockError.message);
+          }
+        }
+
+        const allData = [...hsgtData, ...stockMoneyFlow];
 
         return {
-          data: mockData,
-          data_source: 'mock_api',
-          data_source_message: '模拟资金流向数据'
+          data: allData,
+          data_source: 'tushare',
+          data_source_message: `数据来自Tushare API，包含${hsgtData.length}条沪深港通数据和${stockMoneyFlow.length}条个股数据`
         };
+
       } catch (error) {
         ctx.logger.error('获取资金流向数据失败:', error);
+
+        // 如果是积分不足或权限问题，返回更详细的错误信息
+        if (error.response && error.response.data) {
+          const errorMsg = error.response.data.msg || error.message;
+          if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
+            return {
+              data: [],
+              data_source: 'tushare_error',
+              data_source_message: `Tushare API权限不足: ${errorMsg}，需要至少2000积分才能调用资金流向接口`
+            };
+          }
+        }
+
         return {
           data: [],
           data_source: 'error',
-          data_source_message: '获取资金流向数据失败'
+          data_source_message: `获取资金流向数据失败: ${error.message}`
         };
       }
     });
   }
 
-  // 生成模拟涨停股票数据
-  generateMockLimitUpStocks(limit) {
-    const stocks = [];
-    const stockCodes = [
-      '000001.SZ', '000002.SZ', '000858.SZ', '002415.SZ', '002594.SZ',
-      '600000.SH', '600036.SH', '600519.SH', '600887.SH', '601318.SH'
-    ];
+  // 模拟涨停股票数据生成函数已移除
 
-    for (let i = 0; i < Math.min(limit, stockCodes.length); i++) {
-      stocks.push({
-        ts_code: stockCodes[i],
-        name: `股票${i + 1}`,
-        close: (Math.random() * 50 + 10).toFixed(2),
-        pct_chg: (9.5 + Math.random() * 0.5).toFixed(2), // 接近涨停
-        amount: (Math.random() * 1000000000).toFixed(0),
-        vol: (Math.random() * 100000000).toFixed(0),
-        turnover_rate: (Math.random() * 10).toFixed(2)
-      });
-    }
+  // 模拟跌停股票数据生成函数已移除
 
-    return stocks;
-  }
-
-  // 生成模拟跌停股票数据
-  generateMockLimitDownStocks(limit) {
-    const stocks = [];
-    const stockCodes = [
-      '000003.SZ', '000004.SZ', '000859.SZ', '002416.SZ', '002595.SZ',
-      '600001.SH', '600037.SH', '600520.SH', '600888.SH', '601319.SH'
-    ];
-
-    for (let i = 0; i < Math.min(limit, stockCodes.length); i++) {
-      stocks.push({
-        ts_code: stockCodes[i],
-        name: `股票${i + 1}`,
-        close: (Math.random() * 50 + 10).toFixed(2),
-        pct_chg: (-9.5 - Math.random() * 0.5).toFixed(2), // 接近跌停
-        amount: (Math.random() * 1000000000).toFixed(0),
-        vol: (Math.random() * 100000000).toFixed(0),
-        turnover_rate: (Math.random() * 10).toFixed(2)
-      });
-    }
-
-    return stocks;
-  }
-
-  // 生成模拟资金流向数据
-  generateMockMoneyFlow(limit) {
-    const flows = [];
-    const stockCodes = [
-      '000001.SZ', '000002.SZ', '000858.SZ', '002415.SZ', '002594.SZ',
-      '600000.SH', '600036.SH', '600519.SH', '600887.SH', '601318.SH'
-    ];
-
-    for (let i = 0; i < Math.min(limit, stockCodes.length); i++) {
-      const netInflow = (Math.random() - 0.5) * 1000000000; // -500M到500M
-      flows.push({
-        ts_code: stockCodes[i],
-        name: `股票${i + 1}`,
-        net_inflow: netInflow.toFixed(0),
-        main_net_inflow: (netInflow * 0.6).toFixed(0),
-        retail_net_inflow: (netInflow * 0.4).toFixed(0),
-        net_inflow_rate: ((netInflow / 10000000000) * 100).toFixed(2) // 转换为百分比
-      });
-    }
-
-    return flows;
-  }
+  // 模拟资金流向数据生成函数已移除
 }
 
 module.exports = StockService;

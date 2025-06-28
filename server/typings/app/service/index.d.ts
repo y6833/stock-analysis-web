@@ -10,6 +10,7 @@ type AutoInstanceType<T, U = T extends CanExportFunc ? T : T extends AnyFunc ? R
 import ExportAdmin = require('../../../app/service/admin');
 import ExportAkshare = require('../../../app/service/akshare');
 import ExportAlert = require('../../../app/service/alert');
+import ExportAlltick = require('../../../app/service/alltick');
 import ExportBacktest = require('../../../app/service/backtest');
 import ExportCache = require('../../../app/service/cache');
 import ExportCacheStats = require('../../../app/service/cacheStats');
@@ -48,6 +49,7 @@ declare module 'egg' {
     admin: AutoInstanceType<typeof ExportAdmin>;
     akshare: AutoInstanceType<typeof ExportAkshare>;
     alert: AutoInstanceType<typeof ExportAlert>;
+    alltick: AutoInstanceType<typeof ExportAlltick>;
     backtest: AutoInstanceType<typeof ExportBacktest>;
     cache: AutoInstanceType<typeof ExportCache>;
     cacheStats: AutoInstanceType<typeof ExportCacheStats>;

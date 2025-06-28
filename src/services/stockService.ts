@@ -4,51 +4,40 @@ import { useToast } from '@/composables/useToast'
 import { DataSourceFactory } from './dataSource/DataSourceFactory'
 import type { DataSourceType } from './dataSource/DataSourceFactory'
 import eventBus from '@/utils/eventBus'
+import { dataSourceStateManager } from '@/services/dataSourceStateManager'
+import { smartCache } from '@/services/cacheService'
 
-// 从本地存储获取当前数据源类型
-const getCurrentDataSourceType = (): DataSourceType => {
-  const savedSource = localStorage.getItem('preferredDataSource')
-
-  // 如果localStorage中有值，使用该值
-  if (
-    savedSource &&
-    ['tushare', 'sina', 'eastmoney', 'akshare', 'netease', 'tencent', 'yahoo'].includes(savedSource)
-  ) {
-    console.log(`从localStorage获取数据源类型: ${savedSource}`)
-    return savedSource as DataSourceType
-  }
-
-  // 如果localStorage中没有值或值无效，设置默认值为eastmoney并保存
-  console.log('localStorage中没有有效的数据源类型，使用默认值: eastmoney')
-  localStorage.setItem('preferredDataSource', 'eastmoney')
-  return 'eastmoney'
-}
-
-// 初始化数据源
-let currentDataSourceType = getCurrentDataSourceType()
+// 使用统一的数据源状态管理器
+let currentDataSourceType = dataSourceStateManager.getCurrentDataSource()
 let dataSource = DataSourceFactory.createDataSource(currentDataSourceType)
 
-// 确保localStorage中的值与当前数据源类型一致
-localStorage.setItem('preferredDataSource', currentDataSourceType)
+console.log(`[stockService] 初始化数据源: ${currentDataSourceType}`)
 
 // 更新数据源实例
 const updateDataSource = (type: DataSourceType) => {
+  const oldType = currentDataSourceType
   currentDataSourceType = type
   dataSource = DataSourceFactory.createDataSource(type)
-  console.log(`数据源已更新为: ${type}`)
+  console.log(`[stockService] 数据源已更新: ${oldType} -> ${type}`)
 }
 
-// 监听数据源变化事件
-eventBus.on('data-source-changed', (type: DataSourceType) => {
-  updateDataSource(type)
-})
+// 监听数据源变化事件（防止重复监听）
+let eventListenerAdded = false
+if (!eventListenerAdded) {
+  eventBus.on('data-source-changed', (type: DataSourceType) => {
+    console.log(`[stockService] 收到数据源变化事件: ${type}`)
+    updateDataSource(type)
+  })
+  eventListenerAdded = true
+  console.log('[stockService] 已添加数据源变化事件监听器')
+}
 
 const { showToast } = useToast()
 
 // 股票服务
 export const stockService = {
   // 获取当前数据源类型
-  getCurrentDataSourceType: () => currentDataSourceType,
+  getCurrentDataSourceType: () => dataSourceStateManager.getCurrentDataSource(),
 
   // 获取所有可用数据源
   getAvailableDataSources: () => DataSourceFactory.getAvailableDataSources(),
@@ -59,45 +48,24 @@ export const stockService = {
   // 切换数据源
   switchDataSource: (type: DataSourceType): boolean => {
     try {
-      console.log(`切换数据源: 从 ${currentDataSourceType} 到 ${type}`)
+      console.log(`[stockService] 切换数据源请求: ${currentDataSourceType} -> ${type}`)
 
-      // 检查是否是当前数据源
-      if (type === currentDataSourceType) {
-        showToast(`已经是${DataSourceFactory.getDataSourceInfo(type).name}，无需切换`, 'info')
-        return true
+      // 使用统一的状态管理器进行切换
+      const success = dataSourceStateManager.switchDataSource(type)
+
+      if (success) {
+        // 更新本地数据源实例
+        updateDataSource(type)
+        showToast(`已切换到${DataSourceFactory.getDataSourceInfo(type).name}`, 'success')
+        console.log(`[stockService] 数据源切换成功: ${type}`)
+      } else {
+        showToast('切换数据源失败', 'error')
+        console.error(`[stockService] 数据源切换失败: ${type}`)
       }
 
-      // 更新数据源实例
-      updateDataSource(type)
-
-      // 保存到本地存储
-      localStorage.setItem('preferredDataSource', type)
-      console.log(`已保存数据源设置到localStorage: ${type}`)
-
-      // 记录切换时间
-      localStorage.setItem('last_source_switch_time', Date.now().toString())
-
-      // 确认localStorage中的值已正确设置
-      const storedValue = localStorage.getItem('preferredDataSource')
-      console.log(`确认localStorage中的数据源设置: ${storedValue}`)
-
-      // 如果localStorage中的值与期望的不一致，尝试再次设置
-      if (storedValue !== type) {
-        console.warn(`localStorage中的数据源设置不一致，再次尝试设置: ${storedValue} != ${type}`)
-        localStorage.setItem('preferredDataSource', type)
-        // 再次确认
-        const recheck = localStorage.getItem('preferredDataSource')
-        console.log(`再次确认localStorage中的数据源设置: ${recheck}`)
-      }
-
-      // 发出数据源切换事件
-      eventBus.emit('data-source-changed', type)
-
-      showToast(`已切换到${DataSourceFactory.getDataSourceInfo(type).name}`, 'success')
-
-      return true
+      return success
     } catch (error) {
-      console.error('切换数据源失败:', error)
+      console.error('[stockService] 切换数据源异常:', error)
       showToast('切换数据源失败', 'error')
       return false
     }
@@ -117,8 +85,7 @@ export const stockService = {
         forcedCurrentSource || storedDataSource || currentDataSourceType
 
       console.log(
-        `测试数据源参数 - 请求类型: ${type}, 强制当前源: ${forcedCurrentSource || '无'}, 存储源: ${
-          storedDataSource || '无'
+        `测试数据源参数 - 请求类型: ${type}, 强制当前源: ${forcedCurrentSource || '无'}, 存储源: ${storedDataSource || '无'
         }, 全局源: ${currentDataSourceType}`
       )
       console.log(`最终使用的当前数据源: ${effectiveCurrentSource}`)
@@ -162,7 +129,7 @@ export const stockService = {
       console.error(`${type}数据源连接测试失败:`, error)
 
       // 只有当测试的是当前数据源或在数据源设置页面时才显示错误消息
-      if (type === effectiveCurrentSource || window.location.pathname.includes('/data-source')) {
+      if (type === currentDataSourceType || window.location.pathname.includes('/data-source')) {
         showToast(
           `数据源连接测试失败: ${error instanceof Error ? error.message : '未知错误'}`,
           'error'
@@ -213,7 +180,7 @@ export const stockService = {
     }
   },
 
-  // 获取股票列表
+  // 获取股票列表 - 从数据库获取
   async getStocks(): Promise<
     Stock[] & {
       data_source?: string
@@ -223,87 +190,122 @@ export const stockService = {
       source_type?: DataSourceType
     }
   > {
-    // 获取所有可用的数据源
-    const availableSources = DataSourceFactory.getAvailableDataSources()
+    const cacheKey = 'stocks_from_database'
 
-    // 首先尝试当前选择的数据源
-    try {
-      // 获取数据源信息
-      const sourceInfo = DataSourceFactory.getDataSourceInfo(currentDataSourceType)
-
-      // 获取股票列表，传递数据源类型
-      const stocks = await dataSource.getStocks({ sourceType: currentDataSourceType })
-
-      // 添加数据源信息
-      const result = [...stocks] as Stock[] & {
-        data_source?: string
-        data_source_message?: string
-        is_real_time?: boolean
-        is_cache?: boolean
-        source_type?: DataSourceType
-      }
-
-      // 添加数据源信息
-      result.data_source = sourceInfo.name
-      result.data_source_message = `数据来自${sourceInfo.name}`
-      result.is_real_time = true
-      result.is_cache = false
-      result.source_type = currentDataSourceType
-
-      console.log(`使用 ${currentDataSourceType} 数据源获取股票列表成功`)
-      return result
-    } catch (error) {
-      console.error(`${dataSource.getName()}获取股票列表失败:`, error)
-
-      // 当前数据源失败，尝试其他数据源
-      console.log(`尝试使用其他数据源获取股票列表...`)
-
-      // 过滤掉当前数据源，只尝试其他数据源
-      const otherSources = availableSources.filter((source) => source !== currentDataSourceType)
-
-      // 依次尝试其他数据源
-      for (const sourceType of otherSources) {
+    return await smartCache.getOrSet(
+      cacheKey,
+      async () => {
         try {
-          console.log(`尝试使用 ${sourceType} 数据源获取股票列表...`)
-          const tempDataSource = DataSourceFactory.createDataSource(sourceType)
-          const stocks = await tempDataSource.getStocks({ sourceType })
+          console.log('[StockService] 从后端API获取股票列表（数据库）...')
 
-          // 获取数据源信息
-          const sourceInfo = DataSourceFactory.getDataSourceInfo(sourceType)
+          // 直接调用后端API获取股票列表
+          const response = await axios.get('/api/stocks')
 
-          // 添加数据源信息
-          const result = [...stocks] as Stock[] & {
-            data_source?: string
-            data_source_message?: string
-            is_real_time?: boolean
-            is_cache?: boolean
-            source_type?: DataSourceType
+          if (response.data && response.data.data) {
+            const stocks = response.data.data
+
+            // 添加数据源信息
+            const result = [...stocks] as Stock[] & {
+              data_source?: string
+              data_source_message?: string
+              is_real_time?: boolean
+              is_cache?: boolean
+              source_type?: DataSourceType
+            }
+
+            // 添加数据源信息
+            result.data_source = response.data.data_source || 'database'
+            result.data_source_message = response.data.data_source_message || '数据来自数据库'
+            result.is_real_time = false // 数据库数据不是实时的
+            result.is_cache = false
+            result.source_type = 'database' as DataSourceType
+
+            console.log(`[StockService] 从数据库获取股票列表成功，共 ${stocks.length} 条数据`)
+            console.log(`[StockService] 数据源: ${result.data_source}`)
+
+            return result
+          } else {
+            throw new Error('后端API返回数据格式错误')
           }
+        } catch (error) {
+          console.error('[StockService] 从数据库获取股票列表失败:', error)
 
-          // 添加数据源信息
-          result.data_source = sourceInfo.name
-          result.data_source_message = `数据来自${sourceInfo.name}`
-          result.is_real_time = true
-          result.is_cache = false
-          result.source_type = sourceType
+          // 如果后端API失败，尝试使用外部数据源作为备用
+          console.log('[StockService] 数据库获取失败，尝试使用外部数据源作为备用...')
 
-          console.log(`使用 ${sourceType} 数据源获取股票列表成功`)
-          showToast(`当前数据源获取失败，已使用 ${sourceInfo.name} 获取股票列表`, 'info')
+          try {
+            // 获取所有可用的数据源
+            const availableSources = DataSourceFactory.getAvailableDataSources()
 
-          return result
-        } catch (sourceError) {
-          console.error(`${sourceType} 数据源获取股票列表失败:`, sourceError)
-          // 继续尝试下一个数据源
+            // 尝试第一个可用的数据源
+            for (const sourceType of availableSources) {
+              try {
+                console.log(`[StockService] 尝试使用 ${sourceType} 数据源获取股票列表...`)
+                const tempDataSource = DataSourceFactory.createDataSource(sourceType)
+                const stocks = await tempDataSource.getStocks({ sourceType })
+
+                // 获取数据源信息
+                const sourceInfo = DataSourceFactory.getDataSourceInfo(sourceType)
+
+                // 添加数据源信息
+                const result = [...stocks] as Stock[] & {
+                  data_source?: string
+                  data_source_message?: string
+                  is_real_time?: boolean
+                  is_cache?: boolean
+                  source_type?: DataSourceType
+                }
+
+                // 添加数据源信息
+                result.data_source = sourceInfo.name
+                result.data_source_message = `数据库获取失败，使用${sourceInfo.name}作为备用数据源`
+                result.is_real_time = true
+                result.is_cache = false
+                result.source_type = sourceType
+
+                console.log(`[StockService] 使用 ${sourceType} 备用数据源获取股票列表成功`)
+                showToast(`数据库获取失败，已使用 ${sourceInfo.name} 作为备用数据源`, 'warning')
+
+                return result
+              } catch (sourceError) {
+                console.error(`[StockService] ${sourceType} 数据源获取股票列表失败:`, sourceError)
+                // 继续尝试下一个数据源
+              }
+            }
+
+            // 所有数据源都失败
+            console.error('[StockService] 所有数据源获取股票列表均失败')
+            showToast('无法获取股票列表，所有数据源均失败，请检查网络连接或稍后再试', 'error')
+
+            // 返回空数组而不是抛出错误，避免阻塞应用
+            return [] as Stock[] & {
+              data_source?: string
+              data_source_message?: string
+              is_real_time?: boolean
+              is_cache?: boolean
+              source_type?: DataSourceType
+            }
+          } catch (fallbackError) {
+            console.error('[StockService] 备用数据源也失败:', fallbackError)
+            showToast('获取股票列表失败，请稍后再试', 'error')
+
+            // 返回空数组
+            return [] as Stock[] & {
+              data_source?: string
+              data_source_message?: string
+              is_real_time?: boolean
+              is_cache?: boolean
+              source_type?: DataSourceType
+            }
+          }
         }
+      },
+      {
+        expiry: 60 * 60 * 1000, // 1小时缓存，因为数据库数据相对稳定
+        version: '2.0', // 更新版本号，清除旧缓存
+        tags: ['stocks', 'database']
       }
-
-      // 所有数据源都失败，返回错误信息
-      console.error(`所有数据源获取股票列表均失败`)
-      showToast(`无法获取股票列表。所有数据源均无法提供数据，请检查网络连接或稍后再试。`, 'error')
-
-      // 抛出错误，让调用者处理
-      throw new Error(`无法获取股票列表，所有数据源均失败`)
-    }
+    )
   },
 
   // 获取单个股票数据
@@ -335,8 +337,7 @@ export const stockService = {
 
           console.log(`使用 ${sourceType} 数据源获取股票${symbol}数据成功`)
           showToast(
-            `当前数据源获取失败，已使用 ${
-              DataSourceFactory.getDataSourceInfo(sourceType).name
+            `当前数据源获取失败，已使用 ${DataSourceFactory.getDataSourceInfo(sourceType).name
             } 获取数据`,
             'info'
           )
@@ -389,8 +390,7 @@ export const stockService = {
 
           console.log(`使用 ${sourceType} 数据源搜索股票成功`)
           showToast(
-            `当前数据源获取失败，已使用 ${
-              DataSourceFactory.getDataSourceInfo(sourceType).name
+            `当前数据源获取失败，已使用 ${DataSourceFactory.getDataSourceInfo(sourceType).name
             } 搜索股票`,
             'info'
           )
@@ -416,87 +416,93 @@ export const stockService = {
     symbol: string,
     forceRefresh = false
   ): Promise<StockQuote & { source_type?: DataSourceType }> {
-    // 获取所有可用的数据源
-    const availableSources = DataSourceFactory.getAvailableDataSources()
-
-    // 首先尝试当前选择的数据源
     try {
-      const quote = await dataSource.getStockQuote(symbol, {
-        sourceType: currentDataSourceType,
-        forceRefresh,
+      // 获取当前数据源
+      const currentSource = dataSourceStateManager.getCurrentDataSource()
+      console.log(`使用 ${currentSource} 数据源获取股票${symbol}行情`)
+
+      // 直接调用后端API，传递数据源参数
+      const response = await axios.get(`/api/stocks/${symbol}/quote`, {
+        params: {
+          source: currentSource
+        },
+        headers: {
+          'X-Data-Source': currentSource
+        }
       })
-      // 添加数据源类型
-      console.log(`使用 ${currentDataSourceType} 数据源获取股票${symbol}行情成功`)
-      return { ...quote, source_type: currentDataSourceType }
-    } catch (error) {
-      console.error(`${dataSource.getName()}获取股票${symbol}行情失败:`, error)
 
-      // 当前数据源失败，尝试其他数据源
-      console.log(`尝试使用其他数据源获取股票${symbol}行情...`)
-
-      // 过滤掉当前数据源，只尝试其他数据源
-      const otherSources = availableSources.filter((source) => source !== currentDataSourceType)
-
-      // 依次尝试其他数据源
-      for (const sourceType of otherSources) {
-        try {
-          console.log(`尝试使用 ${sourceType} 数据源获取股票${symbol}行情...`)
-          const tempDataSource = DataSourceFactory.createDataSource(sourceType)
-          const quote = await tempDataSource.getStockQuote(symbol, {
-            sourceType,
-            forceRefresh,
-          })
-
-          console.log(`使用 ${sourceType} 数据源获取股票${symbol}行情成功`)
-          showToast(
-            `当前数据源获取失败，已使用 ${
-              DataSourceFactory.getDataSourceInfo(sourceType).name
-            } 获取行情`,
-            'info'
-          )
-
-          return { ...quote, source_type: sourceType }
-        } catch (sourceError) {
-          console.error(`${sourceType} 数据源获取股票${symbol}行情失败:`, sourceError)
-          // 继续尝试下一个数据源
+      if (response.data) {
+        console.log(`使用 ${currentSource} 数据源获取股票${symbol}行情成功`)
+        return {
+          ...response.data,
+          source_type: currentSource,
+          symbol: symbol
         }
+      } else {
+        throw new Error('获取到的股票行情数据为空')
       }
+    } catch (error) {
+      console.error(`获取股票${symbol}行情失败:`, error)
 
-      // 尝试使用模拟数据
+      // 如果是网络错误或后端错误，尝试使用前端数据源作为备份
+      console.log(`后端API调用失败，尝试使用前端数据源获取股票${symbol}行情...`)
+
       try {
-        console.log(`所有数据源获取失败，尝试使用模拟数据...`)
+        // 获取所有可用的数据源
+        const availableSources = DataSourceFactory.getAvailableDataSources()
 
-        // 检查是否有模拟数据生成函数
-        if (typeof dataSource.generateMockStockQuote === 'function') {
-          const mockQuote = await dataSource.generateMockStockQuote(symbol)
-          console.log(`使用模拟数据获取股票${symbol}行情成功`)
-          showToast(`使用模拟数据显示${symbol}的行情`, 'warning')
-          return { ...mockQuote, source_type: 'mock' }
-        }
+        // 首先尝试当前选择的数据源
+        const quote = await dataSource.getStockQuote(symbol, {
+          sourceType: currentDataSourceType,
+          forceRefresh,
+        })
+        // 添加数据源类型
+        console.log(`使用前端 ${currentDataSourceType} 数据源获取股票${symbol}行情成功`)
+        return { ...quote, source_type: currentDataSourceType }
+      } catch (frontendError) {
+        console.error(`前端数据源也失败:`, frontendError)
 
-        // 如果当前数据源没有模拟数据生成函数，尝试其他数据源的模拟数据
+        // 当前数据源失败，尝试其他数据源
+        console.log(`尝试使用其他前端数据源获取股票${symbol}行情...`)
+
+        // 获取所有可用的数据源
+        const availableSources = DataSourceFactory.getAvailableDataSources()
+        // 过滤掉当前数据源，只尝试其他数据源
+        const otherSources = availableSources.filter((source) => source !== currentDataSourceType)
+
+        // 依次尝试其他数据源
         for (const sourceType of otherSources) {
-          const tempDataSource = DataSourceFactory.createDataSource(sourceType)
-          if (typeof tempDataSource.generateMockStockQuote === 'function') {
-            const mockQuote = await tempDataSource.generateMockStockQuote(symbol)
-            console.log(`使用${sourceType}的模拟数据获取股票${symbol}行情成功`)
-            showToast(`使用模拟数据显示${symbol}的行情`, 'warning')
-            return { ...mockQuote, source_type: 'mock' }
+          try {
+            console.log(`尝试使用 ${sourceType} 数据源获取股票${symbol}行情...`)
+            const tempDataSource = DataSourceFactory.createDataSource(sourceType)
+            const quote = await tempDataSource.getStockQuote(symbol, {
+              sourceType,
+              forceRefresh,
+            })
+
+            console.log(`使用 ${sourceType} 数据源获取股票${symbol}行情成功`)
+            showToast(
+              `当前数据源获取失败，已使用 ${DataSourceFactory.getDataSourceInfo(sourceType).name
+              } 获取行情`,
+              'info'
+            )
+
+            return { ...quote, source_type: sourceType }
+          } catch (sourceError) {
+            console.error(`${sourceType} 数据源获取股票${symbol}行情失败:`, sourceError)
+            // 继续尝试下一个数据源
           }
         }
-      } catch (mockError) {
-        console.error(`生成模拟数据失败:`, mockError)
+        // 所有数据源和模拟数据都失败，返回错误信息
+        console.error(`所有数据源获取股票${symbol}行情均失败`)
+        showToast(
+          `无法获取${symbol}的实时行情。所有数据源均无法提供数据，请检查网络连接或稍后再试。`,
+          'error'
+        )
+
+        // 抛出错误，让调用者处理
+        throw new Error(`无法获取${symbol}的实时行情，所有数据源均失败`)
       }
-
-      // 所有数据源和模拟数据都失败，返回错误信息
-      console.error(`所有数据源获取股票${symbol}行情均失败`)
-      showToast(
-        `无法获取${symbol}的实时行情。所有数据源均无法提供数据，请检查网络连接或稍后再试。`,
-        'error'
-      )
-
-      // 抛出错误，让调用者处理
-      throw new Error(`无法获取${symbol}的实时行情，所有数据源均失败`)
     }
   },
 
@@ -554,8 +560,7 @@ export const stockService = {
 
           console.log(`使用 ${sourceType} 数据源获取财经新闻成功`)
           showToast(
-            `当前数据源获取失败，已使用 ${
-              DataSourceFactory.getDataSourceInfo(sourceType).name
+            `当前数据源获取失败，已使用 ${DataSourceFactory.getDataSourceInfo(sourceType).name
             } 获取新闻`,
             'info'
           )
@@ -575,84 +580,8 @@ export const stockService = {
       try {
         console.log(`所有数据源获取失败，使用模拟财经新闻数据...`)
 
-        // 生成模拟新闻数据
-        const mockNews: FinancialNews[] = [
-          {
-            title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
-            time: '10分钟前',
-            source: '财经日报',
-            url: '#',
-            important: true,
-            content:
-              '中国人民银行今日宣布，决定于下周一起下调金融机构存款准备金率0.5个百分点，预计将释放长期资金约1万亿元。',
-          },
-          {
-            title: '科技板块全线上涨，半导体行业领涨',
-            time: '30分钟前',
-            source: '证券时报',
-            url: '#',
-            important: false,
-            content:
-              '今日A股市场，科技板块表现强势，全线上涨。其中，半导体行业领涨，多只个股涨停。',
-          },
-          {
-            title: '多家券商上调A股目标位，看好下半年行情',
-            time: '1小时前',
-            source: '上海证券报',
-            url: '#',
-            important: false,
-            content: '近日，多家券商发布研报，上调A股目标位，普遍看好下半年市场行情。',
-          },
-          {
-            title: '外资连续三日净流入，北向资金今日净买入超50亿',
-            time: '2小时前',
-            source: '中国证券报',
-            url: '#',
-            important: false,
-            content:
-              '据统计数据显示，外资已连续三个交易日净流入A股市场，今日北向资金净买入超过50亿元。',
-          },
-          {
-            title: '新能源汽车销量创新高，相关概念股受关注',
-            time: '3小时前',
-            source: '第一财经',
-            url: '#',
-            important: false,
-            content:
-              '据中国汽车工业协会最新数据，上月我国新能源汽车销量再创历史新高，同比增长超过50%。',
-          },
-          {
-            title: '国常会：进一步扩大内需，促进消费持续恢复',
-            time: '4小时前',
-            source: '新华社',
-            url: '#',
-            important: true,
-            content: '国务院常务会议今日召开，会议强调要进一步扩大内需，促进消费持续恢复和升级。',
-          },
-          {
-            title: '两部门：加大对先进制造业支持力度，优化融资环境',
-            time: '5小时前',
-            source: '经济参考报',
-            url: '#',
-            important: false,
-            content: '财政部、工信部联合发文，要求加大对先进制造业的支持力度，优化融资环境。',
-          },
-        ]
-
-        // 随机打乱新闻顺序
-        const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
-
-        // 返回指定数量的新闻
-        const result = shuffledNews.slice(0, count).map((item) => ({
-          ...item,
-          source_type: 'mock',
-          data_source: 'mock',
-        }))
-
-        console.log(`成功生成 ${result.length} 条模拟财经新闻`)
-        showToast(`使用模拟数据显示财经新闻`, 'warning')
-
-        return result
+        // 不使用模拟数据，直接抛出错误
+        throw new Error('无法获取财经新闻数据，请检查数据源配置或网络连接')
       } catch (mockError) {
         console.error(`生成模拟财经新闻数据失败:`, mockError)
       }

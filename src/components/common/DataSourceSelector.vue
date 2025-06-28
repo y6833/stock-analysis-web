@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'
@@ -143,24 +143,37 @@ const switchDataSource = async () => {
     }
 
     // 执行切换
+    console.log(`[DataSourceSelector] 开始切换数据源: ${currentSource.value} -> ${selectedSource.value}`)
     const success = stockService.switchDataSource(selectedSource.value)
 
     if (success) {
+      // 立即更新本地状态
       currentSource.value = selectedSource.value
 
-      // 保存当前选择的数据源到本地存储
-      localStorage.setItem('preferredDataSource', selectedSource.value)
+      // 验证localStorage是否正确保存
+      const storedValue = localStorage.getItem('preferredDataSource')
+      if (storedValue !== selectedSource.value) {
+        console.warn(`[DataSourceSelector] localStorage保存不一致: 期望 ${selectedSource.value}, 实际 ${storedValue}`)
+        localStorage.setItem('preferredDataSource', selectedSource.value)
+      }
 
       showToast(`已切换到${getSourceInfo(selectedSource.value).name}`, 'success')
 
       // 发出事件
       emit('source-changed', selectedSource.value)
+
+      console.log(`[DataSourceSelector] 数据源切换成功: ${selectedSource.value}`)
     } else {
+      console.error('[DataSourceSelector] 数据源切换失败')
       showToast('切换数据源失败', 'error')
+      // 恢复选择状态
+      selectedSource.value = currentSource.value
     }
   } catch (error) {
-    console.error('切换数据源失败:', error)
+    console.error('[DataSourceSelector] 切换数据源异常:', error)
     showToast(`切换数据源失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
+    // 恢复选择状态
+    selectedSource.value = currentSource.value
   } finally {
     isChanging.value = false
   }
@@ -189,28 +202,40 @@ const clearSourceCache = async () => {
   }
 }
 
-// 监听数据源变化
+// 更新当前数据源状态
 const updateCurrentDataSource = (type: DataSourceType) => {
+  console.log(`[DataSourceSelector] 更新数据源状态: ${currentSource.value} -> ${type}`)
   currentSource.value = type
   selectedSource.value = type
 }
 
 onMounted(() => {
+  console.log('[DataSourceSelector] 组件挂载')
+
   // 获取可用数据源
   availableSources.value = stockService.getAvailableDataSources()
 
-  // 从本地存储中获取当前数据源
-  const savedDataSource = localStorage.getItem('preferredDataSource')
+  // 从localStorage获取当前数据源并同步状态
+  const savedDataSource = localStorage.getItem('preferredDataSource') as DataSourceType
   if (savedDataSource) {
     // 验证保存的数据源是否有效
-    const isValidSource = availableSources.value.some((source) => source.type === savedDataSource)
-    if (isValidSource) {
-      updateCurrentDataSource(savedDataSource as DataSourceType)
+    const availableTypes = availableSources.value.map(source => source.type)
+    if (availableTypes.includes(savedDataSource)) {
+      updateCurrentDataSource(savedDataSource)
+      console.log(`[DataSourceSelector] 从localStorage恢复数据源: ${savedDataSource}`)
+    } else {
+      console.warn(`[DataSourceSelector] localStorage中的数据源无效: ${savedDataSource}`)
     }
   }
 
   // 监听数据源变化事件
   eventBus.on('data-source-changed', updateCurrentDataSource)
+
+  // 清理函数
+  onUnmounted(() => {
+    console.log('[DataSourceSelector] 组件卸载，移除事件监听器')
+    eventBus.off('data-source-changed', updateCurrentDataSource)
+  })
 })
 </script>
 

@@ -8,7 +8,7 @@ class TencentController extends Controller {
   // 测试连接
   async test() {
     const { ctx } = this;
-    
+
     try {
       // 尝试获取上证指数行情，如果成功则连接正常
       const response = await axios.get('http://qt.gtimg.cn/q=sh000001', {
@@ -17,11 +17,11 @@ class TencentController extends Controller {
         },
         responseType: 'arraybuffer'
       });
-      
+
       if (response.status === 200 && response.data) {
         // 将GBK编码的响应转换为UTF-8
         const data = iconv.decode(response.data, 'GBK');
-        
+
         if (data.includes('sh000001')) {
           ctx.body = {
             success: true,
@@ -50,12 +50,12 @@ class TencentController extends Controller {
       };
     }
   }
-  
+
   // 获取股票行情
   async quote() {
     const { ctx } = this;
     const { symbol } = ctx.query;
-    
+
     if (!symbol) {
       ctx.status = 400;
       ctx.body = {
@@ -64,11 +64,11 @@ class TencentController extends Controller {
       };
       return;
     }
-    
+
     try {
       // 确保股票代码格式正确
       const formattedSymbol = this.formatSymbol(symbol);
-      
+
       // 请求腾讯股票API
       const response = await axios.get(`http://qt.gtimg.cn/q=${formattedSymbol}`, {
         headers: {
@@ -76,15 +76,15 @@ class TencentController extends Controller {
         },
         responseType: 'arraybuffer'
       });
-      
+
       if (response.status === 200 && response.data) {
         // 将GBK编码的响应转换为UTF-8
         const data = iconv.decode(response.data, 'GBK');
-        
+
         // 解析响应数据
         // 腾讯股票API返回格式：v_sh000001="1~上证指数~000001~3429.35~3415.68~3429.35~4134727~2030992~2103734~3429.35~0~0~0~0~0~0~0~0~0~0~3415.68~0~0~0~0~0~0~0~0~0~0~20230331~15:01:04~13.67~0.40~3432.22~3415.68~3429.35/4134727/14158253760~4134727~1415825";
         const match = data.match(/v_[^=]+=("[^"]+")/) || data.match(/v_[^=]+=(.+);/);
-        
+
         if (!match) {
           ctx.status = 500;
           ctx.body = {
@@ -93,9 +93,9 @@ class TencentController extends Controller {
           };
           return;
         }
-        
+
         const stockData = match[1].replace(/"/g, '').split('~');
-        
+
         // 解析股票数据
         const stockName = stockData[1];
         const price = parseFloat(stockData[3]);
@@ -105,11 +105,11 @@ class TencentController extends Controller {
         const high = parseFloat(stockData[33]);
         const low = parseFloat(stockData[34]);
         const amount = parseFloat(stockData[37]);
-        
+
         // 计算涨跌幅
         const change = price - preClose;
         const pctChg = (change / preClose) * 100;
-        
+
         ctx.body = {
           success: true,
           data: {
@@ -143,11 +143,11 @@ class TencentController extends Controller {
       };
     }
   }
-  
+
   // 获取股票列表
   async stockList() {
     const { ctx } = this;
-    
+
     try {
       // 由于腾讯股票API不提供完整的股票列表，我们使用预定义的主要股票列表
       const mainStocks = [
@@ -166,7 +166,7 @@ class TencentController extends Controller {
         { symbol: 'sz000001', name: '平安银行', market: '深圳', industry: '银行' },
         // 可以添加更多股票
       ];
-      
+
       ctx.body = {
         success: true,
         data: mainStocks
@@ -180,12 +180,12 @@ class TencentController extends Controller {
       };
     }
   }
-  
+
   // 搜索股票
   async search() {
     const { ctx } = this;
     const { keyword } = ctx.query;
-    
+
     if (!keyword) {
       ctx.status = 400;
       ctx.body = {
@@ -194,7 +194,7 @@ class TencentController extends Controller {
       };
       return;
     }
-    
+
     try {
       // 获取股票列表
       const mainStocks = [
@@ -212,14 +212,14 @@ class TencentController extends Controller {
         { symbol: 'sh600000', name: '浦发银行', market: '上海', industry: '银行' },
         { symbol: 'sz000001', name: '平安银行', market: '深圳', industry: '银行' },
       ];
-      
+
       // 在本地过滤
       const results = mainStocks.filter(
         (stock) =>
           stock.symbol.toLowerCase().includes(keyword.toLowerCase()) ||
           stock.name.toLowerCase().includes(keyword.toLowerCase())
       );
-      
+
       ctx.body = {
         success: true,
         data: results
@@ -233,12 +233,12 @@ class TencentController extends Controller {
       };
     }
   }
-  
+
   // 获取历史数据
   async history() {
     const { ctx } = this;
     const { symbol, period, count } = ctx.query;
-    
+
     if (!symbol) {
       ctx.status = 400;
       ctx.body = {
@@ -247,11 +247,11 @@ class TencentController extends Controller {
       };
       return;
     }
-    
+
     try {
       // 确保股票代码格式正确
       const formattedSymbol = this.formatSymbol(symbol);
-      
+
       // 获取实时行情作为基准
       const quoteResponse = await axios.get(`http://qt.gtimg.cn/q=${formattedSymbol}`, {
         headers: {
@@ -259,7 +259,7 @@ class TencentController extends Controller {
         },
         responseType: 'arraybuffer'
       });
-      
+
       if (quoteResponse.status !== 200 || !quoteResponse.data) {
         ctx.status = 500;
         ctx.body = {
@@ -268,13 +268,13 @@ class TencentController extends Controller {
         };
         return;
       }
-      
+
       // 将GBK编码的响应转换为UTF-8
       const data = iconv.decode(quoteResponse.data, 'GBK');
-      
+
       // 解析响应数据
       const match = data.match(/v_[^=]+=("[^"]+")/) || data.match(/v_[^=]+=(.+);/);
-      
+
       if (!match) {
         ctx.status = 500;
         ctx.body = {
@@ -283,54 +283,16 @@ class TencentController extends Controller {
         };
         return;
       }
-      
+
       const stockData = match[1].replace(/"/g, '').split('~');
       const basePrice = parseFloat(stockData[3]); // 当前价格
-      
-      // 生成模拟历史数据
-      const days = parseInt(count) || 180;
-      const today = new Date();
-      const historyData = [];
-      
-      for (let i = days; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        // 生成价格（基于随机波动）
-        let price;
-        if (i === days) {
-          // 第一天的价格
-          price = basePrice * 0.9; // 假设180天前的价格是当前价格的90%
-        } else {
-          // 后续价格基于前一天的价格加上随机波动
-          const prevPrice = historyData[historyData.length - 1].close;
-          const change = prevPrice * (Math.random() * 0.06 - 0.03); // -3% 到 +3% 的随机波动
-          price = Math.max(prevPrice + change, 1); // 确保价格不会低于1
-        }
-        
-        // 生成开盘价、最高价、最低价
-        const open = price * (1 + (Math.random() * 0.02 - 0.01));
-        const high = Math.max(price, open) * (1 + Math.random() * 0.01);
-        const low = Math.min(price, open) * (1 - Math.random() * 0.01);
-        const close = price;
-        
-        // 生成成交量
-        const volume = Math.floor(Math.random() * 10000000) + 1000000;
-        
-        historyData.push({
-          date: dateStr,
-          open: parseFloat(open.toFixed(2)),
-          high: parseFloat(high.toFixed(2)),
-          low: parseFloat(low.toFixed(2)),
-          close: parseFloat(close.toFixed(2)),
-          volume
-        });
-      }
-      
+
+      // 模拟历史数据生成已移除
+      // 现在需要调用真实的历史数据API
       ctx.body = {
-        success: true,
-        data: historyData
+        success: false,
+        message: '腾讯财经历史数据API尚未实现，请使用其他数据源',
+        error: '模拟数据已被移除，需要集成真实的历史数据API'
       };
     } catch (error) {
       ctx.status = 500;
@@ -341,12 +303,12 @@ class TencentController extends Controller {
       };
     }
   }
-  
+
   // 获取财经新闻
   async news() {
     const { ctx } = this;
     const { count } = ctx.query;
-    
+
     try {
       // 腾讯财经不提供直接的新闻API，这里我们使用模拟数据
       const mockNews = [
@@ -407,13 +369,13 @@ class TencentController extends Controller {
           content: '财政部、工信部联合发文，要求加大对先进制造业的支持力度，优化融资环境。文件提出，将通过财政贴息、融资担保、风险补偿等方式，引导金融机构加大对先进制造业企业的信贷支持，降低企业融资成本。'
         }
       ];
-      
+
       // 随机打乱新闻顺序
       const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5);
-      
+
       // 返回指定数量的新闻
       const newsCount = parseInt(count) || 5;
-      
+
       ctx.body = {
         success: true,
         data: shuffledNews.slice(0, newsCount)
@@ -427,14 +389,14 @@ class TencentController extends Controller {
       };
     }
   }
-  
+
   // 辅助方法：格式化股票代码
   formatSymbol(symbol) {
     // 如果已经包含sh或sz前缀，直接返回
     if (symbol.startsWith('sh') || symbol.startsWith('sz')) {
       return symbol;
     }
-    
+
     // 如果包含.SH或.SZ后缀，转换为sh或sz前缀
     if (symbol.endsWith('.SH')) {
       return 'sh' + symbol.slice(0, -3);
@@ -442,7 +404,7 @@ class TencentController extends Controller {
     if (symbol.endsWith('.SZ')) {
       return 'sz' + symbol.slice(0, -3);
     }
-    
+
     // 根据股票代码规则添加前缀
     if (symbol.startsWith('6')) {
       return 'sh' + symbol;
@@ -451,7 +413,7 @@ class TencentController extends Controller {
     } else if (symbol.startsWith('4') || symbol.startsWith('8')) {
       return 'bj' + symbol; // 北交所
     }
-    
+
     // 默认返回原始代码
     return symbol;
   }

@@ -17,6 +17,8 @@ export interface DataSourceApiConfigs {
   yahoo_finance: ApiConfig
   google_finance: ApiConfig
   juhe: ApiConfig
+  alphavantage: ApiConfig
+  alltick: ApiConfig
 }
 
 /**
@@ -118,6 +120,34 @@ export const juheConfig: ApiConfig = {
 }
 
 /**
+ * Alpha Vantage API配置
+ */
+export const alphavantageConfig: ApiConfig = {
+  baseUrl: getEnvVar('ALPHA_VANTAGE_BASE_URL', 'https://www.alphavantage.co/query'),
+  apiKey: getEnvVar('ALPHA_VANTAGE_API_KEY', 'UZMT16NQOTELC1O7'),
+  timeout: getEnvNumber('API_REQUEST_TIMEOUT', 15000),
+  retryCount: getEnvNumber('API_RETRY_COUNT', 3),
+  headers: {
+    'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  },
+}
+
+/**
+ * AllTick API配置
+ */
+export const alltickConfig: ApiConfig = {
+  baseUrl: getEnvVar('ALLTICK_BASE_URL', 'https://quote.alltick.io'),
+  apiKey: getEnvVar('ALLTICK_API_KEY', '85b75304f6ef5a52123479654ddab44e-c-app'),
+  timeout: getEnvNumber('API_REQUEST_TIMEOUT', 15000),
+  retryCount: getEnvNumber('API_RETRY_COUNT', 3),
+  headers: {
+    'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  },
+}
+
+/**
  * 所有数据源API配置
  */
 export const dataSourceConfigs: DataSourceApiConfigs = {
@@ -125,6 +155,8 @@ export const dataSourceConfigs: DataSourceApiConfigs = {
   yahoo_finance: yahooFinanceConfig,
   google_finance: googleFinanceConfig,
   juhe: juheConfig,
+  alphavantage: alphavantageConfig,
+  alltick: alltickConfig,
 }
 
 /**
@@ -169,6 +201,18 @@ export function validateApiConfig(sourceType: keyof DataSourceApiConfigs): {
     case 'juhe':
       if (!config.apiKey) missingFields.push('apiKey')
       break
+
+    case 'alphavantage':
+      if (!config.apiKey) {
+        warnings.push('No Alpha Vantage API key, using demo key with limited access')
+      }
+      break
+
+    case 'alltick':
+      if (!config.apiKey) {
+        warnings.push('No AllTick API key, using demo key with limited access')
+      }
+      break
   }
 
   return {
@@ -190,6 +234,8 @@ export function getApiConfigStatus(): Record<
     yahoo_finance: validateApiConfig('yahoo_finance'),
     google_finance: validateApiConfig('google_finance'),
     juhe: validateApiConfig('juhe'),
+    alphavantage: validateApiConfig('alphavantage'),
+    alltick: validateApiConfig('alltick'),
   }
 }
 

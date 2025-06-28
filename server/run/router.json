@@ -824,6 +824,18 @@
   {
     "name": null,
     "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/stocks/quotes/batch",
+    "regexp": "/^\\/api\\/stocks\\/quotes\\/batch(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
       "HEAD",
       "GET"
     ],
@@ -841,6 +853,107 @@
     ],
     "path": "/api/stocks/:code/history",
     "regexp": "/^\\/api\\/stocks\\/((?:[^\\/]+?))\\/history(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/stocks/sync",
+    "regexp": "/^\\/api\\/stocks\\/sync(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/stocks/stats",
+    "regexp": "/^\\/api\\/stocks\\/stats(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/stocks/industry-list",
+    "regexp": "/^\\/api\\/stocks\\/industry-list(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [
+      {
+        "name": "code",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/stocks/industry/:code",
+    "regexp": "/^\\/api\\/stocks\\/industry\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/stocks/hot-stocks",
+    "regexp": "/^\\/api\\/stocks\\/hot-stocks(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/stocks/limit-up",
+    "regexp": "/^\\/api\\/stocks\\/limit-up(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/stocks/limit-down",
+    "regexp": "/^\\/api\\/stocks\\/limit-down(?:\\/(?=$))?$/",
     "stack": [
       "wrappedController"
     ]
@@ -1611,6 +1724,66 @@
     "paramNames": [],
     "path": "/api/juhe/test",
     "regexp": "/^\\/api\\/juhe\\/test(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/alltick/test",
+    "regexp": "/^\\/api\\/alltick\\/test(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/alltick/quote",
+    "regexp": "/^\\/api\\/alltick\\/quote(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/alltick/stocks",
+    "regexp": "/^\\/api\\/alltick\\/stocks(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/alltick/search",
+    "regexp": "/^\\/api\\/alltick\\/search(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/alltick/history",
+    "regexp": "/^\\/api\\/alltick\\/history(?:\\/(?=$))?$/",
     "stack": [
       "wrappedController"
     ]
@@ -4552,6 +4725,92 @@
     "regexp": "/^\\/api\\/stop-loss\\/order\\/((?:[^\\/]+?))\\/execute(?:\\/(?=$))?$/",
     "stack": [
       "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/moneyflow/hsgt",
+    "regexp": "/^\\/api\\/moneyflow\\/hsgt(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/moneyflow/stock",
+    "regexp": "/^\\/api\\/moneyflow\\/stock(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/moneyflow/market",
+    "regexp": "/^\\/api\\/moneyflow\\/market(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/limitlist/up",
+    "regexp": "/^\\/api\\/limitlist\\/up(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/limitlist/down",
+    "regexp": "/^\\/api\\/limitlist\\/down(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/limitlist/zhaban",
+    "regexp": "/^\\/api\\/limitlist\\/zhaban(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/limitlist/overview",
+    "regexp": "/^\\/api\\/limitlist\\/overview(?:\\/(?=$))?$/",
+    "stack": [
       "wrappedController"
     ]
   }

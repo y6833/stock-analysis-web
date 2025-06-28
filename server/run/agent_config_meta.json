@@ -122,6 +122,12 @@
     "api_url": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
     "enableAutoRefresh": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
   },
+  "alltick": {
+    "token": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "baseUrl": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+  },
   "mysql": {
     "client": {
       "host": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
@@ -141,7 +147,8 @@
     "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
     "defaultUser": {
       "id": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-      "username": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js"
+      "username": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
+      "role": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js"
     }
   },
   "clickhouse": {
@@ -173,6 +180,14 @@
       "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "alltick": {
+      "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "token": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "baseUrl": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
     },
     "akshare": {
       "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",

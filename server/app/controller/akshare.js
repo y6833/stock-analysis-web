@@ -363,35 +363,16 @@ except Exception as e:
       stockName = '未知股票';
     }
 
-    // 生成当前价格（基于随机波动）
-    const price = basePrice * (1 + (Math.random() * 0.1 - 0.05)); // -5% 到 +5% 的随机波动
-    const preClose = basePrice * (1 + (Math.random() * 0.05 - 0.025)); // 昨收价
-    const open = preClose * (1 + (Math.random() * 0.03 - 0.015)); // 开盘价
-    const high = Math.max(price, open) * (1 + Math.random() * 0.02); // 最高价
-    const low = Math.min(price, open) * (1 - Math.random() * 0.02); // 最低价
-    const volume = Math.floor(Math.random() * 10000000) + 1000000; // 成交量
-    const amount = price * volume; // 成交额
-
-    // 计算涨跌幅
-    const change = price - preClose;
-    const pctChg = (change / preClose) * 100;
-
-    return {
-      name: stockName,
-      price: parseFloat(price.toFixed(2)),
-      open: parseFloat(open.toFixed(2)),
-      high: parseFloat(high.toFixed(2)),
-      low: parseFloat(low.toFixed(2)),
-      pre_close: parseFloat(preClose.toFixed(2)),
-      volume,
-      amount: parseFloat(amount.toFixed(2)),
-      change: parseFloat(change.toFixed(2)),
-      pct_chg: parseFloat(pctChg.toFixed(2)),
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().split(' ')[0],
-      data_source: 'mock_data',
-      data_source_message: '模拟数据（API调用失败）'
+    // 不生成模拟数据，直接返回错误
+    ctx.status = 500;
+    ctx.body = {
+      success: false,
+      message: `AKShare API调用失败，无法获取股票${symbol}的实时行情数据`,
+      error: 'AKShare API not available',
+      data_source: 'AKShare API',
+      data_source_message: 'AKShare API不可用，请检查Python环境和AKShare库配置'
     };
+    return;
   }
 
   // 获取历史数据
@@ -430,108 +411,19 @@ except Exception as e:
     } catch (error) {
       console.error(`获取股票${symbol}历史数据失败:`, error);
 
-      // 如果发生异常，返回模拟数据
-      const mockData = this.generateMockHistoryData(symbol, period, count);
-
+      // 如果发生异常，返回错误而不是模拟数据
+      ctx.status = 500;
       ctx.body = {
-        success: true,
-        data: mockData,
-        message: '使用模拟数据，原因: ' + error.message
+        success: false,
+        message: `AKShare API调用失败，无法获取股票${symbol}的历史数据`,
+        error: error.message,
+        data_source: 'AKShare API',
+        data_source_message: 'AKShare API不可用，请检查Python环境和AKShare库配置'
       };
     }
   }
 
-  // 生成模拟历史数据
-  generateMockHistoryData(symbol, period = 'daily', count = 180) {
-    // 获取基础价格
-    let basePrice = 0;
 
-    switch (symbol) {
-    case '000001.SH':
-      basePrice = 3000;
-      break;
-    case '399001.SZ':
-      basePrice = 10000;
-      break;
-    case '600519.SH':
-      basePrice = 1800;
-      break;
-    case '601318.SH':
-      basePrice = 60;
-      break;
-    case '600036.SH':
-      basePrice = 40;
-      break;
-    case '000858.SZ':
-      basePrice = 150;
-      break;
-    case '000333.SZ':
-      basePrice = 80;
-      break;
-    case '601166.SH':
-      basePrice = 20;
-      break;
-    case '002415.SZ':
-      basePrice = 35;
-      break;
-    case '600276.SH':
-      basePrice = 50;
-      break;
-    default:
-      basePrice = 100;
-    }
-
-    // 生成历史数据
-    const historyData = [];
-    const days = parseInt(count) || 180;
-    const today = new Date();
-
-    // 根据周期调整时间间隔
-    let timeInterval = 1; // 默认为日K，间隔1天
-    if (period === 'weekly') {
-      timeInterval = 7; // 周K，间隔7天
-    } else if (period === 'monthly') {
-      timeInterval = 30; // 月K，间隔30天
-    }
-
-    for (let i = days; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i * timeInterval);
-      const dateStr = date.toISOString().split('T')[0];
-
-      // 生成价格（基于随机波动）
-      let price;
-      if (i === days) {
-        // 第一天的价格
-        price = basePrice * 0.9; // 假设180天前的价格是当前价格的90%
-      } else {
-        // 后续价格基于前一天的价格加上随机波动
-        const prevPrice = historyData[historyData.length - 1].close;
-        const change = prevPrice * (Math.random() * 0.06 - 0.03); // -3% 到 +3% 的随机波动
-        price = Math.max(prevPrice + change, 1); // 确保价格不会低于1
-      }
-
-      // 生成开盘价、最高价、最低价
-      const open = price * (1 + (Math.random() * 0.02 - 0.01));
-      const high = Math.max(price, open) * (1 + Math.random() * 0.01);
-      const low = Math.min(price, open) * (1 - Math.random() * 0.01);
-      const close = price;
-
-      // 生成成交量
-      const volume = Math.floor(Math.random() * 10000000) + 1000000;
-
-      historyData.push({
-        date: dateStr,
-        open: parseFloat(open.toFixed(2)),
-        high: parseFloat(high.toFixed(2)),
-        low: parseFloat(low.toFixed(2)),
-        close: parseFloat(close.toFixed(2)),
-        volume
-      });
-    }
-
-    return historyData;
-  }
 
   // 搜索股票
   async search() {

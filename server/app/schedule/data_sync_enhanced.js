@@ -178,7 +178,7 @@ class DataSyncEnhancedTask extends Subscription {
           const industryData = await ctx.service.stock.getIndustryData(industry.code);
 
           // 使用 Redis 直接设置缓存
-          if (ctx.app.redis) {
+          if (ctx.app.redis && typeof ctx.app.redis.set === 'function') {
             await ctx.app.redis.set(`industry:${industry.code}`, JSON.stringify(industryData), 'EX', 600);
           }
 
@@ -249,14 +249,14 @@ class DataSyncEnhancedTask extends Subscription {
 
       // 同步市场概览数据
       const marketOverview = await ctx.service.dashboard.getMarketOverview(true);
-      if (ctx.app.redis) {
+      if (ctx.app.redis && typeof ctx.app.redis.set === 'function') {
         await ctx.app.redis.set('market_overview', JSON.stringify(marketOverview), 'EX', 300);
       }
 
       // 同步涨跌停数据
       try {
         const limitData = await this.syncLimitData();
-        if (ctx.app.redis) {
+        if (ctx.app.redis && typeof ctx.app.redis.set === 'function') {
           await ctx.app.redis.set('limit_data', JSON.stringify(limitData), 'EX', 300);
         }
       } catch (error) {
@@ -266,7 +266,7 @@ class DataSyncEnhancedTask extends Subscription {
       // 同步资金流向数据
       try {
         const moneyFlowData = await this.syncMoneyFlowData();
-        if (ctx.app.redis) {
+        if (ctx.app.redis && typeof ctx.app.redis.set === 'function') {
           await ctx.app.redis.set('money_flow', JSON.stringify(moneyFlowData), 'EX', 600);
         }
       } catch (error) {

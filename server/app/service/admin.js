@@ -53,6 +53,7 @@ class AdminService extends Service {
       include: [
         {
           model: ctx.model.UserPreference,
+          as: '_userPreference', // 使用正确的别名
           attributes: ['theme', 'language', 'defaultDashboardLayout'],
         },
       ],
@@ -144,18 +145,22 @@ class AdminService extends Service {
       include: [
         {
           model: ctx.model.UserPreference,
+          as: '_userPreference', // 使用正确的别名
           attributes: ['theme', 'language', 'defaultDashboardLayout', 'emailNotifications', 'pushNotifications'],
         },
         {
           model: ctx.model.UserWatchlist,
+          as: '_userWatchlists', // 使用正确的别名
           attributes: ['id', 'name', 'description', 'isDefault'],
         },
         {
           model: ctx.model.UserPortfolio,
+          as: '_userPortfolios', // 使用正确的别名
           attributes: ['id', 'name', 'description', 'initialCapital', 'currentValue'],
         },
         {
           model: ctx.model.UserAlert,
+          as: '_userAlerts', // 使用正确的别名
           attributes: ['id', 'stockCode', 'condition', 'value', 'isActive'],
         },
       ],

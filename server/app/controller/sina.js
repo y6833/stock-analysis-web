@@ -266,50 +266,14 @@ class SinaController extends Controller {
       const stockData = JSON.parse(match[1]).split(',');
       const basePrice = parseFloat(stockData[3]); // 当前价格
 
-      // 生成模拟历史数据
-      const days = parseInt(count) || 90;
-      const today = new Date();
-      const historyData = [];
-
-      for (let i = days; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-
-        // 生成价格（基于随机波动）
-        let price;
-        if (i === days) {
-          // 第一天的价格
-          price = basePrice * 0.9; // 假设90天前的价格是当前价格的90%
-        } else {
-          // 后续价格基于前一天的价格加上随机波动
-          const prevPrice = historyData[historyData.length - 1].close;
-          const change = prevPrice * (Math.random() * 0.06 - 0.03); // -3% 到 +3% 的随机波动
-          price = Math.max(prevPrice + change, 1); // 确保价格不会低于1
-        }
-
-        // 生成开盘价、最高价、最低价
-        const open = price * (1 + (Math.random() * 0.02 - 0.01));
-        const high = Math.max(price, open) * (1 + Math.random() * 0.01);
-        const low = Math.min(price, open) * (1 - Math.random() * 0.01);
-        const close = price;
-
-        // 生成成交量
-        const volume = Math.floor(Math.random() * 10000000) + 1000000;
-
-        historyData.push({
-          date: dateStr,
-          open: parseFloat(open.toFixed(2)),
-          high: parseFloat(high.toFixed(2)),
-          low: parseFloat(low.toFixed(2)),
-          close: parseFloat(close.toFixed(2)),
-          volume
-        });
-      }
-
+      // 不生成模拟数据，直接返回错误
+      ctx.status = 500;
       ctx.body = {
-        success: true,
-        data: historyData
+        success: false,
+        message: `新浪财经API调用失败，无法获取股票${symbol}的历史数据`,
+        error: 'Sina Finance API not available',
+        data_source: '新浪财经API',
+        data_source_message: '新浪财经API不可用'
       };
     } catch (error) {
       ctx.status = 500;

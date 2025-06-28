@@ -8,7 +8,7 @@ const Service = require('egg').Service;
 class FactorEngineService extends Service {
   constructor(ctx) {
     super(ctx);
-    
+
     // 因子缓存
     this.factorCache = new Map();
     this.cacheExpiry = 3600 * 1000; // 1小时缓存
@@ -19,32 +19,32 @@ class FactorEngineService extends Service {
    */
   async calculateAllFactors(symbol, stockData, factorConfigs) {
     const { ctx } = this;
-    
+
     try {
       ctx.logger.info(`开始计算股票 ${symbol} 的因子`);
-      
+
       // 数据预处理
       const preprocessedData = await this.preprocessData(stockData);
-      
+
       // 按类型分组计算因子
       const technicalConfigs = factorConfigs.filter(c => c.type === 'technical' && c.enabled);
       const fundamentalConfigs = factorConfigs.filter(c => c.type === 'fundamental' && c.enabled);
       const alternativeConfigs = factorConfigs.filter(c => c.type === 'alternative' && c.enabled);
-      
+
       // 并行计算各类因子
       const [technicalFactors, fundamentalFactors, alternativeFactors] = await Promise.all([
         this.calculateTechnicalFactors(symbol, preprocessedData, technicalConfigs),
         this.calculateFundamentalFactors(symbol, preprocessedData, fundamentalConfigs),
         this.calculateAlternativeFactors(symbol, preprocessedData, alternativeConfigs)
       ]);
-      
+
       // 合并所有因子
       const allFactors = {
         ...technicalFactors,
         ...fundamentalFactors,
         ...alternativeFactors
       };
-      
+
       // 构建特征矩阵
       const featureMatrix = {
         symbol,
@@ -61,10 +61,10 @@ class FactorEngineService extends Service {
           missingDataRatio: this.calculateMissingDataRatio(allFactors)
         }
       };
-      
+
       ctx.logger.info(`股票 ${symbol} 因子计算完成，共 ${featureMatrix.metadata.totalFactors} 个因子`);
       return featureMatrix;
-      
+
     } catch (error) {
       ctx.logger.error(`计算股票 ${symbol} 因子失败:`, error);
       throw error;
@@ -76,22 +76,22 @@ class FactorEngineService extends Service {
    */
   async preprocessData(stockData) {
     const { ctx } = this;
-    
+
     try {
       // 数据验证
       this.validateStockData(stockData);
-      
+
       // 数据对齐和排序
       const alignedData = this.alignData(stockData);
-      
+
       // 缺失值处理
       const filledData = this.fillMissingValues(alignedData);
-      
+
       // 异常值处理
       const cleanedData = this.removeOutliers(filledData);
-      
+
       return cleanedData;
-      
+
     } catch (error) {
       ctx.logger.error('数据预处理失败:', error);
       throw error;
@@ -104,11 +104,11 @@ class FactorEngineService extends Service {
   async calculateTechnicalFactors(symbol, stockData, configs) {
     const { ctx } = this;
     const results = {};
-    
+
     for (const config of configs) {
       try {
         const cacheKey = `${symbol}_${config.name}_technical`;
-        
+
         // 检查缓存
         if (this.factorCache.has(cacheKey)) {
           const cached = this.factorCache.get(cacheKey);
@@ -117,23 +117,23 @@ class FactorEngineService extends Service {
             continue;
           }
         }
-        
+
         // 计算因子
         const factorResult = await this.calculateTechnicalFactor(config.name, stockData, config.params || {});
-        
+
         // 缓存结果
         this.factorCache.set(cacheKey, {
           data: factorResult,
           timestamp: Date.now()
         });
-        
+
         results[config.name] = factorResult;
-        
+
       } catch (error) {
         ctx.logger.warn(`计算技术因子 ${config.name} 失败:`, error);
       }
     }
-    
+
     return results;
   }
 
@@ -143,11 +143,11 @@ class FactorEngineService extends Service {
   async calculateFundamentalFactors(symbol, stockData, configs) {
     const { ctx } = this;
     const results = {};
-    
+
     for (const config of configs) {
       try {
         const cacheKey = `${symbol}_${config.name}_fundamental`;
-        
+
         // 检查缓存
         if (this.factorCache.has(cacheKey)) {
           const cached = this.factorCache.get(cacheKey);
@@ -156,23 +156,23 @@ class FactorEngineService extends Service {
             continue;
           }
         }
-        
+
         // 计算因子
         const factorResult = await this.calculateFundamentalFactor(config.name, symbol, stockData, config.params || {});
-        
+
         // 缓存结果
         this.factorCache.set(cacheKey, {
           data: factorResult,
           timestamp: Date.now()
         });
-        
+
         results[config.name] = factorResult;
-        
+
       } catch (error) {
         ctx.logger.warn(`计算基本面因子 ${config.name} 失败:`, error);
       }
     }
-    
+
     return results;
   }
 
@@ -182,11 +182,11 @@ class FactorEngineService extends Service {
   async calculateAlternativeFactors(symbol, stockData, configs) {
     const { ctx } = this;
     const results = {};
-    
+
     for (const config of configs) {
       try {
         const cacheKey = `${symbol}_${config.name}_alternative`;
-        
+
         // 检查缓存
         if (this.factorCache.has(cacheKey)) {
           const cached = this.factorCache.get(cacheKey);
@@ -195,23 +195,23 @@ class FactorEngineService extends Service {
             continue;
           }
         }
-        
+
         // 计算因子
         const factorResult = await this.calculateAlternativeFactor(config.name, symbol, stockData, config.params || {});
-        
+
         // 缓存结果
         this.factorCache.set(cacheKey, {
           data: factorResult,
           timestamp: Date.now()
         });
-        
+
         results[config.name] = factorResult;
-        
+
       } catch (error) {
         ctx.logger.warn(`计算另类因子 ${config.name} 失败:`, error);
       }
     }
-    
+
     return results;
   }
 
@@ -220,7 +220,7 @@ class FactorEngineService extends Service {
    */
   async calculateTechnicalFactor(factorName, stockData, params) {
     const { ctx } = this;
-    
+
     switch (factorName) {
     case 'sma_cross':
       return this.calculateSMACross(stockData, params);
@@ -246,10 +246,10 @@ class FactorEngineService extends Service {
    */
   async calculateFundamentalFactor(factorName, symbol, stockData, params) {
     const { ctx } = this;
-    
+
     // 获取财务数据
     const financialData = await this.getFinancialData(symbol);
-    
+
     switch (factorName) {
     case 'roe_trend':
       return this.calculateROETrend(symbol, stockData, financialData, params);
@@ -271,7 +271,7 @@ class FactorEngineService extends Service {
    */
   async calculateAlternativeFactor(factorName, symbol, stockData, params) {
     const { ctx } = this;
-    
+
     switch (factorName) {
     case 'sentiment_score':
       return this.calculateSentimentScore(symbol, stockData, params);
@@ -292,16 +292,16 @@ class FactorEngineService extends Service {
   calculateSMACross(stockData, params) {
     const shortPeriod = params.shortPeriod || 5;
     const longPeriod = params.longPeriod || 20;
-    
+
     const shortSMA = this.calculateSMA(stockData.prices, shortPeriod);
     const longSMA = this.calculateSMA(stockData.prices, longPeriod);
-    
+
     const values = shortSMA.map((short, i) => {
       const long = longSMA[i];
       if (isNaN(short) || isNaN(long) || long === 0) return NaN;
       return (short - long) / long;
     });
-    
+
     return {
       factorName: 'sma_cross',
       factorType: 'technical',
@@ -323,13 +323,13 @@ class FactorEngineService extends Service {
    */
   calculateMomentum(stockData, params) {
     const period = params.period || 10;
-    
+
     const values = stockData.prices.map((price, i) => {
       if (i < period) return NaN;
       const pastPrice = stockData.prices[i - period];
       return pastPrice > 0 ? (price - pastPrice) / pastPrice : NaN;
     });
-    
+
     return {
       factorName: 'momentum',
       factorType: 'technical',
@@ -350,29 +350,29 @@ class FactorEngineService extends Service {
    */
   calculateVolatility(stockData, params) {
     const period = params.period || 20;
-    
+
     // 计算收益率
     const returns = stockData.prices.map((price, i) => {
       if (i === 0) return 0;
       return Math.log(price / stockData.prices[i - 1]);
     });
-    
+
     const values = [];
-    
+
     for (let i = 0; i < returns.length; i++) {
       if (i < period) {
         values.push(NaN);
         continue;
       }
-      
+
       const slice = returns.slice(i - period + 1, i + 1);
       const mean = slice.reduce((sum, r) => sum + r, 0) / slice.length;
       const variance = slice.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / slice.length;
       const volatility = Math.sqrt(variance * 252); // 年化波动率
-      
+
       values.push(volatility);
     }
-    
+
     return {
       factorName: 'volatility',
       factorType: 'technical',
@@ -393,7 +393,7 @@ class FactorEngineService extends Service {
    */
   calculateSMA(prices, period) {
     const sma = [];
-    
+
     for (let i = 0; i < prices.length; i++) {
       if (i < period - 1) {
         sma.push(NaN);
@@ -402,7 +402,7 @@ class FactorEngineService extends Service {
         sma.push(sum / period);
       }
     }
-    
+
     return sma;
   }
 
@@ -411,7 +411,7 @@ class FactorEngineService extends Service {
    */
   async getFinancialData(symbol) {
     const { ctx } = this;
-    
+
     try {
       // 这里应该调用实际的财务数据API
       // 目前返回模拟数据
@@ -423,34 +423,12 @@ class FactorEngineService extends Service {
   }
 
   /**
-   * 生成模拟财务数据
+   * 模拟财务数据生成函数已移除
+   * 现在只从真实数据源获取财务数据
    */
-  generateMockFinancialData(symbol) {
-    const data = [];
-    const baseRevenue = 1000 + Math.random() * 5000;
-    
-    for (let i = 0; i < 8; i++) {
-      const quarter = i + 1;
-      const year = 2022 + Math.floor(i / 4);
-      const reportDate = `${year}-${String((quarter % 4) * 3 + 3).padStart(2, '0')}-30`;
-      
-      const revenue = baseRevenue * (1 + Math.random() * 0.2 - 0.1) * (1 + i * 0.05);
-      const netProfit = revenue * (0.05 + Math.random() * 0.15);
-      const totalAssets = revenue * (2 + Math.random());
-      const totalEquity = totalAssets * (0.3 + Math.random() * 0.4);
-      
-      data.push({
-        reportDate,
-        revenue,
-        netProfit,
-        totalAssets,
-        totalEquity,
-        roe: netProfit / totalEquity,
-        eps: netProfit / 1000
-      });
-    }
-    
-    return data;
+  async getRealFinancialData(symbol) {
+    // 调用真实的财务数据API
+    throw new Error(`财务数据API尚未实现，无法获取股票${symbol}的财务数据`);
   }
 
   /**
@@ -460,11 +438,11 @@ class FactorEngineService extends Service {
     if (!stockData.dates || stockData.dates.length === 0) {
       throw new Error('股票数据缺少日期信息');
     }
-    
+
     if (!stockData.prices || stockData.prices.length === 0) {
       throw new Error('股票数据缺少价格信息');
     }
-    
+
     if (stockData.dates.length !== stockData.prices.length) {
       throw new Error('日期和价格数据长度不匹配');
     }
@@ -475,13 +453,13 @@ class FactorEngineService extends Service {
    */
   alignData(stockData) {
     const { dates, prices, volumes, highs, lows, opens } = stockData;
-    
+
     // 按日期排序
     const sortedIndices = dates
       .map((date, index) => ({ date, index }))
       .sort((a, b) => a.date.localeCompare(b.date))
       .map(item => item.index);
-    
+
     return {
       symbol: stockData.symbol,
       dates: sortedIndices.map(i => dates[i]),
@@ -503,15 +481,15 @@ class FactorEngineService extends Service {
    */
   fillMissingValues(stockData) {
     const result = { ...stockData };
-    
+
     // 处理价格缺失值（线性插值）
     result.prices = this.fillMissingValuesInArray(stockData.prices, 'linear');
-    
+
     // 处理成交量缺失值（前向填充）
     if (result.volumes && result.volumes.length > 0) {
       result.volumes = this.fillMissingValuesInArray(stockData.volumes, 'forward');
     }
-    
+
     return result;
   }
 
@@ -520,7 +498,7 @@ class FactorEngineService extends Service {
    */
   fillMissingValuesInArray(values, method = 'linear') {
     const result = [...values];
-    
+
     for (let i = 0; i < result.length; i++) {
       if (isNaN(result[i]) || result[i] === null || result[i] === undefined) {
         if (method === 'forward' && i > 0) {
@@ -529,7 +507,7 @@ class FactorEngineService extends Service {
           // 线性插值
           const prevIndex = this.findPreviousValidIndex(result, i);
           const nextIndex = this.findNextValidIndex(result, i);
-          
+
           if (prevIndex !== -1 && nextIndex !== -1) {
             const prevValue = result[prevIndex];
             const nextValue = result[nextIndex];
@@ -543,7 +521,7 @@ class FactorEngineService extends Service {
         }
       }
     }
-    
+
     return result;
   }
 
@@ -576,11 +554,11 @@ class FactorEngineService extends Service {
    */
   removeOutliers(stockData, threshold = 3.0) {
     const result = { ...stockData };
-    
+
     // 检测价格异常值
     const priceOutliers = this.detectOutliers(stockData.prices, threshold);
     result.prices = this.handleOutliers(stockData.prices, priceOutliers);
-    
+
     return result;
   }
 
@@ -589,15 +567,15 @@ class FactorEngineService extends Service {
    */
   detectOutliers(values, threshold) {
     const validValues = values.filter(v => !isNaN(v) && v !== null && v !== undefined);
-    
+
     if (validValues.length === 0) {
       return values.map(() => false);
     }
-    
+
     const mean = validValues.reduce((sum, v) => sum + v, 0) / validValues.length;
     const variance = validValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / validValues.length;
     const stdDev = Math.sqrt(variance);
-    
+
     return values.map(value => {
       if (isNaN(value) || value === null || value === undefined) {
         return false;
@@ -612,7 +590,7 @@ class FactorEngineService extends Service {
    */
   handleOutliers(values, outliers) {
     const result = [...values];
-    
+
     for (let i = 0; i < result.length; i++) {
       if (outliers[i]) {
         // 使用相邻值的平均值替换异常值
@@ -621,7 +599,7 @@ class FactorEngineService extends Service {
         result[i] = (prevValue + nextValue) / 2;
       }
     }
-    
+
     return result;
   }
 
@@ -651,11 +629,11 @@ class FactorEngineService extends Service {
       { type: 'technical', name: 'sma_cross', enabled: true, priority: 1 },
       { type: 'technical', name: 'momentum', enabled: true, priority: 2 },
       { type: 'technical', name: 'volatility', enabled: true, priority: 3 },
-      
+
       // 基本面因子
       { type: 'fundamental', name: 'roe_trend', enabled: true, priority: 4 },
       { type: 'fundamental', name: 'pe_relative', enabled: true, priority: 5 },
-      
+
       // 另类因子
       { type: 'alternative', name: 'sentiment_score', enabled: true, priority: 6 },
       { type: 'alternative', name: 'correlation_factor', enabled: true, priority: 7 },

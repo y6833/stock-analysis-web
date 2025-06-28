@@ -20,7 +20,7 @@ class BacktestService extends Service {
 
       // 如果数据库没有，尝试从外部API获取
       const apiData = await this.fetchHistoricalDataFromAPI(symbol, startDate, endDate, frequency);
-      
+
       if (apiData && apiData.length > 0) {
         // 保存到数据库
         await this.saveHistoricalDataToDB(symbol, apiData);
@@ -28,10 +28,9 @@ class BacktestService extends Service {
         return apiData;
       }
 
-      // 如果都失败，生成模拟数据
-      const mockData = this.generateMockHistoricalData(symbol, startDate, endDate);
-      ctx.logger.warn(`生成 ${symbol} 模拟历史数据: ${mockData.length} 条`);
-      return mockData;
+      // 如果都失败，抛出错误而不是生成模拟数据
+      ctx.logger.error(`无法获取 ${symbol} 历史数据，所有数据源均失败`);
+      throw new Error(`无法获取股票${symbol}的历史数据，所有数据源均不可用`);
 
     } catch (error) {
       ctx.logger.error('获取历史数据失败:', error);
@@ -126,47 +125,7 @@ class BacktestService extends Service {
     }
   }
 
-  /**
-   * 生成模拟历史数据
-   */
-  generateMockHistoricalData(symbol, startDate, endDate) {
-    const data = [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    let currentPrice = 100; // 初始价格
-    let currentDate = new Date(start);
 
-    while (currentDate <= end) {
-      // 跳过周末
-      if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
-        // 生成随机价格变动
-        const change = (Math.random() - 0.5) * 0.08; // ±4%的随机变动
-        const newPrice = currentPrice * (1 + change);
-        
-        const high = newPrice * (1 + Math.random() * 0.02);
-        const low = newPrice * (1 - Math.random() * 0.02);
-        const volume = Math.floor(Math.random() * 1000000) + 100000;
-
-        data.push({
-          symbol,
-          date: currentDate.toISOString().split('T')[0],
-          open: currentPrice,
-          high,
-          low,
-          close: newPrice,
-          volume,
-          amount: volume * newPrice
-        });
-
-        currentPrice = newPrice;
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return data;
-  }
 
   /**
    * 运行专业回测
@@ -177,25 +136,25 @@ class BacktestService extends Service {
     try {
       // 初始化回测环境
       const backtestContext = this.initializeBacktestContext(params);
-      
+
       // 按日期排序历史数据
       const sortedData = historicalData.sort((a, b) => new Date(a.date) - new Date(b.date));
-      
+
       // 执行事件驱动回测
       const trades = [];
       const equityValues = [];
       const drawdownValues = [];
-      
+
       let maxEquity = params.initialCapital;
-      
+
       for (let i = 0; i < sortedData.length; i++) {
         const currentData = sortedData[i];
         backtestContext.currentDate = currentData.date;
         backtestContext.currentPrice = currentData.close;
-        
+
         // 生成交易信号
         const signals = await this.generateTradingSignals(params, currentData, sortedData.slice(0, i + 1));
-        
+
         // 执行交易
         for (const signal of signals) {
           const trade = await this.executeTrade(backtestContext, signal, currentData);
@@ -203,14 +162,14 @@ class BacktestService extends Service {
             trades.push(trade);
           }
         }
-        
+
         // 更新组合价值
         const currentEquity = this.calculatePortfolioValue(backtestContext, currentData.close);
         equityValues.push({
           date: currentData.date,
           value: currentEquity
         });
-        
+
         // 计算回撤
         if (currentEquity > maxEquity) {
           maxEquity = currentEquity;
@@ -221,14 +180,14 @@ class BacktestService extends Service {
           value: drawdown
         });
       }
-      
+
       // 计算绩效指标
       const performance = this.calculatePerformanceMetrics(
         params.initialCapital,
         equityValues,
         trades
       );
-      
+
       // 构建回测结果
       const result = {
         id: `backtest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -246,7 +205,7 @@ class BacktestService extends Service {
         benchmarkReturn: 0, // 这里可以添加基准收益计算
         createdAt: new Date().toISOString()
       };
-      
+
       return result;
 
     } catch (error) {
@@ -275,7 +234,7 @@ class BacktestService extends Service {
    */
   async generateTradingSignals(params, currentData, historicalData) {
     const signals = [];
-    
+
     // 根据策略类型生成不同的信号
     switch (params.strategyType) {
     case 'technical':
@@ -297,19 +256,19 @@ class BacktestService extends Service {
   generateTechnicalSignals(params, currentData, historicalData) {
     const signals = [];
     const strategyParams = params.strategyParams || {};
-    
+
     if (historicalData.length < 20) return signals; // 需要足够的历史数据
-    
+
     // 计算移动平均线
     const shortPeriod = strategyParams.shortPeriod || 5;
     const longPeriod = strategyParams.longPeriod || 20;
-    
+
     if (historicalData.length >= longPeriod) {
       const shortMA = this.calculateMA(historicalData.slice(-shortPeriod));
       const longMA = this.calculateMA(historicalData.slice(-longPeriod));
       const prevShortMA = this.calculateMA(historicalData.slice(-shortPeriod - 1, -1));
       const prevLongMA = this.calculateMA(historicalData.slice(-longPeriod - 1, -1));
-      
+
       // 金叉买入信号
       if (shortMA > longMA && prevShortMA <= prevLongMA) {
         signals.push({
@@ -318,7 +277,7 @@ class BacktestService extends Service {
           strength: 0.8
         });
       }
-      
+
       // 死叉卖出信号
       if (shortMA < longMA && prevShortMA >= prevLongMA) {
         signals.push({
@@ -328,7 +287,7 @@ class BacktestService extends Service {
         });
       }
     }
-    
+
     return signals;
   }
 
@@ -346,31 +305,31 @@ class BacktestService extends Service {
   async executeTrade(context, signal, currentData) {
     const { type, reason, strength } = signal;
     const price = currentData.close;
-    
+
     // 计算交易数量
     let quantity = 0;
     if (type === 'buy') {
       // 买入：使用可用现金的80%
       const availableCash = context.cash * 0.8;
       quantity = Math.floor(availableCash / price / 100) * 100; // 按手买入
-      
+
       if (quantity > 0) {
         const amount = quantity * price;
         const commission = Math.max(amount * context.commissionRate, 5);
         const totalCost = amount + commission;
-        
+
         if (context.cash >= totalCost) {
           context.cash -= totalCost;
-          
+
           const existingPosition = context.positions.get(currentData.symbol) || { quantity: 0, averagePrice: 0 };
           const totalQuantity = existingPosition.quantity + quantity;
           const totalCost = existingPosition.quantity * existingPosition.averagePrice + amount;
-          
+
           context.positions.set(currentData.symbol, {
             quantity: totalQuantity,
             averagePrice: totalCost / totalQuantity
           });
-          
+
           return {
             id: `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             timestamp: context.currentDate,
@@ -390,20 +349,20 @@ class BacktestService extends Service {
       const position = context.positions.get(currentData.symbol);
       if (position && position.quantity > 0) {
         quantity = Math.floor(position.quantity * 0.5 / 100) * 100; // 按手卖出
-        
+
         if (quantity > 0) {
           const amount = quantity * price;
           const commission = Math.max(amount * context.commissionRate, 5);
           const stampDuty = amount * 0.001; // 印花税
           const totalCost = commission + stampDuty;
-          
+
           context.cash += amount - totalCost;
-          
+
           position.quantity -= quantity;
           if (position.quantity <= 0) {
             context.positions.delete(currentData.symbol);
           }
-          
+
           return {
             id: `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             timestamp: context.currentDate,
@@ -420,7 +379,7 @@ class BacktestService extends Service {
         }
       }
     }
-    
+
     return null;
   }
 
@@ -441,12 +400,12 @@ class BacktestService extends Service {
   calculatePerformanceMetrics(initialCapital, equityValues, trades) {
     const finalValue = equityValues[equityValues.length - 1].value;
     const totalReturn = (finalValue - initialCapital) / initialCapital;
-    
+
     // 计算年化收益率
     const days = equityValues.length;
     const years = days / 252; // 假设252个交易日为一年
     const annualizedReturn = Math.pow(1 + totalReturn, 1 / years) - 1;
-    
+
     // 计算最大回撤
     let maxDrawdown = 0;
     let peak = initialCapital;
@@ -457,20 +416,20 @@ class BacktestService extends Service {
       const drawdown = (peak - equity.value) / peak;
       maxDrawdown = Math.max(maxDrawdown, drawdown);
     }
-    
+
     // 计算夏普比率（简化版）
     const returns = [];
     for (let i = 1; i < equityValues.length; i++) {
       const dailyReturn = (equityValues[i].value - equityValues[i - 1].value) / equityValues[i - 1].value;
       returns.push(dailyReturn);
     }
-    
+
     const avgReturn = returns.reduce((sum, ret) => sum + ret, 0) / returns.length;
     const stdDev = Math.sqrt(
       returns.reduce((sum, ret) => sum + Math.pow(ret - avgReturn, 2), 0) / returns.length
     );
     const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
-    
+
     // 计算胜率
     const sellTrades = trades.filter(t => t.direction === 'sell');
     const profitableTrades = sellTrades.filter(t => {
@@ -478,7 +437,7 @@ class BacktestService extends Service {
       return t.price > t.amount / t.quantity; // 这里需要更精确的计算
     });
     const winRate = sellTrades.length > 0 ? profitableTrades.length / sellTrades.length : 0;
-    
+
     return {
       totalReturn,
       annualizedReturn,

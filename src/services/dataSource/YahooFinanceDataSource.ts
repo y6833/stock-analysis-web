@@ -136,27 +136,8 @@ export class YahooFinanceDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取股票数据失败，使用模拟数据:', proxyError)
       }
 
-      // 如果API调用失败，返回模拟数据
-      const mockData: StockData = {
-        symbol,
-        name: 'Yahoo Finance-模拟数据',
-        price: 100.0 + Math.random() * 400,
-        change: (Math.random() - 0.5) * 10,
-        changePercent: (Math.random() - 0.5) * 5,
-        volume: Math.floor(Math.random() * 10000000),
-        turnover: Math.floor(Math.random() * 1000000000),
-        high: 100.0 + Math.random() * 400,
-        low: 100.0 + Math.random() * 400,
-        open: 100.0 + Math.random() * 400,
-        close: 100.0 + Math.random() * 400,
-        marketCap: Math.floor(Math.random() * 10000000000),
-        pe: Math.random() * 30,
-        pb: Math.random() * 5,
-        timestamp: Date.now(),
-      }
-
-      console.log('使用模拟股票数据')
-      return mockData
+      // 不返回模拟数据，抛出错误
+      throw new Error(`Yahoo Finance数据源获取股票${symbol}数据失败，API不可用`)
     } catch (error) {
       console.error(`Yahoo Finance获取股票${symbol}数据失败:`, error)
       throw error

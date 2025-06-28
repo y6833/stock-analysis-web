@@ -233,6 +233,21 @@ class CacheController extends Controller {
         return;
       }
 
+      // 检查Redis是否可用
+      if (!app.redis) {
+        ctx.body = {
+          success: false,
+          message: 'Redis 客户端不可用，使用内存缓存统计',
+          source,
+          count: 0,
+          lastCleared: null,
+          hitCount: 0,
+          missCount: 0,
+          hitRate: 0
+        };
+        return;
+      }
+
       // 获取Redis客户端
       const redis = app.redis;
 
@@ -287,8 +302,25 @@ class CacheController extends Controller {
       // 获取Redis客户端
       const redis = app.redis;
 
+      if (!redis) {
+        ctx.body = {
+          success: false,
+          message: 'Redis 客户端不可用',
+        };
+        return;
+      }
+
       // 获取与指定数据源相关的所有键
-      let keys = await redis.keys(`${source}:*`);
+      let keys = [];
+      if (typeof redis.keys === 'function') {
+        keys = await redis.keys(`${source}:*`);
+      } else {
+        ctx.body = {
+          success: false,
+          message: 'Redis keys 方法不可用',
+        };
+        return;
+      }
 
       // 如果有搜索条件，过滤键
       if (search) {

@@ -32,7 +32,8 @@ module.exports = () => {
     enable: false, // 开发环境可以禁用认证
     defaultUser: {
       id: 1,
-      username: 'dev_user',
+      username: 'dev_admin',
+      role: 'admin', // 设置为管理员角色以便测试管理员功能
     },
   };
 

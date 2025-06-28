@@ -10,14 +10,14 @@ class AkshareService extends Service {
    */
   async getFinancialNews(count = 20) {
     const { ctx } = this;
-    
+
     try {
       ctx.logger.info(`从 AkShare 获取 ${count} 条财经新闻`);
-      
+
       // 由于 AkShare 的 Python 接口比较复杂，这里返回模拟数据
       // 在实际项目中，可以通过调用 Python 脚本或者使用 AkShare 的 HTTP API
       const mockNews = this.generateMockNews(count);
-      
+
       return mockNews.map(news => ({
         ...news,
         source: 'akshare',
@@ -37,10 +37,10 @@ class AkshareService extends Service {
    */
   async getStockQuote(symbol) {
     const { ctx } = this;
-    
+
     try {
       ctx.logger.info(`从 AkShare 获取股票 ${symbol} 行情`);
-      
+
       // 这里应该调用 AkShare 的股票行情接口
       // 由于接口复杂性，返回模拟数据
       return this.generateMockStockQuote(symbol);
@@ -56,10 +56,10 @@ class AkshareService extends Service {
    */
   async getMarketOverview() {
     const { ctx } = this;
-    
+
     try {
       ctx.logger.info('从 AkShare 获取市场概览数据');
-      
+
       // 这里应该调用 AkShare 的市场概览接口
       return this.generateMockMarketOverview();
     } catch (err) {
@@ -91,7 +91,7 @@ class AkshareService extends Service {
     for (let i = 0; i < count; i++) {
       const randomTitle = titles[Math.floor(Math.random() * titles.length)];
       const publishTime = new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000);
-      
+
       news.push({
         id: `akshare_${Date.now()}_${i}`,
         title: randomTitle,
@@ -118,28 +118,8 @@ class AkshareService extends Service {
     const change = (Math.random() - 0.5) * 2; // -1到1之间的变化
     const changePercent = (change / basePrice) * 100;
 
-    return {
-      symbol,
-      name: `股票${symbol}`,
-      price: basePrice + change,
-      open: basePrice + (Math.random() - 0.5) * 1,
-      high: basePrice + Math.random() * 2,
-      low: basePrice - Math.random() * 2,
-      close: basePrice + change,
-      pre_close: basePrice,
-      change,
-      pct_chg: changePercent,
-      vol: Math.round(Math.random() * 10000000),
-      amount: Math.round(Math.random() * 1000000000),
-      turnover_rate: Math.random() * 5,
-      pe: Math.random() * 30 + 5,
-      pb: Math.random() * 5 + 0.5,
-      total_mv: (basePrice + change) * (Math.random() * 10000000000 + 1000000000),
-      circ_mv: (basePrice + change) * (Math.random() * 5000000000 + 500000000),
-      update_time: new Date().toISOString(),
-      data_source: 'akshare_api',
-      data_source_message: '数据来自AkShare API（模拟）'
-    };
+    // 模拟数据已移除 - 抛出错误而不是返回假数据
+    throw new Error(`AKShare API调用失败，无法获取股票${symbol}的数据，请检查Python环境和AKShare库配置`);
   }
 
   /**

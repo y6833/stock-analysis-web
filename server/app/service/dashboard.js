@@ -52,7 +52,7 @@ class DashboardService extends Service {
 
       // 缓存数据（5分钟）
       try {
-        if (ctx.app.redis) {
+        if (ctx.app.redis && typeof ctx.app.redis.set === 'function') {
           await ctx.app.redis.set(cacheKey, JSON.stringify(marketOverview), 'EX', 300);
         }
       } catch (cacheErr) {
@@ -81,8 +81,8 @@ class DashboardService extends Service {
         ctx.logger.warn('获取缓存数据也失败:', cacheErr);
       }
 
-      // 如果都失败了，返回模拟数据
-      return this.getMockMarketOverview();
+      // 如果都失败了，抛出错误而不是返回模拟数据
+      throw new Error('无法获取市场概览数据，请检查数据源配置或网络连接');
     }
   }
 
@@ -153,12 +153,12 @@ class DashboardService extends Service {
             sectors.push({
               id: industry.code,
               name: industry.name,
-              change: Math.random() * 10 - 5, // 模拟涨跌
-              changePercent: Math.random() * 2 - 1, // 模拟涨跌幅
-              volume: Math.round(Math.random() * 1000000000),
-              turnover: Math.round(Math.random() * 5000000000),
-              leadingStocks: [],
-              laggingStocks: []
+              change: industryData.change || 0,
+              changePercent: industryData.changePercent || 0,
+              volume: industryData.volume || 0,
+              turnover: industryData.turnover || 0,
+              leadingStocks: industryData.leadingStocks || [],
+              laggingStocks: industryData.laggingStocks || []
             });
           }
         } catch (err) {
@@ -166,9 +166,9 @@ class DashboardService extends Service {
         }
       }
 
-      // 如果没有获取到任何数据，返回模拟数据
+      // 如果没有获取到任何数据，抛出错误而不是返回模拟数据
       if (sectors.length === 0) {
-        return this.getMockSectors();
+        throw new Error('无法获取行业板块数据，请检查数据源配置或网络连接');
       }
 
       return sectors;
@@ -222,17 +222,16 @@ class DashboardService extends Service {
   }
 
   /**
-   * 获取模拟的市场概览数据
-   * @return {Object} 模拟的市场概览数据
+   * 获取市场概览数据失败时的错误响应
+   * @return {Object} 错误响应数据
    */
-  getMockMarketOverview() {
+  getMarketOverviewError() {
     return {
-      indices: this.getMockIndices(),
-      sectors: this.getMockSectors(),
-      breadth: this.getMarketBreadth(),
-      timestamp: new Date().toISOString(),
-      data_source: 'mock',
-      data_source_message: '数据来自模拟数据（API调用失败）'
+      success: false,
+      message: '无法获取市场概览数据，所有数据源均不可用',
+      error: 'All market data sources failed',
+      data_source: '市场数据API',
+      data_source_message: '市场数据API不可用'
     };
   }
 

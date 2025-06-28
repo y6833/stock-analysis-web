@@ -31,7 +31,7 @@ export default interface DataSourceInterface {
    * @param symbol 股票代码
    * @param options 可选参数
    */
-  getStockQuote(symbol: string, options?: { sourceType?: DataSourceType }): Promise<StockQuote>
+  getStockQuote(symbol: string, options?: { sourceType?: DataSourceType; forceRefresh?: boolean }): Promise<StockQuote>
 
   /**
    * 获取财经新闻
@@ -40,7 +40,7 @@ export default interface DataSourceInterface {
    */
   getFinancialNews(
     count?: number,
-    options?: { sourceType?: DataSourceType }
+    options?: { sourceType?: DataSourceType; forceRefresh?: boolean }
   ): Promise<FinancialNews[]>
 
   /**

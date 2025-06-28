@@ -16,6 +16,8 @@ import { JuheDataSource } from './JuheDataSource'
 import TencentEnhancedDataSource from './TencentEnhancedDataSource'
 import NetEaseEnhancedDataSource from './NetEaseEnhancedDataSource'
 import AlphaVantageDataSource from './AlphaVantageDataSource'
+import AlltickDataSource from './AlltickDataSource'
+import FutuDataSource from './FutuDataSource'
 import type { DataSourceType } from './DataSourceFactory'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 
@@ -69,6 +71,9 @@ export class DataSourceManager {
     this.dataSources.set('yahoo_finance', new YahooFinanceDataSource())
     this.dataSources.set('google_finance', new GoogleFinanceDataSource())
     this.dataSources.set('juhe', new JuheDataSource())
+    this.dataSources.set('alphavantage', new AlphaVantageDataSource())
+    this.dataSources.set('alltick', new AlltickDataSource())
+    this.dataSources.set('futu', new FutuDataSource())
   }
 
   /**
@@ -139,6 +144,30 @@ export class DataSourceManager {
         maxRetries: 2,
         timeout: 8000,
         healthCheckInterval: 30000,
+      },
+      {
+        type: 'alphavantage',
+        priority: 9,
+        enabled: true,
+        maxRetries: 3,
+        timeout: 15000,
+        healthCheckInterval: 60000, // 1分钟
+      },
+      {
+        type: 'alltick',
+        priority: 10,
+        enabled: true,
+        maxRetries: 3,
+        timeout: 15000,
+        healthCheckInterval: 60000, // 1分钟
+      },
+      {
+        type: 'futu',
+        priority: 11,
+        enabled: true,
+        maxRetries: 3,
+        timeout: 15000,
+        healthCheckInterval: 60000, // 1分钟
       },
     ]
 

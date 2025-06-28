@@ -37,13 +37,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, provide } from 'vue'
+import { ref, computed, onMounted, onUnmounted, provide } from 'vue'
 import { useRouter } from 'vue-router'
 import { stockService } from '@/services/stockService'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'
 import { useToast } from '@/composables/useToast'
 import eventBus from '@/utils/eventBus'
+import { dataSourceStateManager } from '@/services/dataSourceStateManager'
 
 // 定义数据源上下文
 const DataSourceContext = Symbol('DataSourceContext')
@@ -60,14 +61,11 @@ const props = defineProps({
 const router = useRouter()
 const { showToast } = useToast()
 
-// 数据源状态
-// 直接从localStorage获取当前数据源，确保使用最新的值
-const storedDataSource = localStorage.getItem('preferredDataSource') as DataSourceType
-const currentDataSource = ref<DataSourceType>(
-  storedDataSource || stockService.getCurrentDataSourceType()
-)
-console.log(`DataSourceProvider: 当前数据源类型 = ${currentDataSource.value}`)
+// 数据源状态 - 使用统一的状态管理器
+const currentDataSource = ref<DataSourceType>(dataSourceStateManager.getCurrentDataSource())
 const isExpanded = ref(false)
+
+console.log(`[DataSourceProvider] 当前数据源类型 = ${currentDataSource.value}`)
 
 // 计算属性
 const currentDataSourceName = computed(() => {
@@ -102,8 +100,8 @@ const clearCurrentDataSourceCache = async () => {
 
 // 监听数据源变化
 const updateCurrentDataSource = (type: DataSourceType) => {
+  console.log(`[DataSourceProvider] 收到数据源变化事件: ${currentDataSource.value} -> ${type}`)
   currentDataSource.value = type
-  console.log(`数据源已更新为: ${type}`)
 }
 
 // 提供数据源上下文
@@ -112,6 +110,31 @@ provide(DataSourceContext, {
   currentDataSourceName,
   currentDataSourceDescription,
   clearCurrentDataSourceCache,
+})
+
+// 组件挂载时添加事件监听
+onMounted(() => {
+  console.log('[DataSourceProvider] 组件已挂载，添加事件监听器')
+
+  // 监听数据源变化事件
+  eventBus.on('data-source-changed', updateCurrentDataSource)
+
+  // 监听localStorage变化（处理其他标签页的变化）
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === 'preferredDataSource' && e.newValue) {
+      console.log(`[DataSourceProvider] 检测到localStorage变化: ${e.oldValue} -> ${e.newValue}`)
+      updateCurrentDataSource(e.newValue as DataSourceType)
+    }
+  }
+
+  window.addEventListener('storage', handleStorageChange)
+
+  // 清理函数
+  onUnmounted(() => {
+    console.log('[DataSourceProvider] 组件卸载，移除事件监听器')
+    eventBus.off('data-source-changed', updateCurrentDataSource)
+    window.removeEventListener('storage', handleStorageChange)
+  })
 })
 
 onMounted(() => {

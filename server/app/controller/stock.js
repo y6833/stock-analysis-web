@@ -3,14 +3,207 @@
 const Controller = require('egg').Controller;
 
 class StockController extends Controller {
+  // 批量获取股票实时行情
+  async getBatchQuotes() {
+    const { ctx, service } = this;
+    const { symbols } = ctx.request.body;
+
+    if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
+      ctx.status = 400;
+      ctx.body = {
+        success: false,
+        message: '请提供股票代码数组',
+        error: 'symbols参数必须是非空数组'
+      };
+      return;
+    }
+
+    // 限制批量请求数量
+    const maxBatchSize = 50;
+    const limitedSymbols = symbols.slice(0, maxBatchSize);
+
+    // 获取数据源参数
+    const dataSource = ctx.query.source || ctx.headers['x-data-source'] || 'tushare';
+
+    ctx.logger.info(`批量获取 ${limitedSymbols.length} 只股票行情，数据源: ${dataSource}`);
+
+    try {
+      const quotes = {};
+      const errors = {};
+
+      // 并行获取所有股票行情，但限制并发数
+      const batchSize = 10;
+      for (let i = 0; i < limitedSymbols.length; i += batchSize) {
+        const batch = limitedSymbols.slice(i, i + batchSize);
+
+        const batchPromises = batch.map(async (symbol) => {
+          try {
+            const quote = await service.stock.getStockQuote(symbol);
+            return { symbol, quote, success: true };
+          } catch (error) {
+            ctx.logger.warn(`获取股票 ${symbol} 行情失败:`, error.message);
+            return { symbol, error: error.message, success: false };
+          }
+        });
+
+        const batchResults = await Promise.allSettled(batchPromises);
+
+        batchResults.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            const { symbol, quote, error, success } = result.value;
+            if (success) {
+              quotes[symbol] = quote;
+            } else {
+              errors[symbol] = error;
+            }
+          } else {
+            // Promise rejected
+            ctx.logger.error('批量获取行情Promise失败:', result.reason);
+          }
+        });
+
+        // 添加小延迟避免API限制
+        if (i + batchSize < limitedSymbols.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      ctx.body = {
+        success: true,
+        quotes,
+        errors,
+        total: limitedSymbols.length,
+        successful: Object.keys(quotes).length,
+        failed: Object.keys(errors).length,
+        data_source: dataSource,
+        data_source_message: `批量获取行情数据，数据源: ${dataSource}`
+      };
+
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '批量获取股票行情失败',
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `批量获取行情失败: ${err.message}`
+      };
+      ctx.logger.error(err);
+    }
+  }
+
   // 获取股票实时行情
   async getQuote() {
     const { ctx, service } = this;
     const stockCode = ctx.params.code;
 
+    // 获取数据源参数
+    const dataSource = ctx.query.source || ctx.headers['x-data-source'] || 'tushare';
+
+    ctx.logger.info(`获取股票 ${stockCode} 行情，数据源: ${dataSource}`);
+
     try {
-      // 直接从 API 获取，如果 API 失败会自动尝试从缓存获取
-      const quote = await service.stock.getStockQuote(stockCode);
+      let quote;
+
+      // 根据数据源调用不同的API
+      switch (dataSource.toLowerCase()) {
+        case 'alphavantage':
+          // 调用Alpha Vantage API
+          try {
+            ctx.logger.info(`调用ALPHAVANTAGE API: http://localhost:7002/api/alphavantage/quote?symbol=${stockCode}`);
+
+            const response = await ctx.curl(`http://localhost:7002/api/alphavantage/quote?symbol=${stockCode}`, {
+              method: 'GET',
+              timeout: 15000,
+              dataType: 'json'
+            });
+
+            ctx.logger.info(`ALPHAVANTAGE API响应: ${JSON.stringify(response.data)}`);
+
+            if (response.data && response.data.success) {
+              quote = {
+                code: stockCode,
+                name: response.data.data.name || stockCode,
+                price: response.data.data.price || 0,
+                open: response.data.data.open || 0,
+                high: response.data.data.high || 0,
+                low: response.data.data.low || 0,
+                volume: response.data.data.volume || 0,
+                amount: response.data.data.amount || 0,
+                change: response.data.data.changePercent || 0,
+                date: new Date().toISOString().split('T')[0],
+                data_source: 'ALPHAVANTAGE API',
+                data_source_message: '数据来自ALPHAVANTAGE API实时查询，最新数据',
+                data_source_type: 'alphavantage',
+                is_real_time: true,
+                cache: false,
+                api_time: new Date().toISOString()
+              };
+            } else {
+              throw new Error(response.data?.message || 'ALPHAVANTAGE API调用失败');
+            }
+          } catch (alphaError) {
+            ctx.logger.error(`ALPHAVANTAGE API调用失败: ${alphaError.message}`);
+            throw new Error(`ALPHAVANTAGE API调用失败: ${alphaError.message}`);
+          }
+          break;
+
+        case 'sina':
+          // 调用新浪财经API
+          try {
+            const response = await ctx.curl(`http://localhost:7002/api/sina/quote?symbol=${stockCode}`, {
+              method: 'GET',
+              timeout: 15000,
+              dataType: 'json'
+            });
+
+            if (response.data && response.data.success) {
+              quote = {
+                ...response.data.data,
+                data_source: 'SINA API',
+                data_source_message: '数据来自新浪财经API',
+                data_source_type: 'sina'
+              };
+            } else {
+              throw new Error(response.data?.message || '新浪财经API调用失败');
+            }
+          } catch (sinaError) {
+            ctx.logger.error(`新浪财经API调用失败: ${sinaError.message}`);
+            throw new Error(`新浪财经API调用失败: ${sinaError.message}`);
+          }
+          break;
+
+        case 'eastmoney':
+          // 调用东方财富API
+          try {
+            const response = await ctx.curl(`http://localhost:7002/api/eastmoney/quote?symbol=${stockCode}`, {
+              method: 'GET',
+              timeout: 15000,
+              dataType: 'json'
+            });
+
+            if (response.data && response.data.success) {
+              quote = {
+                ...response.data.data,
+                data_source: 'EASTMONEY API',
+                data_source_message: '数据来自东方财富API',
+                data_source_type: 'eastmoney'
+              };
+            } else {
+              throw new Error(response.data?.message || '东方财富API调用失败');
+            }
+          } catch (eastmoneyError) {
+            ctx.logger.error(`东方财富API调用失败: ${eastmoneyError.message}`);
+            throw new Error(`东方财富API调用失败: ${eastmoneyError.message}`);
+          }
+          break;
+
+        case 'tushare':
+        default:
+          // 使用原有的Tushare API逻辑
+          quote = await service.stock.getStockQuote(stockCode);
+          break;
+      }
 
       // 设置响应头中的数据来源
       if (quote.data_source) {
@@ -258,6 +451,245 @@ class StockController extends Controller {
         data_source_message: `批量存储数据失败: ${err.message}`
       };
       ctx.logger.error(err);
+    }
+  }
+
+  // 获取行业列表
+  async getIndustryList() {
+    const { ctx, service } = this;
+
+    try {
+      const result = await service.stock.getIndustryList();
+
+      ctx.body = {
+        success: true,
+        data: result.data,
+        message: '成功获取行业列表',
+        data_source: result.data_source,
+        data_source_message: result.data_source_message
+      };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '获取行业列表失败',
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `获取行业列表失败: ${err.message}`
+      };
+      ctx.logger.error(err);
+    }
+  }
+
+  // 获取行业数据
+  async getIndustryData() {
+    const { ctx, service } = this;
+    const industryCode = ctx.params.code;
+
+    try {
+      const result = await service.stock.getIndustryData(industryCode);
+
+      ctx.body = {
+        success: true,
+        data: result,
+        message: `成功获取行业 ${industryCode} 数据`,
+        data_source: result.data_source,
+        data_source_message: result.data_source_message
+      };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: `获取行业 ${industryCode} 数据失败`,
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `获取行业数据失败: ${err.message}`
+      };
+      ctx.logger.error(err);
+    }
+  }
+
+  // 获取热门股票
+  async getHotStocks() {
+    const { ctx, service } = this;
+    const limit = parseInt(ctx.query.limit) || 50;
+
+    try {
+      const result = await service.stock.getHotStocks(limit);
+
+      ctx.body = {
+        success: true,
+        data: result.data,
+        message: `成功获取${result.data.length}只热门股票`,
+        data_source: result.data_source,
+        data_source_message: result.data_source_message
+      };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '获取热门股票失败',
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `获取热门股票失败: ${err.message}`
+      };
+      ctx.logger.error(err);
+    }
+  }
+
+  // 获取涨停股票
+  async getLimitUpStocks() {
+    const { ctx, service } = this;
+    const limit = parseInt(ctx.query.limit) || 50;
+
+    try {
+      const result = await service.stock.getLimitUpStocks(limit);
+
+      ctx.body = {
+        success: true,
+        data: result.data,
+        message: `成功获取${result.data.length}只涨停股票`,
+        data_source: result.data_source,
+        data_source_message: result.data_source_message
+      };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '获取涨停股票失败',
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `获取涨停股票失败: ${err.message}`
+      };
+      ctx.logger.error(err);
+    }
+  }
+
+  // 获取跌停股票
+  async getLimitDownStocks() {
+    const { ctx, service } = this;
+    const limit = parseInt(ctx.query.limit) || 50;
+
+    try {
+      const result = await service.stock.getLimitDownStocks(limit);
+
+      ctx.body = {
+        success: true,
+        data: result.data,
+        message: `成功获取${result.data.length}只跌停股票`,
+        data_source: result.data_source,
+        data_source_message: result.data_source_message
+      };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '获取跌停股票失败',
+        error: err.message || '未知错误',
+        data_source: 'error',
+        data_source_message: `获取跌停股票失败: ${err.message}`
+      };
+      ctx.logger.error(err);
+    }
+  }
+
+  // 手动同步股票数据到数据库
+  async syncStockData() {
+    const { ctx, service } = this;
+
+    try {
+      ctx.logger.info('开始手动同步股票数据到数据库...');
+
+      const result = await service.stock.fetchAndSyncStockList();
+
+      ctx.body = {
+        success: true,
+        message: '股票数据同步成功',
+        data: {
+          count: result.count,
+          data_source: result.data_source,
+          data_source_message: result.data_source_message,
+          sync_time: new Date().toISOString()
+        }
+      };
+
+      ctx.logger.info(`股票数据同步完成，共同步 ${result.count} 条数据`);
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '股票数据同步失败',
+        error: err.message || '未知错误',
+        sync_time: new Date().toISOString()
+      };
+      ctx.logger.error('股票数据同步失败:', err);
+    }
+  }
+
+  // 获取数据库中的股票统计信息
+  async getStockStats() {
+    const { ctx, app } = this;
+
+    try {
+      // 获取股票总数
+      const [totalResult] = await app.model.query('SELECT COUNT(*) as count FROM stock_basic', {
+        type: app.model.QueryTypes.SELECT
+      });
+      const totalCount = totalResult.count;
+
+      // 获取上市股票数
+      const [listedResult] = await app.model.query("SELECT COUNT(*) as count FROM stock_basic WHERE list_status = 'L'", {
+        type: app.model.QueryTypes.SELECT
+      });
+      const listedCount = listedResult.count;
+
+      // 获取最新更新时间（如果有updated_at字段）
+      let lastUpdated = null;
+      try {
+        const [updateResult] = await app.model.query('SELECT MAX(updated_at) as last_updated FROM stock_basic', {
+          type: app.model.QueryTypes.SELECT
+        });
+        lastUpdated = updateResult.last_updated;
+      } catch (updateError) {
+        // 如果没有updated_at字段，忽略错误
+        ctx.logger.info('stock_basic表没有updated_at字段');
+      }
+
+      // 按行业统计
+      const industryStats = await app.model.query(`
+        SELECT industry, COUNT(*) as count
+        FROM stock_basic
+        WHERE list_status = 'L' OR list_status IS NULL
+        GROUP BY industry
+        ORDER BY count DESC
+        LIMIT 10
+      `, {
+        type: app.model.QueryTypes.SELECT
+      });
+
+      ctx.body = {
+        success: true,
+        message: '获取股票统计信息成功',
+        data: {
+          total_count: totalCount,
+          listed_count: listedCount,
+          last_updated: lastUpdated,
+          industry_stats: industryStats.map(item => ({
+            industry: item.industry || '未知',
+            count: parseInt(item.count)
+          })),
+          data_source: 'stock_basic',
+          data_source_message: '统计数据来自stock_basic表'
+        }
+      };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '获取股票统计信息失败',
+        error: err.message || '未知错误'
+      };
+      ctx.logger.error('获取股票统计信息失败:', err);
     }
   }
 }

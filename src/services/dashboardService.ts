@@ -73,12 +73,12 @@ export async function getDashboardSettings(): Promise<DashboardSettings> {
                   }
                 } catch (error) {
                   console.error(`获取股票 ${item.stockCode} 行情失败:`, error)
-                  // 使用模拟数据或默认值
-                  price = item.price || 0
-                  change = item.change || 0
-                  changePercent = item.changePercent || 0
-                  volume = item.volume || 0
-                  turnover = item.turnover || 0
+                  // 使用默认值，不使用模拟数据
+                  price = 0
+                  change = 0
+                  changePercent = 0
+                  volume = 0
+                  turnover = 0
                 }
 
                 return {
@@ -663,9 +663,8 @@ export async function getMarketOverview(forceRefresh = true): Promise<MarketOver
     return marketOverview
   } catch (error) {
     console.error('获取市场概览数据失败:', error)
-    // 如果API调用失败，回退到模拟数据
-    console.warn('API调用失败，使用模拟数据作为回退方案')
-    return generateMockMarketOverview()
+    // 不使用模拟数据，直接抛出错误
+    throw new Error('无法获取市场概览数据，请检查数据源配置或网络连接')
   }
 }
 
@@ -766,9 +765,9 @@ async function fetchIndustrySectors(forceRefresh = true): Promise<IndustrySector
       }
     }
 
-    // 如果没有获取到任何行业板块数据，使用模拟数据
+    // 如果没有获取到任何行业板块数据，抛出错误
     if (sectors.length === 0) {
-      return generateMockSectors()
+      throw new Error('无法获取行业板块数据，请检查数据源配置或网络连接')
     }
 
     return sectors
@@ -1009,266 +1008,7 @@ function generateMockBreadth(): MarketOverview['breadth'] {
   }
 }
 
-/**
- * 生成模拟的市场概览数据
- * @returns 模拟的市场概览数据
- */
-function generateMockMarketOverview(): MarketOverview {
-  // 生成模拟的指数数据
-  const indices: MarketIndex[] = [
-    {
-      symbol: '000001.SH',
-      name: '上证指数',
-      price: 3000 + Math.random() * 200,
-      change: Math.random() * 40 - 20,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 100000000000),
-      turnover: Math.round(Math.random() * 500000000000),
-      components: 1800,
-    },
-    {
-      symbol: '399001.SZ',
-      name: '深证成指',
-      price: 10000 + Math.random() * 1000,
-      change: Math.random() * 100 - 50,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 80000000000),
-      turnover: Math.round(Math.random() * 400000000000),
-      components: 500,
-    },
-    {
-      symbol: '399006.SZ',
-      name: '创业板指',
-      price: 2000 + Math.random() * 200,
-      change: Math.random() * 40 - 20,
-      changePercent: Math.random() * 3 - 1.5,
-      volume: Math.round(Math.random() * 50000000000),
-      turnover: Math.round(Math.random() * 300000000000),
-      components: 100,
-    },
-    {
-      symbol: '000016.SH',
-      name: '上证50',
-      price: 3000 + Math.random() * 200,
-      change: Math.random() * 40 - 20,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 30000000000),
-      turnover: Math.round(Math.random() * 200000000000),
-      components: 50,
-    },
-    {
-      symbol: '000300.SH',
-      name: '沪深300',
-      price: 4000 + Math.random() * 300,
-      change: Math.random() * 60 - 30,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 60000000000),
-      turnover: Math.round(Math.random() * 350000000000),
-      components: 300,
-    },
-    {
-      symbol: '000905.SH',
-      name: '中证500',
-      price: 6000 + Math.random() * 400,
-      change: Math.random() * 80 - 40,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 40000000000),
-      turnover: Math.round(Math.random() * 250000000000),
-      components: 500,
-    },
-  ]
-
-  // 生成模拟的行业板块数据
-  const sectors: IndustrySector[] = [
-    {
-      id: 'finance',
-      name: '金融',
-      change: Math.random() * 2 - 1,
-      changePercent: Math.random() * 3 - 1.5,
-      volume: Math.round(Math.random() * 20000000000),
-      turnover: Math.round(Math.random() * 100000000000),
-      leadingStocks: [
-        {
-          symbol: '601318.SH',
-          name: '中国平安',
-          changePercent: Math.random() * 5,
-        },
-        {
-          symbol: '600036.SH',
-          name: '招商银行',
-          changePercent: Math.random() * 4,
-        },
-      ],
-      laggingStocks: [
-        {
-          symbol: '601398.SH',
-          name: '工商银行',
-          changePercent: Math.random() * -3,
-        },
-        {
-          symbol: '601288.SH',
-          name: '农业银行',
-          changePercent: Math.random() * -2,
-        },
-      ],
-    },
-    {
-      id: 'technology',
-      name: '科技',
-      change: Math.random() * 3 - 1,
-      changePercent: Math.random() * 4 - 1,
-      volume: Math.round(Math.random() * 15000000000),
-      turnover: Math.round(Math.random() * 80000000000),
-      leadingStocks: [
-        {
-          symbol: '000725.SZ',
-          name: '京东方A',
-          changePercent: Math.random() * 6,
-        },
-        {
-          symbol: '002415.SZ',
-          name: '海康威视',
-          changePercent: Math.random() * 5,
-        },
-      ],
-      laggingStocks: [
-        {
-          symbol: '600100.SH',
-          name: '同方股份',
-          changePercent: Math.random() * -4,
-        },
-        {
-          symbol: '000066.SZ',
-          name: '中国长城',
-          changePercent: Math.random() * -3,
-        },
-      ],
-    },
-    {
-      id: 'consumer',
-      name: '消费',
-      change: Math.random() * 2.5 - 1,
-      changePercent: Math.random() * 3.5 - 1.5,
-      volume: Math.round(Math.random() * 12000000000),
-      turnover: Math.round(Math.random() * 70000000000),
-      leadingStocks: [
-        {
-          symbol: '600519.SH',
-          name: '贵州茅台',
-          changePercent: Math.random() * 4,
-        },
-        {
-          symbol: '000858.SZ',
-          name: '五粮液',
-          changePercent: Math.random() * 3.5,
-        },
-      ],
-      laggingStocks: [
-        {
-          symbol: '600887.SH',
-          name: '伊利股份',
-          changePercent: Math.random() * -2.5,
-        },
-        {
-          symbol: '000568.SZ',
-          name: '泸州老窖',
-          changePercent: Math.random() * -2,
-        },
-      ],
-    },
-    {
-      id: 'healthcare',
-      name: '医药健康',
-      change: Math.random() * 2 - 0.5,
-      changePercent: Math.random() * 3 - 1,
-      volume: Math.round(Math.random() * 10000000000),
-      turnover: Math.round(Math.random() * 60000000000),
-      leadingStocks: [
-        {
-          symbol: '600276.SH',
-          name: '恒瑞医药',
-          changePercent: Math.random() * 4.5,
-        },
-        {
-          symbol: '300015.SZ',
-          name: '爱尔眼科',
-          changePercent: Math.random() * 4,
-        },
-      ],
-      laggingStocks: [
-        {
-          symbol: '600196.SH',
-          name: '复星医药',
-          changePercent: Math.random() * -3,
-        },
-        {
-          symbol: '000538.SZ',
-          name: '云南白药',
-          changePercent: Math.random() * -2.5,
-        },
-      ],
-    },
-    {
-      id: 'realestate',
-      name: '房地产',
-      change: Math.random() * 1.5 - 1,
-      changePercent: Math.random() * 2.5 - 2,
-      volume: Math.round(Math.random() * 8000000000),
-      turnover: Math.round(Math.random() * 50000000000),
-      leadingStocks: [
-        {
-          symbol: '600048.SH',
-          name: '保利发展',
-          changePercent: Math.random() * 3,
-        },
-        {
-          symbol: '001979.SZ',
-          name: '招商蛇口',
-          changePercent: Math.random() * 2.5,
-        },
-      ],
-      laggingStocks: [
-        {
-          symbol: '600606.SH',
-          name: '绿地控股',
-          changePercent: Math.random() * -4,
-        },
-        {
-          symbol: '000002.SZ',
-          name: '万科A',
-          changePercent: Math.random() * -3.5,
-        },
-      ],
-    },
-  ]
-
-  // 生成模拟的市场宽度数据
-  const totalStocks = 4000
-  const advancing = Math.round(Math.random() * totalStocks * 0.6)
-  const declining = Math.round(Math.random() * totalStocks * 0.4)
-  const unchanged = totalStocks - advancing - declining
-
-  const totalVolume = Math.round(Math.random() * 500000000000)
-  const advancingVolume = Math.round(
-    totalVolume * (advancing / totalStocks) * (1 + Math.random() * 0.3)
-  )
-  const decliningVolume = totalVolume - advancingVolume
-
-  return {
-    indices,
-    sectors,
-    breadth: {
-      advancing,
-      declining,
-      unchanged,
-      newHighs: Math.round(Math.random() * 100),
-      newLows: Math.round(Math.random() * 50),
-      advancingVolume,
-      decliningVolume,
-    },
-    timestamp: new Date().toISOString(),
-  }
-}
+// 模拟数据生成函数已移除
 
 // 导出服务
 export const dashboardService = {

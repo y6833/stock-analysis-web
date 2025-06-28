@@ -383,27 +383,8 @@ def get_stock_quote(symbol):
                 change = price - preClose
                 pctChg = (change / preClose) * 100
 
-                result = {
-                    'success': True,
-                    'data': {
-                        'name': stockName,
-                        'price': round(price, 2),
-                        'open': round(open_price, 2),
-                        'high': round(high, 2),
-                        'low': round(low, 2),
-                        'pre_close': round(preClose, 2),
-                        'volume': volume,
-                        'amount': round(amount, 2),
-                        'change': round(change, 2),
-                        'pct_chg': round(pctChg, 2),
-                        'date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                        'time': datetime.datetime.now().strftime('%H:%M:%S'),
-                        'data_source': 'mock_data',
-                        'data_source_message': '模拟数据（API调用失败）'
-                    },
-                    'message': '使用模拟数据，原因: API调用失败'
-                }
-                return result
+                # 不使用模拟数据，直接抛出错误
+                raise Exception(f"无法获取股票{symbol}的行情数据，API调用失败")
     except Exception as e:
         # 捕获所有异常，包括超时异常
         error_message = str(e)
@@ -594,7 +575,8 @@ def get_stock_history(symbol, period='daily', count=180):
                         'amount': int(volumes[i] * close)
                     })
 
-                return {'success': True, 'data': history_data, 'message': '使用模拟数据，因为API调用失败'}
+                # 不使用模拟数据，直接抛出错误
+                raise Exception(f"无法获取股票{symbol}的历史数据，API调用失败")
     except Exception as e:
         error_message = str(e)
         if isinstance(e, TimeoutError):
@@ -885,8 +867,8 @@ def get_financial_news(count=5):
                 # 随机打乱新闻顺序
                 random.shuffle(mockNews)
 
-                # 返回指定数量的新闻
-                return {'success': True, 'data': mockNews[:int(count)], 'message': '使用模拟数据，因为API调用失败'}
+                # 不使用模拟数据，直接抛出错误
+                raise Exception("无法获取财经新闻数据，API调用失败")
     except Exception as e:
         error_message = str(e)
         if isinstance(e, TimeoutError):

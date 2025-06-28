@@ -64,7 +64,19 @@ module.exports = app => {
   // 股票行情相关路由
   router.get('/api/stocks', controller.stock.getStockList);
   router.get('/api/stocks/:code/quote', controller.stock.getQuote);
+  router.post('/api/stocks/quotes/batch', controller.stock.getBatchQuotes);
   router.get('/api/stocks/:code/history', controller.stock.getHistory);
+
+  // 股票数据管理路由
+  router.post('/api/stocks/sync', controller.stock.syncStockData);
+  router.get('/api/stocks/stats', controller.stock.getStockStats);
+
+  // 行业数据相关路由
+  router.get('/api/stocks/industry-list', controller.stock.getIndustryList);
+  router.get('/api/stocks/industry/:code', controller.stock.getIndustryData);
+  router.get('/api/stocks/hot-stocks', controller.stock.getHotStocks);
+  router.get('/api/stocks/limit-up', controller.stock.getLimitUpStocks);
+  router.get('/api/stocks/limit-down', controller.stock.getLimitDownStocks);
 
   // 技术指标相关路由
   router.post('/api/technical-indicators/:stockCode', controller.technicalIndicators.calculateIndicators);
@@ -148,6 +160,13 @@ module.exports = app => {
 
   // 聚合数据API代理路由
   router.get('/api/juhe/test', controller.juhe.test);
+
+  // AllTick API代理路由
+  router.post('/api/alltick/test', controller.alltick.testConnection);
+  router.post('/api/alltick/quote', controller.alltick.getQuote);
+  router.post('/api/alltick/stocks', controller.alltick.getStocks);
+  router.post('/api/alltick/search', controller.alltick.searchStocks);
+  router.post('/api/alltick/history', controller.alltick.getHistory);
   router.get('/api/juhe/quote', controller.juhe.quote);
   router.get('/api/juhe/stock-list', controller.juhe.stockList);
   router.get('/api/juhe/search', controller.juhe.search);
@@ -376,4 +395,15 @@ module.exports = app => {
   router.put('/api/stop-loss/order/:id/cancel', auth, controller.stopLossManager.cancelOrder);
   router.post('/api/stop-loss/check-triggers', auth, controller.stopLossManager.checkTriggers);
   router.post('/api/stop-loss/order/:id/execute', auth, controller.stopLossManager.executeOrder);
+
+  // 资金流向相关路由
+  router.post('/api/moneyflow/hsgt', controller.moneyflow.getHsgtFlow);
+  router.post('/api/moneyflow/stock', controller.moneyflow.getStockFlow);
+  router.get('/api/moneyflow/market', controller.moneyflow.getMarketFlow);
+
+  // 涨跌停相关路由
+  router.post('/api/limitlist/up', controller.limitlist.getLimitUpList);
+  router.post('/api/limitlist/down', controller.limitlist.getLimitDownList);
+  router.post('/api/limitlist/zhaban', controller.limitlist.getZhaBanList);
+  router.get('/api/limitlist/overview', controller.limitlist.getLimitOverview);
 };

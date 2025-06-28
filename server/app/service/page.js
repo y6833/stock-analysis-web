@@ -40,7 +40,7 @@ class PageService extends Service {
       queryOptions.include = [
         {
           model: ctx.model.PagePermission,
-          as: 'pagePermissions',
+          as: '_pagePermissions', // 使用正确的别名
         },
       ];
     }

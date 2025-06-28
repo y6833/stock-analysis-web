@@ -255,8 +255,17 @@ const router = createRouter({
     {
       path: '/data-source-test',
       name: 'data-source-test',
-      component: () => import('../views/DataSourceTestView.vue'),
+      component: () => import('../views/DataSourceTest.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/data-source-debug',
+      name: 'data-source-debug',
+      component: () => import('../views/DataSourceDebugView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
     },
     {
       path: '/test-dashboard',

@@ -401,11 +401,18 @@
       "api_url": "http://api.tushare.pro",
       "enableAutoRefresh": false
     },
+    "alltick": {
+      "token": "85b75304f6ef5a52123479654ddab44e-c-app",
+      "baseUrl": "https://quote.alltick.io/quote-stock-b-api",
+      "timeout": 15000,
+      "enabled": true
+    },
     "auth": {
       "enable": false,
       "defaultUser": {
         "id": 1,
-        "username": "dev_user"
+        "username": "dev_admin",
+        "role": "admin"
       }
     },
     "clickhouse": {
@@ -440,28 +447,36 @@
         "timeout": 10000,
         "maxRetries": 3
       },
+      "alltick": {
+        "enabled": true,
+        "token": "85b75304f6ef5a52123479654ddab44e-c-app",
+        "priority": 2,
+        "timeout": 15000,
+        "maxRetries": 3,
+        "baseUrl": "https://quote.tradeswitcher.com/quote-stock-b-api"
+      },
       "akshare": {
         "enabled": true,
-        "priority": 2,
+        "priority": 3,
         "timeout": 15000,
         "maxRetries": 3
       },
       "joinquant": {
         "enabled": false,
         "token": "",
-        "priority": 3,
+        "priority": 4,
         "timeout": 15000,
         "maxRetries": 3
       },
       "sina": {
         "enabled": true,
-        "priority": 4,
+        "priority": 5,
         "timeout": 8000,
         "maxRetries": 2
       },
       "eastmoney": {
         "enabled": true,
-        "priority": 5,
+        "priority": 6,
         "timeout": 8000,
         "maxRetries": 2
       }

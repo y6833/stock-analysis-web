@@ -149,13 +149,13 @@ class CoinRechargeService extends Service {
         include: [
           {
             model: ctx.model.User,
-            as: 'applicantUser',
+            as: '_applicantUser', // 使用正确的别名
             foreignKey: 'userId',
             attributes: ['id', 'username', 'email', 'nickname'],
           },
           {
             model: ctx.model.User,
-            as: 'adminUser',
+            as: '_adminUser', // 使用正确的别名
             foreignKey: 'processedBy',
             attributes: ['id', 'username', 'nickname'],
           },
@@ -415,13 +415,13 @@ class CoinRechargeService extends Service {
         include: [
           {
             model: ctx.model.User,
-            as: 'applicantUser',
+            as: '_applicantUser', // 使用正确的别名
             foreignKey: 'userId',
             attributes: ['id', 'username', 'email', 'nickname'],
           },
           {
             model: ctx.model.User,
-            as: 'adminUser',
+            as: '_adminUser', // 使用正确的别名
             foreignKey: 'processedBy',
             attributes: ['id', 'username', 'nickname'],
           },

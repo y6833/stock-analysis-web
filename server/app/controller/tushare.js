@@ -89,7 +89,7 @@ class TushareController extends Controller {
       let cachedData = null;
 
       try {
-        if (app.redis) {
+        if (app.redis && typeof app.redis.get === 'function') {
           cachedData = await app.redis.get(cacheKey);
           if (cachedData) {
             try {
@@ -152,7 +152,7 @@ class TushareController extends Controller {
         }
 
         // 如果成功获取数据，缓存到Redis
-        if (app.redis && result.data) {
+        if (app.redis && typeof app.redis.set === 'function' && result.data) {
           try {
             const dataToCache = {
               data: result.data,
@@ -223,7 +223,27 @@ class TushareController extends Controller {
       if (!force_api) {
         // 尝试从Redis缓存获取数据，使用数据源作为前缀
         const cacheKey = `${data_source}:${api_name}:${JSON.stringify(params || {})}`;
-        const cachedData = await ctx.app.redis.get(cacheKey);
+        let cachedData = null;
+
+        try {
+          if (ctx.app.redis && typeof ctx.app.redis.get === 'function') {
+            cachedData = await ctx.app.redis.get(cacheKey);
+          } else {
+            // 降级到内存缓存
+            if (global.apiCache && global.apiCache[cacheKey]) {
+              const cacheItem = global.apiCache[cacheKey];
+              if (cacheItem.expireTime > Date.now()) {
+                cachedData = JSON.stringify(cacheItem.data);
+              } else {
+                // 缓存已过期，删除
+                delete global.apiCache[cacheKey];
+              }
+            }
+          }
+        } catch (cacheError) {
+          this.ctx.logger.warn(`获取缓存失败: ${cacheError.message}`);
+          // 继续执行，从API获取数据
+        }
 
         if (cachedData) {
           try {
@@ -296,8 +316,10 @@ class TushareController extends Controller {
                       data_source_type: data_source
                     };
 
-                    await ctx.app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', cacheExpire);
-                    this.ctx.logger.info(`缓存已异步刷新: ${data_source}:${api_name}`);
+                    if (ctx.app.redis && typeof ctx.app.redis.set === 'function') {
+                      await ctx.app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', cacheExpire);
+                      this.ctx.logger.info(`缓存已异步刷新: ${data_source}:${api_name}`);
+                    }
                   }
                 } catch (refreshError) {
                   this.ctx.logger.warn(`异步刷新缓存失败: ${refreshError.message}`);
@@ -369,11 +391,38 @@ class TushareController extends Controller {
 
           // 缓存数据，设置过期时间（默认1小时）
           const cacheExpire = 60 * 60; // 1小时
-          await ctx.app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', cacheExpire);
-          this.ctx.logger.info(`数据已缓存: ${data_source}:${api_name}, 过期时间: ${cacheExpire}秒`);
+          try {
+            if (ctx.app.redis && typeof ctx.app.redis.set === 'function') {
+              await ctx.app.redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', cacheExpire);
+              this.ctx.logger.info(`数据已缓存: ${data_source}:${api_name}, 过期时间: ${cacheExpire}秒`);
+            } else {
+              this.ctx.logger.debug(`Redis不可用，跳过缓存: ${data_source}:${api_name}`);
+              // 使用内存缓存作为降级方案
+              if (!global.apiCache) {
+                global.apiCache = {};
+              }
+              global.apiCache[cacheKey] = {
+                data: dataToCache,
+                expireTime: Date.now() + (cacheExpire * 1000)
+              };
+            }
+          } catch (redisError) {
+            this.ctx.logger.warn(`Redis缓存操作失败: ${redisError.message}`);
+            // 降级到内存缓存
+            if (!global.apiCache) {
+              global.apiCache = {};
+            }
+            global.apiCache[cacheKey] = {
+              data: dataToCache,
+              expireTime: Date.now() + (cacheExpire * 1000)
+            };
+          }
         } catch (cacheError) {
           this.ctx.logger.warn(`缓存数据失败: ${cacheError.message}`);
-          // 继续执行，不影响返回结果
+          // 记录缓存错误但不影响返回结果
+          if (ctx.service && ctx.service.cacheStats) {
+            ctx.service.cacheStats.recordError(data_source, api_name, cacheError);
+          }
         }
       }
 

@@ -174,7 +174,18 @@ const getStockQuote = async () => {
   quoteData.value = null
 
   try {
-    const response = await axios.get(`/api/stocks/${stockCode.value}/quote`)
+    // 获取当前选择的数据源
+    const currentSource = localStorage.getItem('preferredDataSource') || 'tushare'
+    console.log(`使用数据源 ${currentSource} 获取股票行情`)
+
+    const response = await axios.get(`/api/stocks/${stockCode.value}/quote`, {
+      params: {
+        source: currentSource
+      },
+      headers: {
+        'X-Data-Source': currentSource
+      }
+    })
     quoteData.value = response.data
     console.log('股票行情数据:', response.data)
   } catch (err) {

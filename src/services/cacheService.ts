@@ -1,6 +1,6 @@
 /**
  * 缓存服务
- * 处理数据缓存相关的功能
+ * 处理数据缓存相关的功能，包括智能缓存管理
  */
 
 import axios from 'axios'
@@ -8,6 +8,23 @@ import { getAuthHeaders } from '@/utils/auth'
 
 // API基础URL
 const API_URL = 'http://localhost:7001/api'
+
+// 智能缓存项接口
+interface SmartCacheItem<T = any> {
+  data: T
+  timestamp: number
+  expiry: number
+  version?: string
+  tags?: string[]
+}
+
+// 智能缓存选项
+interface SmartCacheOptions {
+  expiry?: number // 过期时间（毫秒）
+  version?: string // 版本号
+  tags?: string[] // 标签
+  forceRefresh?: boolean // 强制刷新
+}
 
 // 缓存状态接口
 export interface CacheStatus {
@@ -43,8 +60,118 @@ export interface RefreshResult {
   error?: string
 }
 
+// 智能缓存管理器
+class SmartCacheManager {
+  private memoryCache = new Map<string, SmartCacheItem>()
+  private readonly defaultExpiry = 5 * 60 * 1000 // 5分钟
+  private readonly maxMemoryCacheSize = 100
+
+  /**
+   * 获取缓存数据
+   */
+  async get<T>(key: string, options: SmartCacheOptions = {}): Promise<T | null> {
+    const { forceRefresh = false, version } = options
+
+    if (forceRefresh) {
+      return null
+    }
+
+    // 检查内存缓存
+    const memoryItem = this.memoryCache.get(key)
+    if (memoryItem && this.isValid(memoryItem, version)) {
+      return memoryItem.data
+    }
+
+    // 检查localStorage缓存
+    try {
+      const localItem = localStorage.getItem(key)
+      if (localItem) {
+        const parsed: SmartCacheItem<T> = JSON.parse(localItem)
+        if (this.isValid(parsed, version)) {
+          this.setMemoryCache(key, parsed)
+          return parsed.data
+        } else {
+          localStorage.removeItem(key)
+        }
+      }
+    } catch (error) {
+      console.warn(`读取缓存失败: ${key}`, error)
+    }
+
+    return null
+  }
+
+  /**
+   * 设置缓存数据
+   */
+  async set<T>(key: string, data: T, options: SmartCacheOptions = {}): Promise<void> {
+    const {
+      expiry = this.defaultExpiry,
+      version = '1.0',
+      tags = []
+    } = options
+
+    const item: SmartCacheItem<T> = {
+      data,
+      timestamp: Date.now(),
+      expiry,
+      version,
+      tags
+    }
+
+    this.setMemoryCache(key, item)
+
+    try {
+      localStorage.setItem(key, JSON.stringify(item))
+    } catch (error) {
+      console.warn(`设置缓存失败: ${key}`, error)
+    }
+  }
+
+  /**
+   * 带缓存的数据获取
+   */
+  async getOrSet<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    options: SmartCacheOptions = {}
+  ): Promise<T> {
+    const cached = await this.get<T>(key, options)
+    if (cached !== null) {
+      return cached
+    }
+
+    const data = await fetcher()
+    await this.set(key, data, options)
+    return data
+  }
+
+  private isValid<T>(item: SmartCacheItem<T>, version?: string): boolean {
+    const now = Date.now()
+    const isNotExpired = now - item.timestamp < item.expiry
+    const isVersionMatch = !version || item.version === version
+    return isNotExpired && isVersionMatch
+  }
+
+  private setMemoryCache<T>(key: string, item: SmartCacheItem<T>): void {
+    if (this.memoryCache.size >= this.maxMemoryCacheSize) {
+      const oldestKey = this.memoryCache.keys().next().value
+      if (oldestKey) {
+        this.memoryCache.delete(oldestKey)
+      }
+    }
+    this.memoryCache.set(key, item)
+  }
+}
+
+// 创建智能缓存实例
+export const smartCache = new SmartCacheManager()
+
 // 缓存服务
 export const cacheService = {
+  // 智能缓存方法
+  smartCache,
+
   /**
    * 获取缓存状态
    * @param dataSource 数据源名称

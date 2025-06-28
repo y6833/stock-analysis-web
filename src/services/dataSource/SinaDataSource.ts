@@ -136,28 +136,8 @@ export class SinaDataSource implements DataSourceInterface {
       const quote = await this.getStockQuote(symbol)
       let basePrice = quote.price
 
-      // 生成90天的模拟历史数据
-      for (let i = 90; i >= 0; i--) {
-        const date = new Date(today)
-        date.setDate(date.getDate() - i)
-        dates.push(date.toISOString().split('T')[0])
-
-        // 生成价格（基于随机波动）
-        if (i === 90) {
-          // 第一天的价格
-          prices.push(basePrice * 0.9) // 假设90天前的价格是当前价格的90%
-        } else {
-          // 后续价格基于前一天的价格加上随机波动
-          const prevPrice = prices[prices.length - 1]
-          const change = prevPrice * (Math.random() * 0.06 - 0.03) // -3% 到 +3% 的随机波动
-          const newPrice = Math.max(prevPrice + change, 1) // 确保价格不会低于1
-          prices.push(parseFloat(newPrice.toFixed(2)))
-        }
-
-        // 生成成交量
-        const volume = Math.floor(Math.random() * 10000000) + 1000000
-        volumes.push(volume)
-      }
+      // 不生成模拟数据，抛出错误
+      throw new Error(`新浪财经数据源获取股票${symbol}历史数据失败，API不可用`)
 
       return {
         symbol,

@@ -177,8 +177,13 @@ class CacheService extends Service {
 
       // 测试 Redis 连接
       try {
-        await app.redis.ping();
-        result.available = true;
+        if (typeof app.redis.ping === 'function') {
+          await app.redis.ping();
+          result.available = true;
+        } else {
+          result.error = 'Redis ping 方法不可用';
+          return result;
+        }
       } catch (pingErr) {
         result.error = `Redis 连接测试失败: ${pingErr.message}`;
         return result;
@@ -238,13 +243,21 @@ class CacheService extends Service {
       }
 
       // 获取所有与数据源相关的键
-      const keys = await app.redis.keys(`${dataSource}:*`);
+      let keys = [];
+      if (typeof app.redis.keys === 'function') {
+        keys = await app.redis.keys(`${dataSource}:*`);
+      } else {
+        result.error = 'Redis keys 方法不可用';
+        return result;
+      }
 
       if (keys.length > 0) {
         // 删除所有键
         for (const key of keys) {
-          await app.redis.del(key);
-          result.clearedKeys.push(key);
+          if (typeof app.redis.del === 'function') {
+            await app.redis.del(key);
+            result.clearedKeys.push(key);
+          }
         }
 
         ctx.logger.info(`已清除 ${dataSource} 数据源的 ${keys.length} 个缓存项`);
@@ -371,7 +384,7 @@ class CacheService extends Service {
     const { app, ctx } = this;
 
     try {
-      if (app.redis) {
+      if (app.redis && typeof app.redis.incr === 'function') {
         // 增加命中计数
         await app.redis.incr(`${dataSource}:hit_count`);
       } else {
@@ -387,6 +400,14 @@ class CacheService extends Service {
       }
     } catch (error) {
       ctx.logger.warn('记录缓存命中失败:', error);
+      // 降级到内存统计
+      if (!global.cacheStats) {
+        global.cacheStats = {};
+      }
+      if (!global.cacheStats[dataSource]) {
+        global.cacheStats[dataSource] = { hits: 0, misses: 0 };
+      }
+      global.cacheStats[dataSource].hits++;
     }
   }
 
@@ -398,7 +419,7 @@ class CacheService extends Service {
     const { app, ctx } = this;
 
     try {
-      if (app.redis) {
+      if (app.redis && typeof app.redis.incr === 'function') {
         // 增加未命中计数
         await app.redis.incr(`${dataSource}:miss_count`);
       } else {
@@ -414,6 +435,14 @@ class CacheService extends Service {
       }
     } catch (error) {
       ctx.logger.warn('记录缓存未命中失败:', error);
+      // 降级到内存统计
+      if (!global.cacheStats) {
+        global.cacheStats = {};
+      }
+      if (!global.cacheStats[dataSource]) {
+        global.cacheStats[dataSource] = { hits: 0, misses: 0 };
+      }
+      global.cacheStats[dataSource].misses++;
     }
   }
 
@@ -479,7 +508,15 @@ class CacheService extends Service {
       const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
 
       // 设置缓存
-      await app.redis.set(key, valueStr, 'EX', ttl);
+      if (typeof app.redis.set === 'function') {
+        await app.redis.set(key, valueStr, 'EX', ttl);
+      } else {
+        return {
+          success: false,
+          message: 'Redis set 方法不可用',
+          error: 'Redis set method not available'
+        };
+      }
 
       ctx.logger.info(`缓存设置成功: ${key}, TTL: ${ttl}秒`);
 
@@ -518,7 +555,16 @@ class CacheService extends Service {
       }
 
       // 获取缓存
-      const value = await app.redis.get(key);
+      let value = null;
+      if (typeof app.redis.get === 'function') {
+        value = await app.redis.get(key);
+      } else {
+        return {
+          success: false,
+          message: 'Redis get 方法不可用',
+          data: null
+        };
+      }
 
       if (value === null) {
         return {
@@ -607,7 +653,15 @@ class CacheService extends Service {
       const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
 
       // 设置缓存
-      await app.redis.set(key, valueStr, 'EX', ttl);
+      if (typeof app.redis.set === 'function') {
+        await app.redis.set(key, valueStr, 'EX', ttl);
+      } else {
+        return {
+          success: false,
+          message: 'Redis set 方法不可用',
+          error: 'Redis set method not available'
+        };
+      }
 
       ctx.logger.info(`缓存设置成功: ${key}, TTL: ${ttl}秒`);
 
@@ -646,7 +700,16 @@ class CacheService extends Service {
       }
 
       // 获取缓存
-      const value = await app.redis.get(key);
+      let value = null;
+      if (typeof app.redis.get === 'function') {
+        value = await app.redis.get(key);
+      } else {
+        return {
+          success: false,
+          message: 'Redis get 方法不可用',
+          data: null
+        };
+      }
 
       if (value === null) {
         return {
@@ -795,7 +858,13 @@ class CacheService extends Service {
       }
 
       // 获取所有与数据源相关的键
-      const keys = await app.redis.keys(`${dataSource}:*`);
+      let keys = [];
+      if (typeof app.redis.keys === 'function') {
+        keys = await app.redis.keys(`${dataSource}:*`);
+      } else {
+        result.error = 'Redis keys 方法不可用';
+        return result;
+      }
 
       if (keys.length <= maxItems) {
         result.success = true;

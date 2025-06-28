@@ -82,6 +82,14 @@ module.exports = (appInfo) => {
     enableAutoRefresh: false, // 默认禁用自动刷新缓存，避免频繁的后台API调用
   };
 
+  // AllTick API 配置
+  config.alltick = {
+    token: '85b75304f6ef5a52123479654ddab44e-c-app',
+    baseUrl: 'https://quote.alltick.io/quote-stock-b-api',
+    timeout: 15000,
+    enabled: true,
+  };
+
   // MySQL 客户端配置（用于直接操作 MySQL）
   config.mysql = {
     client: {
@@ -162,30 +170,46 @@ module.exports = (appInfo) => {
       timeout: 10000,
       maxRetries: 3,
     },
+    alltick: {
+      enabled: true,
+      token: '85b75304f6ef5a52123479654ddab44e-c-app',
+      priority: 2,
+      timeout: 15000,
+      maxRetries: 3,
+      baseUrl: 'https://quote.tradeswitcher.com/quote-stock-b-api',
+    },
     akshare: {
       enabled: true,
-      priority: 2,
+      priority: 3,
       timeout: 15000,
       maxRetries: 3,
     },
     joinquant: {
       enabled: false, // 需要申请API token
       token: '',
-      priority: 3,
+      priority: 4,
       timeout: 15000,
       maxRetries: 3,
     },
     sina: {
       enabled: true,
-      priority: 4,
+      priority: 5,
       timeout: 8000,
       maxRetries: 2,
     },
     eastmoney: {
       enabled: true,
-      priority: 5,
+      priority: 6,
       timeout: 8000,
       maxRetries: 2,
+    },
+    futu: {
+      enabled: true,
+      priority: 7,
+      timeout: 15000,
+      maxRetries: 3,
+      host: '127.0.0.1',
+      port: 11111, // OpenD默认端口
     },
   };
 

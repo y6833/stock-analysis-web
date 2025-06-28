@@ -102,7 +102,7 @@ module.exports = app => {
 
   SystemPage.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
+
 
     // 防止重复关联
     if (SystemPage.associations && Object.keys(SystemPage.associations).length > 0) {
@@ -110,18 +110,18 @@ module.exports = app => {
     }
 
     // 自关联 - 父子页面关系
-    this.hasMany(app.model.SystemPage, { foreignKey: 'parentId', as: `${prefix}_${prefix}_subPages` });
-    this.belongsTo(app.model.SystemPage, { foreignKey: 'parentId', as: `${prefix}_${prefix}_parentPage` });
+    this.hasMany(app.model.SystemPage, { foreignKey: 'parentId', as: `${prefix}_subPages` });
+    this.belongsTo(app.model.SystemPage, { foreignKey: 'parentId', as: `${prefix}_parentPage` });
 
     // 页面权限
-    this.hasMany(app.model.PagePermission, { foreignKey: 'pageId', as: `${prefix}_${prefix}_pagePermissions` });
+    this.hasMany(app.model.PagePermission, { foreignKey: 'pageId', as: `${prefix}_pagePermissions` });
 
     // 页面组关联
     this.belongsToMany(app.model.PageGroup, {
       through: app.model.PageGroupMapping,
       foreignKey: 'pageId',
       otherKey: 'groupId',
-      as: `${prefix}_${prefix}_pageGroups`,
+      as: `${prefix}_pageGroups`,
     });
   };
 

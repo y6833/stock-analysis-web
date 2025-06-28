@@ -286,7 +286,11 @@ class VarCalculationService extends Service {
     try {
       // 尝试从缓存获取
       const cacheKey = `current_price:${stockCode}`;
-      let price = await ctx.app.redis.get(cacheKey);
+      let price = null;
+
+      if (ctx.app.redis && typeof ctx.app.redis.get === 'function') {
+        price = await ctx.app.redis.get(cacheKey);
+      }
 
       if (!price) {
         // 从API获取最新价格
@@ -294,7 +298,9 @@ class VarCalculationService extends Service {
         price = quote.current || quote.close || 0;
 
         // 缓存5分钟
-        await ctx.app.redis.setex(cacheKey, 300, price);
+        if (ctx.app.redis && typeof ctx.app.redis.setex === 'function') {
+          await ctx.app.redis.setex(cacheKey, 300, price);
+        }
       }
 
       return parseFloat(price);

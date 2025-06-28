@@ -240,22 +240,10 @@ async function tushareRequest(
           return tushareRequest(api_name, params, retryCount + 1, dataSource)
         }
 
-        // 其他API限制错误，尝试从缓存获取数据
+        // 其他API限制错误，直接抛出错误
         else {
-          logError(`Tushare API ${api_name} 请求受限，尝试使用模拟数据:`, response.data.msg)
-
-          // 如果是股票行情数据，尝试返回模拟数据
-          if (api_name === 'daily' && params.ts_code) {
-            return getMockStockData(params.ts_code)
-          }
-
-          // 如果是股票列表，尝试返回模拟数据
-          if (api_name === 'stock_basic') {
-            return getMockStockList()
-          }
-
-          // 其他API调用，抛出错误
-          throw new Error(response.data.msg || 'API调用受限')
+          logError(`Tushare API ${api_name} 请求受限:`, response.data.msg)
+          throw new Error(`Tushare API调用受限: ${response.data.msg || 'API调用受限'}，请检查API配置或稍后重试`)
         }
       }
 
@@ -423,120 +411,17 @@ function cacheSectorList(data: any[]): void {
   cacheData(SECTOR_LIST_CACHE_KEY, data, CACHE_EXPIRE_MS)
 }
 
-// 模拟数据函数
-function getMockStockData(symbol: string): any {
-  log(`生成 ${symbol} 的模拟股票数据`)
+// 模拟数据生成函数已移除
+// 现在只使用真实数据源
 
-  // 生成过去30天的模拟数据
-  const today = new Date()
-  const items = []
-  const fields = [
-    'trade_date',
-    'open',
-    'high',
-    'low',
-    'close',
-    'vol',
-    'amount',
-    'change',
-    'pct_chg',
-  ]
-
-  // 基础价格 - 根据股票代码生成一个稳定的随机数
-  const basePrice = (parseInt(symbol.replace(/\D/g, '')) % 100) + 10
-
-  // 生成30天的模拟数据
-  for (let i = 0; i < 30; i++) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-
-    // 格式化日期为 YYYYMMDD
-    const formattedDate = date.toISOString().split('T')[0].replace(/-/g, '')
-
-    // 生成当天价格 (在基础价格上下浮动)
-    const volatility = 0.02 // 2%的波动率
-    const dailyChange = basePrice * volatility * (Math.random() * 2 - 1)
-    const close = basePrice + (dailyChange * (30 - i)) / 30
-    const open = close * (1 + (Math.random() * 0.01 - 0.005))
-    const high = Math.max(open, close) * (1 + Math.random() * 0.01)
-    const low = Math.min(open, close) * (1 - Math.random() * 0.01)
-    const vol = Math.round(Math.random() * 10000 + 5000)
-    const amount = Math.round(vol * close * 100) / 100
-    const change = i > 0 ? close - items[0][3] : 0
-    const pctChg = i > 0 ? ((change / items[0][3]) * 100).toFixed(2) : '0.00'
-
-    items.push([
-      formattedDate,
-      open.toFixed(2),
-      high.toFixed(2),
-      low.toFixed(2),
-      close.toFixed(2),
-      vol.toString(),
-      amount.toString(),
-      change.toFixed(2),
-      pctChg,
-    ])
-  }
-
-  // 按日期降序排序
-  items.sort((a, b) => b[0].localeCompare(a[0]))
-
-  return {
-    fields,
-    items,
-    data_source: 'mock',
-    data_source_message: '模拟数据 (API限制)',
-    is_real_time: false,
-    is_cache: false,
-  }
-}
-
-function getMockStockList(): any {
-  log('生成模拟股票列表数据')
-
-  const fields = ['ts_code', 'name', 'industry', 'market', 'list_date']
-  const items = [
-    ['000001.SZ', '平安银行', '银行', '深圳', '19910403'],
-    ['000002.SZ', '万科A', '房地产', '深圳', '19910129'],
-    ['000063.SZ', '中兴通讯', '通信设备', '深圳', '19971118'],
-    ['000333.SZ', '美的集团', '家用电器', '深圳', '20130918'],
-    ['000651.SZ', '格力电器', '家用电器', '深圳', '19960819'],
-    ['000725.SZ', '京东方A', '电子设备', '深圳', '19970610'],
-    ['000858.SZ', '五粮液', '食品饮料', '深圳', '19980427'],
-    ['002415.SZ', '海康威视', '电子设备', '深圳', '20100528'],
-    ['600000.SH', '浦发银行', '银行', '上海', '19991110'],
-    ['600036.SH', '招商银行', '银行', '上海', '20021209'],
-    ['600276.SH', '恒瑞医药', '医药生物', '上海', '20031024'],
-    ['600519.SH', '贵州茅台', '食品饮料', '上海', '20010827'],
-    ['600887.SH', '伊利股份', '食品饮料', '上海', '19960403'],
-    ['601318.SH', '中国平安', '保险', '上海', '20070301'],
-    ['601398.SH', '工商银行', '银行', '上海', '20061027'],
-    ['601857.SH', '中国石油', '石油石化', '上海', '20071105'],
-    ['601988.SH', '中国银行', '银行', '上海', '20060705'],
-    ['603288.SH', '海天味业', '食品饮料', '上海', '20140211'],
-    ['603501.SH', '韦尔股份', '电子设备', '上海', '20170504'],
-    ['603986.SH', '兆易创新', '电子设备', '上海', '20160818'],
-  ]
-
-  return {
-    fields,
-    items,
-    data_source: 'mock',
-    data_source_message: '模拟数据 (API限制)',
-    is_real_time: false,
-    is_cache: false,
-  }
-}
+// getMockStockList函数已移除
 
 // Tushare 服务
 export const tushareService = {
   // API调用控制
   setAllowApiCall,
   updateCurrentPath,
-  // 获取模拟股票数据
-  getMockStockData,
-  // 获取模拟股票列表
-  getMockStockList,
+  // 模拟数据函数已移除
   // 获取缓存的股票行情
   getCachedStockQuote,
   // 获取缓存的股票列表
@@ -777,60 +662,8 @@ export const tushareService = {
           }
         }
 
-        // 生成模拟数据
-        const mockData = getMockStockData(symbol)
-        if (mockData && mockData.items && mockData.items.length > 0) {
-          const { fields, items } = mockData
-          const latestData = items[0]
-
-          const openIndex = fields.indexOf('open')
-          const closeIndex = fields.indexOf('close')
-          const highIndex = fields.indexOf('high')
-          const lowIndex = fields.indexOf('low')
-          const volIndex = fields.indexOf('vol')
-          const amountIndex = fields.indexOf('amount')
-          const changeIndex = fields.indexOf('change')
-          const pctChgIndex = fields.indexOf('pct_chg')
-
-          // 获取股票基本信息 - 使用模拟数据中的名称
-          let stockName = '未知'
-          if (symbol === '600519.SH') stockName = '贵州茅台'
-          else if (symbol === '000001.SZ') stockName = '平安银行'
-          else {
-            // 尝试从模拟股票列表中查找
-            const mockStocks = getMockStockList()
-            const stockItem = mockStocks.items.find((item) => item[0] === symbol)
-            if (stockItem) stockName = stockItem[1]
-          }
-
-          const stockQuote: StockQuote = {
-            symbol,
-            name: stockName,
-            price: parseFloat(latestData[closeIndex]),
-            open: parseFloat(latestData[openIndex]),
-            high: parseFloat(latestData[highIndex]),
-            low: parseFloat(latestData[lowIndex]),
-            close: parseFloat(latestData[closeIndex]),
-            pre_close:
-              items.length > 1
-                ? parseFloat(items[1][closeIndex])
-                : parseFloat(latestData[closeIndex]),
-            change: changeIndex !== -1 ? parseFloat(latestData[changeIndex]) : 0,
-            pct_chg: pctChgIndex !== -1 ? parseFloat(latestData[pctChgIndex]) : 0,
-            vol: parseFloat(latestData[volIndex]),
-            amount: parseFloat(latestData[amountIndex]),
-            update_time: new Date().toISOString(),
-            data_source: 'mock',
-          }
-
-          // 缓存模拟数据
-          cacheStockQuote(symbol, stockQuote)
-
-          return stockQuote
-        }
-
-        // 如果模拟数据也失败，抛出原始错误
-        throw apiError
+        // 模拟数据已移除 - 抛出错误
+        throw new Error(`无法获取股票${symbol}的行情数据，请检查Tushare API配置或网络连接`)
       }
     } catch (error) {
       logError(`获取股票 ${symbol} 行情失败:`, error)
@@ -1078,51 +911,12 @@ export const tushareService = {
           return quoteData
         }
       } catch (apiError) {
-        log(`API调用失败，使用模拟数据代替: ${indexCode}`, apiError)
+        log(`API调用失败: ${indexCode}`, apiError)
+        throw new Error(`无法获取指数${indexCode}的行情数据，请检查API配置或网络连接`)
       }
 
-      // 模拟指数行情基础数据
-      const baseValues: Record<string, number> = {
-        '000001.SH': 3000,
-        '399001.SZ': 10000,
-        '399006.SZ': 2000,
-        '000016.SH': 3000,
-        '000300.SH': 4000,
-        '000905.SH': 6000,
-      }
-
-      // 获取基础价格，如果没有预设则使用随机值
-      const baseValue = baseValues[indexCode] || 2000 + Math.random() * 3000
-
-      // 生成随机变动
-      const change = Math.random() * 40 - 20 // -20 到 +20 的随机变动
-      const close = baseValue + change
-      const pctChg = (change / baseValue) * 100
-
-      // 生成其他数据
-      const open = close - Math.random() * 10
-      const high = close + Math.random() * 15
-      const low = close - Math.random() * 15
-      const vol = Math.round(Math.random() * 100000000000)
-      const amount = Math.round(Math.random() * 500000000000)
-
-      // 构建行情数据
-      const quoteData = {
-        close,
-        open,
-        high,
-        low,
-        pre_close: baseValue,
-        change,
-        pct_chg: pctChg,
-        vol,
-        amount,
-      }
-
-      // 缓存数据
-      cacheData(cacheKey, quoteData, QUOTE_CACHE_EXPIRE_MS)
-
-      return quoteData
+      // 不使用模拟数据，返回null
+      return null
 
       /* 原始API调用代码，暂时注释掉
       // 获取当前日期
@@ -1572,48 +1366,9 @@ export const tushareService = {
           }))
         }
 
-        // 如果缓存也没有，使用模拟数据
-        log('使用模拟财经新闻数据')
-        const mockNews: FinancialNews[] = [
-          {
-            title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
-            time: '10分钟前',
-            source: '财经日报',
-            url: '#',
-            important: true,
-            content:
-              '中国人民银行今日宣布，决定于下周一起下调金融机构存款准备金率0.5个百分点，预计将释放长期资金约1万亿元。',
-            data_source: 'mock',
-          },
-          {
-            title: '科技板块全线上涨，半导体行业领涨',
-            time: '30分钟前',
-            source: '证券时报',
-            url: '#',
-            important: false,
-            content:
-              '今日A股市场，科技板块表现强势，全线上涨。其中，半导体行业领涨，多只个股涨停。',
-            data_source: 'mock',
-          },
-          {
-            title: '多家券商上调A股目标位，看好下半年行情',
-            time: '1小时前',
-            source: '上海证券报',
-            url: '#',
-            important: false,
-            content: '近日，多家券商发布研报，上调A股目标位，普遍看好下半年市场行情。',
-            data_source: 'mock',
-          },
-        ]
-
-        // 随机打乱新闻顺序
-        const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
-
-        // 缓存模拟数据
-        cacheNews(shuffledNews)
-
-        // 返回指定数量的新闻
-        return shuffledNews.slice(0, count)
+        // 如果缓存也没有，抛出错误而不是使用模拟数据
+        log('无法获取财经新闻数据，所有数据源均失败')
+        throw new Error('无法获取财经新闻数据，请检查Tushare API配置或网络连接')
       }
     } catch (error) {
       logError('获取财经新闻失败:', error)

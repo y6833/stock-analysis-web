@@ -384,49 +384,29 @@ const getStrengthColor = (strength) => {
   return '#909399' // 灰色 - 很弱
 }
 
-// 生成模拟信号数据
-const generateMockSignals = () => {
-  const mockSignals = [
-    {
-      id: 'mock_d2_1',
-      signal: 'D2',
-      type: 'buy',
-      price: 12.5,
-      timestamp: Date.now() - 300000, // 5分钟前
-      strength: 85,
-      confidence: 78,
-    },
-    {
-      id: 'mock_hunting_1',
-      signal: '猎庄',
-      type: 'buy',
-      price: 12.45,
-      timestamp: Date.now() - 600000, // 10分钟前
-      strength: 92,
-      confidence: 85,
-    },
-    {
-      id: 'mock_reversal_1',
-      signal: '反转',
-      type: 'buy',
-      price: 12.6,
-      timestamp: Date.now() - 900000, // 15分钟前
-      strength: 76,
-      confidence: 72,
-    },
-    {
-      id: 'mock_sell_1',
-      signal: '抛↓',
-      type: 'sell',
-      price: 12.8,
-      timestamp: Date.now() - 1200000, // 20分钟前
-      strength: 68,
-      confidence: 75,
-    },
-  ]
-
-  recentSignals.value = mockSignals
-  console.log('使用模拟信号数据:', mockSignals)
+// 模拟信号数据生成函数已移除
+// 现在只从真实数据源获取技术信号
+const loadRealSignals = async () => {
+  try {
+    // 调用真实的技术信号API
+    const response = await fetch(`/api/technical/signals/${props.symbol}`)
+    if (!response.ok) {
+      throw new Error('获取技术信号失败')
+    }
+    const data = await response.json()
+    if (data.success) {
+      recentSignals.value = data.data
+    } else {
+      throw new Error(data.message || '获取技术信号失败')
+    }
+  } catch (error) {
+    console.error('获取技术信号失败:', error)
+    recentSignals.value = []
+    // 显示错误提示而不是使用模拟数据
+    if (window.$message) {
+      window.$message.error('无法获取技术信号数据，请稍后重试')
+    }
+  }
 }
 
 const calculateTechnicalSignals = async () => {

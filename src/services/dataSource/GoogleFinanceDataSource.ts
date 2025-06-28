@@ -123,27 +123,8 @@ export class GoogleFinanceDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取股票数据失败，使用模拟数据:', proxyError)
       }
 
-      // 如果API调用失败，返回模拟数据
-      const mockData: StockData = {
-        symbol,
-        name: 'Google Finance-模拟数据',
-        price: 50.00 + Math.random() * 200,
-        change: (Math.random() - 0.5) * 8,
-        changePercent: (Math.random() - 0.5) * 6,
-        volume: Math.floor(Math.random() * 5000000),
-        turnover: Math.floor(Math.random() * 500000000),
-        high: 50.00 + Math.random() * 200,
-        low: 50.00 + Math.random() * 200,
-        open: 50.00 + Math.random() * 200,
-        close: 50.00 + Math.random() * 200,
-        marketCap: Math.floor(Math.random() * 5000000000),
-        pe: Math.random() * 25,
-        pb: Math.random() * 4,
-        timestamp: Date.now(),
-      }
-
-      console.log('使用模拟股票数据')
-      return mockData
+      // 不再返回模拟数据，直接抛出错误
+      throw new Error(`Google Finance API调用失败，无法获取股票${symbol}的数据`)
     } catch (error) {
       console.error(`Google Finance获取股票${symbol}数据失败:`, error)
       throw error

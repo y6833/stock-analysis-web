@@ -212,54 +212,38 @@ export class BacktestService {
       console.warn(`获取 ${symbol} 历史数据失败:`, error)
     }
 
-    // 如果获取真实数据失败，生成模拟数据
-    return this.generateMockHistoricalData(symbol, startDate, endDate)
+    // 如果获取真实数据失败，抛出错误而不是生成模拟数据
+    throw new Error(`无法获取股票${symbol}的历史数据，所有数据源均不可用`)
   }
 
   /**
-   * 生成模拟历史数据
+   * 获取真实历史数据
+   * 模拟数据生成函数已移除
    */
-  private generateMockHistoricalData(
+  private async getRealHistoricalData(
     symbol: string,
     startDate: string,
     endDate: string
-  ): StockData[] {
-    const data: StockData[] = []
-    const start = new Date(startDate)
-    const end = new Date(endDate)
+  ): Promise<StockData[]> {
+    try {
+      // 调用真实的历史数据API
+      const response = await fetch(`/api/historical/${symbol}?start=${startDate}&end=${endDate}`)
 
-    let currentPrice = 100 // 初始价格
-    let currentDate = new Date(start)
-
-    while (currentDate <= end) {
-      // 跳过周末
-      if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
-        // 生成随机价格变动
-        const change = (Math.random() - 0.5) * 0.1 // ±5%的随机变动
-        const newPrice = currentPrice * (1 + change)
-
-        const high = newPrice * (1 + Math.random() * 0.03)
-        const low = newPrice * (1 - Math.random() * 0.03)
-        const volume = Math.floor(Math.random() * 1000000) + 100000
-
-        data.push({
-          symbol,
-          date: currentDate.toISOString().split('T')[0],
-          open: currentPrice,
-          high,
-          low,
-          close: newPrice,
-          volume,
-          amount: volume * newPrice,
-        })
-
-        currentPrice = newPrice
+      if (!response.ok) {
+        throw new Error(`获取历史数据失败: ${response.status}`)
       }
 
-      currentDate.setDate(currentDate.getDate() + 1)
-    }
+      const data = await response.json()
 
-    return data
+      if (!data.success) {
+        throw new Error(data.message || '获取历史数据失败')
+      }
+
+      return data.data
+    } catch (error) {
+      console.error('获取历史数据失败:', error)
+      throw new Error(`无法获取股票${symbol}的历史数据，请检查数据源配置`)
+    }
   }
 
   /**

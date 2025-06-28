@@ -172,61 +172,8 @@ export class TushareDataSource implements DataSourceInterface {
       } catch (apiError) {
         console.error(`Tushare获取股票${symbol}行情失败:`, apiError)
 
-        // 尝试使用模拟数据
-        if (typeof tushareService.getMockStockData === 'function') {
-          console.log(`尝试使用模拟数据获取股票${symbol}行情`)
-          const mockData = tushareService.getMockStockData(symbol)
-
-          if (mockData && mockData.items && mockData.items.length > 0) {
-            const { fields, items } = mockData
-            const latestData = items[0]
-
-            const openIndex = fields.indexOf('open')
-            const closeIndex = fields.indexOf('close')
-            const highIndex = fields.indexOf('high')
-            const lowIndex = fields.indexOf('low')
-            const volIndex = fields.indexOf('vol')
-            const amountIndex = fields.indexOf('amount')
-
-            // 获取股票名称
-            let stockName = '未知'
-            if (symbol === '600519.SH') stockName = '贵州茅台'
-            else if (symbol === '000001.SZ') stockName = '平安银行'
-            else {
-              try {
-                const stockInfo = await this.getStockBySymbol(symbol)
-                if (stockInfo) stockName = stockInfo.name
-              } catch (e) {
-                console.warn(`无法获取股票${symbol}的名称信息`, e)
-              }
-            }
-
-            const stockQuote: StockQuote = {
-              symbol,
-              name: stockName,
-              price: parseFloat(latestData[closeIndex]),
-              open: parseFloat(latestData[openIndex]),
-              high: parseFloat(latestData[highIndex]),
-              low: parseFloat(latestData[lowIndex]),
-              close: parseFloat(latestData[closeIndex]),
-              pre_close:
-                items.length > 1
-                  ? parseFloat(items[1][closeIndex])
-                  : parseFloat(latestData[closeIndex]),
-              change: 0,
-              pct_chg: 0,
-              vol: parseFloat(latestData[volIndex]),
-              amount: parseFloat(latestData[amountIndex]),
-              update_time: new Date().toISOString(),
-              data_source: 'mock',
-            }
-
-            return stockQuote
-          }
-        }
-
-        // 如果模拟数据也失败，抛出原始错误
-        throw apiError
+        // 不使用模拟数据，直接抛出错误
+        throw new Error(`Tushare API获取股票${symbol}行情失败，请检查API配置或网络连接`)
       }
     } catch (error) {
       console.error(`Tushare获取股票${symbol}行情失败:`, error)
