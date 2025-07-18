@@ -7,6 +7,9 @@ import eventBus from '@/utils/eventBus'
 import { dataSourceStateManager } from '@/services/dataSourceStateManager'
 import { smartCache } from '@/services/cacheService'
 
+// API基础URL配置
+const API_BASE_URL = 'http://localhost:7001'
+
 // 使用统一的数据源状态管理器
 let currentDataSourceType = dataSourceStateManager.getCurrentDataSource()
 let dataSource = DataSourceFactory.createDataSource(currentDataSourceType)
@@ -363,51 +366,75 @@ export const stockService = {
 
   // 搜索股票
   async searchStocks(query: string): Promise<(Stock & { source_type?: DataSourceType })[]> {
-    // 获取所有可用的数据源
-    const availableSources = DataSourceFactory.getAvailableDataSources()
-
-    // 首先尝试当前选择的数据源
     try {
-      const results = await dataSource.searchStocks(query, { sourceType: currentDataSourceType })
-      // 添加数据源类型
-      console.log(`使用 ${currentDataSourceType} 数据源搜索股票成功`)
-      return results.map((stock) => ({ ...stock, source_type: currentDataSourceType }))
-    } catch (error) {
-      console.error(`${dataSource.getName()}搜索股票失败:`, error)
+      // 优先使用数据库搜索API
+      console.log(`使用数据库搜索股票: ${query}`)
+      const response = await fetch(`${API_BASE_URL}/api/stocks/search?keyword=${encodeURIComponent(query)}`)
 
-      // 当前数据源失败，尝试其他数据源
-      console.log(`尝试使用其他数据源搜索股票...`)
-
-      // 过滤掉当前数据源，只尝试其他数据源
-      const otherSources = availableSources.filter((source) => source !== currentDataSourceType)
-
-      // 依次尝试其他数据源
-      for (const sourceType of otherSources) {
-        try {
-          console.log(`尝试使用 ${sourceType} 数据源搜索股票...`)
-          const tempDataSource = DataSourceFactory.createDataSource(sourceType)
-          const results = await tempDataSource.searchStocks(query, { sourceType })
-
-          console.log(`使用 ${sourceType} 数据源搜索股票成功`)
-          showToast(
-            `当前数据源获取失败，已使用 ${DataSourceFactory.getDataSourceInfo(sourceType).name
-            } 搜索股票`,
-            'info'
-          )
-
-          return results.map((stock) => ({ ...stock, source_type: sourceType }))
-        } catch (sourceError) {
-          console.error(`${sourceType} 数据源搜索股票失败:`, sourceError)
-          // 继续尝试下一个数据源
-        }
+      if (!response.ok) {
+        throw new Error(`数据库搜索API请求失败: ${response.status}`)
       }
 
-      // 所有数据源都失败，返回错误信息
-      console.error(`所有数据源搜索股票均失败`)
-      showToast(`无法搜索股票。所有数据源均无法提供数据，请检查网络连接或稍后再试。`, 'error')
+      const data = await response.json()
 
-      // 抛出错误，让调用者处理
-      throw new Error(`无法搜索股票，所有数据源均失败`)
+      if (data.success && Array.isArray(data.data)) {
+        console.log(`数据库搜索成功，找到 ${data.data.length} 条结果`)
+        return data.data.map((stock: any) => ({
+          ...stock,
+          source_type: 'database' as DataSourceType
+        }))
+      } else {
+        throw new Error(data.message || '数据库搜索失败')
+      }
+    } catch (error) {
+      console.error('数据库搜索失败，尝试使用外部数据源:', error)
+
+      // 数据库搜索失败，回退到外部数据源
+      const availableSources = DataSourceFactory.getAvailableDataSources()
+
+      // 首先尝试当前选择的数据源
+      try {
+        const results = await dataSource.searchStocks(query, { sourceType: currentDataSourceType })
+        // 添加数据源类型
+        console.log(`使用 ${currentDataSourceType} 数据源搜索股票成功`)
+        return results.map((stock) => ({ ...stock, source_type: currentDataSourceType }))
+      } catch (dataSourceError) {
+        console.error(`${dataSource.getName()}搜索股票失败:`, dataSourceError)
+
+        // 当前数据源失败，尝试其他数据源
+        console.log(`尝试使用其他数据源搜索股票...`)
+
+        // 过滤掉当前数据源，只尝试其他数据源
+        const otherSources = availableSources.filter((source) => source !== currentDataSourceType)
+
+        // 依次尝试其他数据源
+        for (const sourceType of otherSources) {
+          try {
+            console.log(`尝试使用 ${sourceType} 数据源搜索股票...`)
+            const tempDataSource = DataSourceFactory.createDataSource(sourceType)
+            const results = await tempDataSource.searchStocks(query, { sourceType })
+
+            console.log(`使用 ${sourceType} 数据源搜索股票成功`)
+            showToast(
+              `数据库搜索失败，已使用 ${DataSourceFactory.getDataSourceInfo(sourceType).name
+              } 搜索股票`,
+              'info'
+            )
+
+            return results.map((stock) => ({ ...stock, source_type: sourceType }))
+          } catch (sourceError) {
+            console.error(`${sourceType} 数据源搜索股票失败:`, sourceError)
+            // 继续尝试下一个数据源
+          }
+        }
+
+        // 所有数据源都失败，返回错误信息
+        console.error(`所有数据源搜索股票均失败`)
+        showToast(`无法搜索股票。数据库和所有外部数据源均无法提供数据，请检查网络连接或稍后再试。`, 'error')
+
+        // 抛出错误，让调用者处理
+        throw new Error(`无法搜索股票，所有数据源均失败`)
+      }
     }
   },
 

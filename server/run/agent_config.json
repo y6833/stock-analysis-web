@@ -257,7 +257,7 @@
         "eslint-config-egg": "^12.3.1"
       },
       "engines": {
-        "node": ">=16.0.0"
+        "node": ">=14.0.0"
       },
       "scripts": {
         "start": "egg-scripts start --daemon --title=egg-server-stock-analysis-server",
@@ -479,6 +479,14 @@
         "priority": 6,
         "timeout": 8000,
         "maxRetries": 2
+      },
+      "futu": {
+        "enabled": true,
+        "priority": 7,
+        "timeout": 15000,
+        "maxRetries": 3,
+        "host": "127.0.0.1",
+        "port": 11111
       }
     },
     "realtime": {
@@ -766,7 +774,7 @@
         "eslint-config-egg": "^12.3.1"
       },
       "engines": {
-        "node": ">=16.0.0"
+        "node": ">=14.0.0"
       },
       "scripts": {
         "start": "egg-scripts start --daemon --title=egg-server-stock-analysis-server",

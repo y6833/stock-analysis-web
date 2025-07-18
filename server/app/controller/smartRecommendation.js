@@ -13,7 +13,7 @@ class SmartRecommendationController extends Controller {
    */
   async getRecommendations() {
     const { ctx, service } = this;
-    
+
     try {
       // 获取查询参数
       const {
@@ -37,17 +37,22 @@ class SmartRecommendationController extends Controller {
       // 检查用户权限（基于会员等级限制推荐数量）
       const userId = ctx.user ? ctx.user.id : null;
       let actualLimit = parseInt(limit);
-      
+
       if (userId) {
-        const userMembership = await service.membership.getUserMembership(userId);
-        
-        // 根据会员等级限制推荐数量
-        if (userMembership.level === 'free') {
-          actualLimit = Math.min(actualLimit, 3); // 免费用户最多3个推荐
-        } else if (userMembership.level === 'basic') {
-          actualLimit = Math.min(actualLimit, 8); // 基础会员最多8个推荐
+        try {
+          const userMembership = await service.membership.getUserMembership(userId);
+
+          // 根据会员等级限制推荐数量
+          if (userMembership.level === 'free') {
+            actualLimit = Math.min(actualLimit, 3); // 免费用户最多3个推荐
+          } else if (userMembership.level === 'basic') {
+            actualLimit = Math.min(actualLimit, 8); // 基础会员最多8个推荐
+          }
+          // 高级会员无限制
+        } catch (error) {
+          ctx.logger.warn('获取用户会员信息失败，使用默认限制:', error);
+          actualLimit = Math.min(actualLimit, 3); // 默认限制
         }
-        // 高级会员无限制
       } else {
         actualLimit = Math.min(actualLimit, 3); // 未登录用户最多3个推荐
       }
@@ -80,12 +85,12 @@ class SmartRecommendationController extends Controller {
    */
   async getRecommendationStats() {
     const { ctx, service } = this;
-    
+
     try {
       const { days = 30 } = ctx.query;
-      
+
       const stats = await service.smartRecommendation.getRecommendationStats(parseInt(days));
-      
+
       ctx.status = 200;
       ctx.body = {
         success: true,
@@ -109,10 +114,10 @@ class SmartRecommendationController extends Controller {
    */
   async analyzeStock() {
     const { ctx, service } = this;
-    
+
     try {
       const { symbol } = ctx.params;
-      
+
       if (!symbol) {
         ctx.status = 400;
         ctx.body = {
@@ -178,7 +183,7 @@ class SmartRecommendationController extends Controller {
    */
   async getRecommendationConfig() {
     const { ctx } = this;
-    
+
     try {
       const config = {
         riskLevels: [
@@ -229,7 +234,7 @@ class SmartRecommendationController extends Controller {
    */
   async refreshRecommendations() {
     const { ctx, service } = this;
-    
+
     try {
       const {
         riskLevel = 'medium',

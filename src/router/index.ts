@@ -147,6 +147,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/stock-search-demo',
+      name: 'stock-search-demo',
+      component: () => import('../views/StockSearchDemo.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/tushare-test2',
       name: 'tushare-test2',
       component: () => import('../views/TushareTestView.vue'),
@@ -179,6 +185,24 @@ const router = createRouter({
       path: '/alerts',
       name: 'alerts',
       component: () => import('../views/AlertsView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
+    },
+    {
+      path: '/doji-pattern/alerts',
+      name: 'doji-pattern-alerts',
+      component: () => import('../views/DojiPatternAlertManagementView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
+    },
+    {
+      path: '/doji-pattern/alerts/create',
+      name: 'doji-pattern-alerts-create',
+      component: () => import('../views/DojiPatternAlertCreateView.vue'),
       meta: {
         requiresAuth: true,
         requiredMembershipLevel: MembershipLevel.BASIC,

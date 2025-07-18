@@ -6,29 +6,11 @@
     </div>
 
     <div class="stock-search">
-      <div class="search-input">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="输入股票代码或名称搜索..."
-          @input="handleSearch"
-        />
-        <button class="search-btn" @click="handleSearch">
-          <span>🔍</span>
-        </button>
-      </div>
-
-      <div v-if="searchResults.length > 0" class="search-results">
-        <div
-          v-for="stock in searchResults"
-          :key="stock.symbol"
-          class="search-result-item"
-          @click="selectStock(stock.symbol)"
-        >
-          <span class="stock-symbol">{{ stock.symbol }}</span>
-          <span class="stock-name">{{ stock.name }}</span>
-        </div>
-      </div>
+      <StockSearch
+        placeholder="输入股票代码或名称搜索..."
+        @select="onStockSelect"
+        @clear="onStockClear"
+      />
     </div>
 
     <div v-if="isLoading" class="loading-container">
@@ -124,12 +106,11 @@ import { dashboardService } from '@/services/dashboardService'
 import { toast } from '@/utils/toast'
 import StockChart from '@/components/charts/StockChart.vue'
 import TechnicalSignals from '@/components/TechnicalSignals.vue'
+import StockSearch from '@/components/StockSearch.vue'
 import type { Stock, StockQuote } from '@/types/stock'
 import type { DashboardSettings, Watchlist, WatchlistItem } from '@/types/dashboard'
 
 // 状态
-const searchQuery = ref('')
-const searchResults = ref<Stock[]>([])
 const currentStock = ref<StockQuote | null>(null)
 const isLoading = ref(false)
 const klineData = ref<any>({})
@@ -149,32 +130,31 @@ const preparedKlineData = computed(() => {
   }
 })
 
-// 搜索股票
-const handleSearch = async () => {
-  if (!searchQuery.value || searchQuery.value.length < 2) {
-    searchResults.value = []
-    return
-  }
+// 股票搜索事件处理
+const onStockSelect = async (stock: Stock) => {
+  await selectStock(stock.symbol || stock.tsCode)
+}
 
-  try {
-    const results = await stockService.searchStocks(searchQuery.value)
-    searchResults.value = results.slice(0, 10) // 限制显示前10条结果
-  } catch (error) {
-    console.error('搜索股票失败:', error)
-    toast.error('搜索股票失败，请稍后再试')
-    searchResults.value = []
-  }
+const onStockClear = () => {
+  // 可以在这里添加清除当前股票的逻辑
+  console.log('搜索已清除')
 }
 
 // 选择股票
 const selectStock = async (symbol: string) => {
-  searchResults.value = [] // 清空搜索结果
   isLoading.value = true
 
   try {
     // 使用不强制刷新的方式获取股票行情，优先使用缓存
     const quote = await stockService.getStockQuote(symbol, false)
     currentStock.value = quote
+
+    // 更新URL参数，方便分享和刷新
+    const url = new URL(window.location.href)
+    url.searchParams.set('symbol', symbol)
+    window.history.replaceState({}, '', url.toString())
+
+    toast.success(`已加载 ${quote.name} (${symbol}) 的数据`)
   } catch (error) {
     console.error(`获取股票 ${symbol} 行情失败:`, error)
     toast.error(`获取股票行情失败: ${(error as Error).message || '未知错误'}`)

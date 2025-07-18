@@ -31,27 +31,14 @@
       <!-- 快速添加 -->
       <div class="quick-add-section">
         <div class="search-input-container">
-          <input
-            v-model="searchQuery"
-            @keyup.enter="addStock"
-            @input="onSearchInput"
+          <StockSearch
             placeholder="输入股票代码或名称"
-            class="search-input"
+            @select="onStockSelect"
+            @clear="onStockClear"
           />
-          <button @click="addStock" class="add-btn" :disabled="!searchQuery.trim()">
+          <button @click="addSelectedStock" class="add-btn" :disabled="!selectedStock">
             <span>+</span>
           </button>
-        </div>
-        <div class="search-suggestions" v-if="searchSuggestions.length > 0">
-          <div
-            v-for="suggestion in searchSuggestions"
-            :key="suggestion.symbol"
-            @click="selectSuggestion(suggestion)"
-            class="suggestion-item"
-          >
-            <span class="suggestion-symbol">{{ suggestion.symbol }}</span>
-            <span class="suggestion-name">{{ suggestion.name }}</span>
-          </div>
         </div>
       </div>
 
@@ -73,7 +60,7 @@
             </div>
             <div class="stock-name">{{ stock.name }}</div>
           </div>
-          
+
           <div class="stock-price">
             <div class="current-price">{{ formatPrice(stock.price) }}</div>
             <div class="price-change" :class="getPriceChangeClass(stock.change)">
@@ -175,6 +162,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import StockSearch from '@/components/StockSearch.vue'
+import type { Stock } from '@/types/stock'
 
 const router = useRouter()
 
@@ -183,11 +172,9 @@ const isMinimized = ref(false)
 const isFloating = ref(false)
 const soundEnabled = ref(true)
 const isRefreshing = ref(false)
-const searchQuery = ref('')
-const searchSuggestions = ref([])
 const lastUpdateTime = ref('')
 const showAlertModal = ref(false)
-const selectedStock = ref(null)
+const selectedStock = ref<Stock | null>(null)
 
 // 拖拽相关
 const isDragging = ref(false)
@@ -263,52 +250,39 @@ const refreshData = async () => {
   }, 1000)
 }
 
-const onSearchInput = () => {
-  // 模拟搜索建议
-  if (searchQuery.value.length > 0) {
-    searchSuggestions.value = [
-      { symbol: '000002', name: '万科A' },
-      { symbol: '600036', name: '招商银行' }
-    ].filter(item => 
-      item.symbol.includes(searchQuery.value) || 
-      item.name.includes(searchQuery.value)
-    )
-  } else {
-    searchSuggestions.value = []
-  }
+// 新搜索组件的事件处理
+const onStockSelect = (stock: Stock) => {
+  selectedStock.value = stock
 }
 
-const selectSuggestion = (suggestion) => {
-  searchQuery.value = suggestion.symbol
-  searchSuggestions.value = []
-  addStock()
+const onStockClear = () => {
+  selectedStock.value = null
 }
 
-const addStock = () => {
-  if (!searchQuery.value.trim()) return
-  
+const addSelectedStock = () => {
+  if (!selectedStock.value) return
+
   // 检查是否已存在
-  const exists = watchlist.value.find(stock => stock.symbol === searchQuery.value)
+  const exists = watchlist.value.find(item => item.symbol === selectedStock.value!.symbol)
   if (exists) {
     alert('股票已在监控列表中')
     return
   }
 
-  // 添加新股票（这里应该调用API获取真实数据）
+  // 添加新股票
   const newStock = {
-    symbol: searchQuery.value,
-    name: '新股票',
-    price: 10.00,
+    symbol: selectedStock.value.symbol || selectedStock.value.tsCode,
+    name: selectedStock.value.name,
+    price: 10.00, // 这里应该调用API获取真实价格
     change: 0,
     changePercent: 0,
     hasAlert: false,
     isFavorite: false,
     lastPrice: 10.00
   }
-  
+
   watchlist.value.push(newStock)
-  searchQuery.value = ''
-  searchSuggestions.value = []
+  selectedStock.value = null
 }
 
 const removeStock = (symbol) => {
@@ -386,21 +360,21 @@ const getAlertPlaceholder = () => {
 // 拖拽功能
 const startDrag = (e) => {
   if (!isFloating.value) return
-  
+
   isDragging.value = true
   const rect = e.currentTarget.parentElement.getBoundingClientRect()
   dragOffset.value = {
     x: e.clientX - rect.left,
     y: e.clientY - rect.top
   }
-  
+
   document.addEventListener('mousemove', onDrag)
   document.addEventListener('mouseup', stopDrag)
 }
 
 const onDrag = (e) => {
   if (!isDragging.value) return
-  
+
   const widget = document.querySelector('.stock-monitor-widget')
   if (widget) {
     widget.style.left = (e.clientX - dragOffset.value.x) + 'px'

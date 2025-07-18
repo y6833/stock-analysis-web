@@ -803,6 +803,19 @@
       "HEAD",
       "GET"
     ],
+    "paramNames": [],
+    "path": "/api/stocks/search",
+    "regexp": "/^\\/api\\/stocks\\/search(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
     "paramNames": [
       {
         "name": "code",

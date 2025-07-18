@@ -7,7 +7,7 @@ async function testStockAPIs() {
     // 1. 测试股票统计信息
     console.log('1. 测试股票统计信息...');
     try {
-      const statsResponse = await axios.get('http://localhost:7002/api/stocks/stats');
+      const statsResponse = await axios.get('http://localhost:7001/api/stocks/stats');
       console.log('✅ 股票统计信息:', JSON.stringify(statsResponse.data, null, 2));
     } catch (error) {
       console.log('❌ 股票统计信息失败:', error.message);
@@ -18,7 +18,7 @@ async function testStockAPIs() {
     // 2. 测试手动同步股票数据
     console.log('2. 测试手动同步股票数据...');
     try {
-      const syncResponse = await axios.post('http://localhost:7002/api/stocks/sync');
+      const syncResponse = await axios.post('http://localhost:7001/api/stocks/sync');
       console.log('✅ 股票数据同步成功:', JSON.stringify(syncResponse.data, null, 2));
     } catch (error) {
       console.log('❌ 股票数据同步失败:', error.message);
@@ -32,7 +32,7 @@ async function testStockAPIs() {
     // 3. 测试获取股票列表
     console.log('3. 测试获取股票列表...');
     try {
-      const stocksResponse = await axios.get('http://localhost:7002/api/stocks');
+      const stocksResponse = await axios.get('http://localhost:7001/api/stocks');
       console.log('✅ 股票列表获取成功:');
       console.log('数据源:', stocksResponse.data.data_source);
       console.log('数据源消息:', stocksResponse.data.data_source_message);
@@ -56,7 +56,7 @@ async function testStockAPIs() {
     // 4. 再次测试股票统计信息（同步后）
     console.log('4. 再次测试股票统计信息（同步后）...');
     try {
-      const statsResponse2 = await axios.get('http://localhost:7002/api/stocks/stats');
+      const statsResponse2 = await axios.get('http://localhost:7001/api/stocks/stats');
       console.log('✅ 同步后股票统计信息:', JSON.stringify(statsResponse2.data, null, 2));
     } catch (error) {
       console.log('❌ 同步后股票统计信息失败:', error.message);

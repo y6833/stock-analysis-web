@@ -9,7 +9,7 @@ import { getAuthHeaders } from '@/utils/auth'
 const API_URL = '/api'
 
 // 提醒类型
-export type AlertType = 'price' | 'indicator' | 'pattern'
+export type AlertType = 'price' | 'indicator' | 'pattern' | 'doji'
 
 // 提醒条件
 export type AlertCondition =
@@ -18,6 +18,9 @@ export type AlertCondition =
   | 'volume_above'
   | 'change_above'
   | 'change_below'
+
+// 十字星形态类型
+export type DojiPatternType = 'standard' | 'dragonfly' | 'gravestone' | 'longLegged' | 'any'
 
 // 提醒对象
 export interface Alert {
@@ -33,6 +36,8 @@ export interface Alert {
   lastTriggeredAt?: string
   createdAt: string
   updatedAt: string
+  patternType?: DojiPatternType // 十字星形态类型
+  additionalParams?: Record<string, any> // 额外参数
 }
 
 // 创建提醒请求

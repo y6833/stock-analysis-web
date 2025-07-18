@@ -213,6 +213,14 @@
       "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "futu": {
+      "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "host": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "port": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
     }
   },
   "realtime": {

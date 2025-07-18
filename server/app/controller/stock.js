@@ -110,9 +110,9 @@ class StockController extends Controller {
         case 'alphavantage':
           // 调用Alpha Vantage API
           try {
-            ctx.logger.info(`调用ALPHAVANTAGE API: http://localhost:7002/api/alphavantage/quote?symbol=${stockCode}`);
+            ctx.logger.info(`调用ALPHAVANTAGE API: http://localhost:7001/api/alphavantage/quote?symbol=${stockCode}`);
 
-            const response = await ctx.curl(`http://localhost:7002/api/alphavantage/quote?symbol=${stockCode}`, {
+            const response = await ctx.curl(`http://localhost:7001/api/alphavantage/quote?symbol=${stockCode}`, {
               method: 'GET',
               timeout: 15000,
               dataType: 'json'
@@ -151,7 +151,7 @@ class StockController extends Controller {
         case 'sina':
           // 调用新浪财经API
           try {
-            const response = await ctx.curl(`http://localhost:7002/api/sina/quote?symbol=${stockCode}`, {
+            const response = await ctx.curl(`http://localhost:7001/api/sina/quote?symbol=${stockCode}`, {
               method: 'GET',
               timeout: 15000,
               dataType: 'json'
@@ -176,7 +176,7 @@ class StockController extends Controller {
         case 'eastmoney':
           // 调用东方财富API
           try {
-            const response = await ctx.curl(`http://localhost:7002/api/eastmoney/quote?symbol=${stockCode}`, {
+            const response = await ctx.curl(`http://localhost:7001/api/eastmoney/quote?symbol=${stockCode}`, {
               method: 'GET',
               timeout: 15000,
               dataType: 'json'
@@ -623,6 +623,85 @@ class StockController extends Controller {
         sync_time: new Date().toISOString()
       };
       ctx.logger.error('股票数据同步失败:', err);
+    }
+  }
+
+  // 搜索股票（基于数据库）
+  async searchStocks() {
+    const { ctx, app } = this;
+    const { keyword } = ctx.query;
+
+    if (!keyword) {
+      ctx.status = 400;
+      ctx.body = {
+        success: false,
+        message: '缺少搜索关键词参数'
+      };
+      return;
+    }
+
+    try {
+      ctx.logger.info(`搜索股票关键词: ${keyword}`);
+
+      // 使用原生MySQL查询
+      const mysql = app.mysql;
+      const searchPattern = `%${keyword}%`;
+
+      const results = await mysql.query(
+        `SELECT ts_code as tsCode, symbol, name, area, industry, market, list_date as listDate
+         FROM stock_basic
+         WHERE (
+           symbol LIKE ? OR
+           name LIKE ? OR
+           ts_code LIKE ? OR
+           cnspell LIKE ?
+         )
+         ORDER BY
+           CASE
+             WHEN symbol = ? THEN 1
+             WHEN name = ? THEN 2
+             WHEN symbol LIKE ? THEN 3
+             WHEN name LIKE ? THEN 4
+             ELSE 5
+           END,
+           symbol ASC
+         LIMIT 50`,
+        [
+          searchPattern, searchPattern, searchPattern, searchPattern,
+          keyword, keyword, `${keyword}%`, `${keyword}%`
+        ]
+      );
+
+      ctx.logger.info(`MySQL查询结果类型: ${typeof results}, 是否为数组: ${Array.isArray(results)}, 长度: ${results ? results.length : 'undefined'}`);
+
+      const stocks = Array.isArray(results) ? results.map(stock => ({
+        symbol: stock.symbol || stock.tsCode,
+        tsCode: stock.tsCode,
+        name: stock.name,
+        area: stock.area,
+        industry: stock.industry || '未知',
+        market: stock.market,
+        listDate: stock.listDate
+      })) : [];
+
+      ctx.body = {
+        success: true,
+        data: stocks,
+        count: stocks.length,
+        message: `找到 ${stocks.length} 条匹配的股票`,
+        data_source: 'database_stock_basic',
+        data_source_message: `搜索结果来自stock_basic表，关键词: ${keyword}`
+      };
+
+      ctx.logger.info(`搜索完成，找到 ${stocks.length} 条匹配的股票`);
+    } catch (error) {
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '搜索股票失败',
+        error: error.message
+      };
+      ctx.logger.error('搜索股票失败:', error);
     }
   }
 

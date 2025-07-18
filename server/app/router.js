@@ -63,6 +63,7 @@ module.exports = app => {
 
   // 股票行情相关路由
   router.get('/api/stocks', controller.stock.getStockList);
+  router.get('/api/stocks/search', controller.stock.searchStocks);
   router.get('/api/stocks/:code/quote', controller.stock.getQuote);
   router.post('/api/stocks/quotes/batch', controller.stock.getBatchQuotes);
   router.get('/api/stocks/:code/history', controller.stock.getHistory);

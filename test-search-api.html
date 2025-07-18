@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票搜索API测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .search-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .search-input {
+            width: 300px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .search-btn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .search-btn:hover {
+            background-color: #2980b9;
+        }
+        .search-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result.loading {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .stock-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .stock-code {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stock-name {
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        .stock-info {
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 股票搜索API测试</h1>
+        
+        <div class="search-section">
+            <h3>搜索股票</h3>
+            <input type="text" id="searchInput" class="search-input" placeholder="输入股票名称或代码，如：平安、000001" value="平安">
+            <button onclick="searchStocks()" class="search-btn" id="searchBtn">搜索</button>
+            <div id="searchResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:7001';
+        
+        // 显示结果
+        function showResult(elementId, content, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.innerHTML = content;
+        }
+        
+        // 显示加载状态
+        function showLoading(elementId, message = '搜索中...') {
+            showResult(elementId, message, 'loading');
+        }
+        
+        // 格式化股票数据显示
+        function formatStockData(stocks) {
+            if (!Array.isArray(stocks) || stocks.length === 0) {
+                return '没有找到匹配的股票';
+            }
+            
+            let html = `<div style="margin-bottom: 10px;"><strong>找到 ${stocks.length} 条结果：</strong></div>`;
+            
+            stocks.forEach((stock, index) => {
+                html += `
+                    <div class="stock-item">
+                        <div class="stock-code">${stock.tsCode || stock.symbol}</div>
+                        <div class="stock-name">${stock.name}</div>
+                        <div class="stock-info">
+                            地区: ${stock.area || '未知'} | 
+                            行业: ${stock.industry || '未知'} | 
+                            市场: ${stock.market || '未知'}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+        
+        // 搜索股票
+        async function searchStocks() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            const button = document.getElementById('searchBtn');
+            
+            if (!keyword) {
+                showResult('searchResult', '请输入搜索关键词', 'error');
+                return;
+            }
+            
+            button.disabled = true;
+            showLoading('searchResult', `正在搜索"${keyword}"...`);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/stocks/search?keyword=${encodeURIComponent(keyword)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const formattedResult = formatStockData(data.data);
+                    showResult('searchResult', formattedResult, 'success');
+                } else {
+                    showResult('searchResult', 
+                        `❌ 搜索失败\n\n错误信息：${data.message || '未知错误'}\n\n完整响应：\n${JSON.stringify(data, null, 2)}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('searchResult', 
+                    `💥 请求异常：${error.message}\n\n可能原因：\n1. 后端服务未启动\n2. 网络连接问题\n3. API端点不存在`, 
+                    'error'
+                );
+            } finally {
+                button.disabled = false;
+            }
+        }
+        
+        // 回车键搜索
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchStocks();
+            }
+        });
+        
+        // 页面加载完成后自动搜索一次
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                searchStocks();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -199,8 +199,8 @@ class StockService extends Service {
 
         // 检查API权限错误
         if (response.data && response.data.msg && (response.data.msg.includes('积分') || response.data.msg.includes('权限'))) {
-          ctx.logger.warn(`Tushare API权限不足: ${response.data.msg}，返回默认股票数据`);
-          return this.getDefaultStockQuote(stockCode);
+          ctx.logger.error(`Tushare API权限不足: ${response.data.msg}`);
+          throw new Error(`Tushare API权限不足: ${response.data.msg}`);
         }
 
         // 如果今天没有数据，尝试获取最近一个交易日的数据
@@ -219,14 +219,14 @@ class StockService extends Service {
 
             // 检查fallback API权限错误
             if (fallbackResponse.data && fallbackResponse.data.msg && (fallbackResponse.data.msg.includes('积分') || fallbackResponse.data.msg.includes('权限'))) {
-              ctx.logger.warn(`Tushare API权限不足: ${fallbackResponse.data.msg}，返回默认股票数据`);
-              return this.getDefaultStockQuote(stockCode);
+              ctx.logger.error(`Tushare API权限不足: ${fallbackResponse.data.msg}`);
+              throw new Error(`Tushare API权限不足: ${fallbackResponse.data.msg}`);
             }
 
             return this.processStockData(fallbackResponse, stockCode, 'daily');
           } catch (fallbackErr) {
-            ctx.logger.warn(`获取股票 ${stockCode} fallback数据失败: ${fallbackErr.message}，返回默认数据`);
-            return this.getDefaultStockQuote(stockCode);
+            ctx.logger.error(`获取股票 ${stockCode} fallback数据失败: ${fallbackErr.message}`);
+            throw new Error(`获取股票 ${stockCode} 数据失败: ${fallbackErr.message}`);
           }
         }
 
@@ -234,18 +234,18 @@ class StockService extends Service {
       } catch (err) {
         ctx.logger.error(`获取股票 ${stockCode} 行情失败:`, err);
 
-        // 如果是积分不足或权限问题，返回默认数据
+        // 如果是积分不足或权限问题，抛出错误
         if (err.response && err.response.data) {
           const errorMsg = err.response.data.msg || err.message;
           if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
-            ctx.logger.warn(`Tushare API权限不足: ${errorMsg}，返回默认股票数据`);
-            return this.getDefaultStockQuote(stockCode);
+            ctx.logger.error(`Tushare API权限不足: ${errorMsg}`);
+            throw new Error(`Tushare API权限不足: ${errorMsg}`);
           }
         }
 
-        // 其他错误也返回默认数据，避免整个定时任务失败
-        ctx.logger.warn(`股票 ${stockCode} 获取失败，返回默认数据: ${err.message}`);
-        return this.getDefaultStockQuote(stockCode);
+        // 其他错误也抛出，不使用默认数据
+        ctx.logger.error(`股票 ${stockCode} 获取失败: ${err.message}`);
+        throw new Error(`股票 ${stockCode} 获取失败: ${err.message}`);
       }
     });
   }
@@ -256,8 +256,8 @@ class StockService extends Service {
 
     // 检查API权限错误
     if (response.data && response.data.msg && (response.data.msg.includes('积分') || response.data.msg.includes('权限'))) {
-      ctx.logger.warn(`Tushare API权限不足: ${response.data.msg}，返回默认股票数据`);
-      return this.getDefaultStockQuote(stockCode);
+      ctx.logger.error(`Tushare API权限不足: ${response.data.msg}`);
+      throw new Error(`Tushare API权限不足: ${response.data.msg}`);
     }
 
     if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
@@ -306,48 +306,12 @@ class StockService extends Service {
       return quote;
     }
 
-    // 如果没有获取到数据，返回默认数据而不是抛出错误
-    ctx.logger.warn(`股票 ${stockCode} 未获取到数据，返回默认数据`);
-    return this.getDefaultStockQuote(stockCode);
+    // 如果没有获取到数据，抛出错误
+    ctx.logger.error(`股票 ${stockCode} 未获取到数据`);
+    throw new Error(`股票 ${stockCode} 未获取到数据`);
   }
 
-  // 获取默认股票数据
-  getDefaultStockQuote(stockCode) {
-    const stockNames = {
-      '600519.SH': '贵州茅台',
-      '000858.SZ': '五粮液',
-      '000001.SZ': '平安银行',
-      '600036.SH': '招商银行',
-      '000002.SZ': '万科A',
-      '600000.SH': '浦发银行',
-      '000166.SZ': '申万宏源',
-      '600276.SH': '恒瑞医药',
-      '300015.SZ': '爱尔眼科',
-      '002415.SZ': '海康威视'
-    };
-
-    // 从stockCode中提取纯数字代码
-    const pureCode = stockCode.replace(/\.(SH|SZ)$/, '');
-    const name = stockNames[stockCode] || stockNames[pureCode] || stockCode;
-
-    return {
-      code: stockCode,
-      name: name,
-      price: 100.00,
-      open: 98.50,
-      high: 102.00,
-      low: 97.80,
-      volume: 1000000,
-      amount: 100000000,
-      change: 1.52,
-      date: this.getDateString(0),
-      pe: 25.5,
-      pb: 3.2,
-      total_mv: 1000000000,
-      data_source: 'fallback',
-      data_source_message: '使用默认股票数据，因为Tushare API不可用'
-    };
-  }
+  // 已删除 getDefaultStockQuote 方法 - 禁止使用模拟数据
 
   // 获取股票缓存数据 (如果有)
   async getCachedStockQuote(stockCode) {
@@ -523,18 +487,11 @@ class StockService extends Service {
         };
       }
 
-      return {
-        data: [],
-        data_source: 'external_api',
-        data_source_message: '数据来自Tushare API (daily)，但未获取到数据'
-      };
+      // 如果没有获取到数据，抛出错误
+      throw new Error(`无法获取股票 ${stockCode} 的历史数据`);
     }).catch(err => {
       ctx.logger.error('获取股票历史数据失败:', err);
-      return {
-        data: [],
-        data_source: 'error',
-        data_source_message: `获取数据失败: ${err.message}`
-      };
+      throw new Error(`获取股票历史数据失败: ${err.message}`);
     });
   }
 
@@ -691,15 +648,15 @@ class StockService extends Service {
 
       // 检查响应
       if (!response.data || response.data.code !== 0 || !response.data.data) {
-        ctx.logger.warn('API响应数据为空或错误，返回默认股票数据');
-        return this.getDefaultStockList();
+        ctx.logger.error('API响应数据为空或错误');
+        throw new Error('Tushare API响应数据为空或错误');
       }
 
       const { fields, items } = response.data.data;
 
       if (!fields || !items || items.length === 0) {
-        ctx.logger.warn('API响应数据格式不正确，返回默认股票数据');
-        return this.getDefaultStockList();
+        ctx.logger.error('API响应数据格式不正确');
+        throw new Error('Tushare API响应数据格式不正确');
       }
 
       // 解析字段索引
@@ -863,35 +820,13 @@ class StockService extends Service {
         ctx.logger.error('stock_basic表回退也失败:', fallbackError);
       }
 
-      // 最后的回退：返回默认数据
-      ctx.logger.warn('所有数据源都失败，返回默认股票数据');
-      return this.getDefaultStockList();
+      // 所有数据源都失败，抛出错误
+      ctx.logger.error('所有数据源都失败，无法获取股票数据');
+      throw new Error('所有数据源都失败，无法获取股票数据');
     }
   }
 
-  // 获取默认股票列表（当所有数据源都失败时使用）
-  getDefaultStockList() {
-    const { ctx } = this;
-
-    ctx.logger.info('返回默认股票列表数据');
-
-    // 返回一些主要的股票作为默认数据
-    const defaultStocks = [
-      { symbol: '000001.SZ', tsCode: '000001.SZ', name: '平安银行', area: '深圳', industry: '银行', market: '深圳', listDate: '19910403' },
-      { symbol: '000002.SZ', tsCode: '000002.SZ', name: '万科A', area: '深圳', industry: '房地产开发', market: '深圳', listDate: '19910129' },
-      { symbol: '600000.SH', tsCode: '600000.SH', name: '浦发银行', area: '上海', industry: '银行', market: '上海', listDate: '19991110' },
-      { symbol: '600036.SH', tsCode: '600036.SH', name: '招商银行', area: '深圳', industry: '银行', market: '上海', listDate: '20020409' },
-      { symbol: '600519.SH', tsCode: '600519.SH', name: '贵州茅台', area: '贵州', industry: '白酒', market: '上海', listDate: '20010827' },
-      { symbol: '000858.SZ', tsCode: '000858.SZ', name: '五粮液', area: '四川', industry: '白酒', market: '深圳', listDate: '19980427' }
-    ];
-
-    return {
-      data: defaultStocks,
-      count: defaultStocks.length,
-      data_source: 'default',
-      data_source_message: '所有数据源失败，使用默认股票数据'
-    };
-  }
+  // 已删除 getDefaultStockList 方法 - 禁止使用模拟数据
 
   // 测试 Redis 连接和数据存储
   async testRedisStorage() {
@@ -1473,8 +1408,8 @@ class StockService extends Service {
 
         // 检查API权限错误
         if (response.data && response.data.msg && (response.data.msg.includes('积分') || response.data.msg.includes('权限'))) {
-          ctx.logger.warn(`Tushare API权限不足: ${response.data.msg}，返回默认指数数据`);
-          return this.getDefaultIndexQuote(indexCode);
+          ctx.logger.error(`Tushare API权限不足: ${response.data.msg}`);
+          throw new Error(`Tushare API权限不足: ${response.data.msg}`);
         }
 
         if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
@@ -1499,58 +1434,30 @@ class StockService extends Service {
           return quote;
         }
 
-        // 如果没有数据，返回默认数据而不是抛出错误
-        ctx.logger.warn(`指数 ${indexCode} 未获取到数据，返回默认数据`);
-        return this.getDefaultIndexQuote(indexCode);
+        // 如果没有数据，抛出错误
+        ctx.logger.error(`指数 ${indexCode} 未获取到数据`);
+        throw new Error(`指数 ${indexCode} 未获取到数据`);
 
       } catch (err) {
         ctx.logger.error(`获取指数 ${indexCode} 行情失败:`, err);
 
-        // 如果是积分不足或权限问题，返回默认数据
+        // 如果是积分不足或权限问题，抛出错误
         if (err.response && err.response.data) {
           const errorMsg = err.response.data.msg || err.message;
           if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
-            ctx.logger.warn(`Tushare API权限不足: ${errorMsg}，返回默认指数数据`);
-            return this.getDefaultIndexQuote(indexCode);
+            ctx.logger.error(`Tushare API权限不足: ${errorMsg}`);
+            throw new Error(`Tushare API权限不足: ${errorMsg}`);
           }
         }
 
-        // 其他错误也返回默认数据，避免整个定时任务失败
-        ctx.logger.warn(`指数 ${indexCode} 获取失败，返回默认数据: ${err.message}`);
-        return this.getDefaultIndexQuote(indexCode);
+        // 其他错误也抛出，不使用默认数据
+        ctx.logger.error(`指数 ${indexCode} 获取失败: ${err.message}`);
+        throw new Error(`指数 ${indexCode} 获取失败: ${err.message}`);
       }
     });
   }
 
-  // 获取默认指数数据
-  getDefaultIndexQuote(indexCode) {
-    const indexNames = {
-      '000001.SH': '上证指数',
-      '399001.SZ': '深证成指',
-      '399006.SZ': '创业板指',
-      '000300.SH': '沪深300',
-      '000852.SH': '中证1000',
-      '000905.SH': '中证500',
-      '000016.SH': '上证50',
-      '399905.SZ': '中证500',
-      '000688.SH': '科创50'
-    };
-
-    return {
-      code: indexCode,
-      name: indexNames[indexCode] || indexCode,
-      price: 3000.00,
-      open: 2980.00,
-      high: 3020.00,
-      low: 2970.00,
-      volume: 1000000,
-      amount: 50000000000,
-      change: 0.67,
-      date: this.getDateString(0),
-      data_source: 'fallback',
-      data_source_message: `使用默认指数数据，因为Tushare API不可用`
-    };
-  }
+  // 已删除 getDefaultIndexQuote 方法 - 禁止使用模拟数据
 
   // 获取指数名称
   async getIndexName(indexCode) {
@@ -1570,8 +1477,8 @@ class StockService extends Service {
 
         // 检查API权限错误
         if (response.data && response.data.msg && (response.data.msg.includes('积分') || response.data.msg.includes('权限'))) {
-          ctx.logger.warn(`Tushare API权限不足: ${response.data.msg}，使用默认指数名称`);
-          return this.getDefaultIndexName(indexCode);
+          ctx.logger.error(`Tushare API权限不足: ${response.data.msg}`);
+          throw new Error(`Tushare API权限不足: ${response.data.msg}`);
         }
 
         if (response.data && response.data.data && response.data.data.items && response.data.data.items.length > 0) {
@@ -1583,46 +1490,27 @@ class StockService extends Service {
           };
         }
 
-        // 如果没有数据，使用默认名称
-        return this.getDefaultIndexName(indexCode);
+        // 如果没有数据，抛出错误
+        throw new Error(`指数 ${indexCode} 基本信息未获取到数据`);
       } catch (err) {
         ctx.logger.error('获取指数名称失败:', err);
 
-        // 如果是积分不足或权限问题，使用默认名称
+        // 如果是积分不足或权限问题，抛出错误
         if (err.response && err.response.data) {
           const errorMsg = err.response.data.msg || err.message;
           if (errorMsg.includes('积分') || errorMsg.includes('权限')) {
-            ctx.logger.warn(`Tushare API权限不足: ${errorMsg}，使用默认指数名称`);
-            return this.getDefaultIndexName(indexCode);
+            ctx.logger.error(`Tushare API权限不足: ${errorMsg}`);
+            throw new Error(`Tushare API权限不足: ${errorMsg}`);
           }
         }
 
-        // 其他错误也使用默认名称
-        return this.getDefaultIndexName(indexCode);
+        // 其他错误也抛出
+        throw new Error(`获取指数名称失败: ${err.message}`);
       }
     });
   }
 
-  // 获取默认指数名称
-  getDefaultIndexName(indexCode) {
-    const indexNames = {
-      '000001.SH': '上证指数',
-      '399001.SZ': '深证成指',
-      '399006.SZ': '创业板指',
-      '000300.SH': '沪深300',
-      '000852.SH': '中证1000',
-      '000905.SH': '中证500',
-      '000016.SH': '上证50',
-      '399905.SZ': '中证500',
-      '000688.SH': '科创50'
-    };
-
-    return {
-      name: indexNames[indexCode] || indexCode,
-      data_source: 'fallback',
-      data_source_message: '使用默认指数名称，因为Tushare API不可用'
-    };
-  }
+  // 已删除 getDefaultIndexName 方法 - 禁止使用模拟数据
 
   // 获取用户关注的股票
   async getUserWatchlistStocks() {

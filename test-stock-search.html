@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票搜索组件测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .test-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .test-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .test-button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .stock-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .stock-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .stock-item:hover {
+            background: #e9ecef;
+        }
+        .stock-code {
+            font-weight: bold;
+            color: #007bff;
+            font-family: monospace;
+        }
+        .stock-name {
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        .stock-info {
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 股票搜索组件测试</h1>
+        
+        <div class="test-section">
+            <h3>搜索测试</h3>
+            <input 
+                type="text" 
+                id="searchInput" 
+                class="test-input" 
+                placeholder="输入股票名称或代码，如：平安、000001"
+                value="平安"
+            >
+            <br>
+            <button onclick="testSearch()" class="test-button">搜索</button>
+            <button onclick="clearResults()" class="test-button">清除结果</button>
+            <button onclick="testMultipleSearches()" class="test-button">批量测试</button>
+            
+            <div id="searchResults" class="stock-list"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>API连接测试</h3>
+            <button onclick="testApiConnection()" class="test-button">测试API连接</button>
+            <button onclick="testDatabaseConnection()" class="test-button">测试数据库连接</button>
+            
+            <div id="apiResults" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:7001';
+        
+        // 显示结果
+        function showResult(elementId, content, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.innerHTML = content;
+        }
+        
+        // 搜索股票
+        async function testSearch() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (!keyword) {
+                resultsContainer.innerHTML = '<div style="color: red;">请输入搜索关键词</div>';
+                return;
+            }
+            
+            resultsContainer.innerHTML = '<div style="color: #666;">搜索中...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/stocks/search?keyword=${encodeURIComponent(keyword)}`);
+                const data = await response.json();
+                
+                if (data.success && Array.isArray(data.data)) {
+                    displayStocks(data.data);
+                } else {
+                    resultsContainer.innerHTML = `<div style="color: red;">搜索失败: ${data.message || '未知错误'}</div>`;
+                }
+            } catch (error) {
+                resultsContainer.innerHTML = `<div style="color: red;">请求失败: ${error.message}</div>`;
+            }
+        }
+        
+        // 显示股票列表
+        function displayStocks(stocks) {
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (stocks.length === 0) {
+                resultsContainer.innerHTML = '<div style="color: #666;">没有找到匹配的股票</div>';
+                return;
+            }
+            
+            let html = `<div style="margin-bottom: 10px; font-weight: bold;">找到 ${stocks.length} 条结果：</div>`;
+            
+            stocks.forEach(stock => {
+                html += `
+                    <div class="stock-item" onclick="selectStock('${stock.symbol || stock.tsCode}', '${stock.name}')">
+                        <div class="stock-code">${stock.symbol || stock.tsCode}</div>
+                        <div class="stock-name">${stock.name}</div>
+                        <div class="stock-info">
+                            行业: ${stock.industry || '未知'} | 
+                            市场: ${stock.market || '未知'} | 
+                            地区: ${stock.area || '未知'}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsContainer.innerHTML = html;
+        }
+        
+        // 选择股票
+        function selectStock(code, name) {
+            alert(`选中股票: ${code} ${name}`);
+        }
+        
+        // 清除结果
+        function clearResults() {
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchInput').value = '';
+        }
+        
+        // 批量测试
+        async function testMultipleSearches() {
+            const keywords = ['平安', '000001', '腾讯', '阿里', '茅台'];
+            const resultsContainer = document.getElementById('searchResults');
+            
+            resultsContainer.innerHTML = '<div style="color: #666;">批量测试中...</div>';
+            
+            let allResults = [];
+            
+            for (const keyword of keywords) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/stocks/search?keyword=${encodeURIComponent(keyword)}`);
+                    const data = await response.json();
+                    
+                    if (data.success && Array.isArray(data.data)) {
+                        allResults.push({
+                            keyword,
+                            count: data.data.length,
+                            stocks: data.data.slice(0, 2) // 只取前2个结果
+                        });
+                    }
+                } catch (error) {
+                    allResults.push({
+                        keyword,
+                        error: error.message
+                    });
+                }
+            }
+            
+            // 显示批量测试结果
+            let html = '<div style="margin-bottom: 10px; font-weight: bold;">批量测试结果：</div>';
+            
+            allResults.forEach(result => {
+                if (result.error) {
+                    html += `<div style="color: red; margin-bottom: 10px;">${result.keyword}: 错误 - ${result.error}</div>`;
+                } else {
+                    html += `<div style="margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #007bff;">${result.keyword}: 找到 ${result.count} 条结果</div>`;
+                    
+                    result.stocks.forEach(stock => {
+                        html += `
+                            <div style="margin-left: 20px; padding: 5px; background: #f8f9fa; border-radius: 3px; margin-bottom: 5px;">
+                                ${stock.symbol || stock.tsCode} - ${stock.name}
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                }
+            });
+            
+            resultsContainer.innerHTML = html;
+        }
+        
+        // 测试API连接
+        async function testApiConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/stocks/search?keyword=test`);
+                const data = await response.json();
+                
+                showResult('apiResults', 
+                    `✅ API连接成功\n\n响应状态: ${response.status}\n响应数据: ${JSON.stringify(data, null, 2)}`, 
+                    'success'
+                );
+            } catch (error) {
+                showResult('apiResults', 
+                    `❌ API连接失败\n\n错误信息: ${error.message}\n\n可能原因:\n1. 后端服务未启动\n2. 端口7001不可访问\n3. 网络连接问题`, 
+                    'error'
+                );
+            }
+        }
+        
+        // 测试数据库连接
+        async function testDatabaseConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/stocks/search?keyword=平安`);
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    showResult('apiResults', 
+                        `✅ 数据库连接成功\n\n找到 ${data.data.length} 条"平安"相关股票\n数据源: ${data.data_source || '未知'}\n\n示例数据:\n${JSON.stringify(data.data[0], null, 2)}`, 
+                        'success'
+                    );
+                } else {
+                    showResult('apiResults', 
+                        `⚠️ 数据库连接可能有问题\n\n响应: ${JSON.stringify(data, null, 2)}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('apiResults', 
+                    `❌ 数据库连接测试失败\n\n错误信息: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+        
+        // 回车键搜索
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testSearch();
+            }
+        });
+        
+        // 页面加载完成后自动测试
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                testSearch();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

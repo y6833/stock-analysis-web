@@ -25,7 +25,7 @@
     "eslint-config-egg": "^12.3.1"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=14.0.0"
   },
   "scripts": {
     "start": "egg-scripts start --daemon --title=egg-server-stock-analysis-server",
