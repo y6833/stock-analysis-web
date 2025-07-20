@@ -1,6 +1,17 @@
 // 测试设置文件
 import { afterEach, beforeEach, vi } from 'vitest'
 import { config } from '@vue/test-utils'
+import { webcrypto } from 'node:crypto'
+
+// 添加 crypto polyfill
+if (!global.crypto) {
+  global.crypto = webcrypto as any
+}
+
+// 确保 getRandomValues 可用
+if (!global.crypto.getRandomValues) {
+  global.crypto.getRandomValues = webcrypto.getRandomValues.bind(webcrypto)
+}
 
 // 全局测试设置
 beforeEach(() => {

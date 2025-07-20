@@ -39,6 +39,11 @@ export interface DojiScreenCriteria {
      * 结果数量限制
      */
     limit: number
+
+    /**
+     * 页码（可选，分页用）
+     */
+    page?: number;
 }
 
 /**

@@ -18,6 +18,7 @@ import ExportCoinRecharge = require('../../../app/service/coinRecharge');
 import ExportCoins = require('../../../app/service/coins');
 import ExportDashboard = require('../../../app/service/dashboard');
 import ExportData = require('../../../app/service/data');
+import ExportDojiPatternService = require('../../../app/service/dojiPatternService');
 import ExportEastmoney = require('../../../app/service/eastmoney');
 import ExportFactorEngine = require('../../../app/service/factorEngine');
 import ExportGoogleFinance = require('../../../app/service/googleFinance');
@@ -57,6 +58,7 @@ declare module 'egg' {
     coins: AutoInstanceType<typeof ExportCoins>;
     dashboard: AutoInstanceType<typeof ExportDashboard>;
     data: AutoInstanceType<typeof ExportData>;
+    dojiPatternService: AutoInstanceType<typeof ExportDojiPatternService>;
     eastmoney: AutoInstanceType<typeof ExportEastmoney>;
     factorEngine: AutoInstanceType<typeof ExportFactorEngine>;
     googleFinance: AutoInstanceType<typeof ExportGoogleFinance>;

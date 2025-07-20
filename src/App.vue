@@ -9,6 +9,7 @@ import CacheStatusIndicator from '@/components/common/CacheStatusIndicator.vue'
 import DataSourceProvider from '@/components/DataSourceProvider.vue'
 import { MembershipLevel, checkMembershipLevel } from '@/constants/membership'
 import NotificationCenter from '@/components/common/NotificationCenter.vue'
+import { dojiPatternSystemService } from '@/services/DojiPatternSystemService'
 // 暂时注释掉，直到创建了必要的服务
 // import PageAccessRecorder from '@/components/common/PageAccessRecorder.vue'
 
@@ -131,6 +132,14 @@ onMounted(async () => {
     } catch (error) {
       console.error('[App] 刷新会员信息失败:', error)
     }
+  }
+
+  // 初始化十字星形态系统
+  try {
+    await dojiPatternSystemService.initialize()
+    console.log('[App] 十字星形态系统初始化成功')
+  } catch (error) {
+    console.error('[App] 十字星形态系统初始化失败:', error)
   }
 })
 
@@ -317,6 +326,39 @@ onUnmounted(() => {
                   </div>
                 </template>
 
+                <!-- 十字星形态分析 -->
+                <template v-if="canAccessBasicFeatures">
+                  <RouterLink to="/doji-pattern/screener" class="dropdown-item">
+                    <span class="nav-icon">✨</span>
+                    <span class="nav-text">十字星筛选</span>
+                    <span class="feature-badge basic">基础</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div class="dropdown-item locked" @click="goToMembership(MembershipLevel.BASIC)">
+                    <span class="nav-icon">✨</span>
+                    <span class="nav-text">十字星筛选</span>
+                    <span class="feature-badge basic">基础</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+
+                <template v-if="canAccessBasicFeatures">
+                  <RouterLink to="/doji-pattern/settings" class="dropdown-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">十字星设置</span>
+                    <span class="feature-badge basic">基础</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div class="dropdown-item locked" @click="goToMembership(MembershipLevel.BASIC)">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">十字星设置</span>
+                    <span class="feature-badge basic">基础</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+
                 <template v-if="canAccessPremiumFeatures">
                   <RouterLink to="/export" class="dropdown-item">
                     <span class="nav-icon">📋</span>
@@ -394,6 +436,23 @@ onUnmounted(() => {
                   <div class="dropdown-item locked" @click="goToMembership(MembershipLevel.BASIC)">
                     <span class="nav-icon">🔔</span>
                     <span class="nav-text">条件提醒</span>
+                    <span class="feature-badge basic">基础</span>
+                    <span class="lock-icon">🔒</span>
+                  </div>
+                </template>
+
+                <!-- 十字星形态提醒 -->
+                <template v-if="canAccessBasicFeatures">
+                  <RouterLink to="/doji-pattern/alerts" class="dropdown-item">
+                    <span class="nav-icon">✨</span>
+                    <span class="nav-text">十字星提醒</span>
+                    <span class="feature-badge basic">基础</span>
+                  </RouterLink>
+                </template>
+                <template v-else>
+                  <div class="dropdown-item locked" @click="goToMembership(MembershipLevel.BASIC)">
+                    <span class="nav-icon">✨</span>
+                    <span class="nav-text">十字星提醒</span>
                     <span class="feature-badge basic">基础</span>
                     <span class="lock-icon">🔒</span>
                   </div>

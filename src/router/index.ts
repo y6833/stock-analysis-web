@@ -209,6 +209,33 @@ const router = createRouter({
       },
     },
     {
+      path: '/doji-pattern/settings',
+      name: 'doji-pattern-settings',
+      component: () => import('../views/DojiPatternSettingsView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
+    },
+    {
+      path: '/doji-pattern/screener',
+      name: 'doji-pattern-screener',
+      component: () => import('../views/DojiPatternScreenerView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
+    },
+    {
+      path: '/doji-pattern/system',
+      name: 'doji-pattern-system',
+      component: () => import('../views/DojiPatternSystemView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiredMembershipLevel: MembershipLevel.BASIC,
+      },
+    },
+    {
       path: '/simulation',
       name: 'simulation',
       component: () => import('../views/SimulationView.vue'),

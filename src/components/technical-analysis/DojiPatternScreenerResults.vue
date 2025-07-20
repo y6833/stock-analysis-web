@@ -24,7 +24,7 @@
       </template>
 
       <div v-if="!hasResults && !loading" class="empty-result">
-        <el-empty description="暂无筛选结果，请设置筛选条件并点击"开始筛选""></el-empty>
+        <el-empty description="暂无筛选结果，请设置筛选条件并点击‘开始筛选’"></el-empty>
       </div>
 
       <div v-else-if="hasResults" class="result-content">

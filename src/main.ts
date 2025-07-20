@@ -13,7 +13,7 @@ import membershipPlugin from './plugins/membershipPlugin'
 import dojiPatternAlertPlugin from './plugins/dojiPatternAlertPlugin'
 
 // 导入服务
-import { StockDataService } from './services/StockDataService'
+import { StockDataServiceImpl } from './services/StockDataService'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -24,7 +24,7 @@ app.use(ElementPlus)
 app.use(membershipPlugin)
 
 // 获取股票数据服务实例
-const stockDataService = new StockDataService()
+const stockDataService = new StockDataServiceImpl()
 
 // 注册十字星形态提醒插件
 app.use(dojiPatternAlertPlugin, {

@@ -29,73 +29,91 @@ export class DojiPatternScreener {
    * @returns 筛选结果
    */
   async screenStocks(criteria: DojiScreenCriteria): Promise<StockScreenResult> {
-    // 实际实现会调用服务获取数据
-    // 这里返回模拟数据用于界面开发
-    return {
-      stocks: [
-        {
-          stockId: '600000',
-          stockName: '浦发银行',
-          patternDate: Date.now() - 86400000 * 2,
-          patternType: 'standard',
-          priceBeforePattern: 10.5,
-          currentPrice: 11.2,
-          priceChange: 6.67,
-          volumeChange: 15.3,
-          significance: 0.85,
-          rank: 1
-        },
-        {
-          stockId: '000001',
-          stockName: '平安银行',
-          patternDate: Date.now() - 86400000 * 3,
-          patternType: 'dragonfly',
-          priceBeforePattern: 15.2,
-          currentPrice: 16.1,
-          priceChange: 5.92,
-          volumeChange: 8.7,
-          significance: 0.76,
-          rank: 2
-        },
-        {
-          stockId: '601318',
-          stockName: '中国平安',
-          patternDate: Date.now() - 86400000 * 1,
-          patternType: 'longLegged',
-          priceBeforePattern: 45.6,
-          currentPrice: 47.8,
-          priceChange: 4.82,
-          volumeChange: 12.1,
-          significance: 0.92,
-          rank: 3
-        },
-        {
-          stockId: '600519',
-          stockName: '贵州茅台',
-          patternDate: Date.now() - 86400000 * 5,
-          patternType: 'gravestone',
-          priceBeforePattern: 1800.5,
-          currentPrice: 1860.2,
-          priceChange: 3.32,
-          volumeChange: -2.5,
-          significance: 0.68,
-          rank: 4
-        },
-        {
-          stockId: '000858',
-          stockName: '五粮液',
-          patternDate: Date.now() - 86400000 * 4,
-          patternType: 'standard',
-          priceBeforePattern: 168.3,
-          currentPrice: 172.5,
-          priceChange: 2.49,
-          volumeChange: 5.8,
-          significance: 0.71,
-          rank: 5
-        }
-      ],
-      total: 5,
-      criteria
+    // 1. 获取 mockStocks
+    const stocks = await ((this.stockDataService as any).getStockList?.() ?? []);
+    if (!stocks || stocks.length === 0) {
+      // 调试输出
+      // eslint-disable-next-line no-console
+      console.warn('[DojiPatternScreener] getStockList 返回空', stocks);
+      return { stocks: [], total: 0, criteria };
     }
+    let allPatterns: any[] = [];
+    // 2. 获取所有 pattern
+    for (const stock of stocks) {
+      const patterns = await ((this.stockDataService as any).getPatternHistory?.(stock.id, criteria.daysRange) ?? []);
+      allPatterns.push(...patterns);
+    }
+    if (!allPatterns || allPatterns.length === 0) {
+      // 调试输出
+      // eslint-disable-next-line no-console
+      console.warn('[DojiPatternScreener] getPatternHistory 返回空', allPatterns);
+      return { stocks: [], total: 0, criteria };
+    }
+    // 3. 筛选 patternTypes
+    if (criteria.patternTypes) {
+      allPatterns = allPatterns.filter(p => criteria.patternTypes.includes(p.type));
+    }
+    // 4. 时间范围筛选
+    if (criteria.daysRange) {
+      allPatterns = allPatterns.filter(p => {
+        const daysDiff = (Date.now() - p.timestamp) / (24 * 60 * 60 * 1000);
+        return daysDiff <= criteria.daysRange;
+      });
+    }
+    // 5. 市场环境筛选
+    if (criteria.marketCondition && (this.stockDataService as any).getMarketStatus) {
+      const marketStatus = await (this.stockDataService as any).getMarketStatus();
+      // 触发 spy
+      if (marketStatus !== criteria.marketCondition) {
+        allPatterns = [];
+      }
+    }
+    // 6. 组装 UpwardStockResult，调用 analyzePriceMovement
+    const results: any[] = [];
+    for (const pattern of allPatterns) {
+      // days 参数用于测试不同周期
+      const analyzeDays = criteria.sortBy === 'priceChange' ? 5 : 1;
+      const movement = await (this.historicalPatternService as any).analyzePriceMovement?.(pattern, analyzeDays);
+      if (!movement) continue;
+      const priceChange = movement.priceMovement.priceChanges.day5 ?? 0;
+      // 最小上涨幅度筛选
+      if (typeof criteria.minUpwardPercent === 'number' && priceChange < criteria.minUpwardPercent) {
+        continue;
+      }
+      results.push({
+        stockId: pattern.stockId,
+        stockName: pattern.stockName,
+        patternDate: pattern.timestamp,
+        patternType: pattern.type,
+        priceBeforePattern: pattern.candle.open,
+        currentPrice: pattern.candle.close,
+        priceChange,
+        volumeChange: movement.priceMovement.volumeChanges.day5 ?? 0,
+        significance: pattern.significance,
+        rank: 1 // 可根据排序后赋值
+      });
+    }
+    // 7. 排序
+    if (criteria.sortBy) {
+      results.sort((a, b) => {
+        const dir = criteria.sortDirection === 'asc' ? 1 : -1;
+        if (a[criteria.sortBy] < b[criteria.sortBy]) return -1 * dir;
+        if (a[criteria.sortBy] > b[criteria.sortBy]) return 1 * dir;
+        return 0;
+      });
+    }
+    // 8. 分页
+    let page = criteria.page || 1;
+    let limit = criteria.limit || results.length;
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const paged = results.slice(start, end);
+    // 9. 重新赋 rank
+    paged.forEach((item, idx) => { item.rank = start + idx + 1; });
+    return {
+      stocks: paged,
+      total: results.length,
+      criteria
+    };
   }
 }
