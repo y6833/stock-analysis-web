@@ -1,7 +1,7 @@
-'use strict'
+'use strict';
 
 module.exports = (app) => {
-  const { INTEGER, DATE, DECIMAL, JSON } = app.Sequelize
+  const { INTEGER, DATE, DECIMAL, JSON } = app.Sequelize;
 
   const RiskMonitoringStatus = app.model.define(
     'risk_monitoring_status',
@@ -96,24 +96,23 @@ module.exports = (app) => {
       tableName: 'risk_monitoring_status',
       underscored: true,
     }
-  )
+  );
 
   RiskMonitoringStatus.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 关联用户 - 使用唯一别名
     RiskMonitoringStatus.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: `${prefix}_${prefix}_riskMonitoringStatusUser`,
-    })
+    });
 
     // 关联投资组合
     RiskMonitoringStatus.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: `${prefix}_${prefix}_portfolio`,
-    })
-  }
+    });
+  };
 
-  return RiskMonitoringStatus
-}
+  return RiskMonitoringStatus;
+};

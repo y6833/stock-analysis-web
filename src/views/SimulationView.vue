@@ -6,7 +6,7 @@ import {
   type SimulationPosition,
   type SimulationTransaction,
 } from '@/services/simulationService'
-import StockSearch from '@/components/StockSearch.vue'
+import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 import { useToast } from '@/composables/useToast'
 
 // 使用 Toast 提示
@@ -283,7 +283,7 @@ onMounted(() => {
 
           <div class="form-group">
             <label>选择股票</label>
-            <StockSearch @select="selectStock" />
+            <UnifiedStockSearch @select="selectStock" />
           </div>
 
           <div class="form-group">

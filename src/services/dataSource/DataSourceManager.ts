@@ -30,6 +30,12 @@ interface DataSourceHealth {
   errorCount: number
   lastError?: string
   responseTime: number
+  successRate: number // 成功率 (0-1)
+  totalRequests: number // 总请求数
+  successfulRequests: number // 成功请求数
+  averageResponseTime: number // 平均响应时间
+  lastSuccessTime: number // 最后成功时间
+  consecutiveFailures: number // 连续失败次数
 }
 
 /**

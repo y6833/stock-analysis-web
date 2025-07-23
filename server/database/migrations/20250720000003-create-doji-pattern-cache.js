@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 /**
  * 创建十字星形态查询结果缓存表
@@ -60,7 +60,7 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
-    })
+    });
 
     // 创建分页查询配置表
     await queryInterface.createTable('doji_pattern_pagination_config', {
@@ -108,24 +108,24 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
-    })
+    });
 
     // 添加索引
     await queryInterface.addIndex('doji_pattern_query_cache', ['cache_key'], {
       name: 'idx_doji_pattern_query_cache_key',
-    })
+    });
 
     await queryInterface.addIndex('doji_pattern_query_cache', ['expires_at'], {
       name: 'idx_doji_pattern_query_cache_expires_at',
-    })
+    });
 
     await queryInterface.addIndex('doji_pattern_query_cache', ['last_hit_at'], {
       name: 'idx_doji_pattern_query_cache_last_hit_at',
-    })
+    });
 
     await queryInterface.addIndex('doji_pattern_pagination_config', ['query_type'], {
       name: 'idx_doji_pattern_pagination_config_query_type',
-    })
+    });
 
     // 插入默认分页配置
     await queryInterface.bulkInsert('doji_pattern_pagination_config', [
@@ -156,11 +156,11 @@ module.exports = {
         created_at: new Date(),
         updated_at: new Date(),
       },
-    ])
+    ]);
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('doji_pattern_pagination_config')
-    await queryInterface.dropTable('doji_pattern_query_cache')
+    await queryInterface.dropTable('doji_pattern_pagination_config');
+    await queryInterface.dropTable('doji_pattern_query_cache');
   },
-}
+};

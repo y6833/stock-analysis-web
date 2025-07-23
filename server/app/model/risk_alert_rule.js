@@ -1,7 +1,7 @@
-'use strict'
+'use strict';
 
 module.exports = (app) => {
-  const { STRING, INTEGER, DATE, BOOLEAN, JSON, ENUM } = app.Sequelize
+  const { STRING, INTEGER, DATE, BOOLEAN, JSON, ENUM } = app.Sequelize;
 
   const RiskAlertRule = app.model.define(
     'risk_alert_rule',
@@ -79,30 +79,29 @@ module.exports = (app) => {
       tableName: 'risk_alert_rules',
       underscored: true,
     }
-  )
+  );
 
   RiskAlertRule.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 关联用户 - 使用唯一别名
     RiskAlertRule.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: `${prefix}_${prefix}_riskAlertRuleUser`,
-    })
+    });
 
     // 关联投资组合
     RiskAlertRule.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: `${prefix}_${prefix}_portfolio`,
-    })
+    });
 
     // 关联预警记录
     RiskAlertRule.hasMany(app.model.RiskAlertLog, {
       foreignKey: 'ruleId',
       as: `${prefix}_${prefix}_alertLogs`,
-    })
-  }
+    });
+  };
 
-  return RiskAlertRule
-}
+  return RiskAlertRule;
+};

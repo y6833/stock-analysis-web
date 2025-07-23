@@ -43,7 +43,6 @@ module.exports = app => {
   PagePermission.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
 
-
     // 防止重复关联
     if (PagePermission.associations && Object.keys(PagePermission.associations).length > 0) {
       return;

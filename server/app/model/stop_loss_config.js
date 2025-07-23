@@ -1,7 +1,7 @@
-'use strict'
+'use strict';
 
 module.exports = (app) => {
-  const { STRING, INTEGER, DECIMAL, BOOLEAN, DATE, JSON } = app.Sequelize
+  const { STRING, INTEGER, DECIMAL, BOOLEAN, DATE, JSON } = app.Sequelize;
 
   const StopLossConfig = app.model.define(
     'stop_loss_config',
@@ -132,24 +132,23 @@ module.exports = (app) => {
       underscored: true,
       comment: '止损止盈配置表',
     }
-  )
+  );
 
   StopLossConfig.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 关联用户 - 使用唯一别名
     app.model.StopLossConfig.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: `${prefix}_${prefix}_stopLossConfigUser`,
-    })
+    });
 
     // 关联投资组合
     app.model.StopLossConfig.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: `${prefix}_${prefix}_portfolio`,
-    })
-  }
+    });
+  };
 
-  return StopLossConfig
-}
+  return StopLossConfig;
+};

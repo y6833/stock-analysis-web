@@ -1,46 +1,38 @@
-'use strict';
+'use strict'
 
 /**
- * @param {Egg.EggAppInfo} appInfo app info
+ * 默认配置
  */
 module.exports = (appInfo) => {
-  /**
-   * built-in config
-   * @type {Egg.EggAppConfig}
-   **/
-  const config = (exports = {});
+  const config = {}
 
-  // 使用 appInfo.name 作为 cookie 签名的 key
-  config.keys = appInfo.name + '_1682323267123_3344';
+  // 应用名称
+  config.name = 'Stock Analysis Web'
 
-  // 添加中间件
-  config.middleware = ['auth', 'errorHandler'];
+  // 应用密钥
+  config.keys = appInfo.name + '_1234567890'
 
-  // 错误处理中间件配置
-  config.errorHandler = {
-    match: '/api',
-  };
+  // 中间件配置
+  config.middleware = ['errorHandler', 'security', 'apiLogger']
+
+  // 加载数据质量配置
+  const dataQualityConfig = require('./config.data_quality')
+
+  // 加载安全配置
+  const securityConfig = require('./config.security');
 
   // 安全配置
   config.security = {
-    csrf: {
-      enable: false, // 关闭 CSRF，前后端分离项目通常不需要
-    },
-    domainWhiteList: ['http://localhost:5173'], // 允许的域名白名单
-  };
+    ...securityConfig.security,
+    domainWhiteList: ['http://localhost:8080'],
+  }
 
-  // CORS 配置
+  // CORS配置
   config.cors = {
-    origin: '*', // 允许所有域名访问
+    origin: '*',
     allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH,OPTIONS',
-    credentials: true, // 允许发送 Cookie
-  };
-
-  // JWT 配置
-  config.jwt = {
-    secret: 'your-secret-key', // JWT 密钥，与模拟认证服务器使用的密钥相同
-    expiresIn: '24h', // 令牌过期时间
-  };
+    credentials: true,
+  }
 
   // 数据库配置
   config.sequelize = {
@@ -49,201 +41,229 @@ module.exports = (appInfo) => {
     port: 3306,
     database: 'stock_analysis',
     username: 'root',
-    password: 'root', // 请修改为你的数据库密码
-    timezone: '+08:00', // 东八区
+    password: 'root',
+    timezone: '+08:00',
     define: {
-      underscored: true, // 使用下划线命名法
-      freezeTableName: false, // 不冻结表名
-      charset: 'utf8mb4', // 字符集
-      dialectOptions: {
-        collate: 'utf8mb4_general_ci', // 排序规则
-      },
-      timestamps: true, // 自动添加 createdAt 和 updatedAt 字段
+      underscored: true,
+      freezeTableName: true,
     },
-  };
+  }
 
-  // 参数验证配置
-  config.validate = {
-    convert: true, // 自动转换类型
-    validateRoot: true, // 验证根对象
-  };
+  // Redis配置
+  config.redis = {
+    client: {
+      port: 6379,
+      host: '127.0.0.1',
+      password: '123456',
+      db: 0,
+    },
+  }
+
+  // JWT配置
+  config.jwt = {
+    secret: 'your-jwt-secret',
+    expiresIn: '7d',
+  }
+
+  // 缓存配置
+  config.cache = {
+    enabled: true,
+    prefix: 'app:cache:',
+    defaultTTL: 300,
+    layers: {
+      client: {
+        enabled: true,
+        maxAge: {
+          static: 86400, // 静态资源缓存1天
+          api: 60, // API响应缓存60秒
+          user: 300, // 用户数据缓存5分钟
+        },
+      },
+      server: {
+        enabled: true,
+        ttl: {
+          stock: 300, // 股票数据缓存5分钟
+          user: 600, // 用户数据缓存10分钟
+          market: 60, // 市场数据缓存1分钟
+          search: 1800, // 搜索结果缓存30分钟
+          static: 86400, // 静态数据缓存1天
+        },
+      },
+      database: {
+        enabled: true,
+        refreshInterval: {
+          stock: 3600, // 股票数据每小时刷新
+          index: 1800, // 指数数据每30分钟刷新
+          industry: 7200, // 行业数据每2小时刷新
+        },
+      },
+    },
+  }
+
+  // 数据源配置
+  config.dataSource = {
+    // 数据源列表及其配置
+    sources: {
+      tushare: {
+        priority: 100,
+        reliability: 0.95,
+        performance: 0.9,
+        costPerRequest: 1.0,
+        enabled: true,
+      },
+      akshare: {
+        priority: 90,
+        reliability: 0.9,
+        performance: 0.85,
+        costPerRequest: 0.5,
+        enabled: true,
+      },
+      sina: {
+        priority: 80,
+        reliability: 0.8,
+        performance: 0.95,
+        costPerRequest: 0.0,
+        enabled: true,
+      },
+      eastmoney: {
+        priority: 70,
+        reliability: 0.85,
+        performance: 0.8,
+        costPerRequest: 0.0,
+        enabled: true,
+      },
+      netease: {
+        priority: 60,
+        reliability: 0.75,
+        performance: 0.75,
+        costPerRequest: 0.0,
+        enabled: true,
+      },
+      tencent: {
+        priority: 50,
+        reliability: 0.7,
+        performance: 0.7,
+        costPerRequest: 0.0,
+        enabled: true,
+      },
+      yahoo_finance: {
+        priority: 40,
+        reliability: 0.6,
+        performance: 0.6,
+        costPerRequest: 0.0,
+        enabled: true,
+      },
+      alltick: {
+        priority: 30,
+        reliability: 0.5,
+        performance: 0.5,
+        costPerRequest: 2.0,
+        enabled: true,
+      },
+      juhe: {
+        priority: 20,
+        reliability: 0.4,
+        performance: 0.4,
+        costPerRequest: 0.1,
+        enabled: true,
+      },
+      zhitu: {
+        priority: 10,
+        reliability: 0.3,
+        performance: 0.3,
+        costPerRequest: 0.2,
+        enabled: true,
+      },
+    },
+    // 故障转移配置
+    failover: {
+      enabled: true,
+      maxRetries: 3,
+      retryDelay: 1000,
+      healthCheckInterval: 5 * 60 * 1000, // 5分钟
+      recoveryThreshold: 3, // 连续成功次数阈值
+      failureThreshold: 3, // 连续失败次数阈值
+      timeoutThreshold: 10000, // 超时阈值（毫秒）
+    },
+    // 请求优化器配置
+    requestOptimizer: {
+      // 功能开关
+      batchingEnabled: true, // 启用批处理
+      throttlingEnabled: true, // 启用节流
+      parallelEnabled: true, // 启用并行请求优化
+      adaptiveEnabled: true, // 启用自适应优化
+
+      // 速率限制配置
+      rateLimits: {
+        default: {
+          maxRequests: 20, // 默认每个数据源每秒最多20个请求
+          windowMs: 1000, // 1秒窗口期
+          maxBatchSize: 50, // 最大批处理大小
+          minBatchWait: 50, // 最小批处理等待时间(ms)
+          maxBatchWait: 200, // 最大批处理等待时间(ms)
+        },
+        tushare: {
+          maxRequests: 10,
+          windowMs: 1000,
+          maxBatchSize: 100,
+          minBatchWait: 100,
+          maxBatchWait: 300,
+        },
+        akshare: {
+          maxRequests: 15,
+          windowMs: 1000,
+          maxBatchSize: 80,
+          minBatchWait: 50,
+          maxBatchWait: 200,
+        },
+        sina: {
+          maxRequests: 30,
+          windowMs: 1000,
+          maxBatchSize: 50,
+          minBatchWait: 20,
+          maxBatchWait: 100,
+        },
+        eastmoney: {
+          maxRequests: 20,
+          windowMs: 1000,
+          maxBatchSize: 60,
+          minBatchWait: 30,
+          maxBatchWait: 150,
+        },
+        alltick: {
+          maxRequests: 5,
+          windowMs: 1000,
+          maxBatchSize: 20,
+          minBatchWait: 200,
+          maxBatchWait: 500,
+        },
+      },
+
+      // 并行请求配置
+      parallel: {
+        maxConcurrent: 5, // 最大并发请求数
+        priorityLevels: 3, // 优先级级别数
+        timeout: 10000, // 请求超时时间(ms)
+        retryCount: 2, // 重试次数
+        retryDelay: 1000, // 重试延迟(ms)
+        adaptiveTimeout: true, // 自适应超时
+      },
+    },
+  }
+
+  // 集群配置
+  config.cluster = {
+    listen: {
+      port: 7001,
+    },
+  }
 
   // 日志配置
   config.logger = {
-    dir: require('path').join(appInfo.root, 'logs'),
+    dir: `${appInfo.root}/logs`,
     level: 'INFO',
     consoleLevel: 'INFO',
-  };
+  }
 
-  // Tushare API 配置
-  config.tushare = {
-    token: process.env.TUSHARE_TOKEN || '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61', // 使用用户提供的 token
-    api_url: 'http://api.tushare.pro',
-    enableAutoRefresh: false, // 默认禁用自动刷新缓存，避免频繁的后台API调用
-  };
-
-  // AllTick API 配置
-  config.alltick = {
-    token: '85b75304f6ef5a52123479654ddab44e-c-app',
-    baseUrl: 'https://quote.alltick.io/quote-stock-b-api',
-    timeout: 15000,
-    enabled: true,
-  };
-
-  // MySQL 客户端配置（用于直接操作 MySQL）
-  config.mysql = {
-    client: {
-      host: '127.0.0.1',
-      port: '3306',
-      user: 'root',
-      password: 'root',
-      database: 'stock_analysis',
-    },
-    app: true,
-    agent: false,
-  };
-
-  // Redis 配置 - 暂时禁用以解决连接问题
-  // config.redis = {
-  //   client: {
-  //     port: 6379,
-  //     host: '127.0.0.1',
-  //     password: '123456', // Redis 密码
-  //     db: 0,
-  //     retry_strategy: function (options) {
-  //       // 如果重试次数超过3次，就不再重试
-  //       if (options.attempt > 3) {
-  //         return undefined
-  //       }
-  //       // 重试间隔为1000毫秒
-  //       return 1000
-  //     },
-  //     // 连接超时时间
-  //     connect_timeout: 5000,
-  //     // 添加更多容错配置
-  //     lazyConnect: true,
-  //     maxRetriesPerRequest: 3,
-  //   },
-  //   // 允许 Redis 连接失败，不影响应用启动
-  //   allowFail: true,
-  // }
-
-  // 认证配置
-  config.auth = {
-    enable: true, // 默认启用认证
-    // 只在开发环境中提供默认用户
-    defaultUser: process.env.NODE_ENV === 'development' ? { id: 1, username: 'dev_user' } : null,
-  };
-
-  // ClickHouse配置
-  config.clickhouse = {
-    url: 'http://127.0.0.1',
-    port: 8123,
-    database: 'stock_data',
-    debug: false,
-    basicAuth: null, // 如果需要认证: { username: 'user', password: 'pass' }
-  };
-
-  // WebSocket配置
-  config.io = {
-    init: {
-      wsEngine: 'ws',
-    },
-    namespace: {
-      '/': {
-        connectionMiddleware: [],
-        packetMiddleware: [],
-      },
-      '/realtime': {
-        connectionMiddleware: ['auth'],
-        packetMiddleware: [],
-      },
-    },
-  };
-
-  // 数据源配置
-  config.dataSources = {
-    tushare: {
-      enabled: true,
-      token: '983b25aa025eee598034c4741dc776ddc53ddcffbb180cf61',
-      priority: 1,
-      timeout: 10000,
-      maxRetries: 3,
-    },
-    alltick: {
-      enabled: true,
-      token: '85b75304f6ef5a52123479654ddab44e-c-app',
-      priority: 2,
-      timeout: 15000,
-      maxRetries: 3,
-      baseUrl: 'https://quote.tradeswitcher.com/quote-stock-b-api',
-    },
-    akshare: {
-      enabled: true,
-      priority: 3,
-      timeout: 15000,
-      maxRetries: 3,
-    },
-    joinquant: {
-      enabled: false, // 需要申请API token
-      token: '',
-      priority: 4,
-      timeout: 15000,
-      maxRetries: 3,
-    },
-    sina: {
-      enabled: true,
-      priority: 5,
-      timeout: 8000,
-      maxRetries: 2,
-    },
-    eastmoney: {
-      enabled: true,
-      priority: 6,
-      timeout: 8000,
-      maxRetries: 2,
-    },
-    futu: {
-      enabled: true,
-      priority: 7,
-      timeout: 15000,
-      maxRetries: 3,
-      host: '127.0.0.1',
-      port: 11111, // OpenD默认端口
-    },
-  };
-
-  // 实时数据推送配置
-  config.realtime = {
-    enabled: true,
-    pushInterval: {
-      quote: 5000,    // 行情推送间隔（毫秒）
-      kline: 60000,   // K线推送间隔
-      trade: 1000,    // 交易推送间隔
-      depth: 3000,    // 深度推送间隔
-    },
-    maxSubscriptions: 100, // 单个客户端最大订阅数
-    heartbeatInterval: 30000, // 心跳间隔
-  };
-
-  // 数据同步配置
-  config.dataSync = {
-    enabled: true,
-    batchSize: 20,           // 批处理大小
-    batchDelay: 1000,        // 批次间延迟
-    maxConcurrency: 5,       // 最大并发数
-    retryAttempts: 3,        // 重试次数
-    retryDelay: 2000,        // 重试延迟
-    cacheExpiry: {
-      quote: 300,            // 行情缓存过期时间（秒）
-      index: 300,            // 指数缓存过期时间
-      industry: 600,         // 行业缓存过期时间
-      news: 900,             // 新闻缓存过期时间
-      financial: 3600,       // 财务数据缓存过期时间
-    },
-  };
-
-  return {
-    ...config,
-  };
-};
+  return config
+}

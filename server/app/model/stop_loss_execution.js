@@ -1,7 +1,7 @@
-'use strict'
+'use strict';
 
 module.exports = (app) => {
-  const { STRING, INTEGER, DECIMAL, BOOLEAN, DATE, TEXT, JSON } = app.Sequelize
+  const { STRING, INTEGER, DECIMAL, BOOLEAN, DATE, TEXT, JSON } = app.Sequelize;
 
   const StopLossExecution = app.model.define(
     'stop_loss_execution',
@@ -151,24 +151,23 @@ module.exports = (app) => {
       underscored: true,
       comment: '止损止盈执行记录表',
     }
-  )
+  );
 
   StopLossExecution.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 关联用户 - 使用唯一别名
     app.model.StopLossExecution.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: `${prefix}_${prefix}_stopLossExecutionUser`,
-    })
+    });
 
     // 关联止损订单
     app.model.StopLossExecution.belongsTo(app.model.StopLossOrder, {
       foreignKey: 'orderId',
       as: `${prefix}_${prefix}_order`,
-    })
-  }
+    });
+  };
 
-  return StopLossExecution
-}
+  return StopLossExecution;
+};

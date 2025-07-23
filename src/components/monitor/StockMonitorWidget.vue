@@ -1,5 +1,5 @@
 <template>
-  <div class="stock-monitor-widget" :class="{ 'minimized': isMinimized, 'floating': isFloating }">
+  <div class="stock-monitor-widget" :class="{ minimized: isMinimized, floating: isFloating }">
     <!-- 标题栏 -->
     <div class="widget-header" @mousedown="startDrag">
       <div class="header-left">
@@ -12,7 +12,7 @@
           <span>{{ soundEnabled ? '🔊' : '🔇' }}</span>
         </button>
         <button class="control-btn" @click="refreshData" :disabled="isRefreshing">
-          <span :class="{ 'rotating': isRefreshing }">🔄</span>
+          <span :class="{ rotating: isRefreshing }">🔄</span>
         </button>
         <button class="control-btn" @click="toggleMinimize">
           <span>{{ isMinimized ? '📖' : '📕' }}</span>
@@ -31,7 +31,7 @@
       <!-- 快速添加 -->
       <div class="quick-add-section">
         <div class="search-input-container">
-          <StockSearch
+          <UnifiedStockSearch
             placeholder="输入股票代码或名称"
             @select="onStockSelect"
             @clear="onStockClear"
@@ -70,10 +70,18 @@
           </div>
 
           <div class="stock-actions">
-            <button @click.stop="setAlert(stock)" class="action-btn" :class="{ active: stock.hasAlert }">
+            <button
+              @click.stop="setAlert(stock)"
+              class="action-btn"
+              :class="{ active: stock.hasAlert }"
+            >
               <span>🔔</span>
             </button>
-            <button @click.stop="toggleFavorite(stock)" class="action-btn" :class="{ active: stock.isFavorite }">
+            <button
+              @click.stop="toggleFavorite(stock)"
+              class="action-btn"
+              :class="{ active: stock.isFavorite }"
+            >
               <span>{{ stock.isFavorite ? '⭐' : '☆' }}</span>
             </button>
           </div>
@@ -118,7 +126,9 @@
           <div class="alert-form">
             <div class="form-group">
               <label>股票:</label>
-              <span class="stock-info">{{ selectedStock?.symbol }} - {{ selectedStock?.name }}</span>
+              <span class="stock-info"
+                >{{ selectedStock?.symbol }} - {{ selectedStock?.name }}</span
+              >
             </div>
             <div class="form-group">
               <label>当前价格:</label>
@@ -162,7 +172,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import StockSearch from '@/components/StockSearch.vue'
+import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 import type { Stock } from '@/types/stock'
 
 const router = useRouter()
@@ -190,7 +200,7 @@ const watchlist = ref([
     changePercent: 1.88,
     hasAlert: false,
     isFavorite: true,
-    lastPrice: 12.22
+    lastPrice: 12.22,
   },
   {
     symbol: '600519',
@@ -200,22 +210,22 @@ const watchlist = ref([
     changePercent: -0.82,
     hasAlert: true,
     isFavorite: false,
-    lastPrice: 1861.00
-  }
+    lastPrice: 1861.0,
+  },
 ])
 
 // 提醒表单
 const alertForm = ref({
   type: 'price_above',
   value: '',
-  soundEnabled: true
+  soundEnabled: true,
 })
 
 // 计算属性
 const stats = computed(() => {
-  const rising = watchlist.value.filter(stock => stock.change > 0).length
-  const falling = watchlist.value.filter(stock => stock.change < 0).length
-  const unchanged = watchlist.value.filter(stock => stock.change === 0).length
+  const rising = watchlist.value.filter((stock) => stock.change > 0).length
+  const falling = watchlist.value.filter((stock) => stock.change < 0).length
+  const unchanged = watchlist.value.filter((stock) => stock.change === 0).length
   return { rising, falling, unchanged }
 })
 
@@ -263,7 +273,7 @@ const addSelectedStock = () => {
   if (!selectedStock.value) return
 
   // 检查是否已存在
-  const exists = watchlist.value.find(item => item.symbol === selectedStock.value!.symbol)
+  const exists = watchlist.value.find((item) => item.symbol === selectedStock.value!.symbol)
   if (exists) {
     alert('股票已在监控列表中')
     return
@@ -273,12 +283,12 @@ const addSelectedStock = () => {
   const newStock = {
     symbol: selectedStock.value.symbol || selectedStock.value.tsCode,
     name: selectedStock.value.name,
-    price: 10.00, // 这里应该调用API获取真实价格
+    price: 10.0, // 这里应该调用API获取真实价格
     change: 0,
     changePercent: 0,
     hasAlert: false,
     isFavorite: false,
-    lastPrice: 10.00
+    lastPrice: 10.0,
   }
 
   watchlist.value.push(newStock)
@@ -286,7 +296,7 @@ const addSelectedStock = () => {
 }
 
 const removeStock = (symbol) => {
-  const index = watchlist.value.findIndex(stock => stock.symbol === symbol)
+  const index = watchlist.value.findIndex((stock) => stock.symbol === symbol)
   if (index > -1) {
     watchlist.value.splice(index, 1)
   }
@@ -318,7 +328,7 @@ const toggleFavorite = (stock) => {
 const viewStockDetail = (stock) => {
   router.push({
     path: '/stock',
-    query: { symbol: stock.symbol }
+    query: { symbol: stock.symbol },
   })
 }
 
@@ -365,7 +375,7 @@ const startDrag = (e) => {
   const rect = e.currentTarget.parentElement.getBoundingClientRect()
   dragOffset.value = {
     x: e.clientX - rect.left,
-    y: e.clientY - rect.top
+    y: e.clientY - rect.top,
   }
 
   document.addEventListener('mousemove', onDrag)
@@ -377,8 +387,8 @@ const onDrag = (e) => {
 
   const widget = document.querySelector('.stock-monitor-widget')
   if (widget) {
-    widget.style.left = (e.clientX - dragOffset.value.x) + 'px'
-    widget.style.top = (e.clientY - dragOffset.value.y) + 'px'
+    widget.style.left = e.clientX - dragOffset.value.x + 'px'
+    widget.style.top = e.clientY - dragOffset.value.y + 'px'
   }
 }
 
@@ -491,8 +501,12 @@ onMounted(() => {
 }
 
 @keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .widget-content {

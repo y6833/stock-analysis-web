@@ -9,6 +9,7 @@
       :stock-name="stockName"
       :timeframe="timeframe"
       @pattern-selected="handlePatternSelected"
+      @analyze-pattern="handleAnalyzePattern"
       @add-to-watchlist="handleAddToWatchlist"
     ></doji-pattern-detection>
   </div>
@@ -214,6 +215,11 @@ export default defineComponent({
       console.log('Pattern selected:', pattern)
     }
 
+    // 处理形态分析
+    const handleAnalyzePattern = (pattern: DojiPattern) => {
+      console.log('Analyze pattern:', pattern)
+    }
+
     // 处理添加到关注列表
     const handleAddToWatchlist = (pattern: DojiPattern) => {
       console.log('Add to watchlist:', pattern)
@@ -254,6 +260,7 @@ export default defineComponent({
       chartInstance,
       klineData,
       handlePatternSelected,
+      handleAnalyzePattern,
       handleAddToWatchlist,
     }
   },

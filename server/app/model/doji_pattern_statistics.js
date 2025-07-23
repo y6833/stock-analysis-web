@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
 /**
  * 十字星形态统计缓存模型
  */
 module.exports = (app) => {
-  const { INTEGER, ENUM, DECIMAL, JSON, DATE } = app.Sequelize
+  const { INTEGER, ENUM, DECIMAL, JSON, DATE } = app.Sequelize;
 
   const DojiPatternStatistics = app.model.define(
     'doji_pattern_statistics',
@@ -75,7 +75,7 @@ module.exports = (app) => {
         },
       ],
     }
-  )
+  );
 
   // 静态方法：获取或创建统计记录
   DojiPatternStatistics.findOrCreateStats = async function (
@@ -97,10 +97,10 @@ module.exports = (app) => {
         priceDistribution: {},
         lastUpdated: new Date(),
       },
-    })
+    });
 
-    return stats
-  }
+    return stats;
+  };
 
   // 静态方法：更新统计数据
   DojiPatternStatistics.updateStats = async function (
@@ -108,7 +108,7 @@ module.exports = (app) => {
     analysisPeriod,
     marketCondition = null
   ) {
-    const stats = await this.findOrCreateStats(patternType, analysisPeriod, marketCondition)
+    const stats = await this.findOrCreateStats(patternType, analysisPeriod, marketCondition);
 
     // 查询对应的形态数据
     const whereClause = {
@@ -116,44 +116,44 @@ module.exports = (app) => {
       priceMovement: {
         [app.Sequelize.Op.ne]: null,
       },
-    }
+    };
 
     // 根据分析周期设置日期范围
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - analysisPeriod)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - analysisPeriod);
     whereClause.patternDate = {
       [app.Sequelize.Op.between]: [startDate, endDate],
-    }
+    };
 
     // 如果指定了市场环境，添加条件
     if (marketCondition) {
       whereClause[app.Sequelize.Op.and] = app.Sequelize.literal(
         `JSON_EXTRACT(context, '$.trend') = '${marketCondition}'`
-      )
+      );
     }
 
     const patterns = await app.model.DojiPattern.findAll({
       where: whereClause,
-    })
+    });
 
     // 计算统计数据
-    const totalPatterns = patterns.length
-    const upwardPatterns = patterns.filter((p) => p.isUpward).length
-    const successRate = totalPatterns > 0 ? (upwardPatterns / totalPatterns) * 100 : 0
+    const totalPatterns = patterns.length;
+    const upwardPatterns = patterns.filter((p) => p.isUpward).length;
+    const successRate = totalPatterns > 0 ? (upwardPatterns / totalPatterns) * 100 : 0;
 
     // 计算平均价格变化
     const priceChanges = patterns
       .filter((p) => p.priceMovement && p.priceMovement.day5 !== undefined)
-      .map((p) => p.priceMovement.day5)
+      .map((p) => p.priceMovement.day5);
 
     const avgPriceChange =
       priceChanges.length > 0
         ? priceChanges.reduce((sum, change) => sum + change, 0) / priceChanges.length
-        : 0
+        : 0;
 
     // 计算价格分布
-    const priceDistribution = this.calculatePriceDistribution(priceChanges)
+    const priceDistribution = this.calculatePriceDistribution(priceChanges);
 
     // 更新统计记录
     await stats.update({
@@ -163,15 +163,15 @@ module.exports = (app) => {
       avgPriceChange: Math.round(avgPriceChange * 10000) / 10000,
       priceDistribution,
       lastUpdated: new Date(),
-    })
+    });
 
-    return stats
-  }
+    return stats;
+  };
 
   // 静态方法：计算价格分布
   DojiPatternStatistics.calculatePriceDistribution = function (priceChanges) {
     if (priceChanges.length === 0) {
-      return {}
+      return {};
     }
 
     const distribution = {
@@ -187,22 +187,22 @@ module.exports = (app) => {
       mean: 0,
       median: 0,
       stdDev: 0,
-    }
+    };
 
     // 计算范围分布
     priceChanges.forEach((change) => {
-      if (change < -10) distribution.ranges['below_-10']++
-      else if (change < -5) distribution.ranges['-10_to_-5']++
-      else if (change < 0) distribution.ranges['-5_to_0']++
-      else if (change < 5) distribution.ranges['0_to_5']++
-      else if (change < 10) distribution.ranges['5_to_10']++
-      else distribution.ranges['above_10']++
-    })
+      if (change < -10) distribution.ranges['below_-10']++;
+      else if (change < -5) distribution.ranges['-10_to_-5']++;
+      else if (change < 0) distribution.ranges['-5_to_0']++;
+      else if (change < 5) distribution.ranges['0_to_5']++;
+      else if (change < 10) distribution.ranges['5_to_10']++;
+      else distribution.ranges['above_10']++;
+    });
 
     // 计算统计指标
-    const sorted = priceChanges.sort((a, b) => a - b)
-    distribution.mean = priceChanges.reduce((sum, val) => sum + val, 0) / priceChanges.length
-    distribution.median = sorted[Math.floor(sorted.length / 2)]
+    const sorted = priceChanges.sort((a, b) => a - b);
+    distribution.mean = priceChanges.reduce((sum, val) => sum + val, 0) / priceChanges.length;
+    distribution.median = sorted[Math.floor(sorted.length / 2)];
 
     // 计算百分位数
     distribution.percentiles = {
@@ -210,30 +210,30 @@ module.exports = (app) => {
       p25: sorted[Math.floor(sorted.length * 0.25)],
       p75: sorted[Math.floor(sorted.length * 0.75)],
       p90: sorted[Math.floor(sorted.length * 0.9)],
-    }
+    };
 
     // 计算标准差
     const variance =
       priceChanges.reduce((sum, val) => sum + Math.pow(val - distribution.mean, 2), 0) /
-      priceChanges.length
-    distribution.stdDev = Math.sqrt(variance)
+      priceChanges.length;
+    distribution.stdDev = Math.sqrt(variance);
 
-    return distribution
-  }
+    return distribution;
+  };
 
   // 静态方法：获取统计摘要
   DojiPatternStatistics.getStatsSummary = async function (
     patternType = null,
     analysisPeriod = null
   ) {
-    const whereClause = {}
+    const whereClause = {};
 
     if (patternType) {
-      whereClause.patternType = patternType
+      whereClause.patternType = patternType;
     }
 
     if (analysisPeriod) {
-      whereClause.analysisPeriod = analysisPeriod
+      whereClause.analysisPeriod = analysisPeriod;
     }
 
     return await this.findAll({
@@ -243,8 +243,8 @@ module.exports = (app) => {
         ['analysisPeriod', 'asc'],
         ['marketCondition', 'asc'],
       ],
-    })
-  }
+    });
+  };
 
   // 静态方法：检查统计数据是否需要更新
   DojiPatternStatistics.needsUpdate = async function (
@@ -259,15 +259,15 @@ module.exports = (app) => {
         analysisPeriod,
         marketCondition,
       },
-    })
+    });
 
     if (!stats) {
-      return true
+      return true;
     }
 
-    const ageInSeconds = (new Date() - stats.lastUpdated) / 1000
-    return ageInSeconds > maxAge
-  }
+    const ageInSeconds = (new Date() - stats.lastUpdated) / 1000;
+    return ageInSeconds > maxAge;
+  };
 
-  return DojiPatternStatistics
-}
+  return DojiPatternStatistics;
+};

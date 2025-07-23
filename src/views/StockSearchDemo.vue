@@ -2,57 +2,50 @@
   <div class="stock-search-demo">
     <div class="demo-container">
       <h1 class="demo-title">股票搜索组件演示</h1>
-      
+
       <!-- 基础用法 -->
       <section class="demo-section">
         <h2 class="section-title">基础用法</h2>
         <div class="demo-item">
           <label class="demo-label">默认搜索框：</label>
-          <StockSearchInput
-            @select="onStockSelect"
-            @clear="onStockClear"
-            @search="onSearch"
-          />
+          <BaseSearchInput @select="onStockSelect" @clear="onStockClear" @search="onSearch" />
         </div>
       </section>
-      
+
       <!-- 自定义配置 -->
       <section class="demo-section">
         <h2 class="section-title">自定义配置</h2>
         <div class="demo-item">
           <label class="demo-label">自定义占位符和最大结果数：</label>
-          <StockSearchInput
+          <BaseSearchInput
             placeholder="请输入股票代码或名称..."
             :max-results="5"
             :debounce-delay="500"
             @select="onStockSelect"
           />
         </div>
-        
+
         <div class="demo-item">
           <label class="demo-label">自动聚焦：</label>
-          <StockSearchInput
+          <BaseSearchInput
             placeholder="自动聚焦的搜索框"
             :auto-focus="true"
             @select="onStockSelect"
           />
         </div>
-        
+
         <div class="demo-item">
           <label class="demo-label">禁用状态：</label>
-          <StockSearchInput
-            placeholder="禁用的搜索框"
-            :disabled="true"
-          />
+          <BaseSearchInput placeholder="禁用的搜索框" :disabled="true" />
         </div>
       </section>
-      
+
       <!-- 事件监听 -->
       <section class="demo-section">
         <h2 class="section-title">事件监听</h2>
         <div class="demo-item">
           <label class="demo-label">带事件监听的搜索框：</label>
-          <StockSearchInput
+          <BaseSearchInput
             ref="eventSearchRef"
             placeholder="监听所有事件"
             @select="onStockSelect"
@@ -62,14 +55,14 @@
             @search="onSearch"
           />
         </div>
-        
+
         <div class="demo-controls">
           <button @click="focusSearch" class="demo-button">聚焦搜索框</button>
           <button @click="clearSearch" class="demo-button">清除搜索</button>
           <button @click="searchStock" class="demo-button">搜索"平安"</button>
         </div>
       </section>
-      
+
       <!-- 事件日志 -->
       <section class="demo-section">
         <h2 class="section-title">事件日志</h2>
@@ -84,13 +77,11 @@
             <span class="event-type">{{ event.type }}</span>
             <span class="event-data">{{ event.data }}</span>
           </div>
-          <div v-if="eventLog.length === 0" class="event-empty">
-            暂无事件记录
-          </div>
+          <div v-if="eventLog.length === 0" class="event-empty">暂无事件记录</div>
         </div>
         <button @click="clearEventLog" class="demo-button clear-log">清除日志</button>
       </section>
-      
+
       <!-- 选中的股票信息 -->
       <section class="demo-section" v-if="selectedStock">
         <h2 class="section-title">选中的股票</h2>
@@ -123,13 +114,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import StockSearchInput from '@/components/StockSearchInput.vue'
+import BaseSearchInput from '@/components/base/BaseSearchInput.vue'
 import type { Stock } from '@/types/stock'
 
 // 响应式状态
 const selectedStock = ref<Stock | null>(null)
-const eventLog = ref<Array<{ time: string, type: string, data: string }>>([])
-const eventSearchRef = ref<InstanceType<typeof StockSearchInput>>()
+const eventLog = ref<Array<{ time: string; type: string; data: string }>>([])
+const eventSearchRef = ref<InstanceType<typeof BaseSearchInput>>()
 
 // 事件处理方法
 const onStockSelect = (stock: Stock) => {
@@ -172,7 +163,7 @@ const addEventLog = (type: string, data: string) => {
   const now = new Date()
   const time = now.toLocaleTimeString()
   eventLog.value.unshift({ time, type, data })
-  
+
   // 限制日志数量
   if (eventLog.value.length > 50) {
     eventLog.value = eventLog.value.slice(0, 50)
@@ -412,35 +403,35 @@ const clearEventLog = () => {
   .stock-search-demo {
     padding: 12px;
   }
-  
+
   .demo-section {
     padding: 16px;
   }
-  
+
   .demo-title {
     font-size: 24px;
     margin-bottom: 24px;
   }
-  
+
   .section-title {
     font-size: 18px;
   }
-  
+
   .demo-controls {
     gap: 8px;
   }
-  
+
   .demo-button {
     padding: 6px 12px;
     font-size: 13px;
   }
-  
+
   .stock-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .stock-details {
     grid-template-columns: 1fr;
   }

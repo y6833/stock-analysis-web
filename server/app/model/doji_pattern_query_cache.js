@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
 /**
  * 十字星形态查询结果缓存模型
  */
 module.exports = (app) => {
-  const { INTEGER, STRING, JSON, DATE } = app.Sequelize
+  const { INTEGER, STRING, JSON, DATE } = app.Sequelize;
 
   const DojiPatternQueryCache = app.model.define(
     'doji_pattern_query_cache',
@@ -68,18 +68,18 @@ module.exports = (app) => {
         },
       ],
     }
-  )
+  );
 
   // 静态方法：生成缓存键
   DojiPatternQueryCache.generateCacheKey = function (queryParams) {
-    const crypto = require('crypto')
-    const sortedParams = JSON.stringify(queryParams, Object.keys(queryParams).sort())
-    return crypto.createHash('md5').update(sortedParams).digest('hex')
-  }
+    const crypto = require('crypto');
+    const sortedParams = JSON.stringify(queryParams, Object.keys(queryParams).sort());
+    return crypto.createHash('md5').update(sortedParams).digest('hex');
+  };
 
   // 静态方法：获取缓存结果
   DojiPatternQueryCache.getCache = async function (queryParams) {
-    const cacheKey = this.generateCacheKey(queryParams)
+    const cacheKey = this.generateCacheKey(queryParams);
 
     const cache = await this.findOne({
       where: {
@@ -88,24 +88,24 @@ module.exports = (app) => {
           [app.Sequelize.Op.gt]: new Date(),
         },
       },
-    })
+    });
 
     if (cache) {
       // 更新命中统计
       await cache.update({
         hitCount: cache.hitCount + 1,
         lastHitAt: new Date(),
-      })
+      });
 
       return {
         data: cache.resultData,
         totalCount: cache.totalCount,
         fromCache: true,
-      }
+      };
     }
 
-    return null
-  }
+    return null;
+  };
 
   // 静态方法：设置缓存
   DojiPatternQueryCache.setCache = async function (
@@ -114,9 +114,9 @@ module.exports = (app) => {
     totalCount,
     cacheDuration = 300
   ) {
-    const cacheKey = this.generateCacheKey(queryParams)
-    const expiresAt = new Date()
-    expiresAt.setSeconds(expiresAt.getSeconds() + cacheDuration)
+    const cacheKey = this.generateCacheKey(queryParams);
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + cacheDuration);
 
     await this.upsert({
       cacheKey,
@@ -126,10 +126,10 @@ module.exports = (app) => {
       expiresAt,
       hitCount: 0,
       lastHitAt: null,
-    })
+    });
 
-    return true
-  }
+    return true;
+  };
 
   // 静态方法：清理过期缓存
   DojiPatternQueryCache.cleanExpiredCache = async function () {
@@ -139,10 +139,10 @@ module.exports = (app) => {
           [app.Sequelize.Op.lt]: new Date(),
         },
       },
-    })
+    });
 
-    return deletedCount
-  }
+    return deletedCount;
+  };
 
   // 静态方法：清理特定类型的缓存
   DojiPatternQueryCache.clearCacheByPattern = async function (pattern) {
@@ -152,21 +152,21 @@ module.exports = (app) => {
           [app.Sequelize.Op.like]: `%${pattern}%`,
         },
       },
-    })
+    });
 
-    return deletedCount
-  }
+    return deletedCount;
+  };
 
   // 静态方法：获取缓存统计
   DojiPatternQueryCache.getCacheStats = async function () {
-    const totalCaches = await this.count()
+    const totalCaches = await this.count();
     const expiredCaches = await this.count({
       where: {
         expiresAt: {
           [app.Sequelize.Op.lt]: new Date(),
         },
       },
-    })
+    });
 
     const hitStats = await this.findAll({
       attributes: [
@@ -175,15 +175,15 @@ module.exports = (app) => {
         [app.Sequelize.fn('SUM', app.Sequelize.col('hit_count')), 'totalHits'],
       ],
       raw: true,
-    })
+    });
 
     return {
       totalCaches,
       activeCaches: totalCaches - expiredCaches,
       expiredCaches,
       hitStats: hitStats[0] || { avgHits: 0, maxHits: 0, totalHits: 0 },
-    }
-  }
+    };
+  };
 
-  return DojiPatternQueryCache
-}
+  return DojiPatternQueryCache;
+};

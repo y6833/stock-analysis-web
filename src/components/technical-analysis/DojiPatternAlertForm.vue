@@ -10,7 +10,7 @@
     >
       <!-- 股票选择 -->
       <el-form-item label="股票" prop="stockCode" required>
-        <stock-search-input
+        <BaseSearchInput
           v-model:code="formData.stockCode"
           v-model:name="formData.stockName"
           placeholder="请输入股票代码或名称"
@@ -121,7 +121,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance } from 'element-plus'
-import StockSearchInput from '@/components/StockSearchInput.vue'
+import BaseSearchInput from '@/components/base/BaseSearchInput.vue'
 import {
   dojiPatternAlertService,
   type DojiPatternAlert,

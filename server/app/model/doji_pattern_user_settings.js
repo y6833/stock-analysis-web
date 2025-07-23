@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
 /**
  * 十字星形态用户设置模型
  */
 module.exports = (app) => {
-  const { STRING, INTEGER, JSON, DATE } = app.Sequelize
+  const { STRING, INTEGER, JSON, DATE } = app.Sequelize;
 
   const DojiPatternUserSettings = app.model.define(
     'doji_pattern_user_settings',
@@ -53,7 +53,7 @@ module.exports = (app) => {
         },
       ],
     }
-  )
+  );
 
   // 关联关系
   DojiPatternUserSettings.associate = function () {
@@ -61,8 +61,8 @@ module.exports = (app) => {
     DojiPatternUserSettings.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: 'user',
-    })
-  }
+    });
+  };
 
-  return DojiPatternUserSettings
-}
+  return DojiPatternUserSettings;
+};

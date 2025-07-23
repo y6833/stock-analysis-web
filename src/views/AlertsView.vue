@@ -6,7 +6,7 @@ import { alertMigrationService } from '@/services/alertMigrationService'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import type { Stock } from '@/types/stock'
-import StockSearch from '@/components/StockSearch.vue'
+import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 
 const { showToast } = useToast()
 
@@ -281,7 +281,7 @@ onMounted(() => {
 
           <div class="form-group">
             <label>选择股票</label>
-            <StockSearch @select="selectStock" />
+            <UnifiedStockSearch @select="selectStock" />
           </div>
 
           <div class="form-group">

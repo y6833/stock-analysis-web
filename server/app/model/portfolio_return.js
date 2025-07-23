@@ -1,7 +1,7 @@
-'use strict'
+'use strict';
 
 module.exports = (app) => {
-  const { INTEGER, DATE, DECIMAL } = app.Sequelize
+  const { INTEGER, DATE, DECIMAL } = app.Sequelize;
 
   const PortfolioReturn = app.model.define(
     'portfolio_return',
@@ -66,24 +66,24 @@ module.exports = (app) => {
       tableName: 'portfolio_returns',
       underscored: true,
     }
-  )
+  );
 
   PortfolioReturn.associate = function () {
     // 获取模型关联唯一前缀，确保别名唯一性
-    const prefix = this._associationPrefix || ''
+    const prefix = this._associationPrefix || '';
 
     // 关联用户 - 使用唯一前缀防止别名冲突
     PortfolioReturn.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: `${prefix}_portfolioReturnBelongsToUser`,
-    })
+    });
 
     // 关联投资组合
     PortfolioReturn.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: `${prefix}_portfolio`,
-    })
-  }
+    });
+  };
 
-  return PortfolioReturn
-}
+  return PortfolioReturn;
+};

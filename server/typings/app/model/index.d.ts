@@ -4,6 +4,7 @@
 
 import 'egg';
 import ExportAlertHistory = require('../../../app/model/alert_history');
+import ExportApiRequestLog = require('../../../app/model/apiRequestLog');
 import ExportCoinRechargeRequest = require('../../../app/model/coinRechargeRequest');
 import ExportCoinTransaction = require('../../../app/model/coinTransaction');
 import ExportDashboardWidget = require('../../../app/model/dashboard_widget');
@@ -15,6 +16,7 @@ import ExportDojiPatternQueryCache = require('../../../app/model/doji_pattern_qu
 import ExportDojiPatternStatistics = require('../../../app/model/doji_pattern_statistics');
 import ExportDojiPatternUserSettings = require('../../../app/model/doji_pattern_user_settings');
 import ExportIndex = require('../../../app/model/index');
+import ExportLoginAttempt = require('../../../app/model/loginAttempt');
 import ExportMarketRiskFactor = require('../../../app/model/market_risk_factor');
 import ExportNotification = require('../../../app/model/notification');
 import ExportPageAccessLog = require('../../../app/model/page_access_log');
@@ -29,6 +31,7 @@ import ExportRiskAlertLog = require('../../../app/model/risk_alert_log');
 import ExportRiskAlertRule = require('../../../app/model/risk_alert_rule');
 import ExportRiskMonitoringConfig = require('../../../app/model/risk_monitoring_config');
 import ExportRiskMonitoringStatus = require('../../../app/model/risk_monitoring_status');
+import ExportSecurityAuditLog = require('../../../app/model/securityAuditLog');
 import ExportSimulationAccount = require('../../../app/model/simulation_account');
 import ExportSimulationPosition = require('../../../app/model/simulation_position');
 import ExportSimulationTransaction = require('../../../app/model/simulation_transaction');
@@ -59,6 +62,7 @@ import ExportWatchlistItem = require('../../../app/model/watchlist_item');
 declare module 'egg' {
   interface IModel {
     AlertHistory: ReturnType<typeof ExportAlertHistory>;
+    ApiRequestLog: ReturnType<typeof ExportApiRequestLog>;
     CoinRechargeRequest: ReturnType<typeof ExportCoinRechargeRequest>;
     CoinTransaction: ReturnType<typeof ExportCoinTransaction>;
     DashboardWidget: ReturnType<typeof ExportDashboardWidget>;
@@ -70,6 +74,7 @@ declare module 'egg' {
     DojiPatternStatistics: ReturnType<typeof ExportDojiPatternStatistics>;
     DojiPatternUserSettings: ReturnType<typeof ExportDojiPatternUserSettings>;
     Index: ReturnType<typeof ExportIndex>;
+    LoginAttempt: ReturnType<typeof ExportLoginAttempt>;
     MarketRiskFactor: ReturnType<typeof ExportMarketRiskFactor>;
     Notification: ReturnType<typeof ExportNotification>;
     PageAccessLog: ReturnType<typeof ExportPageAccessLog>;
@@ -84,6 +89,7 @@ declare module 'egg' {
     RiskAlertRule: ReturnType<typeof ExportRiskAlertRule>;
     RiskMonitoringConfig: ReturnType<typeof ExportRiskMonitoringConfig>;
     RiskMonitoringStatus: ReturnType<typeof ExportRiskMonitoringStatus>;
+    SecurityAuditLog: ReturnType<typeof ExportSecurityAuditLog>;
     SimulationAccount: ReturnType<typeof ExportSimulationAccount>;
     SimulationPosition: ReturnType<typeof ExportSimulationPosition>;
     SimulationTransaction: ReturnType<typeof ExportSimulationTransaction>;

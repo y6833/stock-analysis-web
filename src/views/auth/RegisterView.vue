@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/userStore'
+import { useAuthStore } from '@/stores/auth/authStore'
+import { ElMessage } from 'element-plus'
 import type { RegisterRequest } from '@/types/user'
 
 const router = useRouter()
-const userStore = useUserStore()
+const authStore = useAuthStore()
 
 // 表单数据
 const registerForm = reactive<RegisterRequest>({
@@ -29,6 +30,63 @@ const isSubmitting = ref(false)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const agreeToTerms = ref(false)
+
+// 密码强度检查
+const passwordStrength = ref(0)
+const passwordStrengthText = ref('')
+const passwordStrengthColor = ref('')
+
+// 检查密码强度
+const checkPasswordStrength = (password: string) => {
+  if (!password) {
+    passwordStrength.value = 0
+    passwordStrengthText.value = ''
+    passwordStrengthColor.value = ''
+    return
+  }
+  
+  let strength = 0
+  
+  // 长度检查
+  if (password.length >= 8) strength += 1
+  if (password.length >= 12) strength += 1
+  
+  // 复杂性检查
+  if (/[A-Z]/.test(password)) strength += 1
+  if (/[a-z]/.test(password)) strength += 1
+  if (/[0-9]/.test(password)) strength += 1
+  if (/[^A-Za-z0-9]/.test(password)) strength += 1
+  
+  // 设置强度值和文本
+  passwordStrength.value = Math.min(5, strength)
+  
+  switch (true) {
+    case strength <= 1:
+      passwordStrengthText.value = '非常弱'
+      passwordStrengthColor.value = 'var(--danger-color)'
+      break
+    case strength <= 2:
+      passwordStrengthText.value = '弱'
+      passwordStrengthColor.value = 'var(--warning-color)'
+      break
+    case strength <= 3:
+      passwordStrengthText.value = '中等'
+      passwordStrengthColor.value = 'var(--warning-color)'
+      break
+    case strength <= 4:
+      passwordStrengthText.value = '强'
+      passwordStrengthColor.value = 'var(--success-color)'
+      break
+    default:
+      passwordStrengthText.value = '非常强'
+      passwordStrengthColor.value = 'var(--success-color)'
+  }
+}
+
+// 监听密码变化
+const handlePasswordChange = () => {
+  checkPasswordStrength(registerForm.password)
+}
 
 // 验证表单
 const validateForm = (): boolean => {
@@ -67,6 +125,9 @@ const validateForm = (): boolean => {
   } else if (registerForm.password.length < 6) {
     formErrors.password = '密码长度不能少于6个字符'
     isValid = false
+  } else if (passwordStrength.value < 3) {
+    formErrors.password = '密码强度不足，请使用更复杂的密码'
+    isValid = false
   }
 
   // 验证确认密码
@@ -92,25 +153,28 @@ const handleSubmit = async () => {
   if (!validateForm()) return
 
   isSubmitting.value = true
+  formErrors.general = ''
 
   try {
-    const success = await userStore.register(registerForm)
+    const success = await authStore.register(registerForm)
 
     if (success) {
-      // 注册成功，跳转到登录页面，然后刷新页面
-      router.push('/login?registered=true').then(() => {
-        // 使用短暂延迟确保路由变更已完成
-        setTimeout(() => {
-          window.location.reload()
-        }, 100)
+      // 注册成功，显示成功消息
+      ElMessage({
+        message: '注册成功，请登录',
+        type: 'success',
+        duration: 3000
       })
+      
+      // 跳转到登录页面
+      router.push('/auth/login?registered=true')
     } else {
       // 注册失败，显示错误信息
-      formErrors.general = userStore.error || '注册失败，请稍后再试'
+      formErrors.general = authStore.error || '注册失败，请稍后再试'
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('注册过程中发生错误:', error)
-    formErrors.general = '注册过程中发生错误，请稍后再试'
+    formErrors.general = error.message || '注册过程中发生错误，请稍后再试'
   } finally {
     isSubmitting.value = false
   }
@@ -118,7 +182,7 @@ const handleSubmit = async () => {
 
 // 切换到登录页面
 const goToLogin = () => {
-  router.push('/login')
+  router.push('/auth/login')
 }
 
 // 切换密码可见性
@@ -200,13 +264,37 @@ const toggleConfirmPasswordVisibility = () => {
               :class="{ 'has-error': formErrors.password }"
               placeholder="请输入密码"
               autocomplete="new-password"
+              @input="handlePasswordChange"
             />
             <button type="button" class="toggle-password" @click="togglePasswordVisibility">
               {{ showPassword ? '👁️' : '👁️‍🗨️' }}
             </button>
           </div>
+          <div v-if="passwordStrength > 0" class="password-strength">
+            <div class="strength-bar-container">
+              <div 
+                class="strength-bar" 
+                :style="{ 
+                  width: `${passwordStrength * 20}%`, 
+                  backgroundColor: passwordStrengthColor 
+                }"
+              ></div>
+            </div>
+            <span class="strength-text" :style="{ color: passwordStrengthColor }">
+              {{ passwordStrengthText }}
+            </span>
+          </div>
           <div v-if="formErrors.password" class="form-error">
             {{ formErrors.password }}
+          </div>
+          <div class="password-tips" v-if="registerForm.password">
+            <p>密码建议：</p>
+            <ul>
+              <li>至少8个字符</li>
+              <li>包含大小写字母</li>
+              <li>包含数字</li>
+              <li>包含特殊字符</li>
+            </ul>
           </div>
         </div>
 
@@ -402,5 +490,52 @@ const toggleConfirmPasswordVisibility = () => {
   color: var(--primary-color);
   cursor: pointer;
   font-weight: 500;
+}
+
+.password-strength {
+  margin-top: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.strength-bar-container {
+  flex-grow: 1;
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.strength-bar {
+  height: 100%;
+  transition: width 0.3s, background-color 0.3s;
+}
+
+.strength-text {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.password-tips {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  background-color: rgba(var(--info-rgb), 0.1);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+}
+
+.password-tips p {
+  margin-bottom: var(--spacing-xs);
+}
+
+.password-tips ul {
+  padding-left: var(--spacing-md);
+  margin: 0;
+}
+
+.password-tips li {
+  margin-bottom: 2px;
 }
 </style>

@@ -169,30 +169,30 @@ class AlltickService extends Service {
       // 映射周期类型
       let klineType = 8; // 默认日K
       switch (period) {
-        case 'minute':
-          klineType = 1;
-          break;
-        case '5min':
-          klineType = 2;
-          break;
-        case '15min':
-          klineType = 3;
-          break;
-        case '30min':
-          klineType = 4;
-          break;
-        case 'hour':
-          klineType = 5;
-          break;
-        case 'day':
-          klineType = 8;
-          break;
-        case 'week':
-          klineType = 9;
-          break;
-        case 'month':
-          klineType = 10;
-          break;
+      case 'minute':
+        klineType = 1;
+        break;
+      case '5min':
+        klineType = 2;
+        break;
+      case '15min':
+        klineType = 3;
+        break;
+      case '30min':
+        klineType = 4;
+        break;
+      case 'hour':
+        klineType = 5;
+        break;
+      case 'day':
+        klineType = 8;
+        break;
+      case 'week':
+        klineType = 9;
+        break;
+      case 'month':
+        klineType = 10;
+        break;
       }
 
       const params = {

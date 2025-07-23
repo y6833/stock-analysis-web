@@ -107,102 +107,102 @@ class StockController extends Controller {
 
       // 根据数据源调用不同的API
       switch (dataSource.toLowerCase()) {
-        case 'alphavantage':
-          // 调用Alpha Vantage API
-          try {
-            ctx.logger.info(`调用ALPHAVANTAGE API: http://localhost:7001/api/alphavantage/quote?symbol=${stockCode}`);
+      case 'alphavantage':
+        // 调用Alpha Vantage API
+        try {
+          ctx.logger.info(`调用ALPHAVANTAGE API: http://localhost:7001/api/alphavantage/quote?symbol=${stockCode}`);
 
-            const response = await ctx.curl(`http://localhost:7001/api/alphavantage/quote?symbol=${stockCode}`, {
-              method: 'GET',
-              timeout: 15000,
-              dataType: 'json'
-            });
+          const response = await ctx.curl(`http://localhost:7001/api/alphavantage/quote?symbol=${stockCode}`, {
+            method: 'GET',
+            timeout: 15000,
+            dataType: 'json'
+          });
 
-            ctx.logger.info(`ALPHAVANTAGE API响应: ${JSON.stringify(response.data)}`);
+          ctx.logger.info(`ALPHAVANTAGE API响应: ${JSON.stringify(response.data)}`);
 
-            if (response.data && response.data.success) {
-              quote = {
-                code: stockCode,
-                name: response.data.data.name || stockCode,
-                price: response.data.data.price || 0,
-                open: response.data.data.open || 0,
-                high: response.data.data.high || 0,
-                low: response.data.data.low || 0,
-                volume: response.data.data.volume || 0,
-                amount: response.data.data.amount || 0,
-                change: response.data.data.changePercent || 0,
-                date: new Date().toISOString().split('T')[0],
-                data_source: 'ALPHAVANTAGE API',
-                data_source_message: '数据来自ALPHAVANTAGE API实时查询，最新数据',
-                data_source_type: 'alphavantage',
-                is_real_time: true,
-                cache: false,
-                api_time: new Date().toISOString()
-              };
-            } else {
-              throw new Error(response.data?.message || 'ALPHAVANTAGE API调用失败');
-            }
-          } catch (alphaError) {
-            ctx.logger.error(`ALPHAVANTAGE API调用失败: ${alphaError.message}`);
-            throw new Error(`ALPHAVANTAGE API调用失败: ${alphaError.message}`);
+          if (response.data && response.data.success) {
+            quote = {
+              code: stockCode,
+              name: response.data.data.name || stockCode,
+              price: response.data.data.price || 0,
+              open: response.data.data.open || 0,
+              high: response.data.data.high || 0,
+              low: response.data.data.low || 0,
+              volume: response.data.data.volume || 0,
+              amount: response.data.data.amount || 0,
+              change: response.data.data.changePercent || 0,
+              date: new Date().toISOString().split('T')[0],
+              data_source: 'ALPHAVANTAGE API',
+              data_source_message: '数据来自ALPHAVANTAGE API实时查询，最新数据',
+              data_source_type: 'alphavantage',
+              is_real_time: true,
+              cache: false,
+              api_time: new Date().toISOString()
+            };
+          } else {
+            throw new Error(response.data?.message || 'ALPHAVANTAGE API调用失败');
           }
-          break;
+        } catch (alphaError) {
+          ctx.logger.error(`ALPHAVANTAGE API调用失败: ${alphaError.message}`);
+          throw new Error(`ALPHAVANTAGE API调用失败: ${alphaError.message}`);
+        }
+        break;
 
-        case 'sina':
-          // 调用新浪财经API
-          try {
-            const response = await ctx.curl(`http://localhost:7001/api/sina/quote?symbol=${stockCode}`, {
-              method: 'GET',
-              timeout: 15000,
-              dataType: 'json'
-            });
+      case 'sina':
+        // 调用新浪财经API
+        try {
+          const response = await ctx.curl(`http://localhost:7001/api/sina/quote?symbol=${stockCode}`, {
+            method: 'GET',
+            timeout: 15000,
+            dataType: 'json'
+          });
 
-            if (response.data && response.data.success) {
-              quote = {
-                ...response.data.data,
-                data_source: 'SINA API',
-                data_source_message: '数据来自新浪财经API',
-                data_source_type: 'sina'
-              };
-            } else {
-              throw new Error(response.data?.message || '新浪财经API调用失败');
-            }
-          } catch (sinaError) {
-            ctx.logger.error(`新浪财经API调用失败: ${sinaError.message}`);
-            throw new Error(`新浪财经API调用失败: ${sinaError.message}`);
+          if (response.data && response.data.success) {
+            quote = {
+              ...response.data.data,
+              data_source: 'SINA API',
+              data_source_message: '数据来自新浪财经API',
+              data_source_type: 'sina'
+            };
+          } else {
+            throw new Error(response.data?.message || '新浪财经API调用失败');
           }
-          break;
+        } catch (sinaError) {
+          ctx.logger.error(`新浪财经API调用失败: ${sinaError.message}`);
+          throw new Error(`新浪财经API调用失败: ${sinaError.message}`);
+        }
+        break;
 
-        case 'eastmoney':
-          // 调用东方财富API
-          try {
-            const response = await ctx.curl(`http://localhost:7001/api/eastmoney/quote?symbol=${stockCode}`, {
-              method: 'GET',
-              timeout: 15000,
-              dataType: 'json'
-            });
+      case 'eastmoney':
+        // 调用东方财富API
+        try {
+          const response = await ctx.curl(`http://localhost:7001/api/eastmoney/quote?symbol=${stockCode}`, {
+            method: 'GET',
+            timeout: 15000,
+            dataType: 'json'
+          });
 
-            if (response.data && response.data.success) {
-              quote = {
-                ...response.data.data,
-                data_source: 'EASTMONEY API',
-                data_source_message: '数据来自东方财富API',
-                data_source_type: 'eastmoney'
-              };
-            } else {
-              throw new Error(response.data?.message || '东方财富API调用失败');
-            }
-          } catch (eastmoneyError) {
-            ctx.logger.error(`东方财富API调用失败: ${eastmoneyError.message}`);
-            throw new Error(`东方财富API调用失败: ${eastmoneyError.message}`);
+          if (response.data && response.data.success) {
+            quote = {
+              ...response.data.data,
+              data_source: 'EASTMONEY API',
+              data_source_message: '数据来自东方财富API',
+              data_source_type: 'eastmoney'
+            };
+          } else {
+            throw new Error(response.data?.message || '东方财富API调用失败');
           }
-          break;
+        } catch (eastmoneyError) {
+          ctx.logger.error(`东方财富API调用失败: ${eastmoneyError.message}`);
+          throw new Error(`东方财富API调用失败: ${eastmoneyError.message}`);
+        }
+        break;
 
-        case 'tushare':
-        default:
-          // 使用原有的Tushare API逻辑
-          quote = await service.stock.getStockQuote(stockCode);
-          break;
+      case 'tushare':
+      default:
+        // 使用原有的Tushare API逻辑
+        quote = await service.stock.getStockQuote(stockCode);
+        break;
       }
 
       // 设置响应头中的数据来源
@@ -717,7 +717,7 @@ class StockController extends Controller {
       const totalCount = totalResult.count;
 
       // 获取上市股票数
-      const [listedResult] = await app.model.query("SELECT COUNT(*) as count FROM stock_basic WHERE list_status = 'L'", {
+      const [listedResult] = await app.model.query('SELECT COUNT(*) as count FROM stock_basic WHERE list_status = \'L\'', {
         type: app.model.QueryTypes.SELECT
       });
       const listedCount = listedResult.count;

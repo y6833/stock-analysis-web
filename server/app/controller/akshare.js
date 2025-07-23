@@ -423,8 +423,6 @@ except Exception as e:
     }
   }
 
-
-
   // 搜索股票
   async search() {
     const { ctx } = this;

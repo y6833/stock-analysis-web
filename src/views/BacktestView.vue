@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { Stock } from '@/types/stock'
-import StockSearch from '@/components/StockSearch.vue'
+import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 import { useToast } from '@/composables/useToast'
 
 const { showToast } = useToast()
@@ -326,7 +326,7 @@ onMounted(() => {
 
           <div class="form-group">
             <label>选择股票</label>
-            <StockSearch @select="selectStock" />
+            <UnifiedStockSearch @select="selectStock" />
           </div>
 
           <div class="form-group">

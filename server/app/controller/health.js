@@ -38,7 +38,7 @@ class HealthController extends Controller {
       
       // 检查表结构
       const tableInfo = await ctx.model.query(
-        "DESCRIBE users",
+        'DESCRIBE users',
         { type: ctx.model.QueryTypes.SELECT }
       );
       

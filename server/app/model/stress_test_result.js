@@ -1,7 +1,7 @@
-'use strict'
+'use strict';
 
 module.exports = (app) => {
-  const { INTEGER, DATE, DECIMAL, JSON } = app.Sequelize
+  const { INTEGER, DATE, DECIMAL, JSON } = app.Sequelize;
 
   const StressTestResult = app.model.define(
     'stress_test_result',
@@ -101,30 +101,29 @@ module.exports = (app) => {
       tableName: 'stress_test_results',
       underscored: true,
     }
-  )
+  );
 
   StressTestResult.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 关联用户 - 使用唯一别名
     StressTestResult.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: `${prefix}_${prefix}_stressTestResultUser`,
-    })
+    });
 
     // 关联投资组合
     StressTestResult.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: `${prefix}_${prefix}_portfolio`,
-    })
+    });
 
     // 关联压力测试场景
     StressTestResult.belongsTo(app.model.StressTestScenario, {
       foreignKey: 'scenarioId',
       as: `${prefix}_${prefix}_scenario`,
-    })
-  }
+    });
+  };
 
-  return StressTestResult
-}
+  return StressTestResult;
+};

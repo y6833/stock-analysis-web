@@ -1,7 +1,7 @@
-'use strict'
+'use strict';
 
 module.exports = (app) => {
-  const { STRING, INTEGER, DATE, DECIMAL, JSON } = app.Sequelize
+  const { STRING, INTEGER, DATE, DECIMAL, JSON } = app.Sequelize;
 
   const VarCalculation = app.model.define(
     'var_calculation',
@@ -107,30 +107,29 @@ module.exports = (app) => {
       tableName: 'var_calculations',
       underscored: true,
     }
-  )
+  );
 
   VarCalculation.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 关联用户 - 使用唯一别名
     VarCalculation.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: `${prefix}_${prefix}_varCalculationUser`,
-    })
+    });
 
     // 关联投资组合
     VarCalculation.belongsTo(app.model.UserPortfolio, {
       foreignKey: 'portfolioId',
       as: `${prefix}_${prefix}_portfolio`,
-    })
+    });
 
     // 关联风险配置
     VarCalculation.belongsTo(app.model.RiskMonitoringConfig, {
       foreignKey: 'configId',
       as: `${prefix}_${prefix}_config`,
-    })
-  }
+    });
+  };
 
-  return VarCalculation
-}
+  return VarCalculation;
+};

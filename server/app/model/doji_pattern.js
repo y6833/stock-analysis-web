@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
 /**
  * 十字星形态识别结果模型
  */
 module.exports = (app) => {
-  const { INTEGER, STRING, DATEONLY, ENUM, JSON, DECIMAL, BOOLEAN, DATE } = app.Sequelize
+  const { INTEGER, STRING, DATEONLY, ENUM, JSON, DECIMAL, BOOLEAN, DATE } = app.Sequelize;
 
   const DojiPattern = app.model.define(
     'doji_pattern',
@@ -75,12 +75,12 @@ module.exports = (app) => {
         },
       ],
     }
-  )
+  );
 
   DojiPattern.associate = function () {
     // 关联到股票表（如果存在）
     // this.belongsTo(app.model.Stock, { foreignKey: 'stockId', targetKey: 'symbol' });
-  }
+  };
 
   // 静态方法：根据条件筛选上涨股票
   DojiPattern.findUpwardStocks = async function (criteria) {
@@ -92,10 +92,10 @@ module.exports = (app) => {
       sortDirection = 'desc',
       limit = 20,
       offset = 0,
-    } = criteria
+    } = criteria;
 
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days)
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
 
     const whereClause = {
       patternDate: {
@@ -105,37 +105,37 @@ module.exports = (app) => {
         [app.Sequelize.Op.in]: patternTypes,
       },
       isUpward: true,
-    }
+    };
 
     // 如果设置了最小上涨幅度，需要通过 JSON 查询
     if (minUpwardPercent > 0) {
       whereClause[app.Sequelize.Op.and] = app.Sequelize.literal(
         `JSON_EXTRACT(price_movement, '$.day5') >= ${minUpwardPercent}`
-      )
+      );
     }
 
-    const orderClause = []
+    const orderClause = [];
     switch (sortBy) {
-      case 'priceChange':
-        orderClause.push([
-          app.Sequelize.literal("JSON_EXTRACT(price_movement, '$.day5')"),
-          sortDirection,
-        ])
-        break
-      case 'volumeChange':
-        orderClause.push([
-          app.Sequelize.literal("JSON_EXTRACT(context, '$.volumeChange')"),
-          sortDirection,
-        ])
-        break
-      case 'patternDate':
-        orderClause.push(['patternDate', sortDirection])
-        break
-      case 'significance':
-        orderClause.push(['significance', sortDirection])
-        break
-      default:
-        orderClause.push(['patternDate', 'desc'])
+    case 'priceChange':
+      orderClause.push([
+        app.Sequelize.literal('JSON_EXTRACT(price_movement, \'$.day5\')'),
+        sortDirection,
+      ]);
+      break;
+    case 'volumeChange':
+      orderClause.push([
+        app.Sequelize.literal('JSON_EXTRACT(context, \'$.volumeChange\')'),
+        sortDirection,
+      ]);
+      break;
+    case 'patternDate':
+      orderClause.push(['patternDate', sortDirection]);
+      break;
+    case 'significance':
+      orderClause.push(['significance', sortDirection]);
+      break;
+    default:
+      orderClause.push(['patternDate', 'desc']);
     }
 
     return await this.findAndCountAll({
@@ -143,22 +143,22 @@ module.exports = (app) => {
       order: orderClause,
       limit,
       offset,
-    })
-  }
+    });
+  };
 
   // 静态方法：获取最近形态
   DojiPattern.findRecentPatterns = async function (days = 7, patternType = null, limit = 50) {
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days)
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
 
     const whereClause = {
       patternDate: {
         [app.Sequelize.Op.gte]: startDate,
       },
-    }
+    };
 
     if (patternType) {
-      whereClause.patternType = patternType
+      whereClause.patternType = patternType;
     }
 
     return await this.findAll({
@@ -168,8 +168,8 @@ module.exports = (app) => {
         ['significance', 'desc'],
       ],
       limit,
-    })
-  }
+    });
+  };
 
   // 静态方法：分析价格走势
   DojiPattern.analyzePriceMovement = async function (stockId, patternDate, days = 5) {
@@ -178,14 +178,14 @@ module.exports = (app) => {
         stockId,
         patternDate,
       },
-    })
+    });
 
     if (!pattern || !pattern.priceMovement) {
-      return null
+      return null;
     }
 
-    const priceMovement = pattern.priceMovement
-    const dayKey = `day${days}`
+    const priceMovement = pattern.priceMovement;
+    const dayKey = `day${days}`;
 
     return {
       patternId: pattern.id,
@@ -194,8 +194,8 @@ module.exports = (app) => {
       priceChange: priceMovement[dayKey] || 0,
       isUpward: priceMovement[dayKey] > 0,
       volumeChange: pattern.context?.volumeChange || 0,
-    }
-  }
+    };
+  };
 
-  return DojiPattern
-}
+  return DojiPattern;
+};

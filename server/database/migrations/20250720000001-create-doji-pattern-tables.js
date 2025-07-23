@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 /**
  * 创建十字星形态相关数据表
@@ -68,7 +68,7 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
-    })
+    });
 
     // 创建十字星形态提醒设置表
     await queryInterface.createTable('doji_pattern_alerts', {
@@ -139,7 +139,7 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
-    })
+    });
 
     // 创建十字星形态统计缓存表
     await queryInterface.createTable('doji_pattern_statistics', {
@@ -206,12 +206,12 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
-    })
+    });
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('doji_pattern_statistics')
-    await queryInterface.dropTable('doji_pattern_alerts')
-    await queryInterface.dropTable('doji_patterns')
+    await queryInterface.dropTable('doji_pattern_statistics');
+    await queryInterface.dropTable('doji_pattern_alerts');
+    await queryInterface.dropTable('doji_patterns');
   },
-}
+};

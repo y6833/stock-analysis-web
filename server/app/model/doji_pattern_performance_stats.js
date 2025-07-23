@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
 /**
  * 十字星形态性能统计模型
  */
 module.exports = (app) => {
-  const { STRING, INTEGER, FLOAT, DATE } = app.Sequelize
+  const { STRING, INTEGER, FLOAT, DATE } = app.Sequelize;
 
   const DojiPatternPerformanceStats = app.model.define(
     'doji_pattern_performance_stats',
@@ -78,7 +78,7 @@ module.exports = (app) => {
         },
       ],
     }
-  )
+  );
 
   // 关联关系
   DojiPatternPerformanceStats.associate = function () {
@@ -86,8 +86,8 @@ module.exports = (app) => {
     DojiPatternPerformanceStats.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: 'user',
-    })
-  }
+    });
+  };
 
   // 实例方法
   DojiPatternPerformanceStats.prototype.updateStats = function (stats) {
@@ -97,8 +97,8 @@ module.exports = (app) => {
       memoryUsage: stats.memoryUsage || this.memoryUsage,
       totalCalculations: stats.totalCalculations || this.totalCalculations,
       lastCalculationTime: stats.lastCalculationTime || new Date(),
-    })
-  }
+    });
+  };
 
   // 类方法
   DojiPatternPerformanceStats.recordCalculation = async function (userId, calculationTime) {
@@ -110,23 +110,23 @@ module.exports = (app) => {
         totalCalculations: 1,
         lastCalculationTime: new Date(),
       },
-    })
+    });
 
     if (!created) {
-      const newTotalCalculations = stats.totalCalculations + 1
+      const newTotalCalculations = stats.totalCalculations + 1;
       const newAvgCalculationTime =
         (stats.avgCalculationTime * stats.totalCalculations + calculationTime) /
-        newTotalCalculations
+        newTotalCalculations;
 
       await stats.update({
         avgCalculationTime: newAvgCalculationTime,
         totalCalculations: newTotalCalculations,
         lastCalculationTime: new Date(),
-      })
+      });
     }
 
-    return stats
-  }
+    return stats;
+  };
 
-  return DojiPatternPerformanceStats
-}
+  return DojiPatternPerformanceStats;
+};

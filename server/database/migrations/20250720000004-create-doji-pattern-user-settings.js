@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -39,13 +39,13 @@ module.exports = {
         defaultValue: Sequelize.NOW,
         comment: '更新时间',
       },
-    })
+    });
 
     // 创建索引
     await queryInterface.addIndex('doji_pattern_user_settings', ['userId'], {
       unique: true,
       name: 'idx_doji_pattern_user_settings_user_id',
-    })
+    });
 
     // 创建十字星形态性能统计表
     await queryInterface.createTable('doji_pattern_performance_stats', {
@@ -107,21 +107,21 @@ module.exports = {
         defaultValue: Sequelize.NOW,
         comment: '更新时间',
       },
-    })
+    });
 
     // 创建索引
     await queryInterface.addIndex('doji_pattern_performance_stats', ['userId'], {
       name: 'idx_doji_pattern_performance_stats_user_id',
-    })
+    });
 
     await queryInterface.addIndex('doji_pattern_performance_stats', ['createdAt'], {
       name: 'idx_doji_pattern_performance_stats_created_at',
-    })
+    });
   },
 
   down: async (queryInterface, Sequelize) => {
     // 删除表
-    await queryInterface.dropTable('doji_pattern_performance_stats')
-    await queryInterface.dropTable('doji_pattern_user_settings')
+    await queryInterface.dropTable('doji_pattern_performance_stats');
+    await queryInterface.dropTable('doji_pattern_user_settings');
   },
-}
+};

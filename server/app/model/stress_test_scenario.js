@@ -1,7 +1,7 @@
-'use strict'
+'use strict';
 
 module.exports = (app) => {
-  const { STRING, INTEGER, DATE, TEXT, DECIMAL, BOOLEAN, JSON } = app.Sequelize
+  const { STRING, INTEGER, DATE, TEXT, DECIMAL, BOOLEAN, JSON } = app.Sequelize;
 
   const StressTestScenario = app.model.define(
     'stress_test_scenario',
@@ -76,24 +76,23 @@ module.exports = (app) => {
       tableName: 'stress_test_scenarios',
       underscored: true,
     }
-  )
+  );
 
   StressTestScenario.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 关联用户 - 使用唯一别名
     StressTestScenario.belongsTo(app.model.User, {
       foreignKey: 'userId',
       as: `${prefix}_${prefix}_stressTestScenarioUser`,
-    })
+    });
 
     // 关联压力测试结果
     StressTestScenario.hasMany(app.model.StressTestResult, {
       foreignKey: 'scenarioId',
       as: `${prefix}_${prefix}_testResults`,
-    })
-  }
+    });
+  };
 
-  return StressTestScenario
-}
+  return StressTestScenario;
+};

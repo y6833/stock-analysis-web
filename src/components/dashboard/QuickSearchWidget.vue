@@ -1,7 +1,7 @@
 <template>
   <div class="quick-search-widget">
     <div class="search-container">
-      <StockSearch
+      <UnifiedStockSearch
         placeholder="搜索股票代码或名称..."
         @select="onStockSelect"
         @clear="onStockClear"
@@ -44,7 +44,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import StockSearch from '@/components/StockSearch.vue'
+import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 import type { Stock } from '@/types/stock'
 
 // Props
@@ -57,7 +57,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '搜索股票代码或名称...',
   maxResults: 10,
-  showSuggestions: true
+  showSuggestions: true,
 })
 
 // Emits
@@ -105,9 +105,7 @@ const selectStock = (stock: Stock) => {
 
 const addToRecentSearches = (stock: Stock) => {
   // 移除已存在的项
-  recentSearches.value = recentSearches.value.filter(
-    item => item.symbol !== stock.symbol
-  )
+  recentSearches.value = recentSearches.value.filter((item) => item.symbol !== stock.symbol)
 
   // 添加到开头
   recentSearches.value.unshift(stock)
@@ -259,8 +257,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .results-list {

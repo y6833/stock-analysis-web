@@ -38,7 +38,10 @@
         ],
         "refererWhiteList": [],
         "cookieOptions": {
-          "signed": false
+          "signed": false,
+          "httpOnly": true,
+          "sameSite": "strict",
+          "secure": false
         }
       },
       "xframe": {
@@ -79,6 +82,102 @@
         "ipExceptionList": null,
         "hostnameExceptionList": null,
         "checkAddress": null
+      },
+      "enable": true,
+      "xss": {
+        "enable": true
+      },
+      "rateLimit": {
+        "enable": true,
+        "windowMs": 60000,
+        "max": 100,
+        "message": "请求频率过高，请稍后再试",
+        "statusCode": 429,
+        "headers": true,
+        "paths": [
+          {
+            "path": "/api/v1/auth/login",
+            "windowMs": 60000,
+            "max": 5
+          },
+          {
+            "path": "/api/v1/auth/register",
+            "windowMs": 60000,
+            "max": 3
+          },
+          {
+            "path": "/api/v1/auth/reset-password",
+            "windowMs": 60000,
+            "max": 3
+          },
+          {
+            "path": "/api/v1/stocks/search",
+            "windowMs": 60000,
+            "max": 20
+          }
+        ]
+      },
+      "bruteForce": {
+        "enable": true,
+        "paths": [
+          "/api/v1/auth/login",
+          "/api/v1/auth/register",
+          "/api/v1/auth/reset-password"
+        ],
+        "maxAttempts": 5,
+        "blockDuration": 900000
+      },
+      "contentSecurityPolicy": {
+        "enable": true,
+        "policy": {
+          "default-src": [
+            "'self'"
+          ],
+          "script-src": [
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'"
+          ],
+          "style-src": [
+            "'self'",
+            "'unsafe-inline'"
+          ],
+          "img-src": [
+            "'self'",
+            "data:"
+          ],
+          "font-src": [
+            "'self'",
+            "data:"
+          ],
+          "connect-src": [
+            "'self'"
+          ]
+        }
+      },
+      "headers": {
+        "enable": true,
+        "xssProtection": {
+          "enable": true,
+          "value": "1; mode=block"
+        },
+        "noSniff": {
+          "enable": true,
+          "value": "nosniff"
+        },
+        "frameOptions": {
+          "enable": true,
+          "value": "SAMEORIGIN"
+        },
+        "hsts": {
+          "enable": false,
+          "maxAge": 31536000,
+          "includeSubdomains": true
+        },
+        "referrerPolicy": {
+          "enable": true,
+          "value": "strict-origin-when-cross-origin"
+        }
       },
       "_protocolWhiteListSet": "<Set>"
     },
@@ -183,46 +282,43 @@
       "timezone": "+08:00",
       "define": {
         "underscored": true,
-        "freezeTableName": false,
-        "charset": "utf8mb4",
-        "dialectOptions": {
-          "collate": "utf8mb4_general_ci"
-        },
-        "timestamps": true
+        "freezeTableName": true
       }
     },
     "jwt": {
       "secret": "<String len: 15>",
       "enable": false,
-      "expiresIn": "24h"
+      "expiresIn": "7d"
     },
     "cors": {
       "origin": "*",
       "allowMethods": "GET,HEAD,PUT,POST,DELETE,PATCH,OPTIONS",
       "credentials": true
     },
-    "validate": {
-      "convert": true,
-      "validateRoot": true
-    },
+    "validate": {},
     "mysql": {
       "default": {
         "database": null,
         "connectionLimit": 5
       },
       "app": true,
+      "agent": false
+    },
+    "redis": {
+      "default": {},
+      "app": true,
       "agent": false,
+      "supportTimeCommand": true,
       "client": {
+        "port": 6379,
         "host": "127.0.0.1",
-        "port": "3306",
-        "user": "root",
-        "password": "<String len: 4>",
-        "database": "stock_analysis"
+        "password": "<String len: 6>",
+        "db": 0
       }
     },
     "env": "local",
-    "name": "stock-analysis-server",
-    "keys": "<String len: 40>",
+    "name": "Stock Analysis Web",
+    "keys": "<String len: 32>",
     "cookies": {},
     "proxy": false,
     "maxIpsCount": 0,
@@ -239,15 +335,26 @@
         "declarations": true
       },
       "dependencies": {
+        "apollo-server-express": "^3.13.0",
         "egg": "^3.30.1",
         "egg-cors": "^2.2.4",
         "egg-jwt": "^3.1.7",
         "egg-mysql": "^3.4.0",
+        "egg-rate-limiter": "^2.0.0",
+        "egg-redis": "^2.4.0",
         "egg-scripts": "^2.17.0",
+        "egg-security": "^3.0.0",
         "egg-sequelize": "^6.0.0",
+        "express-rate-limit": "^7.2.0",
+        "graphql": "^16.11.0",
+        "graphql-tools": "^9.0.19",
+        "helmet": "^7.1.0",
         "iconv-lite": "^0.6.3",
         "mysql2": "^3.14.0",
-        "sequelize": "^6.37.7"
+        "rate-limit-redis": "^4.2.0",
+        "redis": "^4.6.13",
+        "sequelize": "^6.37.7",
+        "xss": "^1.0.14"
       },
       "devDependencies": {
         "egg-bin": "^5.19.0",
@@ -272,7 +379,9 @@
         "ci": "npm run lint && npm run cov",
         "migrate": "sequelize db:migrate",
         "migrate:undo": "sequelize db:migrate:undo",
-        "migrate:status": "sequelize db:migrate:status"
+        "migrate:status": "sequelize db:migrate:status",
+        "test:db-optimization": "node scripts/test-database-optimization.js",
+        "db:optimize": "sequelize db:migrate --name 20250721000000-add-indexes.js"
       },
       "ci": {
         "version": "16, 18",
@@ -323,7 +432,7 @@
       "onerror": "<Function onerror>"
     },
     "logger": {
-      "dir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\logs",
+      "dir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server/logs",
       "encoding": "utf8",
       "env": "local",
       "level": "DEBUG",
@@ -391,22 +500,183 @@
     },
     "onClientError": null,
     "middleware": [
-      "auth",
-      "errorHandler"
+      "errorHandler",
+      "security",
+      "apiLogger"
     ],
-    "errorHandler": {
-      "match": "/api"
+    "cache": {
+      "enabled": true,
+      "prefix": "app:cache:",
+      "defaultTTL": 300,
+      "layers": {
+        "client": {
+          "enabled": true,
+          "maxAge": {
+            "static": 86400,
+            "api": 60,
+            "user": 300
+          }
+        },
+        "server": {
+          "enabled": true,
+          "ttl": {
+            "stock": 300,
+            "user": 600,
+            "market": 60,
+            "search": 1800,
+            "static": 86400
+          }
+        },
+        "database": {
+          "enabled": true,
+          "refreshInterval": {
+            "stock": 3600,
+            "index": 1800,
+            "industry": 7200
+          }
+        }
+      }
     },
-    "tushare": {
-      "token": "983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61",
-      "api_url": "http://api.tushare.pro",
-      "enableAutoRefresh": false
-    },
-    "alltick": {
-      "token": "85b75304f6ef5a52123479654ddab44e-c-app",
-      "baseUrl": "https://quote.alltick.io/quote-stock-b-api",
-      "timeout": 15000,
-      "enabled": true
+    "dataSource": {
+      "sources": {
+        "tushare": {
+          "priority": 100,
+          "reliability": 0.95,
+          "performance": 0.9,
+          "costPerRequest": 1,
+          "enabled": true
+        },
+        "akshare": {
+          "priority": 90,
+          "reliability": 0.9,
+          "performance": 0.85,
+          "costPerRequest": 0.5,
+          "enabled": true
+        },
+        "sina": {
+          "priority": 80,
+          "reliability": 0.8,
+          "performance": 0.95,
+          "costPerRequest": 0,
+          "enabled": true
+        },
+        "eastmoney": {
+          "priority": 70,
+          "reliability": 0.85,
+          "performance": 0.8,
+          "costPerRequest": 0,
+          "enabled": true
+        },
+        "netease": {
+          "priority": 60,
+          "reliability": 0.75,
+          "performance": 0.75,
+          "costPerRequest": 0,
+          "enabled": true
+        },
+        "tencent": {
+          "priority": 50,
+          "reliability": 0.7,
+          "performance": 0.7,
+          "costPerRequest": 0,
+          "enabled": true
+        },
+        "yahoo_finance": {
+          "priority": 40,
+          "reliability": 0.6,
+          "performance": 0.6,
+          "costPerRequest": 0,
+          "enabled": true
+        },
+        "alltick": {
+          "priority": 30,
+          "reliability": 0.5,
+          "performance": 0.5,
+          "costPerRequest": 2,
+          "enabled": true
+        },
+        "juhe": {
+          "priority": 20,
+          "reliability": 0.4,
+          "performance": 0.4,
+          "costPerRequest": 0.1,
+          "enabled": true
+        },
+        "zhitu": {
+          "priority": 10,
+          "reliability": 0.3,
+          "performance": 0.3,
+          "costPerRequest": 0.2,
+          "enabled": true
+        }
+      },
+      "failover": {
+        "enabled": true,
+        "maxRetries": 3,
+        "retryDelay": 1000,
+        "healthCheckInterval": 300000,
+        "recoveryThreshold": 3,
+        "failureThreshold": 3,
+        "timeoutThreshold": 10000
+      },
+      "requestOptimizer": {
+        "batchingEnabled": true,
+        "throttlingEnabled": true,
+        "parallelEnabled": true,
+        "adaptiveEnabled": true,
+        "rateLimits": {
+          "default": {
+            "maxRequests": 20,
+            "windowMs": 1000,
+            "maxBatchSize": 50,
+            "minBatchWait": 50,
+            "maxBatchWait": 200
+          },
+          "tushare": {
+            "maxRequests": 10,
+            "windowMs": 1000,
+            "maxBatchSize": 100,
+            "minBatchWait": 100,
+            "maxBatchWait": 300
+          },
+          "akshare": {
+            "maxRequests": 15,
+            "windowMs": 1000,
+            "maxBatchSize": 80,
+            "minBatchWait": 50,
+            "maxBatchWait": 200
+          },
+          "sina": {
+            "maxRequests": 30,
+            "windowMs": 1000,
+            "maxBatchSize": 50,
+            "minBatchWait": 20,
+            "maxBatchWait": 100
+          },
+          "eastmoney": {
+            "maxRequests": 20,
+            "windowMs": 1000,
+            "maxBatchSize": 60,
+            "minBatchWait": 30,
+            "maxBatchWait": 150
+          },
+          "alltick": {
+            "maxRequests": 5,
+            "windowMs": 1000,
+            "maxBatchSize": 20,
+            "minBatchWait": 200,
+            "maxBatchWait": 500
+          }
+        },
+        "parallel": {
+          "maxConcurrent": 5,
+          "priorityLevels": 3,
+          "timeout": 10000,
+          "retryCount": 2,
+          "retryDelay": 1000,
+          "adaptiveTimeout": true
+        }
+      }
     },
     "auth": {
       "enable": false,
@@ -414,106 +684,6 @@
         "id": 1,
         "username": "dev_admin",
         "role": "admin"
-      }
-    },
-    "clickhouse": {
-      "url": "http://127.0.0.1",
-      "port": 8123,
-      "database": "stock_data",
-      "debug": false,
-      "basicAuth": null
-    },
-    "io": {
-      "init": {
-        "wsEngine": "ws"
-      },
-      "namespace": {
-        "/": {
-          "connectionMiddleware": [],
-          "packetMiddleware": []
-        },
-        "/realtime": {
-          "connectionMiddleware": [
-            "auth"
-          ],
-          "packetMiddleware": []
-        }
-      }
-    },
-    "dataSources": {
-      "tushare": {
-        "enabled": true,
-        "token": "983b25aa025eee598034c4741dc776ddc53ddcffbb180cf61",
-        "priority": 1,
-        "timeout": 10000,
-        "maxRetries": 3
-      },
-      "alltick": {
-        "enabled": true,
-        "token": "85b75304f6ef5a52123479654ddab44e-c-app",
-        "priority": 2,
-        "timeout": 15000,
-        "maxRetries": 3,
-        "baseUrl": "https://quote.tradeswitcher.com/quote-stock-b-api"
-      },
-      "akshare": {
-        "enabled": true,
-        "priority": 3,
-        "timeout": 15000,
-        "maxRetries": 3
-      },
-      "joinquant": {
-        "enabled": false,
-        "token": "",
-        "priority": 4,
-        "timeout": 15000,
-        "maxRetries": 3
-      },
-      "sina": {
-        "enabled": true,
-        "priority": 5,
-        "timeout": 8000,
-        "maxRetries": 2
-      },
-      "eastmoney": {
-        "enabled": true,
-        "priority": 6,
-        "timeout": 8000,
-        "maxRetries": 2
-      },
-      "futu": {
-        "enabled": true,
-        "priority": 7,
-        "timeout": 15000,
-        "maxRetries": 3,
-        "host": "127.0.0.1",
-        "port": 11111
-      }
-    },
-    "realtime": {
-      "enabled": true,
-      "pushInterval": {
-        "quote": 5000,
-        "kline": 60000,
-        "trade": 1000,
-        "depth": 3000
-      },
-      "maxSubscriptions": 100,
-      "heartbeatInterval": 30000
-    },
-    "dataSync": {
-      "enabled": true,
-      "batchSize": 20,
-      "batchDelay": 1000,
-      "maxConcurrency": 5,
-      "retryAttempts": 3,
-      "retryDelay": 2000,
-      "cacheExpiry": {
-        "quote": 300,
-        "index": 300,
-        "industry": 600,
-        "news": 900,
-        "financial": 3600
       }
     },
     "coreMiddlewares": "~config~coreMiddleware",
@@ -731,7 +901,7 @@
       "version": "3.4.0"
     },
     "redis": {
-      "enable": false,
+      "enable": true,
       "package": "egg-redis",
       "name": "redis",
       "dependencies": [],
@@ -757,15 +927,26 @@
         "declarations": true
       },
       "dependencies": {
+        "apollo-server-express": "^3.13.0",
         "egg": "^3.30.1",
         "egg-cors": "^2.2.4",
         "egg-jwt": "^3.1.7",
         "egg-mysql": "^3.4.0",
+        "egg-rate-limiter": "^2.0.0",
+        "egg-redis": "^2.4.0",
         "egg-scripts": "^2.17.0",
+        "egg-security": "^3.0.0",
         "egg-sequelize": "^6.0.0",
+        "express-rate-limit": "^7.2.0",
+        "graphql": "^16.11.0",
+        "graphql-tools": "^9.0.19",
+        "helmet": "^7.1.0",
         "iconv-lite": "^0.6.3",
         "mysql2": "^3.14.0",
-        "sequelize": "^6.37.7"
+        "rate-limit-redis": "^4.2.0",
+        "redis": "^4.6.13",
+        "sequelize": "^6.37.7",
+        "xss": "^1.0.14"
       },
       "devDependencies": {
         "egg-bin": "^5.19.0",
@@ -790,7 +971,9 @@
         "ci": "npm run lint && npm run cov",
         "migrate": "sequelize db:migrate",
         "migrate:undo": "sequelize db:migrate:undo",
-        "migrate:status": "sequelize db:migrate:status"
+        "migrate:status": "sequelize db:migrate:status",
+        "test:db-optimization": "node scripts/test-database-optimization.js",
+        "db:optimize": "sequelize db:migrate --name 20250721000000-add-indexes.js"
       },
       "ci": {
         "version": "16, 18",

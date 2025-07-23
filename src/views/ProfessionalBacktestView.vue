@@ -10,40 +10,30 @@
       <div class="config-panel">
         <div class="panel-section">
           <h3>基础配置</h3>
-          
+
           <div class="form-group">
             <label>股票代码</label>
-            <StockSearch @select="selectStock" />
-            <div v-if="params.symbol" class="selected-stock">
-              已选择: {{ params.symbol }}
-            </div>
+            <UnifiedStockSearch @select="selectStock" />
+            <div v-if="params.symbol" class="selected-stock">已选择: {{ params.symbol }}</div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>开始日期</label>
-              <input 
-                type="date" 
-                v-model="params.customStartDate" 
-                class="form-control"
-              />
+              <input type="date" v-model="params.customStartDate" class="form-control" />
             </div>
             <div class="form-group">
               <label>结束日期</label>
-              <input 
-                type="date" 
-                v-model="params.customEndDate" 
-                class="form-control"
-              />
+              <input type="date" v-model="params.customEndDate" class="form-control" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>初始资金</label>
-              <input 
-                type="number" 
-                v-model="params.initialCapital" 
+              <input
+                type="number"
+                v-model="params.initialCapital"
                 class="form-control"
                 min="10000"
                 step="10000"
@@ -63,10 +53,14 @@
 
         <div class="panel-section">
           <h3>策略配置</h3>
-          
+
           <div class="form-group">
             <label>策略类型</label>
-            <select v-model="params.strategyType" class="form-control" @change="onStrategyTypeChange">
+            <select
+              v-model="params.strategyType"
+              class="form-control"
+              @change="onStrategyTypeChange"
+            >
               <option value="technical">技术分析策略</option>
               <option value="factor">因子策略</option>
               <option value="ml">机器学习策略</option>
@@ -78,11 +72,7 @@
             <label>策略模板</label>
             <select v-model="selectedTemplate" class="form-control" @change="loadTemplate">
               <option value="">选择策略模板</option>
-              <option 
-                v-for="template in strategyTemplates" 
-                :key="template.id" 
-                :value="template.id"
-              >
+              <option v-for="template in strategyTemplates" :key="template.id" :value="template.id">
                 {{ template.name }}
               </option>
             </select>
@@ -93,38 +83,33 @@
             <h4>策略参数</h4>
             <div v-for="(value, key) in strategyParams" :key="key" class="form-group">
               <label>{{ getParamLabel(key) }}</label>
-              <input 
+              <input
                 v-if="typeof value === 'number'"
-                type="number" 
-                v-model.number="strategyParams[key]" 
+                type="number"
+                v-model.number="strategyParams[key]"
                 class="form-control"
                 :step="getParamStep(key)"
               />
-              <input 
+              <input
                 v-else-if="typeof value === 'boolean'"
-                type="checkbox" 
-                v-model="strategyParams[key]" 
+                type="checkbox"
+                v-model="strategyParams[key]"
                 class="form-checkbox"
               />
-              <input 
-                v-else
-                type="text" 
-                v-model="strategyParams[key]" 
-                class="form-control"
-              />
+              <input v-else type="text" v-model="strategyParams[key]" class="form-control" />
             </div>
           </div>
         </div>
 
         <div class="panel-section">
           <h3>交易成本</h3>
-          
+
           <div class="form-row">
             <div class="form-group">
               <label>佣金率 (%)</label>
-              <input 
-                type="number" 
-                v-model="params.commissionRate" 
+              <input
+                type="number"
+                v-model="params.commissionRate"
                 class="form-control"
                 step="0.001"
                 min="0"
@@ -132,9 +117,9 @@
             </div>
             <div class="form-group">
               <label>滑点率 (%)</label>
-              <input 
-                type="number" 
-                v-model="params.slippageRate" 
+              <input
+                type="number"
+                v-model="params.slippageRate"
                 class="form-control"
                 step="0.001"
                 min="0"
@@ -144,30 +129,20 @@
         </div>
 
         <div class="panel-actions">
-          <button 
-            class="btn btn-primary" 
-            @click="runBacktest" 
+          <button
+            class="btn btn-primary"
+            @click="runBacktest"
             :disabled="isRunning || !canRunBacktest"
           >
             <span v-if="isRunning" class="loading-spinner"></span>
             {{ isRunning ? '回测中...' : '开始回测' }}
           </button>
-          
-          <button 
-            class="btn btn-secondary" 
-            @click="runBatchBacktest" 
-            :disabled="isRunning"
-          >
+
+          <button class="btn btn-secondary" @click="runBatchBacktest" :disabled="isRunning">
             参数优化
           </button>
-          
-          <button 
-            class="btn btn-outline" 
-            @click="resetBacktest"
-            :disabled="isRunning"
-          >
-            重置
-          </button>
+
+          <button class="btn btn-outline" @click="resetBacktest" :disabled="isRunning">重置</button>
         </div>
       </div>
 
@@ -258,7 +233,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import StockSearch from '@/components/StockSearch.vue'
+import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 import BacktestResultVisualization from '@/components/backtest/BacktestResultVisualization.vue'
 import { backtestService } from '@/services/backtest/BacktestService'
 import { useToast } from '@/composables/useToast'
@@ -277,7 +252,7 @@ const params = reactive<BacktestParams>({
   slippageRate: 0.001,
   customStartDate: '',
   customEndDate: '',
-  strategyParams: {}
+  strategyParams: {},
 })
 
 // 状态管理
@@ -295,7 +270,9 @@ const strategyParams = ref<any>(null)
 
 // 计算属性
 const canRunBacktest = computed(() => {
-  return params.symbol && params.customStartDate && params.customEndDate && params.initialCapital > 0
+  return (
+    params.symbol && params.customStartDate && params.customEndDate && params.initialCapital > 0
+  )
 })
 
 // 初始化
@@ -304,10 +281,10 @@ onMounted(async () => {
   const today = new Date()
   const oneYearAgo = new Date()
   oneYearAgo.setFullYear(today.getFullYear() - 1)
-  
+
   params.customEndDate = today.toISOString().split('T')[0]
   params.customStartDate = oneYearAgo.toISOString().split('T')[0]
-  
+
   // 加载策略模板
   strategyTemplates.value = backtestService.getStrategyTemplates()
 })
@@ -325,7 +302,7 @@ const onStrategyTypeChange = () => {
 
 // 加载策略模板
 const loadTemplate = () => {
-  const template = strategyTemplates.value.find(t => t.id === selectedTemplate.value)
+  const template = strategyTemplates.value.find((t) => t.id === selectedTemplate.value)
   if (template) {
     strategyParams.value = { ...template.defaultParams }
     params.strategyParams = strategyParams.value
@@ -360,16 +337,15 @@ const runBacktest = async () => {
     }, 500)
 
     const result = await backtestService.runBacktest(params)
-    
+
     clearInterval(progressInterval)
     progress.value = 100
     loadingMessage.value = '回测完成!'
-    
+
     setTimeout(() => {
       backtestResult.value = result
       showToast('回测完成!')
     }, 500)
-
   } catch (err: any) {
     error.value = err.message
     showToast('回测失败: ' + err.message)
@@ -390,7 +366,7 @@ const runBatchBacktest = async () => {
     shortPeriod: [5, 10, 15, 20],
     longPeriod: [20, 30, 40, 50],
     stopLoss: [0.03, 0.05, 0.08],
-    takeProfit: [0.10, 0.15, 0.20]
+    takeProfit: [0.1, 0.15, 0.2],
   }
 
   isRunning.value = true
@@ -399,7 +375,9 @@ const runBatchBacktest = async () => {
 
   try {
     const results = await backtestService.runBatchBacktest(params, parameterGrid)
-    batchResults.value = results.sort((a, b) => b.performance.sharpeRatio - a.performance.sharpeRatio)
+    batchResults.value = results.sort(
+      (a, b) => b.performance.sharpeRatio - a.performance.sharpeRatio
+    )
     showToast(`批量回测完成，共 ${results.length} 个结果`)
   } catch (err: any) {
     error.value = err.message
@@ -431,7 +409,7 @@ const getParamLabel = (key: string) => {
     takeProfit: '止盈比例',
     rsiPeriod: 'RSI周期',
     oversoldLevel: '超卖阈值',
-    overboughtLevel: '超买阈值'
+    overboughtLevel: '超买阈值',
   }
   return labels[key] || key
 }
@@ -442,7 +420,7 @@ const getParamStep = (key: string) => {
 }
 
 const formatPercent = (value: number) => `${(value * 100).toFixed(2)}%`
-const getReturnClass = (value: number) => value >= 0 ? 'positive' : 'negative'
+const getReturnClass = (value: number) => (value >= 0 ? 'positive' : 'negative')
 
 const formatParams = (params: any) => {
   return Object.entries(params)
@@ -682,8 +660,12 @@ const formatParams = (params: any) => {
   font-weight: 600;
 }
 
-.positive { color: #52c41a; }
-.negative { color: #ff4d4f; }
+.positive {
+  color: #52c41a;
+}
+.negative {
+  color: #ff4d4f;
+}
 
 .btn-small {
   padding: 4px 8px;
@@ -691,7 +673,11 @@ const formatParams = (params: any) => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

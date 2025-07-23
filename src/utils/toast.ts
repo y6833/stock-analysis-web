@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import Toast from '@/components/Toast.vue'
+import MessageToast from '@/components/common/MessageToast.vue'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -11,8 +11,8 @@ interface ToastOptions {
 
 export function showToast(options: ToastOptions | string) {
   // 如果传入的是字符串，则默认为info类型的消息
-  const opts: ToastOptions = typeof options === 'string' 
-    ? { message: options, type: 'info' } 
+  const opts: ToastOptions = typeof options === 'string'
+    ? { message: options, type: 'info' }
     : options
 
   // 创建一个挂载点
@@ -20,7 +20,7 @@ export function showToast(options: ToastOptions | string) {
   document.body.appendChild(mountNode)
 
   // 创建Toast实例
-  const toastApp = createApp(Toast, {
+  const toastApp = createApp(MessageToast, {
     message: opts.message,
     duration: opts.duration || 3000,
     type: opts.type || 'info'
@@ -53,3 +53,5 @@ export const toast = {
     return showToast({ message, type: 'error', duration })
   }
 }
+
+export default MessageToast

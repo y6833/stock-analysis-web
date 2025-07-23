@@ -4,6 +4,27 @@ import { getAuthHeaders } from '@/utils/auth'
 // API基础URL
 const API_URL = 'http://localhost:7001/api'
 
+// 性能数据类型
+export interface PerformanceData {
+  dailyReturns: Array<{
+    date: string
+    value: number
+    return: number
+  }>
+  cumulativeReturns: Array<{
+    date: string
+    value: number
+  }>
+  metrics: {
+    totalReturn: number
+    annualizedReturn: number
+    volatility: number
+    sharpeRatio: number
+    maxDrawdown: number
+    maxDrawdownPercentage: number
+  }
+}
+
 // 投资组合类型
 export interface Portfolio {
   id: number
@@ -203,4 +224,31 @@ export async function getTradeRecords(portfolioId: number): Promise<TradeRecord[
  */
 export async function deleteTradeRecord(portfolioId: number, tradeId: number): Promise<void> {
   await axios.delete(`${API_URL}/portfolios/${portfolioId}/trades/${tradeId}`, getAuthHeaders())
+}
+
+/**
+ * 获取投资组合性能数据
+ * @param portfolioId 组合ID
+ * @param startDate 开始日期 (可选)
+ * @param endDate 结束日期 (可选)
+ * @returns 性能数据
+ */
+export async function getPortfolioPerformance(
+  portfolioId: number,
+  startDate?: string,
+  endDate?: string
+): Promise<PerformanceData> {
+  let url = `${API_URL}/portfolios/${portfolioId}/performance`
+
+  // 添加日期范围查询参数
+  const params = new URLSearchParams()
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+
+  if (params.toString()) {
+    url += `?${params.toString()}`
+  }
+
+  const response = await axios.get(url, getAuthHeaders())
+  return response.data
 }

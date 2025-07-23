@@ -20,6 +20,7 @@ import 'egg-jwt';
 import 'egg-cors';
 import 'egg-validate';
 import 'egg-mysql';
+import 'egg-redis';
 import { EggPluginItem } from 'egg';
 declare module 'egg' {
   interface EggPlugin {

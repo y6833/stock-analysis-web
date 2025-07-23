@@ -50,7 +50,6 @@ module.exports = app => {
 
   UserDashboard.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 使用 this 而不是 app.model.UserDashboard
     this.belongsTo(app.model.User, { foreignKey: 'userId' });

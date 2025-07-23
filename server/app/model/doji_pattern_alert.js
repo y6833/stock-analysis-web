@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
 /**
  * 十字星形态提醒设置模型
  */
 module.exports = (app) => {
-  const { INTEGER, STRING, JSON, DECIMAL, BOOLEAN, DATE } = app.Sequelize
+  const { INTEGER, STRING, JSON, DECIMAL, BOOLEAN, DATE } = app.Sequelize;
 
   const DojiPatternAlert = app.model.define(
     'doji_pattern_alert',
@@ -77,15 +77,15 @@ module.exports = (app) => {
         },
       ],
     }
-  )
+  );
 
   DojiPatternAlert.associate = function () {
     // 关联到用户表
-    this.belongsTo(app.model.User, { foreignKey: 'userId' })
+    this.belongsTo(app.model.User, { foreignKey: 'userId' });
 
     // 关联到提醒历史表
-    this.hasMany(app.model.DojiPatternAlertHistory, { foreignKey: 'alertId' })
-  }
+    this.hasMany(app.model.DojiPatternAlertHistory, { foreignKey: 'alertId' });
+  };
 
   // 静态方法：获取用户的活跃提醒
   DojiPatternAlert.findActiveByUser = async function (userId) {
@@ -95,8 +95,8 @@ module.exports = (app) => {
         isActive: true,
       },
       order: [['createdAt', 'desc']],
-    })
-  }
+    });
+  };
 
   // 静态方法：获取特定股票的活跃提醒
   DojiPatternAlert.findActiveByStock = async function (stockId) {
@@ -108,42 +108,42 @@ module.exports = (app) => {
         ],
         isActive: true,
       },
-    })
-  }
+    });
+  };
 
   // 实例方法：检查形态是否匹配提醒条件
   DojiPatternAlert.prototype.matchesPattern = function (pattern) {
     // 检查形态类型
     if (!this.patternTypes.includes(pattern.patternType)) {
-      return false
+      return false;
     }
 
     // 检查显著性
     if (pattern.significance < this.minSignificance) {
-      return false
+      return false;
     }
 
     // 检查股票（如果指定了特定股票）
     if (this.stockId && this.stockId !== pattern.stockId) {
-      return false
+      return false;
     }
 
     // 检查市场环境（如果指定了）
     if (this.marketConditions && this.marketConditions.length > 0) {
-      const patternMarketCondition = pattern.context?.trend || 'sideways'
+      const patternMarketCondition = pattern.context?.trend || 'sideways';
       if (!this.marketConditions.includes(patternMarketCondition)) {
-        return false
+        return false;
       }
     }
 
-    return true
-  }
+    return true;
+  };
 
   // 实例方法：触发提醒
   DojiPatternAlert.prototype.trigger = async function (pattern) {
     // 更新最后触发时间
-    this.lastTriggeredAt = new Date()
-    await this.save()
+    this.lastTriggeredAt = new Date();
+    await this.save();
 
     // 创建提醒历史记录
     await app.model.DojiPatternAlertHistory.create({
@@ -159,10 +159,10 @@ module.exports = (app) => {
         significance: pattern.significance,
         candleData: pattern.candleData,
       },
-    })
+    });
 
-    return true
-  }
+    return true;
+  };
 
-  return DojiPatternAlert
-}
+  return DojiPatternAlert;
+};

@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
 /**
  * 十字星形态服务
  * 提供形态识别、筛选、统计分析等功能
  */
-const Service = require('egg').Service
+const Service = require('egg').Service;
 
 class DojiPatternService extends Service {
   /**
@@ -22,13 +22,13 @@ class DojiPatternService extends Service {
       limit = 20,
       offset = 0,
       useCache = true,
-    } = criteria
+    } = criteria;
 
     // 尝试从缓存获取结果
     if (useCache) {
-      const cachedResult = await this.getCachedResult('upward_stocks_screening', criteria)
+      const cachedResult = await this.getCachedResult('upward_stocks_screening', criteria);
       if (cachedResult) {
-        return cachedResult
+        return cachedResult;
       }
     }
 
@@ -41,7 +41,7 @@ class DojiPatternService extends Service {
       sortDirection,
       limit,
       offset,
-    })
+    });
 
     // 处理结果数据
     const processedData = result.rows.map((pattern) => ({
@@ -55,7 +55,7 @@ class DojiPatternService extends Service {
       volumeChange: pattern.context?.volumeChange || 0,
       significance: pattern.significance,
       rank: offset + result.rows.indexOf(pattern) + 1,
-    }))
+    }));
 
     const finalResult = {
       data: processedData,
@@ -66,14 +66,14 @@ class DojiPatternService extends Service {
         hasMore: offset + limit < result.count,
       },
       fromCache: false,
-    }
+    };
 
     // 缓存结果
     if (useCache) {
-      await this.setCachedResult('upward_stocks_screening', criteria, finalResult, 300)
+      await this.setCachedResult('upward_stocks_screening', criteria, finalResult, 300);
     }
 
-    return finalResult
+    return finalResult;
   }
 
   /**
@@ -82,30 +82,30 @@ class DojiPatternService extends Service {
    * @returns {Array} 形态列表
    */
   async getRecentPatterns(params) {
-    const { days = 7, patternType = null, limit = 50, useCache = true } = params
+    const { days = 7, patternType = null, limit = 50, useCache = true } = params;
 
     // 尝试从缓存获取结果
     if (useCache) {
-      const cachedResult = await this.getCachedResult('pattern_history_query', params)
+      const cachedResult = await this.getCachedResult('pattern_history_query', params);
       if (cachedResult) {
-        return cachedResult
+        return cachedResult;
       }
     }
 
-    const patterns = await this.ctx.model.DojiPattern.findRecentPatterns(days, patternType, limit)
+    const patterns = await this.ctx.model.DojiPattern.findRecentPatterns(days, patternType, limit);
 
     const result = {
       data: patterns,
       totalCount: patterns.length,
       fromCache: false,
-    }
+    };
 
     // 缓存结果
     if (useCache) {
-      await this.setCachedResult('pattern_history_query', params, result, 600)
+      await this.setCachedResult('pattern_history_query', params, result, 600);
     }
 
-    return result
+    return result;
   }
 
   /**
@@ -116,7 +116,7 @@ class DojiPatternService extends Service {
    * @returns {Object} 价格走势分析
    */
   async analyzePriceMovement(stockId, patternDate, days = 5) {
-    return await this.ctx.model.DojiPattern.analyzePriceMovement(stockId, patternDate, days)
+    return await this.ctx.model.DojiPattern.analyzePriceMovement(stockId, patternDate, days);
   }
 
   /**
@@ -130,7 +130,7 @@ class DojiPatternService extends Service {
       analysisPeriod = 5,
       marketCondition = null,
       forceUpdate = false,
-    } = params
+    } = params;
 
     // 检查是否需要更新统计数据
     if (
@@ -145,10 +145,10 @@ class DojiPatternService extends Service {
         patternType,
         analysisPeriod,
         marketCondition
-      )
+      );
     }
 
-    return await this.ctx.model.DojiPatternStatistics.getStatsSummary(patternType, analysisPeriod)
+    return await this.ctx.model.DojiPatternStatistics.getStatsSummary(patternType, analysisPeriod);
   }
 
   /**
@@ -157,12 +157,12 @@ class DojiPatternService extends Service {
    * @returns {Object} 创建的提醒
    */
   async createPatternAlert(alertData) {
-    const alert = await this.ctx.model.DojiPatternAlert.create(alertData)
+    const alert = await this.ctx.model.DojiPatternAlert.create(alertData);
 
     // 清理相关缓存
-    await this.clearRelatedCache('pattern_alerts')
+    await this.clearRelatedCache('pattern_alerts');
 
-    return alert
+    return alert;
   }
 
   /**
@@ -172,17 +172,17 @@ class DojiPatternService extends Service {
    * @returns {Object} 更新后的提醒
    */
   async updatePatternAlert(alertId, updateData) {
-    const alert = await this.ctx.model.DojiPatternAlert.findByPk(alertId)
+    const alert = await this.ctx.model.DojiPatternAlert.findByPk(alertId);
     if (!alert) {
-      throw new Error('提醒不存在')
+      throw new Error('提醒不存在');
     }
 
-    await alert.update(updateData)
+    await alert.update(updateData);
 
     // 清理相关缓存
-    await this.clearRelatedCache('pattern_alerts')
+    await this.clearRelatedCache('pattern_alerts');
 
-    return alert
+    return alert;
   }
 
   /**
@@ -191,17 +191,17 @@ class DojiPatternService extends Service {
    * @returns {Boolean} 删除结果
    */
   async deletePatternAlert(alertId) {
-    const alert = await this.ctx.model.DojiPatternAlert.findByPk(alertId)
+    const alert = await this.ctx.model.DojiPatternAlert.findByPk(alertId);
     if (!alert) {
-      throw new Error('提醒不存在')
+      throw new Error('提醒不存在');
     }
 
-    await alert.destroy()
+    await alert.destroy();
 
     // 清理相关缓存
-    await this.clearRelatedCache('pattern_alerts')
+    await this.clearRelatedCache('pattern_alerts');
 
-    return true
+    return true;
   }
 
   /**
@@ -210,7 +210,7 @@ class DojiPatternService extends Service {
    * @returns {Array} 提醒列表
    */
   async getUserPatternAlerts(userId) {
-    return await this.ctx.model.DojiPatternAlert.findActiveByUser(userId)
+    return await this.ctx.model.DojiPatternAlert.findActiveByUser(userId);
   }
 
   /**
@@ -219,17 +219,17 @@ class DojiPatternService extends Service {
    * @returns {Array} 触发的提醒列表
    */
   async triggerPatternAlerts(pattern) {
-    const alerts = await this.ctx.model.DojiPatternAlert.findActiveByStock(pattern.stockId)
-    const triggeredAlerts = []
+    const alerts = await this.ctx.model.DojiPatternAlert.findActiveByStock(pattern.stockId);
+    const triggeredAlerts = [];
 
     for (const alert of alerts) {
       if (alert.matchesPattern(pattern)) {
-        await alert.trigger(pattern)
-        triggeredAlerts.push(alert)
+        await alert.trigger(pattern);
+        triggeredAlerts.push(alert);
       }
     }
 
-    return triggeredAlerts
+    return triggeredAlerts;
   }
 
   /**
@@ -240,11 +240,11 @@ class DojiPatternService extends Service {
    */
   async getCachedResult(queryType, queryParams) {
     try {
-      const cacheParams = { queryType, ...queryParams }
-      return await this.ctx.model.DojiPatternQueryCache.getCache(cacheParams)
+      const cacheParams = { queryType, ...queryParams };
+      return await this.ctx.model.DojiPatternQueryCache.getCache(cacheParams);
     } catch (error) {
-      this.logger.warn('获取缓存失败:', error)
-      return null
+      this.logger.warn('获取缓存失败:', error);
+      return null;
     }
   }
 
@@ -258,17 +258,17 @@ class DojiPatternService extends Service {
    */
   async setCachedResult(queryType, queryParams, result, cacheDuration = 300) {
     try {
-      const cacheParams = { queryType, ...queryParams }
+      const cacheParams = { queryType, ...queryParams };
       await this.ctx.model.DojiPatternQueryCache.setCache(
         cacheParams,
         result.data,
         result.totalCount,
         cacheDuration
-      )
-      return true
+      );
+      return true;
     } catch (error) {
-      this.logger.warn('设置缓存失败:', error)
-      return false
+      this.logger.warn('设置缓存失败:', error);
+      return false;
     }
   }
 
@@ -279,10 +279,10 @@ class DojiPatternService extends Service {
    */
   async clearRelatedCache(pattern) {
     try {
-      return await this.ctx.model.DojiPatternQueryCache.clearCacheByPattern(pattern)
+      return await this.ctx.model.DojiPatternQueryCache.clearCacheByPattern(pattern);
     } catch (error) {
-      this.logger.warn('清理缓存失败:', error)
-      return 0
+      this.logger.warn('清理缓存失败:', error);
+      return 0;
     }
   }
 
@@ -292,10 +292,10 @@ class DojiPatternService extends Service {
    */
   async cleanExpiredCache() {
     try {
-      return await this.ctx.model.DojiPatternQueryCache.cleanExpiredCache()
+      return await this.ctx.model.DojiPatternQueryCache.cleanExpiredCache();
     } catch (error) {
-      this.logger.warn('清理过期缓存失败:', error)
-      return 0
+      this.logger.warn('清理过期缓存失败:', error);
+      return 0;
     }
   }
 
@@ -305,10 +305,10 @@ class DojiPatternService extends Service {
    */
   async getCacheStats() {
     try {
-      return await this.ctx.model.DojiPatternQueryCache.getCacheStats()
+      return await this.ctx.model.DojiPatternQueryCache.getCacheStats();
     } catch (error) {
-      this.logger.warn('获取缓存统计失败:', error)
-      return { totalCaches: 0, activeCaches: 0, expiredCaches: 0, hitStats: {} }
+      this.logger.warn('获取缓存统计失败:', error);
+      return { totalCaches: 0, activeCaches: 0, expiredCaches: 0, hitStats: {} };
     }
   }
 
@@ -319,9 +319,9 @@ class DojiPatternService extends Service {
    */
   calculateCurrentPrice(pattern) {
     // 这里应该调用实时价格API，暂时使用模拟数据
-    const basePrice = pattern.candleData.close
-    const priceChange = pattern.priceMovement?.day5 || 0
-    return basePrice * (1 + priceChange / 100)
+    const basePrice = pattern.candleData.close;
+    const priceChange = pattern.priceMovement?.day5 || 0;
+    return basePrice * (1 + priceChange / 100);
   }
 
   /**
@@ -330,27 +330,27 @@ class DojiPatternService extends Service {
    * @returns {Array} 保存的形态
    */
   async batchSavePatterns(patterns) {
-    const savedPatterns = []
+    const savedPatterns = [];
 
     for (const patternData of patterns) {
       try {
-        const pattern = await this.ctx.model.DojiPattern.create(patternData)
-        savedPatterns.push(pattern)
+        const pattern = await this.ctx.model.DojiPattern.create(patternData);
+        savedPatterns.push(pattern);
 
         // 触发相关提醒
-        await this.triggerPatternAlerts(pattern)
+        await this.triggerPatternAlerts(pattern);
       } catch (error) {
-        this.logger.error('保存形态失败:', error, patternData)
+        this.logger.error('保存形态失败:', error, patternData);
       }
     }
 
     // 清理相关缓存
     if (savedPatterns.length > 0) {
-      await this.clearRelatedCache('upward_stocks')
-      await this.clearRelatedCache('pattern_history')
+      await this.clearRelatedCache('upward_stocks');
+      await this.clearRelatedCache('pattern_history');
     }
 
-    return savedPatterns
+    return savedPatterns;
   }
 
   /**
@@ -364,11 +364,11 @@ class DojiPatternService extends Service {
       upward_stocks_screening: { defaultPageSize: 20, maxPageSize: 100, cacheDuration: 300 },
       pattern_history_query: { defaultPageSize: 50, maxPageSize: 200, cacheDuration: 600 },
       pattern_statistics_query: { defaultPageSize: 10, maxPageSize: 50, cacheDuration: 1800 },
-    }
+    };
 
     return (
       defaultConfigs[queryType] || { defaultPageSize: 20, maxPageSize: 100, cacheDuration: 300 }
-    )
+    );
   }
 
   /**
@@ -380,21 +380,21 @@ class DojiPatternService extends Service {
     try {
       const userSettings = await this.ctx.model.DojiPatternUserSettings.findOne({
         where: { userId },
-      })
+      });
 
       if (!userSettings) {
         // 返回默认设置
-        return this.getDefaultSettings()
+        return this.getDefaultSettings();
       }
 
       return {
         ...this.getDefaultSettings(),
         ...userSettings.settings,
         updatedAt: userSettings.updatedAt,
-      }
+      };
     } catch (error) {
-      this.logger.error('获取用户设置失败:', error)
-      return this.getDefaultSettings()
+      this.logger.error('获取用户设置失败:', error);
+      return this.getDefaultSettings();
     }
   }
 
@@ -412,20 +412,20 @@ class DojiPatternService extends Service {
           userId,
           settings,
         },
-      })
+      });
 
       if (!created) {
-        await userSettings.update({ settings })
+        await userSettings.update({ settings });
       }
 
       return {
         ...this.getDefaultSettings(),
         ...settings,
         updatedAt: userSettings.updatedAt,
-      }
+      };
     } catch (error) {
-      this.logger.error('保存用户设置失败:', error)
-      throw error
+      this.logger.error('保存用户设置失败:', error);
+      throw error;
     }
   }
 
@@ -438,12 +438,12 @@ class DojiPatternService extends Service {
     try {
       await this.ctx.model.DojiPatternUserSettings.destroy({
         where: { userId },
-      })
+      });
 
-      return this.getDefaultSettings()
+      return this.getDefaultSettings();
     } catch (error) {
-      this.logger.error('重置用户设置失败:', error)
-      throw error
+      this.logger.error('重置用户设置失败:', error);
+      throw error;
     }
   }
 
@@ -453,7 +453,7 @@ class DojiPatternService extends Service {
    * @returns {Object} 验证结果
    */
   async validateSettings(settings) {
-    const errors = []
+    const errors = [];
 
     try {
       // 验证基础识别参数
@@ -462,7 +462,7 @@ class DojiPatternService extends Service {
         settings.bodyThreshold < 0.1 ||
         settings.bodyThreshold > 2.0
       ) {
-        errors.push('敏感度阈值必须在0.1-2.0之间')
+        errors.push('敏感度阈值必须在0.1-2.0之间');
       }
 
       if (
@@ -470,7 +470,7 @@ class DojiPatternService extends Service {
         settings.equalPriceThreshold < 0.01 ||
         settings.equalPriceThreshold > 1.0
       ) {
-        errors.push('价格相等容差必须在0.01-1.0之间')
+        errors.push('价格相等容差必须在0.01-1.0之间');
       }
 
       if (
@@ -478,7 +478,7 @@ class DojiPatternService extends Service {
         settings.longLegThreshold < 1.0 ||
         settings.longLegThreshold > 5.0
       ) {
-        errors.push('长腿阈值必须在1.0-5.0之间')
+        errors.push('长腿阈值必须在1.0-5.0之间');
       }
 
       // 验证形态类型
@@ -486,15 +486,15 @@ class DojiPatternService extends Service {
         !Array.isArray(settings.enabledPatternTypes) ||
         settings.enabledPatternTypes.length === 0
       ) {
-        errors.push('必须至少启用一种形态类型')
+        errors.push('必须至少启用一种形态类型');
       }
 
-      const validPatternTypes = ['standard', 'dragonfly', 'gravestone', 'longLegged']
+      const validPatternTypes = ['standard', 'dragonfly', 'gravestone', 'longLegged'];
       const invalidTypes = settings.enabledPatternTypes.filter(
         (type) => !validPatternTypes.includes(type)
-      )
+      );
       if (invalidTypes.length > 0) {
-        errors.push(`无效的形态类型: ${invalidTypes.join(', ')}`)
+        errors.push(`无效的形态类型: ${invalidTypes.join(', ')}`);
       }
 
       // 验证显示设置
@@ -503,12 +503,12 @@ class DojiPatternService extends Service {
         settings.minSignificance < 0.1 ||
         settings.minSignificance > 1.0
       ) {
-        errors.push('最小显著性必须在0.1-1.0之间')
+        errors.push('最小显著性必须在0.1-1.0之间');
       }
 
-      const validMarkerSizes = ['small', 'medium', 'large']
+      const validMarkerSizes = ['small', 'medium', 'large'];
       if (!validMarkerSizes.includes(settings.markerSize)) {
-        errors.push('无效的标记大小')
+        errors.push('无效的标记大小');
       }
 
       if (
@@ -516,13 +516,13 @@ class DojiPatternService extends Service {
         settings.markerOpacity < 0.3 ||
         settings.markerOpacity > 1.0
       ) {
-        errors.push('标记透明度必须在0.3-1.0之间')
+        errors.push('标记透明度必须在0.3-1.0之间');
       }
 
       // 验证性能设置
-      const validCalculationModes = ['realtime', 'ondemand', 'cached']
+      const validCalculationModes = ['realtime', 'ondemand', 'cached'];
       if (!validCalculationModes.includes(settings.calculationMode)) {
-        errors.push('无效的计算模式')
+        errors.push('无效的计算模式');
       }
 
       if (
@@ -530,7 +530,7 @@ class DojiPatternService extends Service {
         settings.cacheTimeout < 60 ||
         settings.cacheTimeout > 3600
       ) {
-        errors.push('缓存时长必须在60-3600秒之间')
+        errors.push('缓存时长必须在60-3600秒之间');
       }
 
       if (
@@ -538,19 +538,19 @@ class DojiPatternService extends Service {
         settings.maxCalculationCount < 100 ||
         settings.maxCalculationCount > 10000
       ) {
-        errors.push('最大计算数量必须在100-10000之间')
+        errors.push('最大计算数量必须在100-10000之间');
       }
 
       return {
         valid: errors.length === 0,
         errors,
-      }
+      };
     } catch (error) {
-      this.logger.error('验证设置失败:', error)
+      this.logger.error('验证设置失败:', error);
       return {
         valid: false,
         errors: ['设置验证过程中发生错误'],
-      }
+      };
     }
   }
 
@@ -614,7 +614,7 @@ class DojiPatternService extends Service {
           maxCalculationCount: 2000,
         },
       },
-    ]
+    ];
   }
 
   /**
@@ -628,7 +628,7 @@ class DojiPatternService extends Service {
       const stats = await this.ctx.model.DojiPatternPerformanceStats.findOne({
         where: { userId },
         order: [['createdAt', 'DESC']],
-      })
+      });
 
       if (!stats) {
         return {
@@ -637,7 +637,7 @@ class DojiPatternService extends Service {
           memoryUsage: 12.5,
           totalCalculations: 0,
           lastCalculationTime: null,
-        }
+        };
       }
 
       return {
@@ -646,16 +646,16 @@ class DojiPatternService extends Service {
         memoryUsage: stats.memoryUsage,
         totalCalculations: stats.totalCalculations,
         lastCalculationTime: stats.lastCalculationTime,
-      }
+      };
     } catch (error) {
-      this.logger.error('获取性能统计失败:', error)
+      this.logger.error('获取性能统计失败:', error);
       return {
         avgCalculationTime: 0,
         cacheHitRate: 0,
         memoryUsage: 0,
         totalCalculations: 0,
         lastCalculationTime: null,
-      }
+      };
     }
   }
 
@@ -683,8 +683,8 @@ class DojiPatternService extends Service {
       calculationMode: 'cached',
       cacheTimeout: 300,
       maxCalculationCount: 1000,
-    }
+    };
   }
 }
 
-module.exports = DojiPatternService
+module.exports = DojiPatternService;

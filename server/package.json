@@ -7,15 +7,26 @@
     "declarations": true
   },
   "dependencies": {
+    "apollo-server-express": "^3.13.0",
     "egg": "^3.30.1",
     "egg-cors": "^2.2.4",
     "egg-jwt": "^3.1.7",
     "egg-mysql": "^3.4.0",
+    "egg-rate-limiter": "^2.0.0",
+    "egg-redis": "^2.4.0",
     "egg-scripts": "^2.17.0",
+    "egg-security": "^3.0.0",
     "egg-sequelize": "^6.0.0",
+    "express-rate-limit": "^7.2.0",
+    "graphql": "^16.11.0",
+    "graphql-tools": "^9.0.19",
+    "helmet": "^7.1.0",
     "iconv-lite": "^0.6.3",
     "mysql2": "^3.14.0",
-    "sequelize": "^6.37.7"
+    "rate-limit-redis": "^4.2.0",
+    "redis": "^4.6.13",
+    "sequelize": "^6.37.7",
+    "xss": "^1.0.14"
   },
   "devDependencies": {
     "egg-bin": "^5.19.0",
@@ -40,7 +51,9 @@
     "ci": "npm run lint && npm run cov",
     "migrate": "sequelize db:migrate",
     "migrate:undo": "sequelize db:migrate:undo",
-    "migrate:status": "sequelize db:migrate:status"
+    "migrate:status": "sequelize db:migrate:status",
+    "test:db-optimization": "node scripts/test-database-optimization.js",
+    "db:optimize": "sequelize db:migrate --name 20250721000000-add-indexes.js"
   },
   "ci": {
     "version": "16, 18",

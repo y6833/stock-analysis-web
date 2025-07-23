@@ -83,7 +83,6 @@ module.exports = app => {
 
   PageAccessLog.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性
     const prefix = this._associationPrefix || '';
-    
 
     // 防止重复关联
     if (PageAccessLog.associations && Object.keys(PageAccessLog.associations).length > 0) {

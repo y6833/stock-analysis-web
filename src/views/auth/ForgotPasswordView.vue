@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { userService } from '@/services/userService'
+import { authService } from '@/services/authService'
+import { ElMessage } from 'element-plus'
 import type { PasswordResetRequest } from '@/types/user'
 
 const router = useRouter()
@@ -47,13 +48,56 @@ const handleSubmit = async () => {
   if (!validateForm()) return
   
   isSubmitting.value = true
+  formErrors.general = ''
   
   try {
-    await userService.requestPasswordReset(resetForm)
+    await authService.requestPasswordReset(resetForm)
     resetRequestSent.value = true
+    
+    // 记录重置请求的邮箱，用于防止频繁请求
+    sessionStorage.setItem('password_reset_email', resetForm.email)
+    sessionStorage.setItem('password_reset_time', Date.now().toString())
   } catch (error: any) {
     console.error('请求密码重置失败:', error)
-    formErrors.general = error.response?.data?.message || '请求密码重置失败，请稍后再试'
+    formErrors.general = error.message || '请求密码重置失败，请稍后再试'
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// 重新发送重置链接
+const resendResetLink = async () => {
+  // 检查是否可以重新发送（防止频繁请求，限制为1分钟一次）
+  const lastResetTime = sessionStorage.getItem('password_reset_time')
+  if (lastResetTime && Date.now() - parseInt(lastResetTime) < 60000) {
+    ElMessage({
+      message: '请求过于频繁，请稍后再试',
+      type: 'warning',
+      duration: 3000
+    })
+    return
+  }
+  
+  isSubmitting.value = true
+  
+  try {
+    await authService.requestPasswordReset(resetForm)
+    
+    ElMessage({
+      message: '重置链接已重新发送',
+      type: 'success',
+      duration: 3000
+    })
+    
+    // 更新重置请求时间
+    sessionStorage.setItem('password_reset_time', Date.now().toString())
+  } catch (error: any) {
+    console.error('重新发送重置链接失败:', error)
+    ElMessage({
+      message: error.message || '重新发送失败，请稍后再试',
+      type: 'error',
+      duration: 3000
+    })
   } finally {
     isSubmitting.value = false
   }
@@ -61,7 +105,7 @@ const handleSubmit = async () => {
 
 // 返回登录页面
 const goToLogin = () => {
-  router.push('/login')
+  router.push('/auth/login')
 }
 </script>
 
@@ -78,7 +122,7 @@ const goToLogin = () => {
         <div class="success-icon">✅</div>
         <h2>重置链接已发送</h2>
         <p>我们已向 {{ resetForm.email }} 发送了一封包含密码重置链接的邮件。请检查您的邮箱并按照邮件中的指示操作。</p>
-        <p class="note">如果您没有收到邮件，请检查垃圾邮件文件夹，或者 <button @click="resetRequestSent = false" class="text-link">重新发送</button></p>
+        <p class="note">如果您没有收到邮件，请检查垃圾邮件文件夹，或者 <button @click="resendResetLink" class="text-link">重新发送</button></p>
         <button @click="goToLogin" class="btn btn-primary btn-block">返回登录</button>
       </div>
       

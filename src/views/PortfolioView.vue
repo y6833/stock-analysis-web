@@ -5,7 +5,7 @@ import { usePortfolioStore } from '@/stores/portfolioStore'
 import type { Position } from '@/types/portfolio'
 import { stockService } from '@/services/stockService'
 import * as portfolioService from '@/services/portfolioService'
-import StockSearch from '@/components/StockSearch.vue'
+import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 
 // 仓位数据
 const positions = ref<Position[]>([])
@@ -747,7 +747,7 @@ onMounted(async () => {
 
       <div class="form-group">
         <label>股票代码/名称</label>
-        <StockSearch @select="selectStock" />
+        <UnifiedStockSearch @select="selectStock" />
       </div>
 
       <div class="form-row">

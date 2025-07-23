@@ -6,7 +6,7 @@
     </div>
 
     <div class="stock-search">
-      <StockSearch
+      <UnifiedStockSearch
         placeholder="输入股票代码或名称搜索..."
         @select="onStockSelect"
         @clear="onStockClear"
@@ -106,7 +106,7 @@ import { dashboardService } from '@/services/dashboardService'
 import { toast } from '@/utils/toast'
 import StockChart from '@/components/charts/StockChart.vue'
 import TechnicalSignals from '@/components/TechnicalSignals.vue'
-import StockSearch from '@/components/StockSearch.vue'
+import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 import type { Stock, StockQuote } from '@/types/stock'
 import type { DashboardSettings, Watchlist, WatchlistItem } from '@/types/dashboard'
 

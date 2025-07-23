@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/userStore'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth/authStore'
+import { ElMessage } from 'element-plus'
 import type { LoginRequest } from '@/types/user'
 
 const router = useRouter()
-const userStore = useUserStore()
+const route = useRoute()
+const authStore = useAuthStore()
 
 // 表单数据
 const loginForm = reactive<LoginRequest>({
@@ -24,6 +26,29 @@ const formErrors = reactive({
 // 表单状态
 const isSubmitting = ref(false)
 const showPassword = ref(false)
+
+// 检查URL参数
+onMounted(() => {
+  // 检查是否是从注册页面跳转来的
+  if (route.query.registered === 'true') {
+    ElMessage({
+      message: '注册成功，请登录',
+      type: 'success',
+      duration: 5000
+    })
+  }
+  
+  // 检查会话是否过期
+  if (route.query.session_expired === 'true') {
+    formErrors.general = '您的会话已过期，请重新登录'
+  }
+  
+  // 检查是否有重定向URL
+  if (route.query.redirect) {
+    // 存储重定向URL，登录成功后使用
+    sessionStorage.setItem('auth_redirect', route.query.redirect as string)
+  }
+})
 
 // 验证表单
 const validateForm = (): boolean => {
@@ -57,25 +82,32 @@ const handleSubmit = async () => {
   if (!validateForm()) return
 
   isSubmitting.value = true
+  formErrors.general = ''
 
   try {
-    const success = await userStore.login(loginForm)
+    const success = await authStore.login(loginForm)
 
     if (success) {
-      // 登录成功，跳转到仪表盘，然后刷新页面
-      router.push('/').then(() => {
-        // 使用短暂延迟确保路由变更已完成
-        setTimeout(() => {
-          window.location.reload()
-        }, 100)
+      // 登录成功，显示成功消息
+      ElMessage({
+        message: '登录成功',
+        type: 'success',
+        duration: 2000
       })
+      
+      // 检查是否有重定向URL
+      const redirectUrl = sessionStorage.getItem('auth_redirect') || '/'
+      sessionStorage.removeItem('auth_redirect')
+      
+      // 跳转到目标页面
+      router.push(redirectUrl)
     } else {
       // 登录失败，显示错误信息
-      formErrors.general = userStore.error || '登录失败，请检查用户名和密码'
+      formErrors.general = authStore.error || '登录失败，请检查用户名和密码'
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('登录过程中发生错误:', error)
-    formErrors.general = '登录过程中发生错误，请稍后再试'
+    formErrors.general = error.message || '登录过程中发生错误，请稍后再试'
   } finally {
     isSubmitting.value = false
   }
@@ -83,7 +115,7 @@ const handleSubmit = async () => {
 
 // 切换到注册页面
 const goToRegister = () => {
-  router.push('/register')
+  router.push('/auth/register')
 }
 
 // 切换密码可见性
@@ -93,7 +125,7 @@ const togglePasswordVisibility = () => {
 
 // 忘记密码
 const forgotPassword = () => {
-  router.push('/forgot-password')
+  router.push('/auth/forgot-password')
 }
 </script>
 

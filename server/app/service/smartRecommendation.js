@@ -127,7 +127,7 @@ class SmartRecommendationService extends Service {
       if (results && results.length > 0) {
         allStocks = results;
         ctx.logger.info(`✅ 从数据库获取到 ${allStocks.length} 只股票`);
-        ctx.logger.info(`📋 前3只股票样本:`, allStocks.slice(0, 3));
+        ctx.logger.info('📋 前3只股票样本:', allStocks.slice(0, 3));
       } else {
         ctx.logger.error('❌ 数据库查询返回空结果！');
         ctx.logger.info('🔍 开始诊断数据库问题...');
@@ -337,17 +337,17 @@ class SmartRecommendationService extends Service {
 
       // 调用不同的数据源API
       switch (source) {
-        case 'sina':
-          return await this.fetchFromSinaAPI(symbol);
-        case 'eastmoney':
-          return await this.fetchFromEastMoneyAPI(symbol);
-        case 'alphavantage':
-          return await this.fetchFromAlphaVantageAPI(symbol);
-        case 'alltick':
-          return await this.fetchFromAlltickAPI(symbol);
-        default:
-          ctx.logger.warn(`未知数据源: ${source}`);
-          return null;
+      case 'sina':
+        return await this.fetchFromSinaAPI(symbol);
+      case 'eastmoney':
+        return await this.fetchFromEastMoneyAPI(symbol);
+      case 'alphavantage':
+        return await this.fetchFromAlphaVantageAPI(symbol);
+      case 'alltick':
+        return await this.fetchFromAlltickAPI(symbol);
+      default:
+        ctx.logger.warn(`未知数据源: ${source}`);
+        return null;
       }
     } catch (error) {
       ctx.logger.warn(`从 ${source} 获取 ${symbol} 价格失败:`, error.message);
@@ -1192,14 +1192,14 @@ class SmartRecommendationService extends Service {
    */
   getPositionSizing(riskLevel) {
     switch (riskLevel) {
-      case 'low':
-        return '可适当加大仓位，建议5-10%';
-      case 'medium':
-        return '标准仓位，建议3-5%';
-      case 'high':
-        return '控制仓位，建议1-3%';
-      default:
-        return '标准仓位，建议3-5%';
+    case 'low':
+      return '可适当加大仓位，建议5-10%';
+    case 'medium':
+      return '标准仓位，建议3-5%';
+    case 'high':
+      return '控制仓位，建议1-3%';
+    default:
+      return '标准仓位，建议3-5%';
     }
   }
 
