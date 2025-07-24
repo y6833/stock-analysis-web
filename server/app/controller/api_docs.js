@@ -1,13 +1,13 @@
-'use strict';
+'use strict'
 
-const Controller = require('egg').Controller;
+const Controller = require('egg').Controller
 
 class ApiDocsController extends Controller {
   /**
    * 获取API文档
    */
   async getDocs() {
-    const { ctx } = this;
+    const { ctx } = this
 
     const apiDocs = {
       openapi: '3.0.0',
@@ -40,25 +40,25 @@ class ApiDocsController extends Controller {
         { name: 'GraphQL', description: 'GraphQL查询接口' },
       ],
       // 路径和组件定义省略，实际实现中应包含完整的OpenAPI规范
-    };
+    }
 
-    ctx.success(apiDocs, 'API文档获取成功');
+    ctx.success(apiDocs, 'API文档获取成功')
   }
 
   /**
    * 获取GraphQL Schema
    */
   async getGraphQLSchema() {
-    const { ctx, app } = this;
+    const { ctx, app } = this
 
-    const isDevelopment = app.config.env === 'local' || app.config.env === 'development';
+    const isDevelopment = app.config.env === 'local' || app.config.env === 'development'
     if (!isDevelopment) {
-      ctx.notFound('Schema不可用');
-      return;
+      ctx.notFound('Schema不可用')
+      return
     }
 
     try {
-      const { typeDefs } = require('../graphql');
+      const { typeDefs } = require('../graphql')
 
       ctx.success(
         {
@@ -94,10 +94,10 @@ query GetStocks($search: String, $limit: Int) {
           },
         },
         'GraphQL Schema获取成功'
-      );
+      )
     } catch (error) {
-      ctx.logger.error('获取GraphQL Schema失败:', error);
-      ctx.error('获取GraphQL Schema失败', 'SCHEMA_ERROR', 500, error.message);
+      ctx.logger.error('获取GraphQL Schema失败:', error)
+      ctx.error('获取GraphQL Schema失败', 'SCHEMA_ERROR', 500, error.message)
     }
   }
 
@@ -105,7 +105,7 @@ query GetStocks($search: String, $limit: Int) {
    * 获取API版本信息
    */
   async getVersionInfo() {
-    const { ctx } = this;
+    const { ctx } = this
 
     const versionInfo = {
       currentVersion: ctx.apiVersion || 'v1',
@@ -131,36 +131,50 @@ query GetStocks($search: String, $limit: Int) {
           description: '支持多种API版本控制策略',
         },
       },
-    };
+    }
 
-    ctx.success(versionInfo, 'API版本信息获取成功');
+    ctx.success(versionInfo, 'API版本信息获取成功')
   }
 
   /**
    * 获取API迁移指南
    */
   async getMigrationGuide() {
-    const { ctx } = this;
-    const fs = require('fs');
-    const path = require('path');
+    const { ctx } = this
+    const fs = require('fs')
+    const path = require('path')
 
     try {
-      const guidePath = path.join(this.app.baseDir, 'docs/api-migration-guide.md');
-      const guideContent = fs.readFileSync(guidePath, 'utf8');
+      const guidePath = path.join(this.app.baseDir, 'docs/api-migration-guide.md')
 
-      ctx.success(
-        {
-          content: guideContent,
-          format: 'markdown',
-          version: ctx.apiVersion || 'v1',
-        },
-        'API迁移指南获取成功'
-      );
+      // 检查文件是否存在
+      if (fs.existsSync(guidePath)) {
+        const guideContent = fs.readFileSync(guidePath, 'utf8')
+
+        ctx.success(
+          {
+            content: guideContent,
+            format: 'markdown',
+            version: ctx.apiVersion || 'v1',
+          },
+          'API迁移指南获取成功'
+        )
+      } else {
+        // 如果文件不存在，返回默认内容
+        ctx.success(
+          {
+            content: '# API迁移指南\n\n目前尚无迁移指南内容。',
+            format: 'markdown',
+            version: ctx.apiVersion || 'v1',
+          },
+          'API迁移指南获取成功'
+        )
+      }
     } catch (error) {
-      ctx.logger.error('获取API迁移指南失败:', error);
-      ctx.error('获取API迁移指南失败', 'GUIDE_ERROR', 500, error.message);
+      ctx.logger.error('获取API迁移指南失败:', error)
+      ctx.error('获取API迁移指南失败', 'GUIDE_ERROR', 500, error.message)
     }
   }
 }
 
-module.exports = ApiDocsController;
+module.exports = ApiDocsController

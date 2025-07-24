@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 /** @type Egg.EggPlugin */
 module.exports = {
@@ -34,7 +34,7 @@ module.exports = {
 
   // 启用 Redis 插件
   redis: {
-    enable: true,
+    enable: false, // 临时禁用 Redis
     package: 'egg-redis',
   },
-};
+}

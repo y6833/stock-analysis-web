@@ -19,7 +19,7 @@ module.exports = (appInfo) => {
   const dataQualityConfig = require('./config.data_quality')
 
   // 加载安全配置
-  const securityConfig = require('./config.security');
+  const securityConfig = require('./config.security')
 
   // 安全配置
   config.security = {
@@ -54,7 +54,7 @@ module.exports = (appInfo) => {
     client: {
       port: 6379,
       host: '127.0.0.1',
-      password: '123456',
+      password: '', // 移除密码，如果你的Redis没有设置密码
       db: 0,
     },
   }
@@ -98,6 +98,12 @@ module.exports = (appInfo) => {
         },
       },
     },
+  }
+
+  // Tushare API 配置
+  config.tushare = {
+    token: process.env.TUSHARE_TOKEN || 'demo_token', // 从环境变量获取，或者使用演示token
+    baseUrl: 'http://api.tushare.pro',
   }
 
   // 数据源配置

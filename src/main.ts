@@ -37,6 +37,7 @@ import accessibilityPlugin from './plugins/accessibilityPlugin'
 import authInterceptor from './plugins/authInterceptor'
 import permissionPlugin from './plugins/permissionPlugin'
 import securityPlugin from './plugins/securityPlugin'
+import monitoringPlugin from './plugins/monitoring'
 
 // 导入服务
 import { StockDataServiceImpl } from './services/StockDataService'
@@ -56,6 +57,7 @@ app.use(membershipPlugin)
 app.use(offlinePlugin)
 app.use(accessibilityPlugin)
 app.use(permissionPlugin)
+app.use(monitoringPlugin)
 
 // 全局错误处理已由errorHandlingPlugin提供
 

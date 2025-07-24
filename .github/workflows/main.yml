@@ -1,0 +1,492 @@
+name: Stock Analysis Web CI/CD
+
+on:
+  push:
+    branches: [ main, develop, feature/*, hotfix/* ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      deploy_type:
+        description: 'Deployment type'
+        required: true
+        default: 'normal'
+        type: choice
+        options:
+          - normal
+          - rollback
+      version:
+        description: 'Version to rollback to (only for rollback)'
+        required: false
+        type: string
+
+env:
+  NODE_VERSION: '16.x'
+  CACHE_NPM: 'npm'
+  CACHE_BUILD: 'build'
+
+jobs:
+  # Code quality checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Use Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: ${{ env.CACHE_NPM }}
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linting
+      run: npm run format
+    
+    - name: Type check
+      run: npm run type-check
+    
+    - name: Run ESLint
+      run: npx eslint . --ext .js,.jsx,.ts,.tsx
+      continue-on-error: true
+    
+    - name: Check for security vulnerabilities
+      run: npm audit --production
+      continue-on-error: true
+    
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      continue-on-error: true
+  
+  # Unit and integration tests
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: ${{ env.CACHE_NPM }}
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run unit tests
+      run: npm run test:unit
+    
+    - name: Run integration tests
+      run: npm run test:integration
+    
+    - name: Run performance tests
+      run: npm run test:performance
+      continue-on-error: true
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: coverage/
+        retention-days: 7
+  
+  # Build application
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: ${{ env.CACHE_NPM }}
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build for staging
+      if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+      run: npm run build:staging
+      env:
+        NODE_ENV: staging
+    
+    - name: Build for production
+      if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+      run: npm run build:production
+      env:
+        NODE_ENV: production
+    
+    - name: Run build optimization
+      run: node scripts/optimize-build.js
+    
+    - name: Generate build report
+      run: |
+        echo "Build Report" > build-report.txt
+        echo "Timestamp: $(date)" >> build-report.txt
+        echo "Commit: ${{ github.sha }}" >> build-report.txt
+        echo "Branch: ${{ github.ref }}" >> build-report.txt
+        echo "Build Number: ${{ github.run_number }}" >> build-report.txt
+        echo "Environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}" >> build-report.txt
+        echo "Version: $(node -p "require('./package.json').version")" >> build-report.txt
+    
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment
+        cp -r dist deployment/
+        cp -r server deployment/
+        cp -r scripts deployment/
+        cp package.json deployment/
+        cp package-lock.json deployment/
+        cp build-report.txt deployment/
+        cp .env.${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }} deployment/
+        cp .env.${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}.local deployment/
+        echo "${{ github.sha }}" > deployment/COMMIT_SHA
+        echo "${{ github.run_number }}" > deployment/BUILD_NUMBER
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-package
+        path: deployment/
+        retention-days: 7
+
+  # Deploy to staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/develop') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: https://staging.happystockmarket.com
+    
+    steps:
+    - name: Download deployment package
+      uses: actions/download-artifact@v3
+      with:
+        name: deployment-package
+        path: deployment
+    
+    - name: Create backup directory name
+      id: backup
+      run: echo "backup_dir=backup_$(date +%Y%m%d_%H%M%S)" >> $GITHUB_OUTPUT
+    
+    - name: Deploy to staging server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.STAGING_REMOTE_HOST }}
+        username: ${{ secrets.STAGING_REMOTE_USER }}
+        key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        script: |
+          # Create backup of current deployment
+          if [ -d "${{ secrets.STAGING_REMOTE_TARGET }}" ]; then
+            mkdir -p "${{ secrets.STAGING_BACKUP_DIR }}/${{ steps.backup.outputs.backup_dir }}"
+            cp -r "${{ secrets.STAGING_REMOTE_TARGET }}"/* "${{ secrets.STAGING_BACKUP_DIR }}/${{ steps.backup.outputs.backup_dir }}/"
+            echo "Backup created at ${{ secrets.STAGING_BACKUP_DIR }}/${{ steps.backup.outputs.backup_dir }}"
+          fi
+          
+          # Prepare deployment directory
+          mkdir -p "${{ secrets.STAGING_REMOTE_TARGET }}"
+    
+    - name: Upload deployment package
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        ARGS: "-rlgoDzvc -i"
+        SOURCE: "deployment/"
+        REMOTE_HOST: ${{ secrets.STAGING_REMOTE_HOST }}
+        REMOTE_USER: ${{ secrets.STAGING_REMOTE_USER }}
+        TARGET: ${{ secrets.STAGING_REMOTE_TARGET }}
+        EXCLUDE: ".git/, .github/, node_modules/"
+    
+    - name: Run post-deployment scripts
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.STAGING_REMOTE_HOST }}
+        username: ${{ secrets.STAGING_REMOTE_USER }}
+        key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        script: |
+          cd "${{ secrets.STAGING_REMOTE_TARGET }}"
+          chmod +x scripts/post-deploy.sh
+          ./scripts/post-deploy.sh staging
+          
+          # Store deployment info
+          mkdir -p deployments
+          cp build-report.txt "deployments/staging_$(cat BUILD_NUMBER).txt"
+          echo "$(cat COMMIT_SHA)" > deployments/staging_latest_commit
+          echo "$(cat BUILD_NUMBER)" > deployments/staging_latest_build
+    
+    - name: Verify deployment
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.STAGING_REMOTE_HOST }}
+        username: ${{ secrets.STAGING_REMOTE_USER }}
+        key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        script: |
+          cd "${{ secrets.STAGING_REMOTE_TARGET }}"
+          # Check if server is running
+          if ! pm2 show stock-analysis-web-server > /dev/null; then
+            echo "Server is not running, rolling back..."
+            ./scripts/rollback.sh staging "${{ steps.backup.outputs.backup_dir }}"
+            exit 1
+          fi
+          
+          # Check if server responds
+          if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:7001/api/v1/health | grep -q "200"; then
+            echo "Server is not responding, rolling back..."
+            ./scripts/rollback.sh staging "${{ steps.backup.outputs.backup_dir }}"
+            exit 1
+          fi
+          
+          echo "Deployment verified successfully"
+    
+    - name: Notify deployment success
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_CHANNEL: deployments
+        SLACK_COLOR: good
+        SLACK_TITLE: Staging Deployment Successful
+        SLACK_MESSAGE: 'Build #${{ github.run_number }} deployed to staging environment'
+        SLACK_FOOTER: 'Stock Analysis Web'
+      if: success()
+    
+    - name: Notify deployment failure
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_CHANNEL: deployments
+        SLACK_COLOR: danger
+        SLACK_TITLE: Staging Deployment Failed
+        SLACK_MESSAGE: 'Build #${{ github.run_number }} failed to deploy to staging environment'
+        SLACK_FOOTER: 'Stock Analysis Web'
+      if: failure()
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://happystockmarket.com
+    
+    steps:
+    - name: Download deployment package
+      uses: actions/download-artifact@v3
+      with:
+        name: deployment-package
+        path: deployment
+    
+    - name: Create backup directory name
+      id: backup
+      run: echo "backup_dir=backup_$(date +%Y%m%d_%H%M%S)" >> $GITHUB_OUTPUT
+    
+    - name: Deploy to production server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PRODUCTION_REMOTE_HOST }}
+        username: ${{ secrets.PRODUCTION_REMOTE_USER }}
+        key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+        script: |
+          # Create backup of current deployment
+          if [ -d "${{ secrets.PRODUCTION_REMOTE_TARGET }}" ]; then
+            mkdir -p "${{ secrets.PRODUCTION_BACKUP_DIR }}/${{ steps.backup.outputs.backup_dir }}"
+            cp -r "${{ secrets.PRODUCTION_REMOTE_TARGET }}"/* "${{ secrets.PRODUCTION_BACKUP_DIR }}/${{ steps.backup.outputs.backup_dir }}/"
+            echo "Backup created at ${{ secrets.PRODUCTION_BACKUP_DIR }}/${{ steps.backup.outputs.backup_dir }}"
+          fi
+          
+          # Prepare deployment directory
+          mkdir -p "${{ secrets.PRODUCTION_REMOTE_TARGET }}"
+    
+    - name: Upload deployment package
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+        ARGS: "-rlgoDzvc -i"
+        SOURCE: "deployment/"
+        REMOTE_HOST: ${{ secrets.PRODUCTION_REMOTE_HOST }}
+        REMOTE_USER: ${{ secrets.PRODUCTION_REMOTE_USER }}
+        TARGET: ${{ secrets.PRODUCTION_REMOTE_TARGET }}
+        EXCLUDE: ".git/, .github/, node_modules/"
+    
+    - name: Run post-deployment scripts
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PRODUCTION_REMOTE_HOST }}
+        username: ${{ secrets.PRODUCTION_REMOTE_USER }}
+        key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+        script: |
+          cd "${{ secrets.PRODUCTION_REMOTE_TARGET }}"
+          chmod +x scripts/post-deploy.sh
+          ./scripts/post-deploy.sh production
+          
+          # Store deployment info
+          mkdir -p deployments
+          cp build-report.txt "deployments/production_$(cat BUILD_NUMBER).txt"
+          echo "$(cat COMMIT_SHA)" > deployments/production_latest_commit
+          echo "$(cat BUILD_NUMBER)" > deployments/production_latest_build
+    
+    - name: Verify deployment
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PRODUCTION_REMOTE_HOST }}
+        username: ${{ secrets.PRODUCTION_REMOTE_USER }}
+        key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+        script: |
+          cd "${{ secrets.PRODUCTION_REMOTE_TARGET }}"
+          # Check if server is running
+          if ! pm2 show stock-analysis-web-server > /dev/null; then
+            echo "Server is not running, rolling back..."
+            ./scripts/rollback.sh production "${{ steps.backup.outputs.backup_dir }}"
+            exit 1
+          fi
+          
+          # Check if server responds
+          if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:7001/api/v1/health | grep -q "200"; then
+            echo "Server is not responding, rolling back..."
+            ./scripts/rollback.sh production "${{ steps.backup.outputs.backup_dir }}"
+            exit 1
+          fi
+          
+          echo "Deployment verified successfully"
+    
+    - name: Create release tag
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          const packageJson = JSON.parse(fs.readFileSync('./deployment/package.json', 'utf8'));
+          const version = packageJson.version;
+          const tagName = `v${version}`;
+          const releaseDate = new Date().toISOString().split('T')[0];
+          
+          try {
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${tagName}`,
+              sha: context.sha
+            });
+            
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tagName,
+              name: `Release ${tagName}`,
+              body: `Release ${tagName} - ${releaseDate}\n\nDeployed to production on ${releaseDate}`,
+              draft: false,
+              prerelease: false
+            });
+            
+            console.log(`Created release tag: ${tagName}`);
+          } catch (error) {
+            console.log(`Error creating release tag: ${error.message}`);
+          }
+    
+    - name: Notify deployment success
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_CHANNEL: deployments
+        SLACK_COLOR: good
+        SLACK_TITLE: Production Deployment Successful
+        SLACK_MESSAGE: 'Build #${{ github.run_number }} deployed to production environment'
+        SLACK_FOOTER: 'Stock Analysis Web'
+      if: success()
+    
+    - name: Notify deployment failure
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_CHANNEL: deployments
+        SLACK_COLOR: danger
+        SLACK_TITLE: Production Deployment Failed
+        SLACK_MESSAGE: 'Build #${{ github.run_number }} failed to deploy to production environment'
+        SLACK_FOOTER: 'Stock Analysis Web'
+      if: failure()
+
+  # Rollback workflow
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_type == 'rollback'
+    environment:
+      name: ${{ github.event.inputs.environment }}
+      url: ${{ github.event.inputs.environment == 'production' && 'https://happystockmarket.com' || 'https://staging.happystockmarket.com' }}
+    
+    steps:
+    - name: Rollback staging deployment
+      if: github.event.inputs.environment == 'staging'
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.STAGING_REMOTE_HOST }}
+        username: ${{ secrets.STAGING_REMOTE_USER }}
+        key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        script: |
+          cd "${{ secrets.STAGING_REMOTE_TARGET }}"
+          chmod +x scripts/rollback.sh
+          ./scripts/rollback.sh staging "${{ github.event.inputs.version }}"
+    
+    - name: Rollback production deployment
+      if: github.event.inputs.environment == 'production'
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PRODUCTION_REMOTE_HOST }}
+        username: ${{ secrets.PRODUCTION_REMOTE_USER }}
+        key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+        script: |
+          cd "${{ secrets.PRODUCTION_REMOTE_TARGET }}"
+          chmod +x scripts/rollback.sh
+          ./scripts/rollback.sh production "${{ github.event.inputs.version }}"
+    
+    - name: Notify rollback success
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_CHANNEL: deployments
+        SLACK_COLOR: warning
+        SLACK_TITLE: ${{ github.event.inputs.environment }} Rollback Successful
+        SLACK_MESSAGE: 'Rolled back ${{ github.event.inputs.environment }} to version ${{ github.event.inputs.version }}'
+        SLACK_FOOTER: 'Stock Analysis Web'
+      if: success()
+    
+    - name: Notify rollback failure
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_CHANNEL: deployments
+        SLACK_COLOR: danger
+        SLACK_TITLE: ${{ github.event.inputs.environment }} Rollback Failed
+        SLACK_MESSAGE: 'Failed to roll back ${{ github.event.inputs.environment }} to version ${{ github.event.inputs.version }}'
+        SLACK_FOOTER: 'Stock Analysis Web'
+      if: failure()

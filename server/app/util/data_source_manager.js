@@ -390,7 +390,13 @@ class DataSourceManager {
         let responseTime = 0
         let error = null
 
-        if (service && typeof service.test === 'function') {
+        if (!service) {
+          error = new Error(`数据源服务 ${src} 不存在`)
+          success = false
+        } else if (typeof service.test !== 'function') {
+          error = new Error(`数据源服务 ${src} 没有 test 方法`)
+          success = false
+        } else {
           try {
             await service.test()
             success = true
@@ -439,16 +445,16 @@ class DataSourceManager {
    */
   getDataSourceService(source) {
     const serviceMap = {
-      tushare: this.app.service.tushareService,
-      akshare: this.app.service.akshareService,
-      sina: this.app.service.sinaService,
-      eastmoney: this.app.service.eastmoneyService,
-      netease: this.app.service.neteaseService,
-      tencent: this.app.service.tencentService,
-      yahoo_finance: this.app.service.yahooFinanceService,
-      alltick: this.app.service.alltickService,
-      juhe: this.app.service.juheService,
-      zhitu: this.app.service.zhituService,
+      tushare: this.app.service.tushare,
+      akshare: this.app.service.akshare,
+      sina: this.app.service.sina,
+      eastmoney: this.app.service.eastmoney,
+      netease: this.app.service.netease,
+      tencent: this.app.service.tencent,
+      yahoo_finance: this.app.service.yahooFinance,
+      alltick: this.app.service.alltick,
+      juhe: this.app.service.juhe,
+      zhitu: this.app.service.zhitu,
     }
 
     return serviceMap[source] || null

@@ -144,11 +144,7 @@
       "host": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "password": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "db": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
-    },
-    "default": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-redis\\config\\config.default.js",
-    "app": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-redis\\config\\config.default.js",
-    "agent": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-redis\\config\\config.default.js",
-    "supportTimeCommand": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-redis\\config\\config.default.js"
+    }
   },
   "jwt": {
     "secret": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
@@ -187,6 +183,10 @@
         }
       }
     }
+  },
+  "tushare": {
+    "token": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "baseUrl": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
   },
   "dataSource": {
     "sources": {

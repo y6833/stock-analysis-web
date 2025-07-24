@@ -1,136 +1,398 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import axios from 'axios'
+/**
+ * StockService 单元测试
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { stockService } from '@/services/stockService'
-import { tushareService } from '@/services/tushareService'
+import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'
+import { dataSourceStateManager } from '@/services/dataSourceStateManager'
+import { smartCache } from '@/services/cacheService'
 
-// 模拟 axios
-vi.mock('axios')
+// Mock dependencies
+vi.mock('@/services/dataSource/DataSourceFactory')
+vi.mock('@/services/dataSourceStateManager')
+vi.mock('@/services/cacheService')
+vi.mock('@/composables/useToast', () => ({
+  useToast: () => ({
+    showToast: vi.fn()
+  })
+}))
 
-describe('股票服务测试', () => {
+// Mock axios
+vi.mock('axios', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn()
+  }
+}))
+
+describe('StockService', () => {
+  const mockDataSource = {
+    getName: vi.fn().mockReturnValue('MockDataSource'),
+    getStocks: vi.fn(),
+    getStockData: vi.fn(),
+    searchStocks: vi.fn(),
+    getStockQuote: vi.fn(),
+    getFinancialNews: vi.fn()
+  }
+
   beforeEach(() => {
-    // 重置所有模拟
-    vi.resetAllMocks()
+    vi.clearAllMocks()
+    
+    // Setup mocks
+    DataSourceFactory.createDataSource = vi.fn().mockReturnValue(mockDataSource)
+    DataSourceFactory.getAvailableDataSources = vi.fn().mockReturnValue(['tushare', 'sina'])
+    DataSourceFactory.getDataSourceInfo = vi.fn().mockReturnValue({ name: 'Test Source' })
+    
+    dataSourceStateManager.getCurrentDataSource = vi.fn().mockReturnValue('tushare')
+    dataSourceStateManager.switchDataSource = vi.fn().mockReturnValue(true)
+    
+    smartCache.getOrSet = vi.fn()
   })
 
-  describe('基础股票数据获取', () => {
-    // 模拟的股票服务函数
-    const fetchStockData = async (code: string) => {
-      try {
-        const response = await axios.get(`/api/stock/${code}`)
-        return response.data
-      } catch (error) {
-        console.error('获取股票数据失败:', error)
-        throw error
-      }
-    }
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
-    it('成功获取股票数据', async () => {
-      // 模拟 axios 响应
-      const mockData = {
-        code: '000001',
+  describe('getCurrentDataSourceType', () => {
+    it('should return current data source type', () => {
+      const result = stockService.getCurrentDataSourceType()
+      expect(result).toBe('tushare')
+      expect(dataSourceStateManager.getCurrentDataSource).toHaveBeenCalled()
+    })
+  })
+
+  describe('getAvailableDataSources', () => {
+    it('should return available data sources', () => {
+      const result = stockService.getAvailableDataSources()
+      expect(result).toEqual(['tushare', 'sina'])
+      expect(DataSourceFactory.getAvailableDataSources).toHaveBeenCalled()
+    })
+  })
+
+  describe('getDataSourceInfo', () => {
+    it('should return data source info', () => {
+      const result = stockService.getDataSourceInfo('tushare')
+      expect(result).toEqual({ name: 'Test Source' })
+      expect(DataSourceFactory.getDataSourceInfo).toHaveBeenCalledWith('tushare')
+    })
+  })
+
+  describe('switchDataSource', () => {
+    it('should switch data source successfully', () => {
+      const result = stockService.switchDataSource('sina')
+      expect(result).toBe(true)
+      expect(dataSourceStateManager.switchDataSource).toHaveBeenCalledWith('sina')
+    })
+
+    it('should handle switch failure', () => {
+      dataSourceStateManager.switchDataSource = vi.fn().mockReturnValue(false)
+      
+      const result = stockService.switchDataSource('sina')
+      expect(result).toBe(false)
+    })
+
+    it('should handle switch error', () => {
+      dataSourceStateManager.switchDataSource = vi.fn().mockImplementation(() => {
+        throw new Error('Switch failed')
+      })
+      
+      const result = stockService.switchDataSource('sina')
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('testDataSource', () => {
+    it('should test data source connection successfully', async () => {
+      // Mock axios response
+      const axios = await import('axios')
+      axios.default.get = vi.fn().mockResolvedValue({
+        data: { success: true }
+      })
+
+      const result = await stockService.testDataSource('tushare')
+      expect(result).toBe(true)
+    })
+
+    it('should handle test failure', async () => {
+      const axios = await import('axios')
+      axios.default.get = vi.fn().mockRejectedValue(new Error('Connection failed'))
+
+      const result = await stockService.testDataSource('tushare')
+      expect(result).toBe(false)
+    })
+
+    it('should skip test for non-current data source', async () => {
+      dataSourceStateManager.getCurrentDataSource = vi.fn().mockReturnValue('sina')
+      
+      const result = await stockService.testDataSource('tushare')
+      expect(result).toBe(true) // Should return true for non-current sources
+    })
+  })
+
+  describe('getStocks', () => {
+    it('should get stocks from database successfully', async () => {
+      const mockStocks = [
+        { symbol: '000001', name: '平安银行' },
+        { symbol: '000002', name: '万科A' }
+      ]
+
+      smartCache.getOrSet = vi.fn().mockResolvedValue({
+        ...mockStocks,
+        data_source: 'database',
+        data_source_message: '数据来自数据库'
+      })
+
+      const result = await stockService.getStocks()
+      expect(result).toEqual(expect.objectContaining({
+        data_source: 'database'
+      }))
+      expect(smartCache.getOrSet).toHaveBeenCalled()
+    })
+
+    it('should fallback to external data source when database fails', async () => {
+      const mockStocks = [
+        { symbol: '000001', name: '平安银行' }
+      ]
+
+      // Mock database failure, then external source success
+      smartCache.getOrSet = vi.fn().mockImplementation(async (key, fetchFn) => {
+        return await fetchFn() // Execute the fetch function
+      })
+
+      // Mock axios to simulate database API failure, then external source success
+      const axios = await import('axios')
+      axios.default.get = vi.fn()
+        .mockRejectedValueOnce(new Error('Database failed'))
+        .mockResolvedValueOnce({
+          data: { data: mockStocks }
+        })
+
+      mockDataSource.getStocks = vi.fn().mockResolvedValue(mockStocks)
+
+      const result = await stockService.getStocks()
+      expect(Array.isArray(result)).toBe(true)
+    })
+  })
+
+  describe('getStockData', () => {
+    it('should get stock data from current data source', async () => {
+      const mockStockData = {
+        symbol: '000001',
         name: '平安银行',
         price: 10.5,
-        change: 0.5,
-        changePercent: 5.0
+        history: []
       }
 
-      // @ts-ignore - 模拟 axios.get 返回
-      axios.get.mockResolvedValue({ data: mockData })
+      mockDataSource.getStockData = vi.fn().mockResolvedValue(mockStockData)
 
-      // 调用服务函数
-      const result = await fetchStockData('000001')
-
-      // 验证 axios 被正确调用
-      expect(axios.get).toHaveBeenCalledWith('/api/stock/000001')
-
-      // 验证返回的数据
-      expect(result).toEqual(mockData)
+      const result = await stockService.getStockData('000001')
+      expect(result).toEqual({
+        ...mockStockData,
+        source_type: 'tushare'
+      })
+      expect(mockDataSource.getStockData).toHaveBeenCalledWith('000001', {
+        sourceType: 'tushare'
+      })
     })
 
-    it('处理获取股票数据失败的情况', async () => {
-      // 模拟 axios 错误
-      const mockError = new Error('网络错误')
-      // @ts-ignore - 模拟 axios.get 抛出错误
-      axios.get.mockRejectedValue(mockError)
+    it('should fallback to other data sources on failure', async () => {
+      const mockStockData = {
+        symbol: '000001',
+        name: '平安银行',
+        price: 10.5
+      }
 
-      // 验证服务函数抛出错误
-      await expect(fetchStockData('000001')).rejects.toThrow('网络错误')
+      // First data source fails
+      mockDataSource.getStockData = vi.fn().mockRejectedValue(new Error('Primary source failed'))
 
-      // 验证 axios 被正确调用
-      expect(axios.get).toHaveBeenCalledWith('/api/stock/000001')
+      // Create mock for fallback data source
+      const fallbackDataSource = {
+        getStockData: vi.fn().mockResolvedValue(mockStockData)
+      }
+
+      DataSourceFactory.createDataSource = vi.fn()
+        .mockReturnValueOnce(mockDataSource) // Primary source
+        .mockReturnValueOnce(fallbackDataSource) // Fallback source
+
+      const result = await stockService.getStockData('000001')
+      expect(result).toEqual({
+        ...mockStockData,
+        source_type: 'sina'
+      })
+    })
+
+    it('should throw error when all data sources fail', async () => {
+      mockDataSource.getStockData = vi.fn().mockRejectedValue(new Error('All sources failed'))
+      DataSourceFactory.createDataSource = vi.fn().mockReturnValue(mockDataSource)
+
+      await expect(stockService.getStockData('000001')).rejects.toThrow()
     })
   })
 
-  describe('Tushare数据源测试', () => {
-    it('应该能够获取Tushare股票列表', async () => {
-      // 模拟Tushare API响应
-      const mockTushareResponse = {
-        data: {
-          code: 0,
-          msg: null,
-          data: {
-            fields: ['ts_code', 'name', 'industry', 'market', 'list_date'],
-            items: [
-              ['000001.SZ', '平安银行', '银行', '深圳', '19910403'],
-              ['000002.SZ', '万科A', '房地产开发', '深圳', '19910129']
-            ]
-          }
-        }
-      }
+  describe('searchStocks', () => {
+    it('should search stocks using database API first', async () => {
+      const mockResults = [
+        { symbol: '000001', name: '平安银行' }
+      ]
 
-      // @ts-ignore
-      axios.post.mockResolvedValue(mockTushareResponse)
+      // Mock successful database search
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          data: mockResults
+        })
+      })
 
-      // 调用Tushare服务
-      const result = await tushareService.getMockStockList()
-
-      // 验证返回的数据结构
-      expect(result).toHaveProperty('fields')
-      expect(result).toHaveProperty('items')
-      expect(Array.isArray(result.fields)).toBe(true)
-      expect(Array.isArray(result.items)).toBe(true)
+      const result = await stockService.searchStocks('平安')
+      expect(result).toEqual(mockResults.map(stock => ({
+        ...stock,
+        source_type: 'database'
+      })))
     })
 
-    it('应该能够处理Tushare API错误', async () => {
-      // 模拟API错误响应
-      const mockErrorResponse = {
-        data: {
-          code: 40001,
-          msg: 'API调用频率限制'
-        }
+    it('should fallback to external data source when database search fails', async () => {
+      const mockResults = [
+        { symbol: '000001', name: '平安银行' }
+      ]
+
+      // Mock database search failure
+      global.fetch = vi.fn().mockRejectedValue(new Error('Database search failed'))
+
+      // Mock external data source success
+      mockDataSource.searchStocks = vi.fn().mockResolvedValue(mockResults)
+
+      const result = await stockService.searchStocks('平安')
+      expect(result).toEqual(mockResults.map(stock => ({
+        ...stock,
+        source_type: 'tushare'
+      })))
+    })
+  })
+
+  describe('getStockQuote', () => {
+    it('should get stock quote from backend API', async () => {
+      const mockQuote = {
+        symbol: '000001',
+        price: 10.5,
+        change: 0.1
       }
 
-      // @ts-ignore
-      axios.post.mockResolvedValue(mockErrorResponse)
+      const axios = await import('axios')
+      axios.default.get = vi.fn().mockResolvedValue({
+        data: mockQuote
+      })
 
-      // 验证错误处理
-      // 注意：这里需要根据实际的错误处理逻辑进行调整
-      const result = await tushareService.getMockStockList()
-      expect(result).toBeDefined()
+      const result = await stockService.getStockQuote('000001')
+      expect(result).toEqual({
+        ...mockQuote,
+        source_type: 'tushare',
+        symbol: '000001'
+      })
+    })
+
+    it('should fallback to frontend data source when backend fails', async () => {
+      const mockQuote = {
+        symbol: '000001',
+        price: 10.5,
+        change: 0.1
+      }
+
+      // Mock backend failure
+      const axios = await import('axios')
+      axios.default.get = vi.fn().mockRejectedValue(new Error('Backend failed'))
+
+      // Mock frontend data source success
+      mockDataSource.getStockQuote = vi.fn().mockResolvedValue(mockQuote)
+
+      const result = await stockService.getStockQuote('000001')
+      expect(result).toEqual({
+        ...mockQuote,
+        source_type: 'tushare'
+      })
+    })
+  })
+
+  describe('getFinancialNews', () => {
+    it('should get financial news from current data source', async () => {
+      const mockNews = [
+        {
+          title: 'Test News',
+          content: 'Test content',
+          publishTime: '2023-01-01'
+        }
+      ]
+
+      mockDataSource.getFinancialNews = vi.fn().mockResolvedValue(mockNews)
+
+      const result = await stockService.getFinancialNews(5)
+      expect(result).toEqual(mockNews.map(item => ({
+        ...item,
+        source_type: 'tushare',
+        data_source: 'tushare'
+      })))
+    })
+
+    it('should fallback to other data sources on failure', async () => {
+      const mockNews = [
+        {
+          title: 'Test News',
+          content: 'Test content'
+        }
+      ]
+
+      // Primary source fails
+      mockDataSource.getFinancialNews = vi.fn().mockRejectedValue(new Error('Primary failed'))
+
+      // Fallback source succeeds
+      const fallbackDataSource = {
+        getFinancialNews: vi.fn().mockResolvedValue(mockNews)
+      }
+
+      DataSourceFactory.createDataSource = vi.fn()
+        .mockReturnValueOnce(mockDataSource)
+        .mockReturnValueOnce(fallbackDataSource)
+
+      const result = await stockService.getFinancialNews(5)
+      expect(result).toEqual(mockNews.map(item => ({
+        ...item,
+        source_type: 'sina',
+        data_source: 'sina'
+      })))
+    })
+  })
+
+  describe('clearDataSourceCache', () => {
+    it('should clear data source cache successfully', async () => {
+      // Mock localStorage
+      const mockLocalStorage = {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn()
+      }
+      Object.defineProperty(window, 'localStorage', {
+        value: mockLocalStorage
+      })
+
+      Object.keys = vi.fn().mockReturnValue(['tushare_test_key'])
+
+      const axios = await import('axios')
+      axios.default.delete = vi.fn().mockResolvedValue({
+        data: { success: true, message: 'Cache cleared' }
+      })
+
+      const result = await stockService.clearDataSourceCache('tushare')
+      expect(result).toBe(true)
+    })
+
+    it('should handle cache clear failure gracefully', async () => {
+      const axios = await import('axios')
+      axios.default.delete = vi.fn().mockRejectedValue(new Error('Clear failed'))
+
+      const result = await stockService.clearDataSourceCache('tushare')
+      expect(result).toBe(false)
     })
   })
 })
-
-// 注释：实际测试时，您应该导入真实的服务函数并测试其功能
-// 例如：
-/*
-import { fetchStockList, fetchStockDetail } from '@/services/stockService'
-
-describe('股票服务', () => {
-  it('获取股票列表', async () => {
-    // 模拟 axios 响应
-    const mockList = [
-      { code: '000001', name: '平安银行' },
-      { code: '000002', name: '万科A' }
-    ]
-
-    axios.get.mockResolvedValue({ data: { data: mockList } })
-
-    // 调用服务函数
-    const result = await fetchStockList()
-
-    // 验证返回的数据
-    expect(result).toEqual(mockList)
-  })
-})
-*/

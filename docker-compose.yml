@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # Frontend web application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV:-production}
+    ports:
+      - "80:80"
+    depends_on:
+      - api-server
+    networks:
+      - stock-network
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+
+  # Backend API server
+  api-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "7001:7001"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - stock-network
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-stock_user}
+      - DB_PASSWORD=${DB_PASSWORD:-stock_password}
+      - DB_NAME=${DB_NAME:-stock_analysis}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./logs:/app/logs
+
+  # MySQL database
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    networks:
+      - stock-network
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
+      - MYSQL_DATABASE=${DB_NAME:-stock_analysis}
+      - MYSQL_USER=${DB_USER:-stock_user}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-stock_password}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./server/init-scripts:/docker-entrypoint-initdb.d
+
+  # Redis cache
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - stock-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+
+networks:
+  stock-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:

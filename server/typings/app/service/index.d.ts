@@ -27,6 +27,7 @@ import ExportGoogleFinance = require('../../../app/service/googleFinance');
 import ExportJuhe = require('../../../app/service/juhe');
 import ExportLogs = require('../../../app/service/logs');
 import ExportMembership = require('../../../app/service/membership');
+import ExportMonitoring = require('../../../app/service/monitoring');
 import ExportNotification = require('../../../app/service/notification');
 import ExportOrderBook = require('../../../app/service/orderBook');
 import ExportPage = require('../../../app/service/page');
@@ -70,6 +71,7 @@ declare module 'egg' {
     juhe: AutoInstanceType<typeof ExportJuhe>;
     logs: AutoInstanceType<typeof ExportLogs>;
     membership: AutoInstanceType<typeof ExportMembership>;
+    monitoring: AutoInstanceType<typeof ExportMonitoring>;
     notification: AutoInstanceType<typeof ExportNotification>;
     orderBook: AutoInstanceType<typeof ExportOrderBook>;
     page: AutoInstanceType<typeof ExportPage>;

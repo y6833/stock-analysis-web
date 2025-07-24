@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { BaseDataService } from '@/core/BaseService'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 import { useToast } from '@/composables/useToast'
 import { DataSourceFactory } from './dataSource/DataSourceFactory'
@@ -6,6 +6,8 @@ import type { DataSourceType } from './dataSource/DataSourceFactory'
 import eventBus from '@/utils/eventBus'
 import { dataSourceStateManager } from '@/services/dataSourceStateManager'
 import { smartCache } from '@/services/cacheService'
+import { CONSTANTS } from '@/constants'
+import { Utils } from '@/utils'
 
 // API基础URL配置
 const API_BASE_URL = 'http://localhost:7001'
@@ -37,19 +39,43 @@ if (!eventListenerAdded) {
 
 const { showToast } = useToast()
 
-// 股票服务
-export const stockService = {
-  // 获取当前数据源类型
-  getCurrentDataSourceType: () => dataSourceStateManager.getCurrentDataSource(),
+/**
+ * 股票服务类
+ * 继承BaseDataService，提供统一的股票数据访问接口
+ */
+class StockService extends BaseDataService {
+  constructor() {
+    super('StockService', {
+      enableLoading: true,
+      enableCache: true,
+      timeout: CONSTANTS.API.TIMEOUT
+    })
+  }
+  /**
+   * 获取当前数据源类型
+   */
+  getCurrentDataSourceType(): DataSourceType {
+    return dataSourceStateManager.getCurrentDataSource()
+  }
 
-  // 获取所有可用数据源
-  getAvailableDataSources: () => DataSourceFactory.getAvailableDataSources(),
+  /**
+   * 获取所有可用数据源
+   */
+  getAvailableDataSources(): DataSourceType[] {
+    return DataSourceFactory.getAvailableDataSources()
+  }
 
-  // 获取数据源信息
-  getDataSourceInfo: (type: DataSourceType) => DataSourceFactory.getDataSourceInfo(type),
+  /**
+   * 获取数据源信息
+   */
+  getDataSourceInfo(type: DataSourceType) {
+    return DataSourceFactory.getDataSourceInfo(type)
+  }
 
-  // 切换数据源
-  switchDataSource: (type: DataSourceType): boolean => {
+  /**
+   * 切换数据源
+   */
+  switchDataSource(type: DataSourceType): boolean {
     try {
       console.log(`[stockService] 切换数据源请求: ${currentDataSourceType} -> ${type}`)
 
@@ -72,9 +98,11 @@ export const stockService = {
       showToast('切换数据源失败', 'error')
       return false
     }
-  },
+  }
 
-  // 测试数据源连接
+  /**
+   * 测试数据源连接
+   */
   async testDataSource(
     type: DataSourceType,
     forcedCurrentSource?: DataSourceType
@@ -140,7 +168,7 @@ export const stockService = {
       }
       return false
     }
-  },
+  }
 
   // 清除数据源缓存
   async clearDataSourceCache(type: DataSourceType): Promise<boolean> {
@@ -181,7 +209,7 @@ export const stockService = {
       showToast(`清除缓存失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
       return false
     }
-  },
+  }
 
   // 获取股票列表 - 从数据库获取
   async getStocks(): Promise<
@@ -309,7 +337,7 @@ export const stockService = {
         tags: ['stocks', 'database']
       }
     )
-  },
+  }
 
   // 获取单个股票数据
   async getStockData(symbol: string): Promise<StockData & { source_type?: DataSourceType }> {
@@ -362,7 +390,7 @@ export const stockService = {
       // 抛出错误，让调用者处理
       throw new Error(`无法获取${symbol}的历史数据，所有数据源均失败`)
     }
-  },
+  }
 
   // 搜索股票
   async searchStocks(query: string): Promise<(Stock & { source_type?: DataSourceType })[]> {
@@ -436,7 +464,7 @@ export const stockService = {
         throw new Error(`无法搜索股票，所有数据源均失败`)
       }
     }
-  },
+  }
 
   // 获取股票实时行情
   async getStockQuote(
@@ -531,19 +559,19 @@ export const stockService = {
         throw new Error(`无法获取${symbol}的实时行情，所有数据源均失败`)
       }
     }
-  },
+  }
 
   // 获取仪表盘设置（代理到 dashboardService）
   async getDashboardSettings() {
     const { dashboardService } = await import('@/services/dashboardService')
     return dashboardService.getDashboardSettings()
-  },
+  }
 
   // 保存仪表盘设置（代理到 dashboardService）
   async saveDashboardSettings(settings: any) {
     const { dashboardService } = await import('@/services/dashboardService')
     return dashboardService.saveDashboardSettings(settings)
-  },
+  }
 
   // 获取财经新闻
   async getFinancialNews(
@@ -620,5 +648,8 @@ export const stockService = {
       // 抛出错误，让调用者处理
       throw new Error(`无法获取财经新闻，所有数据源均失败`)
     }
-  },
+  }
 }
+
+// 创建并导出股票服务实例
+export const stockService = new StockService()
