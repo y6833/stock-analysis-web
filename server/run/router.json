@@ -27,6 +27,7 @@
       "PROPPATCH",
       "PURGE",
       "PUT",
+      "QUERY",
       "REBIND",
       "REPORT",
       "SEARCH",
@@ -84,6 +85,7 @@
       "PROPPATCH",
       "PURGE",
       "PUT",
+      "QUERY",
       "REBIND",
       "REPORT",
       "SEARCH",
@@ -3270,6 +3272,18 @@
     "methods": [
       "POST"
     ],
+    "paramNames": [],
+    "path": "/api/technical-indicators/scan",
+    "regexp": "/^\\/api\\/technical-indicators\\/scan(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
     "paramNames": [
       {
         "name": "stockCode",
@@ -3308,18 +3322,6 @@
     ],
     "path": "/api/technical-indicators/:stockCode/realtime",
     "regexp": "/^\\/api\\/technical-indicators\\/((?:[^\\/]+?))\\/realtime(?:\\/(?=$))?$/",
-    "stack": [
-      "wrappedController"
-    ]
-  },
-  {
-    "name": null,
-    "methods": [
-      "POST"
-    ],
-    "paramNames": [],
-    "path": "/api/technical-indicators/scan",
-    "regexp": "/^\\/api\\/technical-indicators\\/scan(?:\\/(?=$))?$/",
     "stack": [
       "wrappedController"
     ]
@@ -7749,6 +7751,81 @@
     ],
     "path": "/api/v1/patterns/doji/alerts/:id",
     "regexp": "/^\\/api\\/v1\\/patterns\\/doji\\/alerts\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/doji-alerts",
+    "regexp": "/^\\/api\\/doji-alerts(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/doji-alerts",
+    "regexp": "/^\\/api\\/doji-alerts(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "PUT"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/doji-alerts/:id",
+    "regexp": "/^\\/api\\/doji-alerts\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
+    "stack": [
+      "auth",
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "DELETE"
+    ],
+    "paramNames": [
+      {
+        "name": "id",
+        "prefix": "/",
+        "delimiter": "/",
+        "optional": false,
+        "repeat": false,
+        "partial": false,
+        "asterisk": false,
+        "pattern": "[^\\/]+?"
+      }
+    ],
+    "path": "/api/doji-alerts/:id",
+    "regexp": "/^\\/api\\/doji-alerts\\/((?:[^\\/]+?))(?:\\/(?=$))?$/",
     "stack": [
       "auth",
       "wrappedController"

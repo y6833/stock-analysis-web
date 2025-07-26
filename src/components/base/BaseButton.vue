@@ -1,30 +1,11 @@
 <template>
-  <button
-    :class="buttonClasses"
-    :disabled="disabled || loading"
-    :type="htmlType"
-    @click="handleClick"
-  >
+  <button :class="buttonClasses" :disabled="disabled || loading" :type="htmlType" @click="handleClick">
     <span v-if="loading" class="btn-loading">
       <svg class="spinner" viewBox="0 0 24 24">
-        <circle
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="2"
-          fill="none"
-          stroke-dasharray="60"
-          stroke-dashoffset="60"
-          stroke-linecap="round"
-        >
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            values="0 12 12;360 12 12"
-            dur="1s"
-            repeatCount="indefinite"
-          />
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="60"
+          stroke-dashoffset="60" stroke-linecap="round">
+          <animateTransform attributeName="transform" type="rotate" values="0 12 12;360 12 12" dur="1s"
+            repeatCount="indefinite" />
         </circle>
       </svg>
     </span>
@@ -36,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 
 interface Props {
   type?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'text'
@@ -63,6 +44,8 @@ const emit = defineEmits<{
   click: [event: MouseEvent]
 }>()
 
+const slots = useSlots()
+
 const buttonClasses = computed(() => [
   'base-button',
   `base-button--${props.type}`,
@@ -71,7 +54,7 @@ const buttonClasses = computed(() => [
     'base-button--disabled': props.disabled,
     'base-button--loading': props.loading,
     'base-button--block': props.block,
-    'base-button--icon-only': props.icon && !$slots.default,
+    'base-button--icon-only': props.icon && !slots.default,
   },
 ])
 

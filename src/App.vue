@@ -22,7 +22,7 @@ const { showToast } = useToast()
 const dropdownOpen = ref({
   dashboard: false,
   analysis: false,
-  strategy: false,
+  smart: false,
   user: false,
   admin: false,
 })

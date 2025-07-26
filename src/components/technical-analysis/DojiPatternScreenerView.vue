@@ -10,7 +10,12 @@
       <template #header>
         <div class="card-header">
           <span>筛选条件</span>
-          <el-button type="primary" @click="handleSearch">开始筛选</el-button>
+          <div class="header-buttons">
+            <el-button type="info" size="small" @click="testClick">测试点击</el-button>
+            <el-button type="primary" @click="handleSearch" :loading="loading">
+              {{ loading ? '筛选中...' : '开始筛选' }}
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -27,38 +32,21 @@
 
         <!-- 时间范围选择 -->
         <el-form-item label="查找时间范围">
-          <el-input-number
-            v-model="filterForm.daysRange"
-            :min="1"
-            :max="90"
-            :step="1"
-            controls-position="right"
-            style="width: 180px"
-          />
+          <el-input-number v-model="filterForm.daysRange" :min="1" :max="90" :step="1" controls-position="right"
+            style="width: 180px" />
           <span class="input-suffix">天内</span>
         </el-form-item>
 
         <!-- 上涨幅度输入 -->
         <el-form-item label="最小上涨幅度">
-          <el-input-number
-            v-model="filterForm.minUpwardPercent"
-            :min="0"
-            :max="100"
-            :step="0.5"
-            :precision="1"
-            controls-position="right"
-            style="width: 180px"
-          />
+          <el-input-number v-model="filterForm.minUpwardPercent" :min="0" :max="100" :step="0.5" :precision="1"
+            controls-position="right" style="width: 180px" />
           <span class="input-suffix">%</span>
         </el-form-item>
 
         <!-- 市场环境筛选 -->
         <el-form-item label="市场环境">
-          <el-select
-            v-model="filterForm.marketCondition"
-            placeholder="选择市场环境"
-            style="width: 180px"
-          >
+          <el-select v-model="filterForm.marketCondition" placeholder="选择市场环境" style="width: 180px">
             <el-option label="全部" value="" />
             <el-option label="牛市" value="bull" />
             <el-option label="熊市" value="bear" />
@@ -70,7 +58,7 @@
         <el-form-item label="排序方式">
           <el-row :gutter="10">
             <el-col :span="12">
-              <el-select v-model="filterForm.sortBy" placeholder="排序字段" style="width: 100%">
+              <el-select v-model="filterForm.sortBy" placeholder="排序字段" style="width: 120px;margin-right: 10px;">
                 <el-option label="上涨幅度" value="priceChange" />
                 <el-option label="成交量变化" value="volumeChange" />
                 <el-option label="形态日期" value="patternDate" />
@@ -78,11 +66,7 @@
               </el-select>
             </el-col>
             <el-col :span="12">
-              <el-select
-                v-model="filterForm.sortDirection"
-                placeholder="排序方向"
-                style="width: 100%"
-              >
+              <el-select v-model="filterForm.sortDirection" placeholder="排序方向" style="width: 120px;margin-right: 10px;">
                 <el-option label="降序" value="desc" />
                 <el-option label="升序" value="asc" />
               </el-select>
@@ -92,25 +76,15 @@
 
         <!-- 结果数量限制 -->
         <el-form-item label="结果数量限制">
-          <el-input-number
-            v-model="filterForm.limit"
-            :min="10"
-            :max="500"
-            :step="10"
-            controls-position="right"
-            style="width: 180px"
-          />
+          <el-input-number v-model="filterForm.limit" :min="10" :max="500" :step="10" controls-position="right"
+            style="width: 180px" />
         </el-form-item>
       </el-form>
     </el-card>
 
     <!-- 筛选结果 -->
-    <doji-pattern-screener-results
-      :screen-result="screenResult"
-      :loading="loading"
-      @refresh="refreshResults"
-      @view-detail="handleViewDetail"
-    />
+    <doji-pattern-screener-results :screen-result="screenResult" :loading="loading" @refresh="refreshResults"
+      @view-detail="handleViewDetail" />
   </div>
 </template>
 
@@ -135,10 +109,14 @@ export default defineComponent({
   },
 
   setup() {
+    console.log('[DojiPatternScreenerView] 组件初始化开始')
+
     // 筛选器实例
     const historicalPatternService = new HistoricalPatternServiceImpl()
     const stockDataService = new StockDataServiceImpl()
     const screener = new DojiPatternScreener(historicalPatternService, stockDataService)
+
+    console.log('[DojiPatternScreenerView] 服务实例创建完成')
 
     // 筛选表单
     const filterForm = reactive<DojiScreenCriteria>({
@@ -168,17 +146,33 @@ export default defineComponent({
     // 是否有结果
     const hasResults = computed(() => screenResult.value.stocks.length > 0)
 
+    // 测试点击功能
+    const testClick = () => {
+      console.log('[DojiPatternScreenerView] 测试点击按钮被点击')
+      alert('点击功能正常工作！')
+    }
+
     // 搜索处理
     const handleSearch = async () => {
+      console.log('[DojiPatternScreenerView] 开始筛选，条件:', filterForm)
       loading.value = true
       try {
         const result = await screener.screenStocks({
           ...filterForm,
         })
+        console.log('[DojiPatternScreenerView] 筛选完成，结果:', result)
         screenResult.value = result
         currentPage.value = 1
+
+        // 显示成功消息
+        if (result.stocks.length > 0) {
+          console.log(`[DojiPatternScreenerView] 找到 ${result.stocks.length} 个符合条件的股票`)
+        } else {
+          console.log('[DojiPatternScreenerView] 未找到符合条件的股票')
+        }
       } catch (error) {
-        console.error('筛选出错:', error)
+        console.error('[DojiPatternScreenerView] 筛选出错:', error)
+        // 可以在这里添加错误提示
       } finally {
         loading.value = false
       }
@@ -299,6 +293,7 @@ export default defineComponent({
       currentPage,
       pageSize,
       hasResults,
+      testClick,
       handleSearch,
       refreshResults,
       exportResults,
@@ -336,6 +331,12 @@ export default defineComponent({
 .card-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
   align-items: center;
 }
 

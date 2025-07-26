@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 /**
  * 数据源管理器
@@ -6,10 +6,10 @@
  */
 class DataSourceManager {
   constructor(app) {
-    this.app = app
-    this.logger = app.logger
-    this.config = app.config.dataSource || {}
-    this.cacheManager = app.cacheManager
+    this.app = app;
+    this.logger = app.logger;
+    this.config = app.config.dataSource || {};
+    this.cacheManager = app.cacheManager;
 
     // 数据源配置
     this.dataSources = this.config.sources || {
@@ -83,13 +83,13 @@ class DataSourceManager {
         costPerRequest: 0.2,
         enabled: true,
       },
-    }
+    };
 
     // 数据源健康状态
-    this.healthStatus = {}
+    this.healthStatus = {};
 
     // 数据源评分历史
-    this.scoreHistory = {}
+    this.scoreHistory = {};
 
     // 故障转移配置
     this.failoverConfig = this.config.failover || {
@@ -100,7 +100,7 @@ class DataSourceManager {
       recoveryThreshold: 3, // 连续成功次数阈值
       failureThreshold: 3, // 连续失败次数阈值
       timeoutThreshold: 10000, // 超时阈值（毫秒）
-    }
+    };
 
     // 数据请求优化配置
     this.requestOptimizerConfig = this.config.requestOptimizer || {
@@ -108,10 +108,10 @@ class DataSourceManager {
       throttlingEnabled: true, // 启用节流
       parallelEnabled: true, // 启用并行请求优化
       adaptiveEnabled: true, // 启用自适应优化
-    }
+    };
 
     // 初始化数据源健康状态
-    this.initHealthStatus()
+    this.initHealthStatus();
   }
 
   /**
@@ -131,9 +131,8 @@ class DataSourceManager {
         lastError: null,
         lastSuccess: null,
         status: config.enabled ? 'available' : 'disabled',
-      }
-
-      this.scoreHistory[source] = []
+      };
+      this.scoreHistory[source] = [];
     }
   }
 
@@ -142,7 +141,7 @@ class DataSourceManager {
    * @returns {Array} 数据源列表
    */
   getDataSources() {
-    return Object.keys(this.dataSources).filter((source) => this.dataSources[source].enabled)
+    return Object.keys(this.dataSources).filter((source) => this.dataSources[source].enabled);
   }
 
   /**
@@ -151,7 +150,7 @@ class DataSourceManager {
    * @returns {Object} 数据源配置
    */
   getDataSourceConfig(source) {
-    return this.dataSources[source] || null
+    return this.dataSources[source] || null;
   }
 
   /**
@@ -160,7 +159,7 @@ class DataSourceManager {
    * @returns {Object} 数据源健康状态
    */
   getDataSourceHealth(source) {
-    return this.healthStatus[source] || null
+    return this.healthStatus[source] || null;
   }
 
   /**
@@ -168,7 +167,7 @@ class DataSourceManager {
    * @returns {Object} 所有数据源健康状态
    */
   getAllDataSourceHealth() {
-    return this.healthStatus
+    return this.healthStatus;
   }
 
   /**
@@ -178,44 +177,44 @@ class DataSourceManager {
    * @returns {Number} 评分（0-100）
    */
   calculateScore(source) {
-    const config = this.dataSources[source]
-    const health = this.healthStatus[source]
+    const config = this.dataSources[source];
+    const health = this.healthStatus[source];
 
     if (!config || !config.enabled || !health || health.status === 'disabled') {
-      return 0
+      return 0;
     }
 
     // 如果数据源不健康，大幅降低评分
     if (health.status === 'unavailable') {
-      return config.priority * 0.1
+      return config.priority * 0.1;
     }
 
     // 基础评分 = 优先级（40%）+ 可靠性（30%）+ 性能（30%）
     let score =
-      config.priority * 0.4 + config.reliability * 100 * 0.3 + config.performance * 100 * 0.3
+      config.priority * 0.4 + config.reliability * 100 * 0.3 + config.performance * 100 * 0.3;
 
     // 根据健康状态调整评分
     if (health.totalRequests > 0) {
-      const successRate = health.successfulRequests / health.totalRequests
+      const successRate = health.successfulRequests / health.totalRequests;
 
       // 成功率低于80%时，降低评分
       if (successRate < 0.8) {
-        score *= successRate
+        score *= successRate;
       }
 
       // 响应时间超过5秒，降低评分
       if (health.averageResponseTime > 5000) {
-        score *= 5000 / health.averageResponseTime
+        score *= 5000 / health.averageResponseTime;
       }
 
       // 连续失败次数影响
       if (health.consecutiveFailures > 0) {
-        score *= Math.pow(0.9, health.consecutiveFailures)
+        score *= Math.pow(0.9, health.consecutiveFailures);
       }
     }
 
     // 确保评分在0-100之间
-    return Math.max(0, Math.min(100, score))
+    return Math.max(0, Math.min(100, score));
   }
 
   /**
@@ -224,21 +223,21 @@ class DataSourceManager {
    * @returns {String} 最佳数据源名称
    */
   getBestDataSource(requiredSources = null) {
-    const sources = requiredSources || this.getDataSources()
+    const sources = requiredSources || this.getDataSources();
 
-    let bestSource = null
-    let bestScore = -1
+    let bestSource = null;
+    let bestScore = -1;
 
     for (const source of sources) {
-      const score = this.calculateScore(source)
+      const score = this.calculateScore(source);
 
       if (score > bestScore) {
-        bestScore = score
-        bestSource = source
+        bestScore = score;
+        bestSource = source;
       }
     }
 
-    return bestSource
+    return bestSource;
   }
 
   /**
@@ -248,7 +247,7 @@ class DataSourceManager {
    * @returns {Array} 数据源优先级列表
    */
   getDataSourcePriority(requiredSources = null) {
-    const sources = requiredSources || this.getDataSources()
+    const sources = requiredSources || this.getDataSources();
 
     return sources
       .map((source) => ({
@@ -256,7 +255,7 @@ class DataSourceManager {
         score: this.calculateScore(source),
         health: this.healthStatus[source].status,
       }))
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => b.score - a.score);
   }
 
   /**
@@ -280,64 +279,64 @@ class DataSourceManager {
         lastError: null,
         lastSuccess: null,
         status: 'available',
-      }
+      };
     }
 
-    const health = this.healthStatus[source]
+    const health = this.healthStatus[source];
 
     // 更新请求统计
-    health.totalRequests++
+    health.totalRequests++;
 
     if (success) {
-      health.successfulRequests++
-      health.consecutiveSuccesses++
-      health.consecutiveFailures = 0
-      health.lastSuccess = new Date()
+      health.successfulRequests++;
+      health.consecutiveSuccesses++;
+      health.consecutiveFailures = 0;
+      health.lastSuccess = new Date();
 
       // 更新平均响应时间
       health.averageResponseTime =
         (health.averageResponseTime * (health.successfulRequests - 1) + responseTime) /
-        health.successfulRequests
+        health.successfulRequests;
 
       // 如果之前不健康，检查是否恢复
       if (
         health.status === 'unavailable' &&
         health.consecutiveSuccesses >= this.failoverConfig.recoveryThreshold
       ) {
-        health.status = 'available'
-        health.isHealthy = true
-        this.logger.info(`[DataSourceManager] 数据源 ${source} 已恢复可用`)
+        health.status = 'available';
+        health.isHealthy = true;
+        this.logger.info(`[DataSourceManager] 数据源 ${source} 已恢复可用`);
       }
     } else {
-      health.failedRequests++
-      health.consecutiveFailures++
-      health.consecutiveSuccesses = 0
+      health.failedRequests++;
+      health.consecutiveFailures++;
+      health.consecutiveSuccesses = 0;
       health.lastError = {
         time: new Date(),
         message: error ? error.message : 'Unknown error',
         stack: error ? error.stack : null,
-      }
+      };
 
       // 检查是否需要标记为不可用
       if (
         health.status === 'available' &&
         health.consecutiveFailures >= this.failoverConfig.failureThreshold
       ) {
-        health.status = 'unavailable'
-        health.isHealthy = false
+        health.status = 'unavailable';
+        health.isHealthy = false;
         this.logger.warn(
           `[DataSourceManager] 数据源 ${source} 已标记为不可用，连续失败 ${health.consecutiveFailures} 次`
-        )
+        );
       }
     }
 
     // 更新最后检查时间
-    health.lastCheck = new Date()
+    health.lastCheck = new Date();
 
     // 记录评分历史
-    this.recordScoreHistory(source)
+    this.recordScoreHistory(source);
 
-    return health
+    return health;
   }
 
   /**
@@ -346,19 +345,19 @@ class DataSourceManager {
    */
   recordScoreHistory(source) {
     if (!this.scoreHistory[source]) {
-      this.scoreHistory[source] = []
+      this.scoreHistory[source] = [];
     }
 
-    const score = this.calculateScore(source)
+    const score = this.calculateScore(source);
 
     this.scoreHistory[source].push({
       timestamp: Date.now(),
       score,
-    })
+    });
 
     // 保留最近100条记录
     if (this.scoreHistory[source].length > 100) {
-      this.scoreHistory[source].shift()
+      this.scoreHistory[source].shift();
     }
   }
 
@@ -368,7 +367,7 @@ class DataSourceManager {
    * @returns {Array} 评分历史
    */
   getScoreHistory(source) {
-    return this.scoreHistory[source] || []
+    return this.scoreHistory[source] || [];
   }
 
   /**
@@ -377,65 +376,61 @@ class DataSourceManager {
    * @returns {Object} 健康检查结果
    */
   async checkHealth(source = null) {
-    const sources = source ? [source] : this.getDataSources()
-    const results = {}
+    const sources = source ? [source] : this.getDataSources();
+    const results = {};
 
     for (const src of sources) {
       try {
-        const startTime = Date.now()
+        const startTime = Date.now();
 
         // 调用数据源的测试接口
-        const service = this.getDataSourceService(src)
-        let success = false
-        let responseTime = 0
-        let error = null
+        const service = this.getDataSourceService(src);
+        let success = false;
+        let responseTime = 0;
+        let error = null;
 
         if (!service) {
-          error = new Error(`数据源服务 ${src} 不存在`)
-          success = false
+          error = new Error(`数据源服务 ${src} 不存在`);
+          success = false;
         } else if (typeof service.test !== 'function') {
-          error = new Error(`数据源服务 ${src} 没有 test 方法`)
-          success = false
+          error = new Error(`数据源服务 ${src} 没有 test 方法`);
+          success = false;
         } else {
           try {
-            await service.test()
-            success = true
+            await service.test();
+            success = true;
           } catch (err) {
-            error = err
-            success = false
+            error = err;
+            success = false;
           } finally {
-            responseTime = Date.now() - startTime
+            responseTime = Date.now() - startTime;
           }
-        } else {
-          error = new Error(`数据源 ${src} 不存在或没有测试方法`)
-          success = false
-          responseTime = 0
         }
 
         // 记录结果
-        const health = this.recordRequestResult(src, success, responseTime, error)
+        const health = this.recordRequestResult(src, success, responseTime, error);
 
         results[src] = {
           success,
           responseTime,
           health: health.status,
           error: error ? error.message : null,
-        }
+        };
       } catch (err) {
-        this.logger.error(`[DataSourceManager] 检查数据源 ${src} 健康状态失败:`, err)
+        this.logger.error(`[DataSourceManager] 检查数据源 ${src} 健康状态失败:`, err);
         results[src] = {
           success: false,
           responseTime: 0,
           health: 'error',
           error: err.message,
-        }
+        };
       }
     }
 
     return {
       timestamp: Date.now(),
       results,
-    }
+    };
   }
 
   /**
@@ -444,6 +439,10 @@ class DataSourceManager {
    * @returns {Object} 数据源服务
    */
   getDataSourceService(source) {
+    if (!this.app.service) {
+      this.logger.error('[DataSourceManager] app.service 未初始化');
+      return null;
+    }
     const serviceMap = {
       tushare: this.app.service.tushare,
       akshare: this.app.service.akshare,
@@ -455,9 +454,8 @@ class DataSourceManager {
       alltick: this.app.service.alltick,
       juhe: this.app.service.juhe,
       zhitu: this.app.service.zhitu,
-    }
-
-    return serviceMap[source] || null
+    };
+    return serviceMap[source] || null;
   }
 
   /**
@@ -465,23 +463,22 @@ class DataSourceManager {
    */
   startHealthCheck() {
     if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval)
+      clearInterval(this.healthCheckInterval);
     }
 
     this.healthCheckInterval = setInterval(async () => {
       try {
-        this.logger.info('[DataSourceManager] 执行定期数据源健康检查')
-        await this.checkHealth()
+        this.logger.info('[DataSourceManager] 执行定期数据源健康检查');
+        await this.checkHealth();
       } catch (error) {
-        this.logger.error('[DataSourceManager] 定期健康检查失败:', error)
+        this.logger.error('[DataSourceManager] 定期健康检查失败:', error);
       }
-    }, this.failoverConfig.healthCheckInterval)
+    }, this.failoverConfig.healthCheckInterval);
 
     this.logger.info(
-      `[DataSourceManager] 已启动定期健康检查，间隔 ${
-        this.failoverConfig.healthCheckInterval / 1000
+      `[DataSourceManager] 已启动定期健康检查，间隔 ${this.failoverConfig.healthCheckInterval / 1000
       } 秒`
-    )
+    );
   }
 
   /**
@@ -489,9 +486,9 @@ class DataSourceManager {
    */
   stopHealthCheck() {
     if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval)
-      this.healthCheckInterval = null
-      this.logger.info('[DataSourceManager] 已停止定期健康检查')
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+      this.logger.info('[DataSourceManager] 已停止定期健康检查');
     }
   }
 
@@ -512,74 +509,74 @@ class DataSourceManager {
       cacheNamespace = null,
       cacheTTL = null,
       useThrottling = this.requestOptimizerConfig.throttlingEnabled,
-    } = options
+    } = options;
 
     // 如果提供了缓存键，尝试从缓存获取
     if (cacheKey && cacheNamespace && !requireFresh && this.cacheManager) {
       try {
-        const cachedData = await this.cacheManager.get(cacheNamespace, cacheKey)
+        const cachedData = await this.cacheManager.get(cacheNamespace, cacheKey);
         if (cachedData !== null) {
           return {
             success: true,
             data: cachedData,
             source: 'cache',
             fromCache: true,
-          }
+          };
         }
       } catch (error) {
         this.logger.warn(
           `[DataSourceManager] 从缓存获取数据失败 (${cacheNamespace}:${cacheKey}):`,
           error
-        )
+        );
       }
     }
 
     // 获取数据源优先级列表
-    const dataSourcePriority = sources || this.getDataSourcePriority().map((s) => s.name)
+    const dataSourcePriority = sources || this.getDataSourcePriority().map((s) => s.name);
 
     if (dataSourcePriority.length === 0) {
-      throw new Error('没有可用的数据源')
+      throw new Error('没有可用的数据源');
     }
 
-    let lastError = null
+    let lastError = null;
 
     // 按优先级尝试每个数据源
     for (const source of dataSourcePriority) {
       // 跳过不健康的数据源
-      const health = this.healthStatus[source]
+      const health = this.healthStatus[source];
       if (health && health.status === 'unavailable' && !options.forceUseUnhealthy) {
-        continue
+        continue;
       }
 
-      let retries = 0
+      let retries = 0;
 
       while (retries <= maxRetries) {
+        const startTime = Date.now();
         try {
-          const startTime = Date.now()
-          let result
+          let result;
 
           // 如果启用了节流，使用请求优化器执行请求
           if (useThrottling && this.requestOptimizer) {
             // 创建一个包装函数，将请求函数包装为接受参数的形式
-            const wrappedFn = async () => requestFn(source)
-            result = await this.requestOptimizer.executeWithThrottle(source, 'custom', wrappedFn)
+            const wrappedFn = async () => requestFn(source);
+            result = await this.requestOptimizer.executeWithThrottle(source, 'custom', wrappedFn);
           } else {
             // 设置超时
             const timeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error(`请求超时 (${timeout}ms)`)), timeout)
-            })
+              setTimeout(() => reject(new Error(`请求超时 (${timeout}ms)`)), timeout);
+            });
 
             // 执行请求
-            const resultPromise = requestFn(source)
+            const resultPromise = requestFn(source);
 
             // 使用Promise.race实现超时
-            result = await Promise.race([resultPromise, timeoutPromise])
+            result = await Promise.race([resultPromise, timeoutPromise]);
           }
 
-          const responseTime = Date.now() - startTime
+          const responseTime = Date.now() - startTime;
 
           // 记录成功
-          this.recordRequestResult(source, true, responseTime)
+          this.recordRequestResult(source, true, responseTime);
 
           // 如果提供了缓存键，将结果存入缓存
           if (cacheKey && cacheNamespace && this.cacheManager) {
@@ -587,12 +584,12 @@ class DataSourceManager {
               await this.cacheManager.set(cacheNamespace, cacheKey, result, cacheTTL, {
                 source,
                 timestamp: Date.now(),
-              })
+              });
             } catch (error) {
               this.logger.warn(
                 `[DataSourceManager] 缓存数据失败 (${cacheNamespace}:${cacheKey}):`,
                 error
-              )
+              );
             }
           }
 
@@ -602,57 +599,56 @@ class DataSourceManager {
             source,
             responseTime,
             fromCache: false,
-          }
+          };
         } catch (error) {
-          const responseTime = Date.now() - startTime
+          const responseTime = Date.now() - startTime;
 
           // 记录失败
-          this.recordRequestResult(source, false, responseTime, error)
+          this.recordRequestResult(source, false, responseTime, error);
 
-          lastError = error
-          retries++
+          lastError = error;
+          retries++;
 
           this.logger.warn(
             `[DataSourceManager] 数据源 ${source} 请求失败 (重试 ${retries}/${maxRetries}):`,
             error
-          )
+          );
 
           if (retries <= maxRetries) {
             // 等待重试延迟
-            await new Promise((resolve) => setTimeout(resolve, retryDelay))
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
           }
         }
       }
     }
 
     // 所有数据源都失败了
-    throw lastError || new Error('所有数据源请求失败')
+    throw lastError || new Error('所有数据源请求失败');
   }
 
   /**
    * 初始化数据源管理器
    */
   async init() {
-    this.logger.info('[DataSourceManager] 初始化数据源管理器')
+    this.logger.info('[DataSourceManager] 初始化数据源管理器');
 
     try {
       // 初始化数据请求优化器
-      const DataRequestOptimizer = require('./data_request_optimizer')
-      this.requestOptimizer = new DataRequestOptimizer(this.app)
-      await this.requestOptimizer.init()
-
+      const DataRequestOptimizer = require('./data_request_optimizer');
+      this.requestOptimizer = new DataRequestOptimizer(this.app);
+      await this.requestOptimizer.init();
       // 执行初始健康检查
-      await this.checkHealth()
+      await this.checkHealth();
 
       // 启动定期健康检查
       if (this.failoverConfig.enabled) {
-        this.startHealthCheck()
+        this.startHealthCheck();
       }
 
-      this.logger.info('[DataSourceManager] 数据源管理器初始化完成')
+      this.logger.info('[DataSourceManager] 数据源管理器初始化完成');
     } catch (error) {
-      this.logger.error('[DataSourceManager] 初始化数据源管理器失败:', error)
-      throw error
+      this.logger.error('[DataSourceManager] 初始化数据源管理器失败:', error);
+      throw error;
     }
   }
 
@@ -668,14 +664,14 @@ class DataSourceManager {
   async executeBatchRequest(source, method, params, options = {}) {
     // 如果未启用批处理或请求优化器不可用，则使用并行请求
     if (!this.requestOptimizerConfig.batchingEnabled || !this.requestOptimizer) {
-      return this.executeParallelRequests(source, method, params, options)
+      return this.executeParallelRequests(source, method, params, options);
     }
 
     try {
       // 如果启用了数据验证和转换
       if (this.app.dataValidator && this.app.dataTransformer && options.validateData) {
-        const dataType = options.dataType || 'unknown'
-        const dataQualityService = this.app.service.dataQualityService
+        const dataType = options.dataType || 'unknown';
+        const dataQualityService = this.app.service.dataQualityService;
 
         // 批量处理数据
         if (dataQualityService) {
@@ -684,26 +680,26 @@ class DataSourceManager {
             skipQualityCheck: options.skipQualityCheck,
             skipStandardization: options.skipStandardization,
             strict: options.strict,
-          })
+          });
 
           // 使用处理后的数据
           if (result.success) {
-            params = result.data
+            params = result.data;
           } else {
             this.logger.warn(
               `[DataSourceManager] 批量数据处理有问题: ${source}.${method}, 继续使用原始数据`
-            )
+            );
           }
         }
       }
 
-      return await this.requestOptimizer.batchRequest(source, method, params, options)
+      return await this.requestOptimizer.batchRequest(source, method, params, options);
     } catch (error) {
-      this.logger.error(`[DataSourceManager] 批处理请求失败: ${source}.${method}:`, error)
+      this.logger.error(`[DataSourceManager] 批处理请求失败: ${source}.${method}:`, error);
 
       // 如果批处理失败，回退到并行请求
-      this.logger.info(`[DataSourceManager] 回退到并行请求: ${source}.${method}`)
-      return this.executeParallelRequests(source, method, params, options)
+      this.logger.info(`[DataSourceManager] 回退到并行请求: ${source}.${method}`);
+      return this.executeParallelRequests(source, method, params, options);
     }
   }
 
@@ -719,35 +715,35 @@ class DataSourceManager {
   async executeParallelRequests(source, method, params, options = {}) {
     // 如果未启用并行请求优化或请求优化器不可用，则使用普通的Promise.all
     if (!this.requestOptimizerConfig.parallelEnabled || !this.requestOptimizer) {
-      const service = this.getDataSourceService(source)
+      const service = this.getDataSourceService(source);
 
       if (!service || typeof service[method] !== 'function') {
-        throw new Error(`数据源 ${source} 不支持方法 ${method}`)
+        throw new Error(`数据源 ${source} 不支持方法 ${method}`);
       }
 
       // 创建请求函数数组
       const requestFunctions = params.map((param) => async () => {
-        return service[method](param)
-      })
+        return service[method](param);
+      });
 
       // 使用Promise.all执行所有请求
-      return Promise.all(requestFunctions.map((fn) => fn()))
+      return Promise.all(requestFunctions.map((fn) => fn()));
     }
 
     // 获取数据源服务
-    const service = this.getDataSourceService(source)
+    const service = this.getDataSourceService(source);
 
     if (!service || typeof service[method] !== 'function') {
-      throw new Error(`数据源 ${source} 不支持方法 ${method}`)
+      throw new Error(`数据源 ${source} 不支持方法 ${method}`);
     }
 
     // 创建请求函数数组
     const requestFunctions = params.map((param) => async () => {
-      return service[method](param)
-    })
+      return service[method](param);
+    });
 
     // 使用请求优化器执行并行请求
-    return this.requestOptimizer.executeParallelRequests(requestFunctions, source, options)
+    return this.requestOptimizer.executeParallelRequests(requestFunctions, source, options);
   }
 
   /**
@@ -762,16 +758,16 @@ class DataSourceManager {
   async executeWithThrottle(source, method, params, options = {}) {
     // 如果未启用节流或请求优化器不可用，则直接执行请求
     if (!this.requestOptimizerConfig.throttlingEnabled || !this.requestOptimizer) {
-      const service = this.getDataSourceService(source)
+      const service = this.getDataSourceService(source);
 
       if (!service || typeof service[method] !== 'function') {
-        throw new Error(`数据源 ${source} 不支持方法 ${method}`)
+        throw new Error(`数据源 ${source} 不支持方法 ${method}`);
       }
 
-      return service[method](params)
+      return service[method](params);
     }
 
-    return this.requestOptimizer.executeWithThrottle(source, method, params, options)
+    return this.requestOptimizer.executeWithThrottle(source, method, params, options);
   }
 
   /**
@@ -783,10 +779,10 @@ class DataSourceManager {
       return {
         enabled: false,
         message: '请求优化器未初始化',
-      }
+      };
     }
 
-    return this.requestOptimizer.getStats()
+    return this.requestOptimizer.getStats();
   }
 
   /**
@@ -794,7 +790,7 @@ class DataSourceManager {
    */
   resetRequestOptimizerStats() {
     if (this.requestOptimizer) {
-      this.requestOptimizer.resetStats()
+      this.requestOptimizer.resetStats();
     }
   }
 
@@ -802,16 +798,16 @@ class DataSourceManager {
    * 关闭数据源管理器
    */
   async shutdown() {
-    this.logger.info('[DataSourceManager] 关闭数据源管理器')
+    this.logger.info('[DataSourceManager] 关闭数据源管理器');
 
     // 停止定期健康检查
-    this.stopHealthCheck()
+    this.stopHealthCheck();
 
     // 关闭请求优化器
     if (this.requestOptimizer) {
-      await this.requestOptimizer.shutdown()
+      await this.requestOptimizer.shutdown();
     }
   }
 }
 
-module.exports = DataSourceManager
+module.exports = DataSourceManager;

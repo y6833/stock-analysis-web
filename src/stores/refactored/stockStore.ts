@@ -39,7 +39,7 @@ export const useStockQuoteStore = defineStore('stockQuote', () => {
 
   // 当前选中的股票
   const currentSymbol = ref<string>('')
-  const currentQuote = computed(() => 
+  const currentQuote = computed(() =>
     baseStore.data.find(quote => quote.symbol === currentSymbol.value)
   )
 
@@ -56,7 +56,7 @@ export const useStockQuoteStore = defineStore('stockQuote', () => {
 
       // 获取新数据
       const quote = await stockService.getStockQuote(symbol, forceRefresh)
-      
+
       // 更新或添加到列表
       const existingIndex = baseStore.data.findIndex(q => q.symbol === symbol)
       if (existingIndex !== -1) {
@@ -73,7 +73,7 @@ export const useStockQuoteStore = defineStore('stockQuote', () => {
   const getBatchQuotes = async (symbols: string[]): Promise<Record<string, StockQuote>> => {
     return await baseStore.withAsyncOperation(async () => {
       const results: Record<string, StockQuote> = {}
-      
+
       // 并发获取行情数据
       const promises = symbols.map(async (symbol) => {
         try {
@@ -104,7 +104,7 @@ export const useStockQuoteStore = defineStore('stockQuote', () => {
 
   // 清除过期行情
   const clearExpiredQuotes = () => {
-    baseStore.updateData(quotes => 
+    baseStore.updateData(quotes =>
       quotes.filter(quote => isQuoteValid(quote))
     )
   }
@@ -121,11 +121,11 @@ export const useStockQuoteStore = defineStore('stockQuote', () => {
   return {
     // 继承基础Store功能
     ...baseStore,
-    
+
     // 当前股票状态
     currentSymbol,
     currentQuote,
-    
+
     // 行情操作
     getQuote,
     getBatchQuotes,
@@ -165,10 +165,10 @@ export const useStockSearchStore = defineStore('stockSearch', () => {
     return await baseStore.withAsyncOperation(async () => {
       const results = await stockService.searchStocks(query)
       baseStore.setItems(results, results.length)
-      
+
       // 添加到搜索历史
       addToHistory(query)
-      
+
       return results
     }, '搜索股票失败') || []
   }
@@ -224,9 +224,10 @@ export const useStockSearchStore = defineStore('stockSearch', () => {
       // 这里可以从API获取热门搜索词
       // const hot = await stockService.getHotSearches()
       // hotSearches.value = hot
-      
-      // 暂时使用模拟数据
-      hotSearches.value = ['贵州茅台', '中国平安', '招商银行', '五粮液', '美的集团']
+
+      // 不再使用硬编码数据，返回空数组
+      console.warn('热门搜索：暂无真实数据源，返回空结果');
+      hotSearches.value = []
       return hotSearches.value
     } catch (error) {
       console.error('获取热门搜索失败:', error)
@@ -237,12 +238,12 @@ export const useStockSearchStore = defineStore('stockSearch', () => {
   return {
     // 继承基础Store功能
     ...baseStore,
-    
+
     // 搜索状态
     searchHistory,
     hotSearches,
     suggestions,
-    
+
     // 搜索操作
     search,
     getSuggestions,
@@ -260,12 +261,12 @@ export const useStockDataSourceStore = defineStore('stockDataSource', () => {
   const currentDataSource = ref<string>(
     Utils.Storage.local.get(CONSTANTS.STORAGE.KEYS.DATA_SOURCE, CONSTANTS.DATA_SOURCE.TYPES.TUSHARE)
   )
-  
+
   const availableDataSources = ref<string[]>(
     stockService.getAvailableDataSources()
   )
 
-  const dataSourceInfo = computed(() => 
+  const dataSourceInfo = computed(() =>
     stockService.getDataSourceInfo(currentDataSource.value as any)
   )
 
@@ -309,7 +310,7 @@ export const useStockDataSourceStore = defineStore('stockDataSource', () => {
     currentDataSource,
     availableDataSources,
     dataSourceInfo,
-    
+
     // 操作
     switchDataSource,
     testDataSource,

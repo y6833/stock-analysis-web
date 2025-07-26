@@ -149,92 +149,62 @@ except Exception as e:
     const { ctx } = this;
     const { force_refresh = false } = ctx.query;
 
-    // 生成模拟股票数据的函数
-    const getMockStocks = () => [
-      { symbol: '000001.SH', name: '上证指数', market: '上海', industry: '指数' },
-      { symbol: '399001.SZ', name: '深证成指', market: '深圳', industry: '指数' },
-      { symbol: '600519.SH', name: '贵州茅台', market: '上海', industry: '白酒' },
-      { symbol: '601318.SH', name: '中国平安', market: '上海', industry: '保险' },
-      { symbol: '600036.SH', name: '招商银行', market: '上海', industry: '银行' },
-      { symbol: '000858.SZ', name: '五粮液', market: '深圳', industry: '白酒' },
-      { symbol: '000333.SZ', name: '美的集团', market: '深圳', industry: '家电' },
-      { symbol: '601166.SH', name: '兴业银行', market: '上海', industry: '银行' },
-      { symbol: '002415.SZ', name: '海康威视', market: '深圳', industry: '电子' },
-      { symbol: '600276.SH', name: '恒瑞医药', market: '上海', industry: '医药' },
-      { symbol: '000002.SZ', name: '万科A', market: '深圳', industry: '房地产' },
-      { symbol: '600000.SH', name: '浦发银行', market: '上海', industry: '银行' },
-      { symbol: '000001.SZ', name: '平安银行', market: '深圳', industry: '银行' },
-      { symbol: '600887.SH', name: '伊利股份', market: '上海', industry: '食品饮料' },
-      { symbol: '002594.SZ', name: '比亚迪', market: '深圳', industry: '汽车' }
-    ];
+    // 从数据库获取真实股票数据的函数
+    const getRealStocks = async () => {
+      try {
+        const [results] = await app.model.query(
+          'SELECT symbol, name, area as market, industry FROM stock_basic WHERE list_status = "L" ORDER BY symbol LIMIT 100',
+          { type: app.model.QueryTypes.SELECT }
+        );
+
+        if (!results || results.length === 0) {
+          ctx.logger.error('❌ AKShare服务：数据库中没有股票数据');
+          return [];
+        }
+
+        return results.map(stock => ({
+          symbol: stock.symbol,
+          name: stock.name,
+          market: stock.market || '未知',
+          industry: stock.industry || '未知'
+        }));
+      } catch (error) {
+        ctx.logger.error('❌ AKShare服务：获取股票数据失败', error.message);
+        return [];
+      }
+    };
 
     try {
-      // 如果不强制刷新，直接返回模拟数据（避免超时）
-      if (!force_refresh) {
-        ctx.logger.info('使用AKShare模拟股票列表数据（避免Python脚本超时）');
+      // 从数据库获取真实股票数据
+      ctx.logger.info('从数据库获取真实股票列表数据');
 
-        const mockStocks = getMockStocks();
+      const realStocks = await getRealStocks();
 
+      if (realStocks.length === 0) {
+        ctx.status = 404;
         ctx.body = {
-          success: true,
-          data: mockStocks,
-          message: '使用模拟数据（Python脚本超时风险较高）',
-          data_source: 'mock_data',
-          count: mockStocks.length,
-          note: '如需真实数据，请设置force_refresh=true'
+          success: false,
+          message: '数据库中没有股票数据',
+          data_source: 'database',
+          count: 0
         };
         return;
       }
 
-      // 只有在强制刷新时才调用Python脚本
-      ctx.logger.info('强制刷新：尝试执行Python脚本获取真实股票列表');
-
-      try {
-        // 执行 Python 脚本获取股票列表
-        const result = await this.execPythonScript('stock-list');
-
-        if (result.success) {
-          ctx.body = result;
-        } else {
-          // Python脚本失败，降级到模拟数据
-          ctx.logger.warn('Python脚本执行失败，降级到模拟数据:', result.message);
-          const mockStocks = getMockStocks();
-
-          ctx.body = {
-            success: true,
-            data: mockStocks,
-            message: 'Python脚本执行失败，使用模拟数据',
-            data_source: 'mock_data_fallback',
-            count: mockStocks.length,
-            error: result.message
-          };
-        }
-      } catch (scriptError) {
-        // Python脚本超时或异常，降级到模拟数据
-        ctx.logger.warn('Python脚本超时或异常，降级到模拟数据:', scriptError.message);
-        const mockStocks = getMockStocks();
-
-        ctx.body = {
-          success: true,
-          data: mockStocks,
-          message: 'Python脚本超时，使用模拟数据',
-          data_source: 'mock_data_timeout',
-          count: mockStocks.length,
-          error: scriptError.message
-        };
-      }
-    } catch (error) {
-      console.error('获取股票列表失败:', error);
-
-      // 如果发生异常，返回模拟数据
-      const mockStocks = getMockStocks();
-
       ctx.body = {
         success: true,
-        data: mockStocks,
-        message: '使用模拟数据，原因: ' + error.message,
-        data_source: 'mock_data_error',
-        count: mockStocks.length
+        data: realStocks,
+        message: '从数据库获取股票列表成功',
+        data_source: 'database',
+        count: realStocks.length
+      };
+    } catch (error) {
+      console.error('获取股票列表失败:', error);
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '获取股票列表失败: ' + error.message,
+        data_source: 'database_error'
       };
     }
   }
@@ -318,49 +288,49 @@ except Exception as e:
     let stockName = '';
 
     switch (symbol) {
-    case '000001.SH':
-      basePrice = 3000;
-      stockName = '上证指数';
-      break;
-    case '399001.SZ':
-      basePrice = 10000;
-      stockName = '深证成指';
-      break;
-    case '600519.SH':
-      basePrice = 1800;
-      stockName = '贵州茅台';
-      break;
-    case '601318.SH':
-      basePrice = 60;
-      stockName = '中国平安';
-      break;
-    case '600036.SH':
-      basePrice = 40;
-      stockName = '招商银行';
-      break;
-    case '000858.SZ':
-      basePrice = 150;
-      stockName = '五粮液';
-      break;
-    case '000333.SZ':
-      basePrice = 80;
-      stockName = '美的集团';
-      break;
-    case '601166.SH':
-      basePrice = 20;
-      stockName = '兴业银行';
-      break;
-    case '002415.SZ':
-      basePrice = 35;
-      stockName = '海康威视';
-      break;
-    case '600276.SH':
-      basePrice = 50;
-      stockName = '恒瑞医药';
-      break;
-    default:
-      basePrice = 100;
-      stockName = '未知股票';
+      case '000001.SH':
+        basePrice = 3000;
+        stockName = '上证指数';
+        break;
+      case '399001.SZ':
+        basePrice = 10000;
+        stockName = '深证成指';
+        break;
+      case '600519.SH':
+        basePrice = 1800;
+        stockName = '贵州茅台';
+        break;
+      case '601318.SH':
+        basePrice = 60;
+        stockName = '中国平安';
+        break;
+      case '600036.SH':
+        basePrice = 40;
+        stockName = '招商银行';
+        break;
+      case '000858.SZ':
+        basePrice = 150;
+        stockName = '五粮液';
+        break;
+      case '000333.SZ':
+        basePrice = 80;
+        stockName = '美的集团';
+        break;
+      case '601166.SH':
+        basePrice = 20;
+        stockName = '兴业银行';
+        break;
+      case '002415.SZ':
+        basePrice = 35;
+        stockName = '海康威视';
+        break;
+      case '600276.SH':
+        basePrice = 50;
+        stockName = '恒瑞医药';
+        break;
+      default:
+        basePrice = 100;
+        stockName = '未知股票';
     }
 
     // 不生成模拟数据，直接返回错误
@@ -444,62 +414,52 @@ except Exception as e:
       if (result.success) {
         ctx.body = result;
       } else {
-        // 如果 Python 脚本执行失败，返回模拟数据
-        console.warn(`搜索股票失败，关键词: ${keyword}，使用模拟数据:`, result.message);
+        // 如果 Python 脚本执行失败，从数据库搜索
+        console.warn(`搜索股票失败，关键词: ${keyword}，从数据库搜索:`, result.message);
 
-        // 获取模拟股票列表
-        const mockStocks = [
-          { symbol: '000001.SH', name: '上证指数', market: '上海', industry: '指数' },
-          { symbol: '399001.SZ', name: '深证成指', market: '深圳', industry: '指数' },
-          { symbol: '600519.SH', name: '贵州茅台', market: '上海', industry: '白酒' },
-          { symbol: '601318.SH', name: '中国平安', market: '上海', industry: '保险' },
-          { symbol: '600036.SH', name: '招商银行', market: '上海', industry: '银行' },
-          { symbol: '000858.SZ', name: '五粮液', market: '深圳', industry: '白酒' },
-          { symbol: '000333.SZ', name: '美的集团', market: '深圳', industry: '家电' },
-          { symbol: '601166.SH', name: '兴业银行', market: '上海', industry: '银行' },
-          { symbol: '002415.SZ', name: '海康威视', market: '深圳', industry: '电子' },
-          { symbol: '600276.SH', name: '恒瑞医药', market: '上海', industry: '医药' },
-        ];
+        try {
+          // 从数据库搜索股票
+          const [results] = await app.model.query(
+            'SELECT symbol, name, area as market, industry FROM stock_basic WHERE list_status = "L" AND (symbol LIKE ? OR name LIKE ?) ORDER BY symbol LIMIT 50',
+            {
+              type: app.model.QueryTypes.SELECT,
+              replacements: [`%${keyword}%`, `%${keyword}%`]
+            }
+          );
 
-        // 在模拟数据中搜索
-        const filteredStocks = mockStocks.filter(stock =>
-          stock.symbol.toLowerCase().includes(keyword.toLowerCase()) ||
-          stock.name.toLowerCase().includes(keyword.toLowerCase())
-        );
+          const searchResults = results.map(stock => ({
+            symbol: stock.symbol,
+            name: stock.name,
+            market: stock.market || '未知',
+            industry: stock.industry || '未知'
+          }));
 
-        ctx.body = {
-          success: true,
-          data: filteredStocks,
-          message: '使用模拟数据，原因: ' + result.message
-        };
+          ctx.body = {
+            success: true,
+            data: searchResults,
+            message: '从数据库搜索股票成功',
+            data_source: 'database_search',
+            count: searchResults.length
+          };
+          return;
+        } catch (dbError) {
+          console.error('数据库搜索失败:', dbError.message);
+          ctx.status = 500;
+          ctx.body = {
+            success: false,
+            message: '搜索股票失败',
+            error: dbError.message
+          };
+          return;
+        }
       }
     } catch (error) {
       console.error(`搜索股票失败，关键词: ${keyword}:`, error);
-
-      // 如果发生异常，返回模拟数据
-      const mockStocks = [
-        { symbol: '000001.SH', name: '上证指数', market: '上海', industry: '指数' },
-        { symbol: '399001.SZ', name: '深证成指', market: '深圳', industry: '指数' },
-        { symbol: '600519.SH', name: '贵州茅台', market: '上海', industry: '白酒' },
-        { symbol: '601318.SH', name: '中国平安', market: '上海', industry: '保险' },
-        { symbol: '600036.SH', name: '招商银行', market: '上海', industry: '银行' },
-        { symbol: '000858.SZ', name: '五粮液', market: '深圳', industry: '白酒' },
-        { symbol: '000333.SZ', name: '美的集团', market: '深圳', industry: '家电' },
-        { symbol: '601166.SH', name: '兴业银行', market: '上海', industry: '银行' },
-        { symbol: '002415.SZ', name: '海康威视', market: '深圳', industry: '电子' },
-        { symbol: '600276.SH', name: '恒瑞医药', market: '上海', industry: '医药' },
-      ];
-
-      // 在模拟数据中搜索
-      const filteredStocks = mockStocks.filter(stock =>
-        stock.symbol.toLowerCase().includes(keyword.toLowerCase()) ||
-        stock.name.toLowerCase().includes(keyword.toLowerCase())
-      );
-
+      ctx.status = 500;
       ctx.body = {
-        success: true,
-        data: filteredStocks,
-        message: '使用模拟数据，原因: ' + error.message
+        success: false,
+        message: '搜索股票失败: ' + error.message,
+        data_source: 'error'
       };
     }
   }

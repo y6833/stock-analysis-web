@@ -6,22 +6,17 @@ module.exports = (app) => {
   const Stock = app.model.define(
     'stock',
     {
-      id: {
-        type: INTEGER.UNSIGNED,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      symbol: {
-        type: STRING(20),
-        allowNull: false,
-        unique: true,
-        comment: '股票代码',
-      },
       tsCode: {
-        type: STRING(20),
-        allowNull: true,
+        type: STRING(10),
+        allowNull: false,
+        primaryKey: true,
         field: 'ts_code',
         comment: 'Tushare代码',
+      },
+      symbol: {
+        type: STRING(10),
+        allowNull: true,
+        comment: '股票代码',
       },
       name: {
         type: STRING(100),
@@ -93,19 +88,10 @@ module.exports = (app) => {
         field: 'is_hs',
         comment: '是否沪深港通',
       },
-      createdAt: {
-        type: DATE,
-        allowNull: false,
-        field: 'created_at',
-      },
-      updatedAt: {
-        type: DATE,
-        allowNull: false,
-        field: 'updated_at',
-      },
     },
     {
-      tableName: 'stocks', // 明确指定表名为复数形式
+      tableName: 'stock_basic', // 指定表名为 stock_basic
+      timestamps: false, // stock_basic 表没有 created_at 和 updated_at 字段
     }
   )
 

@@ -250,30 +250,35 @@ class StockController extends Controller {
     }
   }
 
-  // 获取股票历史数据
+  // 获取股票历史数据（使用缓存优化）
   async getHistory() {
     const { ctx, service } = this
     const stockCode = ctx.params.code
-    const { start_date, end_date } = ctx.query
+    const { start_date, end_date, cache_priority } = ctx.query
 
     try {
-      const history = await service.stock.getStockHistory(
+      // 使用新的缓存优化方法
+      const result = await service.stock.getStockHistoryData(
         stockCode,
         start_date || service.stock.getDateString(-30), // 默认30天前
-        end_date || service.stock.getDateString(0) // 默认今天
+        end_date || service.stock.getDateString(0), // 默认今天
+        parseInt(cache_priority) || 3 // 默认优先级3
       )
 
       // 设置响应头中的数据来源
-      if (history.data_source) {
-        ctx.set('X-Data-Source', history.data_source)
+      if (result.data_source) {
+        ctx.set('X-Data-Source', result.data_source)
       }
 
       // 返回数据，保留原有的数据来源信息
-      ctx.body = history
+      ctx.body = result
     } catch (err) {
       ctx.status = 500
       ctx.body = {
+        success: false,
         message: '获取股票历史数据失败',
+        data: [],
+        count: 0,
         data_source: 'error',
         data_source_message: `获取数据失败: ${err.message}`,
       }
@@ -397,28 +402,33 @@ class StockController extends Controller {
         // 如果提供了股票代码，则使用提供的代码
         stockCodes = codes.split(',')
       } else {
-        // 否则，获取常用股票列表
-        const commonStocks = [
-          '000001.SZ', // 平安银行
-          '000002.SZ', // 万科A
-          '000063.SZ', // 中兴通讯
-          '000333.SZ', // 美的集团
-          '000651.SZ', // 格力电器
-          '000858.SZ', // 五粮液
-          '002415.SZ', // 海康威视
-          '600000.SH', // 浦发银行
-          '600036.SH', // 招商银行
-          '600276.SH', // 恒瑞医药
-          '600519.SH', // 贵州茅台
-          '600887.SH', // 伊利股份
-          '601318.SH', // 中国平安
-          '601398.SH', // 工商银行
-          '601857.SH', // 中国石油
-          '601988.SH', // 中国银行
-          '603288.SH', // 海天味业
-        ]
+        // 从数据库获取常用股票列表
+        try {
+          const [results] = await app.model.query(
+            'SELECT symbol FROM stock_basic WHERE list_status = "L" ORDER BY symbol LIMIT 20',
+            { type: app.model.QueryTypes.SELECT }
+          )
 
-        stockCodes = commonStocks
+          if (results && results.length > 0) {
+            stockCodes = results.map((row) => row.symbol)
+          } else {
+            ctx.logger.error('❌ 数据库中没有股票数据')
+            ctx.status = 404
+            ctx.body = {
+              success: false,
+              message: '数据库中没有股票数据',
+            }
+            return
+          }
+        } catch (dbError) {
+          ctx.logger.error('❌ 获取股票列表失败:', dbError.message)
+          ctx.status = 500
+          ctx.body = {
+            success: false,
+            message: '获取股票列表失败: ' + dbError.message,
+          }
+          return
+        }
       }
 
       if (stockCodes.length === 0) {
@@ -653,40 +663,34 @@ class StockController extends Controller {
     try {
       ctx.logger.info(`搜索股票关键词: ${keyword}`)
 
-      // 使用原生MySQL查询
-      const mysql = app.mysql
+      // 使用 Sequelize 模型查询
+      const { Op } = app.Sequelize
       const searchPattern = `%${keyword}%`
 
-      const results = await mysql.query(
-        `SELECT ts_code as tsCode, symbol, name, area, industry, market, list_date as listDate
-         FROM stock_basic
-         WHERE (
-           symbol LIKE ? OR
-           name LIKE ? OR
-           ts_code LIKE ? OR
-           cnspell LIKE ?
-         )
-         ORDER BY
-           CASE
-             WHEN symbol = ? THEN 1
-             WHEN name = ? THEN 2
-             WHEN symbol LIKE ? THEN 3
-             WHEN name LIKE ? THEN 4
-             ELSE 5
-           END,
-           symbol ASC
-         LIMIT 50`,
-        [
-          searchPattern,
-          searchPattern,
-          searchPattern,
-          searchPattern,
-          keyword,
-          keyword,
-          `${keyword}%`,
-          `${keyword}%`,
-        ]
-      )
+      const results = await app.model.Stock.findAll({
+        where: {
+          [Op.or]: [
+            { symbol: { [Op.like]: searchPattern } },
+            { name: { [Op.like]: searchPattern } },
+            { tsCode: { [Op.like]: searchPattern } },
+          ],
+        },
+        attributes: ['tsCode', 'symbol', 'name', 'area', 'industry', 'market', 'listDate'],
+        order: [
+          [
+            app.Sequelize.literal(`CASE
+            WHEN symbol = '${keyword}' THEN 1
+            WHEN name = '${keyword}' THEN 2
+            WHEN symbol LIKE '${keyword}%' THEN 3
+            WHEN name LIKE '${keyword}%' THEN 4
+            ELSE 5
+          END`),
+          ],
+          ['symbol', 'ASC'],
+        ],
+        limit: 50,
+        raw: true,
+      })
 
       ctx.logger.info(
         `MySQL查询结果类型: ${typeof results}, 是否为数组: ${Array.isArray(results)}, 长度: ${

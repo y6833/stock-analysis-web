@@ -57,17 +57,9 @@ export class JuheDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取股票列表失败，使用预定义列表:', proxyError)
       }
 
-      // 如果API调用失败，返回预定义的A股列表
-      const fallbackStocks: Stock[] = [
-        { symbol: 'sh000001', name: '上证指数', market: '上海', industry: '指数' },
-        { symbol: 'sz399001', name: '深证成指', market: '深圳', industry: '指数' },
-        { symbol: 'sz399006', name: '创业板指', market: '深圳', industry: '指数' },
-        { symbol: 'sh000300', name: '沪深300', market: '上海', industry: '指数' },
-        { symbol: 'sh600519', name: '贵州茅台', market: '上海', industry: '食品饮料' },
-        { symbol: 'sh600036', name: '招商银行', market: '上海', industry: '银行' },
-        { symbol: 'sz000858', name: '五粮液', market: '深圳', industry: '食品饮料' },
-        { symbol: 'sz000001', name: '平安银行', market: '深圳', industry: '银行' },
-      ]
+      // 如果API调用失败，返回空数组而不是硬编码数据
+      console.warn('Juhe数据源：API调用失败，返回空结果');
+      return [];
 
       console.log('使用预定义A股列表')
       return fallbackStocks

@@ -168,10 +168,10 @@ Object.defineProperty(window, 'sessionStorage', {
 
 // Global test utilities
 global.testUtils = {
-  // Helper to create mock data
+  // Helper to create mock data (使用通用测试数据，不依赖真实股票)
   createMockStock: (overrides = {}) => ({
-    symbol: '000001',
-    name: '平安银行',
+    symbol: 'TEST001',
+    name: '测试股票',
     price: 10.5,
     change: 0.1,
     changePercent: 0.95,

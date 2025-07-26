@@ -1,5 +1,5 @@
-import { ref, Ref } from 'vue';
-import errorHandlingService, { AppError, ErrorType, ErrorSeverity } from '@/services/errorHandlingService';
+import { ref, type Ref } from 'vue';
+import errorHandlingService, { type AppError, ErrorType, ErrorSeverity } from '@/services/errorHandlingService';
 import { useToast } from './useToast';
 
 interface ErrorState {
@@ -24,7 +24,7 @@ export function useErrorHandling() {
    * 显示错误消息
    */
   const showError = (
-    message: string, 
+    message: string,
     type: 'error' | 'warning' | 'info' | 'question' = 'error',
     details?: string,
     suggestion?: string
@@ -52,7 +52,7 @@ export function useErrorHandling() {
     // 如果是应用错误对象，直接处理
     if (error && error.type && error.severity && error.message) {
       errorHandlingService.handleError(error as AppError);
-      
+
       // 更新组件错误状态
       showError(
         error.message,
@@ -61,10 +61,10 @@ export function useErrorHandling() {
       );
       return;
     }
-    
+
     // 创建应用错误对象
     let appError: AppError;
-    
+
     if (error && error.isAxiosError) {
       // Axios错误
       appError = errorHandlingService.createErrorFromAxiosError(error);
@@ -77,10 +77,10 @@ export function useErrorHandling() {
         error
       );
     }
-    
+
     // 处理错误
     errorHandlingService.handleError(appError);
-    
+
     // 更新组件错误状态
     showError(
       appError.message,

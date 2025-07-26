@@ -98,34 +98,9 @@ export class AlphaVantageDataSource implements DataSourceInterface {
         return this.stockListCache
       }
 
-      // Alpha Vantage没有直接的股票列表API，使用预定义列表
-      const popularStocks = [
-        { symbol: '000001.SZ', name: '平安银行', industry: '银行' },
-        { symbol: '000002.SZ', name: '万科A', industry: '房地产' },
-        { symbol: '000858.SZ', name: '五粮液', industry: '食品饮料' },
-        { symbol: '002415.SZ', name: '海康威视', industry: '电子' },
-        { symbol: '600000.SH', name: '浦发银行', industry: '银行' },
-        { symbol: '600036.SH', name: '招商银行', industry: '银行' },
-        { symbol: '600519.SH', name: '贵州茅台', industry: '食品饮料' },
-        // 添加一些美股示例
-        { symbol: 'AAPL', name: 'Apple Inc.', industry: '科技' },
-        { symbol: 'MSFT', name: 'Microsoft Corporation', industry: '科技' },
-        { symbol: 'GOOGL', name: 'Alphabet Inc.', industry: '科技' }
-      ]
-
-      const stocks: Stock[] = popularStocks.map(stock => ({
-        symbol: stock.symbol,
-        name: stock.name,
-        market: stock.symbol.includes('.') ?
-          (stock.symbol.endsWith('.SH') ? 'SH' : 'SZ') : 'US',
-        listDate: '',
-        industry: stock.industry,
-        area: stock.symbol.includes('.') ? 'CN' : 'US'
-      }))
-
-      // 更新缓存
-      this.stockListCache = stocks
-      this.stockListCacheTime = Date.now()
+      // Alpha Vantage没有直接的股票列表API，返回空数组而不是硬编码数据
+      console.warn('Alpha Vantage数据源：没有股票列表API，返回空结果');
+      return [];
 
       return stocks
     } catch (error) {

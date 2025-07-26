@@ -3,7 +3,7 @@
  * 提供统一的服务基础功能和错误处理模式
  */
 
-import { AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { get, post, put, del } from '@/services/apiService'
 import errorHandlingService, { ErrorType, ErrorSeverity } from '@/services/errorHandlingService'
 import loadingService from '@/services/loadingService'
@@ -142,7 +142,7 @@ export abstract class BaseService {
    */
   protected handleError(error: any, method: string, url: string): void {
     const errorMessage = `${this.serviceName} ${method} ${url} 失败`
-    
+
     // 创建应用错误对象
     const appError = errorHandlingService.createAppError(
       this.getErrorType(error),
@@ -200,7 +200,7 @@ export abstract class BaseService {
         return await operation()
       } catch (error) {
         lastError = error
-        
+
         // 如果是最后一次尝试，直接抛出错误
         if (attempt === maxRetries) {
           break
@@ -255,7 +255,7 @@ export abstract class BaseService {
    * 验证必需参数
    */
   protected validateRequired(params: Record<string, any>, requiredFields: string[]): void {
-    const missingFields = requiredFields.filter(field => 
+    const missingFields = requiredFields.filter(field =>
       params[field] === undefined || params[field] === null || params[field] === ''
     )
 

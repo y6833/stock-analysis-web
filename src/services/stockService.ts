@@ -8,6 +8,15 @@ import { dataSourceStateManager } from '@/services/dataSourceStateManager'
 import { smartCache } from '@/services/cacheService'
 import { CONSTANTS } from '@/constants'
 import { Utils } from '@/utils'
+import axios from 'axios'
+import apiRequest from '@/utils/apiRequest'
+
+// 创建 API 客户端实例
+const apiClient = apiRequest.createClient({
+  baseUrl: 'http://localhost:7001',
+  timeout: 30000,
+  retryCount: 3
+})
 
 // API基础URL配置
 const API_BASE_URL = 'http://localhost:7001'
@@ -339,6 +348,92 @@ class StockService extends BaseDataService {
     )
   }
 
+  // 获取股票图表数据（优化版本，使用缓存系统）
+  async getStockChartData(symbol: string, days: number = 30): Promise<StockData & { source_type?: DataSourceType }> {
+    try {
+      console.log(`获取股票 ${symbol} 的图表数据，天数: ${days}`)
+
+      // 计算日期范围
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - days)
+
+      const formatDate = (date: Date) => {
+        return date.toISOString().split('T')[0].replace(/-/g, '')
+      }
+
+      const startDateStr = formatDate(startDate)
+      const endDateStr = formatDate(endDate)
+
+      // 调用后端API获取缓存数据
+      const response = await apiClient.get(`/api/stocks/${symbol}/history`, {
+        params: {
+          start_date: startDateStr,
+          end_date: endDateStr,
+          cache_priority: 2 // 搜索历史优先级
+        }
+      })
+
+      if (response.data.success && response.data.data && response.data.data.length > 0) {
+        const historyData = response.data.data
+
+        // 转换数据格式为图表组件期望的格式
+        const dates: string[] = []
+        const prices: number[] = []
+        const opens: number[] = []
+        const highs: number[] = []
+        const lows: number[] = []
+        const closes: number[] = []
+        const volumes: number[] = []
+
+        historyData.forEach((item: any) => {
+          if (item.trade_date && item.close) {
+            // 格式化日期为 YYYY-MM-DD
+            const dateStr = item.trade_date
+            const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+
+            dates.push(formattedDate)
+            prices.push(parseFloat(item.close) || 0)
+            opens.push(parseFloat(item.open) || parseFloat(item.close) || 0)
+            highs.push(parseFloat(item.high) || parseFloat(item.close) || 0)
+            lows.push(parseFloat(item.low) || parseFloat(item.close) || 0)
+            closes.push(parseFloat(item.close) || 0)
+            volumes.push(parseFloat(item.vol) || 0)
+          }
+        })
+
+        if (dates.length > 0) {
+          const stockData: StockData = {
+            symbol,
+            dates,
+            prices,
+            opens,
+            highs,
+            lows,
+            closes,
+            volumes,
+            high: Math.max(...highs),
+            low: Math.min(...lows),
+            open: opens[0] || 0,
+            close: closes[closes.length - 1] || 0
+          }
+
+          console.log(`成功获取股票 ${symbol} 图表数据，共 ${dates.length} 条记录`)
+          return { ...stockData, source_type: 'cache' as DataSourceType }
+        }
+      }
+
+      // 如果缓存数据获取失败，回退到原有方法
+      console.log(`缓存数据获取失败，回退到原有数据源获取股票 ${symbol} 数据`)
+      return await this.getStockData(symbol)
+
+    } catch (error) {
+      console.error(`获取股票 ${symbol} 图表数据失败:`, error)
+      // 回退到原有方法
+      return await this.getStockData(symbol)
+    }
+  }
+
   // 获取单个股票数据
   async getStockData(symbol: string): Promise<StockData & { source_type?: DataSourceType }> {
     // 获取所有可用的数据源
@@ -504,7 +599,7 @@ class StockService extends BaseDataService {
 
       try {
         // 获取所有可用的数据源
-        const availableSources = DataSourceFactory.getAvailableDataSources()
+        // const availableSources = DataSourceFactory.getAvailableDataSources()
 
         // 首先尝试当前选择的数据源
         const quote = await dataSource.getStockQuote(symbol, {
@@ -648,6 +743,68 @@ class StockService extends BaseDataService {
       // 抛出错误，让调用者处理
       throw new Error(`无法获取财经新闻，所有数据源均失败`)
     }
+  }
+
+  // 获取热门股票
+  async getHotStocks(limit: number = 50): Promise<Stock[]> {
+    const cacheKey = `hot_stocks_${limit}`
+
+    return await smartCache.getOrSet(
+      cacheKey,
+      async () => {
+        try {
+          console.log('[StockService] 从后端API获取热门股票...')
+
+          // 调用后端API获取热门股票
+          const response = await axios.get('/api/stocks/hot-stocks', {
+            params: { limit }
+          })
+
+          if (response.data && response.data.success) {
+            console.log(`[StockService] 获取热门股票成功，共 ${response.data.data.length} 只`)
+            return response.data.data.map((stock: any) => ({
+              symbol: stock.symbol,
+              tsCode: stock.tsCode || stock.symbol,
+              name: stock.name,
+              area: stock.area,
+              industry: stock.industry,
+              market: stock.market,
+              listDate: stock.listDate,
+              price: stock.price,
+              change: stock.change,
+              volume: stock.volume,
+              amount: stock.amount,
+              data_source: response.data.data_source,
+              data_source_message: response.data.data_source_message
+            }))
+          } else {
+            throw new Error(response.data?.message || '获取热门股票失败')
+          }
+        } catch (error) {
+          console.error('[StockService] 获取热门股票失败:', error)
+
+          // 返回默认热门股票列表
+          console.log('[StockService] 使用默认热门股票列表')
+          return [
+            { symbol: '000001.SZ', name: '平安银行', market: 'SZ', industry: '银行' },
+            { symbol: '600036.SH', name: '招商银行', market: 'SH', industry: '银行' },
+            { symbol: '601318.SH', name: '中国平安', market: 'SH', industry: '保险' },
+            { symbol: '000858.SZ', name: '五粮液', market: 'SZ', industry: '白酒' },
+            { symbol: '600519.SH', name: '贵州茅台', market: 'SH', industry: '白酒' },
+            { symbol: '000002.SZ', name: '万科A', market: 'SZ', industry: '房地产' },
+            { symbol: '002415.SZ', name: '海康威视', market: 'SZ', industry: '电子' },
+            { symbol: '002594.SZ', name: '比亚迪', market: 'SZ', industry: '汽车' },
+            { symbol: '300059.SZ', name: '东方财富', market: 'SZ', industry: '软件服务' },
+            { symbol: '300750.SZ', name: '宁德时代', market: 'SZ', industry: '电池' }
+          ] as Stock[]
+        }
+      },
+      {
+        expiry: 30 * 60 * 1000, // 30分钟缓存
+        version: '1.0',
+        tags: ['stocks', 'hot']
+      }
+    )
   }
 }
 

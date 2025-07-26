@@ -132,6 +132,8 @@ module.exports = (app) => {
   router.get('/api/stocks/limit-down', controller.stock.getLimitDownStocks)
 
   // 技术指标相关路由
+  // 注意：具体路径要放在参数路径之前
+  router.post('/api/technical-indicators/scan', controller.technicalIndicators.scanStockSignals)
   router.post(
     '/api/technical-indicators/:stockCode',
     controller.technicalIndicators.calculateIndicators
@@ -140,7 +142,6 @@ module.exports = (app) => {
     '/api/technical-indicators/:stockCode/realtime',
     controller.technicalIndicators.getRealTimeSignals
   )
-  router.post('/api/technical-indicators/scan', controller.technicalIndicators.scanStockSignals)
   router.get(
     '/api/technical-indicators/:stockCode/history',
     controller.technicalIndicators.getSignalHistory
@@ -631,6 +632,12 @@ module.exports = (app) => {
   router.get('/api/v1/patterns/doji/alerts', auth, controller.dojiPattern.getUserPatternAlerts)
   router.put('/api/v1/patterns/doji/alerts/:id', auth, controller.dojiPattern.updatePatternAlert)
   router.delete('/api/v1/patterns/doji/alerts/:id', auth, controller.dojiPattern.deletePatternAlert)
+
+  // 兼容性路由 - 十字星提醒
+  router.post('/api/doji-alerts', auth, controller.dojiPattern.createPatternAlert)
+  router.get('/api/doji-alerts', auth, controller.dojiPattern.getUserPatternAlerts)
+  router.put('/api/doji-alerts/:id', auth, controller.dojiPattern.updatePatternAlert)
+  router.delete('/api/doji-alerts/:id', auth, controller.dojiPattern.deletePatternAlert)
   router.post('/api/v1/patterns/doji/batch', auth, controller.dojiPattern.batchSavePatterns)
   router.get('/api/v1/patterns/doji/cache-stats', auth, controller.dojiPattern.getCacheStats)
   router.post('/api/v1/patterns/doji/clean-cache', auth, controller.dojiPattern.cleanExpiredCache)

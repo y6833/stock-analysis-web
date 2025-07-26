@@ -1,31 +1,227 @@
-@import './base.css';
+/* 导入设计系统和全局样式 */
+@import './styles/variables.css';
+@import './styles/global.css';
+@import './styles/responsive.css';
+@import './styles/accessibility.css';
 
+/* 应用程序根容器 */
 #app {
   width: 100%;
+  min-height: 100vh;
+  font-family: var(--font-family-sans);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  transition: color var(--transition-normal), background-color var(--transition-normal);
+}
+
+/* ===== 专业金融界面样式 ===== */
+
+/* 数据展示组件 */
+.data-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-normal);
+}
+
+.data-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-regular);
+}
+
+/* 价格显示组件 */
+.price-display {
+  font-family: var(--font-family-number);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.price-up {
+  color: var(--color-bull);
+}
+
+.price-down {
+  color: var(--color-bear);
+}
+
+.price-neutral {
+  color: var(--color-neutral);
+}
+
+/* 百分比变化显示 */
+.percentage-change {
+  font-family: var(--font-family-number);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-base);
+}
+
+.percentage-change.positive {
+  background: rgba(56, 161, 105, 0.1);
+  color: var(--color-bull);
+}
+
+.percentage-change.negative {
+  background: rgba(229, 62, 62, 0.1);
+  color: var(--color-bear);
+}
+
+.percentage-change.neutral {
+  background: var(--bg-secondary);
+  color: var(--color-neutral);
+}
+
+/* 状态指示器 */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.status-indicator.success {
+  background: rgba(56, 161, 105, 0.1);
+  color: var(--success-color);
+}
+
+.status-indicator.warning {
+  background: rgba(214, 158, 46, 0.1);
+  color: var(--warning-color);
+}
+
+.status-indicator.danger {
+  background: rgba(229, 62, 62, 0.1);
+  color: var(--danger-color);
+}
+
+.status-indicator.info {
+  background: rgba(49, 130, 206, 0.1);
+  color: var(--info-color);
+}
+
+/* 功能徽章 */
+.feature-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  border-radius: var(--border-radius-base);
+  color: var(--text-inverse);
+}
+
+.feature-badge.basic {
+  background: var(--gradient-success);
+}
+
+.feature-badge.premium {
+  background: var(--gradient-premium);
+}
+
+.feature-badge.pro {
+  background: var(--gradient-warning);
+}
+
+/* 加载状态 */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-light);
+  border-radius: 50%;
+  border-top-color: var(--accent-color);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 渐变文本 */
+.gradient-text {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 专业图表容器 */
+.chart-container {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 数据表格样式 */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-family-number);
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--spacing-3) var(--spacing-4);
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.data-table th {
+  background: var(--bg-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.data-table td {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.data-table tr:hover {
+  background: var(--bg-secondary);
+}
+
+/* 响应式容器 */
+.container {
+  width: 100%;
+  max-width: var(--container-xl);
   margin: 0 auto;
-  font-weight: normal;
+  padding: 0 var(--spacing-4);
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+.container-sm {
+  max-width: var(--container-sm);
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+.container-md {
+  max-width: var(--container-md);
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: block;
-  }
+.container-lg {
+  max-width: var(--container-lg);
+}
 
-  #app {
-    width: 100%;
-  }
+.container-xl {
+  max-width: var(--container-xl);
+}
+
+.container-2xl {
+  max-width: var(--container-2xl);
 }

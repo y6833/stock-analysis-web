@@ -1,4 +1,4 @@
-import { inject, ref, Ref } from 'vue'
+import { inject, ref, type Ref } from 'vue'
 import type { CacheStats } from '../plugins/cachePlugin'
 
 /**

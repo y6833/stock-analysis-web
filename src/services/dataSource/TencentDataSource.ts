@@ -9,12 +9,12 @@ export class TencentDataSource implements DataSourceInterface {
   // 腾讯股票API基础URL
   private readonly TENCENT_API_URL = '/api/tencent'
   private readonly TENCENT_FINANCE_URL = 'https://finance.qq.com'
-  
+
   // 缓存
   private stockListCache: Stock[] | null = null
   private stockListCacheTime: number = 0
   private readonly CACHE_DURATION = 24 * 60 * 60 * 1000 // 24小时
-  
+
   /**
    * 获取股票列表
    */
@@ -24,11 +24,11 @@ export class TencentDataSource implements DataSourceInterface {
       if (this.stockListCache && Date.now() - this.stockListCacheTime < this.CACHE_DURATION) {
         return this.stockListCache
       }
-      
+
       // 尝试通过后端代理获取股票列表
       try {
         const response = await axios.get(`${this.TENCENT_API_URL}/stock-list`)
-        
+
         // 检查响应
         if (response.data && response.data.success && Array.isArray(response.data.data)) {
           const stocks: Stock[] = response.data.data.map((item: any) => ({
@@ -37,40 +37,20 @@ export class TencentDataSource implements DataSourceInterface {
             market: item.market || (item.symbol.startsWith('sh') ? '上海' : '深圳'),
             industry: item.industry || '未知'
           }))
-          
+
           // 更新缓存
           this.stockListCache = stocks
           this.stockListCacheTime = Date.now()
-          
+
           return stocks
         }
       } catch (proxyError) {
         console.warn('通过后端代理获取股票列表失败，使用预定义列表:', proxyError)
       }
-      
-      // 如果后端代理未实现或返回格式不正确，使用预定义的主要股票列表
-      const mainStocks: Stock[] = [
-        { symbol: 'sh000001', name: '上证指数', market: '上海', industry: '指数' },
-        { symbol: 'sz399001', name: '深证成指', market: '深圳', industry: '指数' },
-        { symbol: 'sh600519', name: '贵州茅台', market: '上海', industry: '白酒' },
-        { symbol: 'sh601318', name: '中国平安', market: '上海', industry: '保险' },
-        { symbol: 'sh600036', name: '招商银行', market: '上海', industry: '银行' },
-        { symbol: 'sz000858', name: '五粮液', market: '深圳', industry: '白酒' },
-        { symbol: 'sz000333', name: '美的集团', market: '深圳', industry: '家电' },
-        { symbol: 'sh601166', name: '兴业银行', market: '上海', industry: '银行' },
-        { symbol: 'sz002415', name: '海康威视', market: '深圳', industry: '电子' },
-        { symbol: 'sh600276', name: '恒瑞医药', market: '上海', industry: '医药' },
-        { symbol: 'sh601398', name: '工商银行', market: '上海', industry: '银行' },
-        { symbol: 'sh600000', name: '浦发银行', market: '上海', industry: '银行' },
-        { symbol: 'sz000001', name: '平安银行', market: '深圳', industry: '银行' },
-        // 可以添加更多股票
-      ]
-      
-      // 更新缓存
-      this.stockListCache = mainStocks
-      this.stockListCacheTime = Date.now()
-      
-      return mainStocks
+
+      // 如果后端代理未实现或返回格式不正确，返回空数组而不是硬编码数据
+      console.warn('Tencent数据源：后端代理未实现或返回格式不正确，返回空结果');
+      return [];
     } catch (error) {
       console.error('腾讯股票获取股票列表失败:', error)
       throw error
@@ -85,7 +65,7 @@ export class TencentDataSource implements DataSourceInterface {
     try {
       // 确保股票代码格式正确
       const formattedSymbol = this.formatSymbol(symbol)
-      
+
       // 尝试通过后端代理获取历史数据
       try {
         const response = await axios.get(`${this.TENCENT_API_URL}/history`, {
@@ -95,21 +75,21 @@ export class TencentDataSource implements DataSourceInterface {
             count: 180
           }
         })
-        
+
         // 检查响应
         if (response.data && response.data.success && Array.isArray(response.data.data)) {
           const historyData = response.data.data
-          
+
           const dates: string[] = []
           const prices: number[] = []
           const volumes: number[] = []
-          
+
           historyData.forEach((item: any) => {
             dates.push(item.date)
             prices.push(parseFloat(item.close))
             volumes.push(parseInt(item.volume))
           })
-          
+
           return {
             symbol,
             dates,
@@ -124,23 +104,23 @@ export class TencentDataSource implements DataSourceInterface {
       } catch (proxyError) {
         console.warn(`通过后端代理获取股票${symbol}历史数据失败，使用模拟数据:`, proxyError)
       }
-      
+
       // 如果后端代理未实现或返回格式不正确，使用模拟数据
       const today = new Date()
       const dates: string[] = []
       const prices: number[] = []
       const volumes: number[] = []
-      
+
       // 获取实时行情作为基准价格
       const quote = await this.getStockQuote(symbol)
       let basePrice = quote.price
-      
+
       // 生成180天的模拟历史数据
       for (let i = 180; i >= 0; i--) {
         const date = new Date(today)
         date.setDate(date.getDate() - i)
         dates.push(date.toISOString().split('T')[0])
-        
+
         // 生成价格（基于随机波动）
         if (i === 180) {
           // 第一天的价格
@@ -152,12 +132,12 @@ export class TencentDataSource implements DataSourceInterface {
           const newPrice = Math.max(prevPrice + change, 1) // 确保价格不会低于1
           prices.push(parseFloat(newPrice.toFixed(2)))
         }
-        
+
         // 生成成交量
         const volume = Math.floor(Math.random() * 10000000) + 1000000
         volumes.push(volume)
       }
-      
+
       return {
         symbol,
         dates,
@@ -187,7 +167,7 @@ export class TencentDataSource implements DataSourceInterface {
             keyword: query
           }
         })
-        
+
         // 检查响应
         if (response.data && response.data.success && Array.isArray(response.data.data)) {
           return response.data.data.map((item: any) => ({
@@ -200,10 +180,10 @@ export class TencentDataSource implements DataSourceInterface {
       } catch (proxyError) {
         console.warn('通过后端代理搜索股票失败，使用本地过滤:', proxyError)
       }
-      
+
       // 如果后端代理未实现或返回格式不正确，使用本地过滤
       const allStocks = await this.getStocks()
-      
+
       // 在本地过滤
       return allStocks.filter(
         (stock) =>
@@ -224,18 +204,18 @@ export class TencentDataSource implements DataSourceInterface {
     try {
       // 确保股票代码格式正确
       const formattedSymbol = this.formatSymbol(symbol)
-      
+
       // 通过后端代理请求腾讯股票API
       const response = await axios.get(`${this.TENCENT_API_URL}/quote`, {
         params: {
           symbol: formattedSymbol
         }
       })
-      
+
       // 检查响应
       if (response.data && response.data.success && response.data.data) {
         const data = response.data.data
-        
+
         // 直接使用后端返回的解析好的数据
         const stockName = data.name
         const open = parseFloat(data.open)
@@ -245,11 +225,11 @@ export class TencentDataSource implements DataSourceInterface {
         const low = parseFloat(data.low)
         const volume = parseInt(data.volume)
         const amount = parseFloat(data.amount)
-        
+
         // 计算涨跌幅
         const change = price - preClose
         const pctChg = (change / preClose) * 100
-        
+
         return {
           symbol,
           name: stockName,
@@ -266,7 +246,7 @@ export class TencentDataSource implements DataSourceInterface {
           update_time: new Date().toISOString(),
         }
       }
-      
+
       // 如果后端代理未实现或返回格式不正确，使用模拟数据
       return this.generateMockStockQuote(symbol)
     } catch (error) {
@@ -289,7 +269,7 @@ export class TencentDataSource implements DataSourceInterface {
             count
           }
         })
-        
+
         // 检查响应
         if (response.data && response.data.success && Array.isArray(response.data.data)) {
           const news: FinancialNews[] = response.data.data.map((item: any) => ({
@@ -300,13 +280,13 @@ export class TencentDataSource implements DataSourceInterface {
             important: item.important || false,
             content: item.content || ''
           }))
-          
+
           return news
         }
       } catch (proxyError) {
         console.warn('通过后端代理获取财经新闻失败，使用模拟数据:', proxyError)
       }
-      
+
       // 如果后端代理未实现或返回格式不正确，使用模拟数据
       const mockNews: FinancialNews[] = [
         {
@@ -359,10 +339,10 @@ export class TencentDataSource implements DataSourceInterface {
           important: false,
         },
       ]
-      
+
       // 随机打乱新闻顺序
       const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
-      
+
       // 返回指定数量的新闻
       return shuffledNews.slice(0, count)
     } catch (error) {
@@ -392,12 +372,12 @@ export class TencentDataSource implements DataSourceInterface {
     try {
       // 尝试通过后端代理测试连接
       const response = await axios.get(`${this.TENCENT_API_URL}/test`)
-      
+
       // 检查响应
       if (response.data && response.data.success) {
         return true
       }
-      
+
       // 如果后端代理未实现测试接口，尝试获取上证指数行情
       await this.getStockQuote('sh000001')
       return true
@@ -406,7 +386,7 @@ export class TencentDataSource implements DataSourceInterface {
       return false
     }
   }
-  
+
   /**
    * 格式化股票代码
    * @param symbol 股票代码
@@ -417,7 +397,7 @@ export class TencentDataSource implements DataSourceInterface {
     if (symbol.startsWith('sh') || symbol.startsWith('sz')) {
       return symbol
     }
-    
+
     // 如果包含.SH或.SZ后缀，转换为sh或sz前缀
     if (symbol.endsWith('.SH')) {
       return 'sh' + symbol.slice(0, -3)
@@ -425,7 +405,7 @@ export class TencentDataSource implements DataSourceInterface {
     if (symbol.endsWith('.SZ')) {
       return 'sz' + symbol.slice(0, -3)
     }
-    
+
     // 根据股票代码规则添加前缀
     if (symbol.startsWith('6')) {
       return 'sh' + symbol
@@ -434,11 +414,11 @@ export class TencentDataSource implements DataSourceInterface {
     } else if (symbol.startsWith('4') || symbol.startsWith('8')) {
       return 'bj' + symbol // 北交所
     }
-    
+
     // 默认返回原始代码
     return symbol
   }
-  
+
   /**
    * 生成模拟股票行情
    * @param symbol 股票代码
@@ -447,7 +427,7 @@ export class TencentDataSource implements DataSourceInterface {
   private generateMockStockQuote(symbol: string): StockQuote {
     // 查找股票基本信息
     const stock = this.getStockInfo(symbol)
-    
+
     // 生成基础价格
     let basePrice = 0
     switch (symbol) {
@@ -484,7 +464,7 @@ export class TencentDataSource implements DataSourceInterface {
       default:
         basePrice = 100
     }
-    
+
     // 生成当前价格（基于随机波动）
     const price = basePrice * (1 + (Math.random() * 0.1 - 0.05)) // -5% 到 +5% 的随机波动
     const preClose = basePrice * (1 + (Math.random() * 0.05 - 0.025)) // 昨收价
@@ -493,11 +473,11 @@ export class TencentDataSource implements DataSourceInterface {
     const low = Math.min(price, open) * (1 - Math.random() * 0.02) // 最低价
     const volume = Math.floor(Math.random() * 10000000) + 1000000 // 成交量
     const amount = price * volume // 成交额
-    
+
     // 计算涨跌幅
     const change = price - preClose
     const pctChg = (change / preClose) * 100
-    
+
     return {
       symbol,
       name: stock.name,
@@ -514,7 +494,7 @@ export class TencentDataSource implements DataSourceInterface {
       update_time: new Date().toISOString(),
     }
   }
-  
+
   /**
    * 获取股票基本信息
    * @param symbol 股票代码
@@ -528,7 +508,7 @@ export class TencentDataSource implements DataSourceInterface {
         return stock
       }
     }
-    
+
     // 如果缓存中没有，返回默认信息
     return {
       symbol,

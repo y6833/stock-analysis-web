@@ -56,17 +56,9 @@ export class GoogleFinanceDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取股票列表失败，使用预定义列表:', proxyError)
       }
 
-      // 如果API调用失败，返回预定义的全球股票列表
-      const fallbackStocks: Stock[] = [
-        { symbol: 'AAPL', name: 'Apple Inc.', market: '纳斯达克', industry: '科技' },
-        { symbol: 'MSFT', name: 'Microsoft Corporation', market: '纳斯达克', industry: '科技' },
-        { symbol: 'GOOGL', name: 'Alphabet Inc.', market: '纳斯达克', industry: '科技' },
-        { symbol: 'TSLA', name: 'Tesla Inc.', market: '纳斯达克', industry: '汽车' },
-        { symbol: 'BABA', name: 'Alibaba Group', market: '纽交所', industry: '科技' },
-        { symbol: 'TSM', name: 'Taiwan Semiconductor', market: '纽交所', industry: '科技' },
-        { symbol: 'ASML', name: 'ASML Holding', market: '纳斯达克', industry: '科技' },
-        { symbol: 'SAP', name: 'SAP SE', market: '纽交所', industry: '科技' },
-      ]
+      // 如果API调用失败，返回空数组而不是硬编码数据
+      console.warn('Google Finance数据源：API调用失败，返回空结果');
+      return [];
 
       console.log('使用预定义全球股票列表')
       return fallbackStocks

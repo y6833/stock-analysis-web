@@ -3,7 +3,7 @@
  * 提供全局离线模式功能和组件
  */
 
-import { App } from 'vue';
+import type { App } from 'vue';
 import { initPwa } from './pwa';
 import { initNetworkMonitoring } from '@/services/networkStatusService';
 import OfflineIndicator from '@/components/common/OfflineIndicator.vue';
@@ -20,29 +20,29 @@ export default {
     app.component('NetworkAwareImage', NetworkAwareImage);
     app.component('NetworkAwareDataTable', NetworkAwareDataTable);
     app.component('OfflineNotification', OfflineNotification);
-    
+
     // 初始化PWA功能
     if ('serviceWorker' in navigator) {
       initPwa();
     }
-    
+
     // 初始化网络监控
     initNetworkMonitoring();
-    
+
     // 添加全局属性
     app.config.globalProperties.$isOnline = navigator.onLine;
-    
+
     // 监听网络状态变化
     window.addEventListener('online', () => {
       app.config.globalProperties.$isOnline = true;
-      
+
       // 触发自定义事件
       window.dispatchEvent(new CustomEvent('app:online'));
     });
-    
+
     window.addEventListener('offline', () => {
       app.config.globalProperties.$isOnline = false;
-      
+
       // 触发自定义事件
       window.dispatchEvent(new CustomEvent('app:offline'));
     });

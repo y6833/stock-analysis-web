@@ -46,32 +46,7 @@ export class TushareDataSource implements DataSourceInterface {
         return stocks
       } catch (apiError) {
         console.error('Tushare API获取股票列表失败:', apiError)
-
-        // 尝试使用模拟数据
-        const mockStocks = tushareService.getMockStockList
-          ? tushareService.getMockStockList()
-          : { items: [], fields: [] }
-
-        if (mockStocks && mockStocks.items && mockStocks.items.length > 0) {
-          const { fields, items } = mockStocks
-          const tsCodeIndex = fields.indexOf('ts_code')
-          const nameIndex = fields.indexOf('name')
-          const industryIndex = fields.indexOf('industry')
-          const marketIndex = fields.indexOf('market')
-
-          const stocks: Stock[] = items.map((item: any) => ({
-            symbol: item[tsCodeIndex],
-            name: item[nameIndex],
-            industry: item[industryIndex] || '',
-            market: item[marketIndex] || '',
-            data_source: 'mock',
-          }))
-
-          console.log('使用模拟股票列表数据')
-          return stocks
-        }
-
-        // 如果模拟数据也失败，抛出原始错误
+        // 直接抛出错误，不使用模拟数据
         throw apiError
       }
     } catch (error) {
@@ -217,47 +192,8 @@ export class TushareDataSource implements DataSourceInterface {
       } catch (apiError) {
         console.error('Tushare API获取财经新闻失败:', apiError)
 
-        // 尝试使用模拟数据
-        console.log('使用模拟财经新闻数据')
-
-        // 生成模拟新闻数据
-        const mockNews: FinancialNews[] = [
-          {
-            title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
-            time: '10分钟前',
-            source: '财经日报',
-            url: '#',
-            important: true,
-            content:
-              '中国人民银行今日宣布，决定于下周一起下调金融机构存款准备金率0.5个百分点，预计将释放长期资金约1万亿元。',
-            data_source: 'mock (tushare)',
-          },
-          {
-            title: '科技板块全线上涨，半导体行业领涨',
-            time: '30分钟前',
-            source: '证券时报',
-            url: '#',
-            important: false,
-            content:
-              '今日A股市场，科技板块表现强势，全线上涨。其中，半导体行业领涨，多只个股涨停。',
-            data_source: 'mock (tushare)',
-          },
-          {
-            title: '多家券商上调A股目标位，看好下半年行情',
-            time: '1小时前',
-            source: '上海证券报',
-            url: '#',
-            important: false,
-            content: '近日，多家券商发布研报，上调A股目标位，普遍看好下半年市场行情。',
-            data_source: 'mock (tushare)',
-          },
-        ]
-
-        // 随机打乱新闻顺序
-        const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
-
-        // 返回指定数量的新闻
-        return shuffledNews.slice(0, count)
+        // Tushare 不提供财经新闻功能，抛出错误
+        throw new Error('Tushare 数据源不支持财经新闻功能')
       }
     } catch (error) {
       console.error('Tushare获取财经新闻失败:', error)

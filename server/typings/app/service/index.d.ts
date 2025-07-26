@@ -39,6 +39,7 @@ import ExportSimulation = require('../../../app/service/simulation');
 import ExportSina = require('../../../app/service/sina');
 import ExportSmartRecommendation = require('../../../app/service/smartRecommendation');
 import ExportStock = require('../../../app/service/stock');
+import ExportStockDailyCache = require('../../../app/service/stockDailyCache');
 import ExportStopLossManager = require('../../../app/service/stopLossManager');
 import ExportStrategy = require('../../../app/service/strategy');
 import ExportStressTesting = require('../../../app/service/stressTesting');
@@ -83,6 +84,7 @@ declare module 'egg' {
     sina: AutoInstanceType<typeof ExportSina>;
     smartRecommendation: AutoInstanceType<typeof ExportSmartRecommendation>;
     stock: AutoInstanceType<typeof ExportStock>;
+    stockDailyCache: AutoInstanceType<typeof ExportStockDailyCache>;
     stopLossManager: AutoInstanceType<typeof ExportStopLossManager>;
     strategy: AutoInstanceType<typeof ExportStrategy>;
     stressTesting: AutoInstanceType<typeof ExportStressTesting>;

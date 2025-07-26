@@ -24,8 +24,8 @@ export interface DojiPatternDetectionResult {
     }
     context?: {
         trend?: 'uptrend' | 'downtrend' | 'sideways'
-        nearSupportResistance?: boolean
-        volumeChange?: number
+        volume?: 'high' | 'normal' | 'low'
+        position?: 'top' | 'middle' | 'bottom'
     }
 }
 
@@ -166,14 +166,12 @@ export class DojiPatternDetectorService {
 
             case 'pattern_with_volume':
                 // 检查形态出现且成交量变化满足要求
-                return (
-                    (detectionResult.context?.volumeChange || 0) >= volumeChangePercent / 100
-                )
+                return detectionResult.context?.volume === 'high'
 
             case 'pattern_near_support':
             case 'pattern_near_resistance':
                 // 检查形态是否出现在支撑/阻力位附近
-                return detectionResult.context?.nearSupportResistance === true
+                return detectionResult.context?.position === 'bottom' || detectionResult.context?.position === 'top'
 
             default:
                 return false
@@ -329,11 +327,15 @@ export class DojiPatternDetectorService {
      */
     private analyzeContext(candle: KLineData, previousCandles: KLineData[]): {
         trend?: 'uptrend' | 'downtrend' | 'sideways'
-        nearSupportResistance?: boolean
-        volumeChange?: number
+        volume?: 'high' | 'normal' | 'low'
+        position?: 'top' | 'middle' | 'bottom'
     } {
         if (previousCandles.length < 10) {
-            return {}
+            return {
+                trend: 'sideways',
+                volume: 'normal',
+                position: 'middle'
+            }
         }
 
         // 分析趋势
@@ -349,17 +351,37 @@ export class DojiPatternDetectorService {
             trend = 'downtrend'
         }
 
-        // 分析成交量变化
+        // 分析成交量状态
         const avgVolume = recentCandles.reduce((sum, c) => sum + c.volume, 0) / recentCandles.length
-        const volumeChange = avgVolume > 0 ? (candle.volume - avgVolume) / avgVolume : 0
+        const volumeRatio = avgVolume > 0 ? candle.volume / avgVolume : 1
 
-        // 检查是否接近支撑/阻力位
-        const nearSupportResistance = this.checkNearSupportResistance(candle, previousCandles)
+        let volume: 'high' | 'normal' | 'low' = 'normal'
+        if (volumeRatio > 1.5) {
+            volume = 'high'
+        } else if (volumeRatio < 0.5) {
+            volume = 'low'
+        }
+
+        // 分析价格位置
+        const allPrices = recentCandles.map(c => c.close)
+        const maxPrice = Math.max(...allPrices)
+        const minPrice = Math.min(...allPrices)
+        const priceRange = maxPrice - minPrice
+
+        let position: 'top' | 'middle' | 'bottom' = 'middle'
+        if (priceRange > 0) {
+            const relativePosition = (candle.close - minPrice) / priceRange
+            if (relativePosition > 0.7) {
+                position = 'top'
+            } else if (relativePosition < 0.3) {
+                position = 'bottom'
+            }
+        }
 
         return {
             trend,
-            nearSupportResistance,
-            volumeChange
+            volume,
+            position
         }
     }
 

@@ -3,13 +3,14 @@
  * 使用新的基础服务类和统一的错误处理模式
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
+import axios from 'axios'
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import { BaseService, type ServiceConfig, type ApiResponse } from '@/core/BaseService'
 import { CONSTANTS } from '@/constants'
 import { Utils } from '@/utils'
-import { 
-  saveOfflineData, 
-  getOfflineData, 
+import {
+  saveOfflineData,
+  getOfflineData,
   isOnline,
   savePendingWatchlistChange,
   savePendingPortfolioChange
@@ -50,7 +51,7 @@ class ApiService extends BaseService {
 
   constructor(config: ApiServiceConfig = {}) {
     super('ApiService', config)
-    
+
     this.defaultConfig = {
       baseURL: CONSTANTS.API.BASE_URL,
       timeout: CONSTANTS.API.TIMEOUT,
@@ -86,13 +87,13 @@ class ApiService extends BaseService {
       async (config) => {
         // 根据网络状态调整超时时间
         config.timeout = getNetworkAwareTimeout()
-        
+
         // 添加认证令牌
         const token = Utils.Storage.local.get<string>(CONSTANTS.STORAGE.KEYS.AUTH_TOKEN)
         if (token) {
           config.headers[CONSTANTS.API.HEADERS.AUTHORIZATION] = `Bearer ${token}`
         }
-        
+
         // 添加CSRF令牌到非GET请求
         if (config.method?.toLowerCase() !== 'get') {
           const csrfToken = Utils.Storage.local.get<string>('csrf_token')
@@ -100,7 +101,7 @@ class ApiService extends BaseService {
             config.headers[CONSTANTS.API.HEADERS.X_CSRF_TOKEN] = csrfToken
           }
         }
-        
+
         return config
       },
       (error) => Promise.reject(error)
@@ -134,9 +135,9 @@ class ApiService extends BaseService {
    * 判断是否为网络错误
    */
   private isNetworkError(error: AxiosError): boolean {
-    return error.message === 'Network Error' || 
-           error.code === 'ECONNABORTED' ||
-           error.message.includes('timeout')
+    return error.message === 'Network Error' ||
+      error.code === 'ECONNABORTED' ||
+      error.message.includes('timeout')
   }
 
   /**
@@ -288,7 +289,7 @@ class ApiService extends BaseService {
         ...(method.toLowerCase() === 'get' ? { params: data } : { data })
       }
 
-      const response = await (retryCount && retryCount > 1 
+      const response = await (retryCount && retryCount > 1
         ? this.withRetry(() => this.axiosInstance.request<T>(requestConfig), retryCount)
         : this.axiosInstance.request<T>(requestConfig)
       )
@@ -397,13 +398,13 @@ class ApiService extends BaseService {
     try {
       if (pattern) {
         // 清除匹配模式的缓存
-        const keys = Object.keys(localStorage).filter(key => 
+        const keys = Object.keys(localStorage).filter(key =>
           key.startsWith(CONSTANTS.CACHE.PREFIXES.API) && key.includes(pattern)
         )
         keys.forEach(key => localStorage.removeItem(key))
       } else {
         // 清除所有API缓存
-        const keys = Object.keys(localStorage).filter(key => 
+        const keys = Object.keys(localStorage).filter(key =>
           key.startsWith(CONSTANTS.CACHE.PREFIXES.API)
         )
         keys.forEach(key => localStorage.removeItem(key))

@@ -123,11 +123,11 @@ interface Config {
  */
 function getEnvVar(key: string, defaultValue?: string): string {
   if (typeof window !== 'undefined') {
-    // 浏览器环境
-    return (window as any).__ENV__?.[key] || defaultValue || ''
+    // 浏览器环境 - 使用 import.meta.env
+    return (import.meta.env as any)[`VITE_${key}`] || (window as any).__ENV__?.[key] || defaultValue || ''
   } else {
     // Node.js环境
-    return process.env[key] || defaultValue || ''
+    return (typeof process !== 'undefined' ? process.env[key] : undefined) || defaultValue || ''
   }
 }
 

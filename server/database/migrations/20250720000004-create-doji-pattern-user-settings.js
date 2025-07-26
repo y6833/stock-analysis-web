@@ -41,11 +41,7 @@ module.exports = {
       },
     });
 
-    // 创建索引
-    await queryInterface.addIndex('doji_pattern_user_settings', ['userId'], {
-      unique: true,
-      name: 'idx_doji_pattern_user_settings_user_id',
-    });
+    // 索引已通过unique: true在字段定义中创建，无需重复创建
 
     // 创建十字星形态性能统计表
     await queryInterface.createTable('doji_pattern_performance_stats', {
@@ -109,14 +105,22 @@ module.exports = {
       },
     });
 
-    // 创建索引
-    await queryInterface.addIndex('doji_pattern_performance_stats', ['userId'], {
-      name: 'idx_doji_pattern_performance_stats_user_id',
-    });
+    // 创建索引（如果不存在）
+    try {
+      await queryInterface.addIndex('doji_pattern_performance_stats', ['userId'], {
+        name: 'idx_doji_pattern_performance_stats_user_id',
+      });
+    } catch (error) {
+      // 索引可能已存在，忽略错误
+    }
 
-    await queryInterface.addIndex('doji_pattern_performance_stats', ['createdAt'], {
-      name: 'idx_doji_pattern_performance_stats_created_at',
-    });
+    try {
+      await queryInterface.addIndex('doji_pattern_performance_stats', ['createdAt'], {
+        name: 'idx_doji_pattern_performance_stats_created_at',
+      });
+    } catch (error) {
+      // 索引可能已存在，忽略错误
+    }
   },
 
   down: async (queryInterface, Sequelize) => {

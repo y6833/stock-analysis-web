@@ -5,10 +5,10 @@
 
 // API相关常量
 export const API_CONSTANTS = {
-  BASE_URL: '/api/v1',
+  BASE_URL: 'http://localhost:7001/api',
   TIMEOUT: 8000,
   RETRY_COUNT: 3,
-  
+
   // HTTP状态码
   STATUS_CODES: {
     OK: 200,
@@ -21,7 +21,7 @@ export const API_CONSTANTS = {
     INTERNAL_SERVER_ERROR: 500,
     SERVICE_UNAVAILABLE: 503
   },
-  
+
   // 请求头
   HEADERS: {
     CONTENT_TYPE: 'Content-Type',
@@ -41,7 +41,7 @@ export const CACHE_CONSTANTS = {
     WATCHLIST: 'watchlist_cache:',
     PORTFOLIO: 'portfolio_cache:'
   },
-  
+
   // 缓存过期时间 (毫秒)
   TTL: {
     SHORT: 5 * 60 * 1000,      // 5分钟
@@ -49,7 +49,7 @@ export const CACHE_CONSTANTS = {
     LONG: 60 * 60 * 1000,      // 1小时
     VERY_LONG: 24 * 60 * 60 * 1000  // 24小时
   },
-  
+
   // 缓存版本
   VERSIONS: {
     API: '2.0',
@@ -67,7 +67,7 @@ export const DATA_SOURCE_CONSTANTS = {
     ALPHAVANTAGE: 'alphavantage',
     DATABASE: 'database'
   },
-  
+
   NAMES: {
     tushare: 'Tushare',
     sina: '新浪财经',
@@ -75,7 +75,7 @@ export const DATA_SOURCE_CONSTANTS = {
     alphavantage: 'Alpha Vantage',
     database: '数据库'
   },
-  
+
   PRIORITIES: {
     tushare: 1,
     database: 2,
@@ -93,7 +93,7 @@ export const USER_CONSTANTS = {
     ADMIN: 'admin',
     MODERATOR: 'moderator'
   },
-  
+
   // 订阅类型
   SUBSCRIPTION_TYPES: {
     FREE: 'free',
@@ -101,7 +101,7 @@ export const USER_CONSTANTS = {
     PREMIUM: 'premium',
     ENTERPRISE: 'enterprise'
   },
-  
+
   // 用户状态
   STATUS: {
     ACTIVE: 'active',
@@ -121,7 +121,7 @@ export const STOCK_CONSTANTS = {
     HK: 'HK',  // 香港证券交易所
     US: 'US'   // 美国证券交易所
   },
-  
+
   // 股票类型
   TYPES: {
     STOCK: 'stock',
@@ -131,7 +131,7 @@ export const STOCK_CONSTANTS = {
     OPTION: 'option',
     FUTURE: 'future'
   },
-  
+
   // 交易状态
   TRADING_STATUS: {
     TRADING: 'trading',
@@ -140,7 +140,7 @@ export const STOCK_CONSTANTS = {
     PRE_MARKET: 'pre_market',
     AFTER_MARKET: 'after_market'
   },
-  
+
   // 价格变动方向
   PRICE_DIRECTION: {
     UP: 'up',
@@ -157,7 +157,7 @@ export const UI_CONSTANTS = {
     MEDIUM: 'medium',
     LARGE: 'large'
   },
-  
+
   // 组件变体
   VARIANTS: {
     PRIMARY: 'primary',
@@ -167,21 +167,21 @@ export const UI_CONSTANTS = {
     ERROR: 'error',
     INFO: 'info'
   },
-  
+
   // 主题
   THEMES: {
     LIGHT: 'light',
     DARK: 'dark',
     AUTO: 'auto'
   },
-  
+
   // 分页
   PAGINATION: {
     DEFAULT_PAGE_SIZE: 20,
     PAGE_SIZE_OPTIONS: [10, 20, 50, 100],
     MAX_PAGE_SIZE: 1000
   },
-  
+
   // 动画持续时间
   ANIMATION_DURATION: {
     FAST: 150,
@@ -203,7 +203,7 @@ export const ERROR_CONSTANTS = {
     OFFLINE: 'offline',
     UNKNOWN: 'unknown'
   },
-  
+
   // 错误严重程度
   SEVERITY: {
     LOW: 'low',
@@ -211,7 +211,7 @@ export const ERROR_CONSTANTS = {
     HIGH: 'high',
     CRITICAL: 'critical'
   },
-  
+
   // 错误代码
   CODES: {
     NETWORK_ERROR: 'NETWORK_ERROR',
@@ -240,7 +240,7 @@ export const STORAGE_CONSTANTS = {
     PORTFOLIO: 'portfolio',
     DASHBOARD_SETTINGS: 'dashboard_settings'
   },
-  
+
   // 存储类型
   TYPES: {
     LOCAL: 'localStorage',
@@ -263,7 +263,7 @@ export const ROUTE_CONSTANTS = {
     SETTINGS: 'Settings',
     ADMIN: 'Admin'
   },
-  
+
   // 路由路径
   PATHS: {
     HOME: '/',
@@ -287,7 +287,7 @@ export const PERMISSION_CONSTANTS = {
     DELETE: 'delete',
     ADMIN: 'admin'
   },
-  
+
   // 资源类型
   RESOURCES: {
     STOCK: 'stock',
@@ -297,7 +297,7 @@ export const PERMISSION_CONSTANTS = {
     ADMIN: 'admin',
     SETTINGS: 'settings'
   },
-  
+
   // 权限级别
   LEVELS: {
     NONE: 0,
@@ -316,7 +316,7 @@ export const NOTIFICATION_CONSTANTS = {
     WARNING: 'warning',
     INFO: 'info'
   },
-  
+
   // 通知位置
   POSITIONS: {
     TOP_LEFT: 'top-left',
@@ -326,7 +326,7 @@ export const NOTIFICATION_CONSTANTS = {
     TOP_CENTER: 'top-center',
     BOTTOM_CENTER: 'bottom-center'
   },
-  
+
   // 通知持续时间
   DURATION: {
     SHORT: 3000,
@@ -346,7 +346,7 @@ export const CHART_CONSTANTS = {
     AREA: 'area',
     SCATTER: 'scatter'
   },
-  
+
   // 时间周期
   TIME_PERIODS: {
     '1m': '1分钟',
@@ -359,7 +359,7 @@ export const CHART_CONSTANTS = {
     '1w': '周线',
     '1M': '月线'
   },
-  
+
   // 技术指标
   INDICATORS: {
     MA: 'MA',

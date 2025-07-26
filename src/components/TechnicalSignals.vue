@@ -12,12 +12,8 @@
 
       <!-- 实时信号列表 -->
       <div class="signals-list">
-        <div
-          v-for="signal in recentSignals"
-          :key="signal.id"
-          :class="['signal-item', signal.type]"
-          @click="showSignalDetails(signal)"
-        >
+        <div v-for="signal in recentSignals" :key="signal.id" :class="['signal-item', signal.type]"
+          @click="showSignalDetails(signal)">
           <div class="signal-icon">
             {{ getSignalIcon(signal.signal) }}
           </div>
@@ -106,14 +102,8 @@
           </label>
           <label>
             账户资金:
-            <input
-              type="number"
-              v-model="turtleParams.riskManagement.accountValue"
-              @change="updateSignalConfig"
-              placeholder="100000"
-              min="10000"
-              step="10000"
-            />
+            <input type="number" v-model="turtleParams.riskManagement.accountValue" @change="updateSignalConfig"
+              placeholder="100000" min="10000" step="10000" />
           </label>
           <label>
             风险比例:
@@ -134,37 +124,21 @@
           </label>
           <label>
             ATR周期:
-            <input
-              type="number"
-              v-model.number="turtleParams.riskManagement.atrPeriod"
-              @change="updateSignalConfig"
-              min="5"
-              max="30"
-              step="1"
-            />
+            <input type="number" v-model.number="turtleParams.riskManagement.atrPeriod" @change="updateSignalConfig"
+              min="5" max="30" step="1" />
           </label>
           <label>
             最大仓位(%):
-            <input
-              type="number"
-              v-model.number="turtleParams.riskManagement.maxPositionPercent"
-              @change="updateSignalConfig"
-              min="1"
-              max="50"
-              step="1"
-            />
+            <input type="number" v-model.number="turtleParams.riskManagement.maxPositionPercent"
+              @change="updateSignalConfig" min="1" max="50" step="1" />
           </label>
         </div>
       </div>
     </div>
 
     <!-- 信号详情弹窗 -->
-    <el-dialog
-      v-model="showSignalDetail"
-      :title="`${selectedSignal?.signal} 信号详情`"
-      width="500px"
-      :before-close="() => (showSignalDetail = false)"
-    >
+    <el-dialog v-model="showSignalDetail" :title="`${selectedSignal?.signal} 信号详情`" width="500px"
+      :before-close="() => (showSignalDetail = false)">
       <div class="signal-detail">
         <div class="detail-content">
           <div class="detail-item">
@@ -180,12 +154,9 @@
           <div class="detail-item">
             <label>信号强度:</label>
             <div class="strength-container">
-              <el-progress
-                :percentage="selectedSignal?.strength || 50"
-                :color="getStrengthColor(selectedSignal?.strength || 50)"
-                :show-text="true"
-                :format="(percentage) => `${percentage}%`"
-              />
+              <el-progress :percentage="selectedSignal?.strength || 50"
+                :color="getStrengthColor(selectedSignal?.strength || 50)" :show-text="true"
+                :format="(percentage) => `${percentage}%`" />
             </div>
           </div>
           <div class="detail-item">
@@ -209,25 +180,19 @@
               </div>
               <div class="risk-item">
                 <label>仓位价值:</label>
-                <span
-                  >¥{{
-                    (selectedSignal.riskManagement.positionSize?.positionValue || 0).toFixed(2)
-                  }}</span
-                >
+                <span>¥{{
+                  (selectedSignal.riskManagement.positionSize?.positionValue || 0).toFixed(2)
+                }}</span>
               </div>
               <div class="risk-item">
                 <label>止损价格:</label>
-                <span
-                  >¥{{ (selectedSignal.riskManagement.stopLoss?.stopPrice || 0).toFixed(2) }}</span
-                >
+                <span>¥{{ (selectedSignal.riskManagement.stopLoss?.stopPrice || 0).toFixed(2) }}</span>
               </div>
               <div class="risk-item">
                 <label>风险金额:</label>
-                <span
-                  >¥{{
-                    (selectedSignal.riskManagement.positionSize?.dollarRisk || 0).toFixed(2)
-                  }}</span
-                >
+                <span>¥{{
+                  (selectedSignal.riskManagement.positionSize?.dollarRisk || 0).toFixed(2)
+                }}</span>
               </div>
               <div class="risk-item">
                 <label>ATR值:</label>
@@ -235,11 +200,9 @@
               </div>
               <div class="risk-item">
                 <label>风险比例:</label>
-                <span
-                  >{{
-                    (selectedSignal.riskManagement.stopLoss?.riskPercent || 0).toFixed(2)
-                  }}%</span
-                >
+                <span>{{
+                  (selectedSignal.riskManagement.stopLoss?.riskPercent || 0).toFixed(2)
+                }}%</span>
               </div>
             </div>
           </div>
@@ -436,13 +399,25 @@ const calculateTechnicalSignals = async () => {
         }
       })
 
-      // 为每个信号添加时间戳（如果没有的话）
+      // 为每个信号添加时间戳和类型（如果没有的话）
       allSignals.forEach((signal, index) => {
         if (!signal.timestamp) {
           signal.timestamp = Date.now() - (allSignals.length - index) * 60000
         }
         if (!signal.id) {
           signal.id = `${signal.signal}_${signal.index || index}_${Date.now()}`
+        }
+        // 添加信号类型，如果没有的话
+        if (!signal.type) {
+          // 根据信号名称判断类型
+          const signalName = signal.signal?.toLowerCase() || ''
+          if (signalName.includes('买入') || signalName.includes('buy') || signalName.includes('突破') || signalName.includes('金叉')) {
+            signal.type = 'buy'
+          } else if (signalName.includes('卖出') || signalName.includes('sell') || signalName.includes('跌破') || signalName.includes('死叉')) {
+            signal.type = 'sell'
+          } else {
+            signal.type = 'neutral'
+          }
         }
       })
 

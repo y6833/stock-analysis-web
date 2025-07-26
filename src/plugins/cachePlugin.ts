@@ -2,8 +2,8 @@
  * 缓存插件
  * 提供客户端缓存功能，与服务器缓存协同工作
  */
-import { App, Plugin } from 'vue'
-import { Router } from 'vue-router'
+import type { App, Plugin } from 'vue'
+import type { Router } from 'vue-router'
 import axios from 'axios'
 
 // 缓存配置接口

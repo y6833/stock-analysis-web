@@ -15,6 +15,9 @@ class SmartRecommendationService extends Service {
    * @param {number} options.expectedReturn - 预期收益率
    * @param {number} options.timeHorizon - 投资时间范围（天）
    * @param {number} options.limit - 推荐数量限制
+   * @param {string} options.industry - 行业筛选
+   * @param {string} options.market - 板块筛选
+   * @param {string} options.marketCap - 市值筛选 (large/medium/small)
    * @return {Array} 推荐股票列表
    */
   async getRecommendations(options = {}) {
@@ -23,12 +26,21 @@ class SmartRecommendationService extends Service {
       riskLevel = 'medium',
       expectedReturn = 0.05,
       timeHorizon = 7,
-      limit = 10
+      limit = 10,
+      industry = null,
+      market = null,
+      marketCap = null
     } = options;
 
     try {
-      // 1. 获取股票池
-      const stockPool = await this.getStockPool();
+      // 1. 获取股票池（支持筛选条件）
+      const stockPool = await this.getStockPool({
+        industry,
+        market,
+        marketCap,
+        riskLevel,
+        timeHorizon
+      });
 
       // 2. 对每只股票进行评分
       const scoredStocks = [];
@@ -99,26 +111,72 @@ class SmartRecommendationService extends Service {
   /**
    * 获取股票池
    * 筛选出适合分析的活跃股票
+   * @param {Object} filters - 筛选条件
+   * @param {string} filters.industry - 行业筛选
+   * @param {string} filters.market - 板块筛选
+   * @param {string} filters.marketCap - 市值筛选
+   * @param {string} filters.riskLevel - 风险等级
+   * @param {number} filters.timeHorizon - 投资时间范围
    */
-  async getStockPool() {
+  async getStockPool(filters = {}) {
     const { ctx, app } = this;
+    const { industry, market, marketCap, riskLevel, timeHorizon } = filters;
 
     try {
-      ctx.logger.info('🔍 开始从数据库获取股票池...');
+      ctx.logger.info('🔍 开始从数据库获取股票池...', { filters });
 
-      // 直接从 stock_basic 表获取所有股票
+      // 构建动态SQL查询 - 简化条件，确保能获取到数据
+      let whereConditions = ['1=1']; // 移除list_status限制，确保能获取到数据
+      let queryParams = [];
+
+      // 行业筛选
+      if (industry && industry !== 'all') {
+        whereConditions.push('industry LIKE ?');
+        queryParams.push(`%${industry}%`);
+      }
+
+      // 板块筛选（基于股票代码前缀）
+      if (market && market !== 'all') {
+        const marketConditions = this.getMarketConditions(market);
+        if (marketConditions) {
+          whereConditions.push(marketConditions);
+        }
+      }
+
+      // 市值筛选（基于股票代码规律）
+      if (marketCap && marketCap !== 'all') {
+        const marketCapConditions = this.getMarketCapConditions(marketCap);
+        if (marketCapConditions) {
+          whereConditions.push(marketCapConditions);
+        }
+      }
+
+      // 根据风险等级和投资期限调整股票池大小
+      let limitSize = 200; // 默认200只股票
+      if (riskLevel === 'low') {
+        limitSize = 150; // 低风险选择更少但更稳定的股票
+      } else if (riskLevel === 'high') {
+        limitSize = 300; // 高风险可以选择更多股票
+      }
+
+      if (timeHorizon <= 7) {
+        limitSize = Math.min(limitSize, 100); // 短期投资减少选择范围
+      }
+
       const rawQuery = `
         SELECT ts_code as tsCode, symbol, name, area, industry, market, list_date as listDate
         FROM stock_basic
-        WHERE (list_status = 'L' OR list_status IS NULL)
-        ORDER BY symbol ASC
-        LIMIT 100
+        WHERE ${whereConditions.join(' AND ')}
+        ORDER BY ${this.getOrderByClause(riskLevel, timeHorizon)}
+        LIMIT ${limitSize}
       `;
 
       ctx.logger.info('📊 执行SQL查询:', rawQuery);
+      ctx.logger.info('📊 查询参数:', queryParams);
 
       const [results] = await app.model.query(rawQuery, {
-        type: app.model.QueryTypes.SELECT
+        type: app.model.QueryTypes.SELECT,
+        replacements: queryParams
       });
 
       ctx.logger.info(`📈 数据库查询结果: ${results ? results.length : 0} 条记录`);
@@ -337,17 +395,17 @@ class SmartRecommendationService extends Service {
 
       // 调用不同的数据源API
       switch (source) {
-      case 'sina':
-        return await this.fetchFromSinaAPI(symbol);
-      case 'eastmoney':
-        return await this.fetchFromEastMoneyAPI(symbol);
-      case 'alphavantage':
-        return await this.fetchFromAlphaVantageAPI(symbol);
-      case 'alltick':
-        return await this.fetchFromAlltickAPI(symbol);
-      default:
-        ctx.logger.warn(`未知数据源: ${source}`);
-        return null;
+        case 'sina':
+          return await this.fetchFromSinaAPI(symbol);
+        case 'eastmoney':
+          return await this.fetchFromEastMoneyAPI(symbol);
+        case 'alphavantage':
+          return await this.fetchFromAlphaVantageAPI(symbol);
+        case 'alltick':
+          return await this.fetchFromAlltickAPI(symbol);
+        default:
+          ctx.logger.warn(`未知数据源: ${source}`);
+          return null;
       }
     } catch (error) {
       ctx.logger.warn(`从 ${source} 获取 ${symbol} 价格失败:`, error.message);
@@ -565,15 +623,18 @@ class SmartRecommendationService extends Service {
         }
       }
 
-      // 计算综合评分
-      const totalScore = (
+      // 计算基础综合评分
+      let totalScore = (
         technicalScore * 0.4 +
         volumePriceScore * 0.3 +
         trendScore * 0.2 +
         momentumScore * 0.1
       );
 
-      ctx.logger.info(`📊 股票 ${stock.symbol} 各项评分: 技术=${technicalScore}, 量价=${volumePriceScore}, 趋势=${trendScore}, 动量=${momentumScore}, 综合=${Math.round(totalScore)}`);
+      // 根据用户偏好调整评分
+      totalScore = this.adjustScoreByUserPreference(totalScore, stock, options);
+
+      ctx.logger.info(`📊 股票 ${stock.symbol} 各项评分: 技术=${technicalScore}, 量价=${volumePriceScore}, 趋势=${trendScore}, 动量=${momentumScore}, 基础=${Math.round(totalScore - this.getPreferenceAdjustment(stock, options))}, 调整后=${Math.round(totalScore)}`);
 
       // 计算风险等级
       const riskLevel = this.calculateRiskLevel(historicalData, totalScore);
@@ -1192,14 +1253,14 @@ class SmartRecommendationService extends Service {
    */
   getPositionSizing(riskLevel) {
     switch (riskLevel) {
-    case 'low':
-      return '可适当加大仓位，建议5-10%';
-    case 'medium':
-      return '标准仓位，建议3-5%';
-    case 'high':
-      return '控制仓位，建议1-3%';
-    default:
-      return '标准仓位，建议3-5%';
+      case 'low':
+        return '可适当加大仓位，建议5-10%';
+      case 'medium':
+        return '标准仓位，建议3-5%';
+      case 'high':
+        return '控制仓位，建议1-3%';
+      default:
+        return '标准仓位，建议3-5%';
     }
   }
 
@@ -1431,22 +1492,11 @@ class SmartRecommendationService extends Service {
    */
   getBasicStockList() {
     const { ctx } = this;
-    ctx.logger.info('🔄 使用基础股票列表进行推荐分析');
+    ctx.logger.error('❌ 无法获取股票数据 - 数据库连接失败且无可用数据源');
 
-    // 返回一些知名的真实股票代码，用于基础推荐
-    // 这些不是模拟数据，而是真实存在的股票代码
-    return [
-      { symbol: '000001.SZ', tsCode: '000001.SZ', name: '平安银行', area: '深圳', industry: '银行', market: '深圳' },
-      { symbol: '000002.SZ', tsCode: '000002.SZ', name: '万科A', area: '深圳', industry: '房地产', market: '深圳' },
-      { symbol: '600000.SH', tsCode: '600000.SH', name: '浦发银行', area: '上海', industry: '银行', market: '上海' },
-      { symbol: '600036.SH', tsCode: '600036.SH', name: '招商银行', area: '深圳', industry: '银行', market: '上海' },
-      { symbol: '600519.SH', tsCode: '600519.SH', name: '贵州茅台', area: '贵州', industry: '白酒', market: '上海' },
-      { symbol: '000858.SZ', tsCode: '000858.SZ', name: '五粮液', area: '四川', industry: '白酒', market: '深圳' },
-      { symbol: '601318.SH', tsCode: '601318.SH', name: '中国平安', area: '深圳', industry: '保险', market: '上海' },
-      { symbol: '000063.SZ', tsCode: '000063.SZ', name: '中兴通讯', area: '深圳', industry: '通信设备', market: '深圳' },
-      { symbol: '002415.SZ', tsCode: '002415.SZ', name: '海康威视', area: '浙江', industry: '安防设备', market: '深圳' },
-      { symbol: '300059.SZ', tsCode: '300059.SZ', name: '东方财富', area: '上海', industry: '互联网金融', market: '深圳' }
-    ];
+    // 不再返回硬编码数据，确保系统完全依赖真实数据库
+    // 如果数据库无法连接，应该返回空数组并记录错误
+    return [];
   }
 
   /**
@@ -1542,6 +1592,309 @@ class SmartRecommendationService extends Service {
 
     // 综合用户期望和评分计算
     return Math.max(0.01, Math.min(0.15, (baseReturn + userExpected) / 2));
+  }
+
+  /**
+   * 获取市场筛选条件
+   * @param {string} market - 市场类型
+   * @return {string} SQL条件
+   */
+  getMarketConditions(market) {
+    const { ctx } = this;
+
+    switch (market) {
+      case 'main': // 主板
+        return "(symbol LIKE '600%' OR symbol LIKE '601%' OR symbol LIKE '603%' OR symbol LIKE '000%')";
+      case 'sme': // 中小板
+        return "symbol LIKE '002%'";
+      case 'gem': // 创业板
+        return "symbol LIKE '300%'";
+      case 'star': // 科创板
+        return "symbol LIKE '688%'";
+      case 'beijing': // 北交所
+        return "(symbol LIKE '8%' OR symbol LIKE '4%')";
+      default:
+        ctx.logger.warn(`未知的市场类型: ${market}`);
+        return null;
+    }
+  }
+
+  /**
+   * 获取市值筛选条件
+   * @param {string} marketCap - 市值类型
+   * @return {string} SQL条件
+   */
+  getMarketCapConditions(marketCap) {
+    const { ctx } = this;
+
+    switch (marketCap) {
+      case 'large': // 大盘股（主要是600、000开头的知名股票）
+        return "(symbol LIKE '600%' OR symbol LIKE '000001%' OR symbol LIKE '000002%')";
+      case 'medium': // 中盘股（002开头和部分600开头）
+        return "(symbol LIKE '002%' OR (symbol LIKE '600%' AND symbol NOT IN ('600000', '600036', '600519')))";
+      case 'small': // 小盘股（300开头和688开头）
+        return "(symbol LIKE '300%' OR symbol LIKE '688%')";
+      default:
+        ctx.logger.warn(`未知的市值类型: ${marketCap}`);
+        return null;
+    }
+  }
+
+  /**
+   * 获取排序条件
+   * @param {string} riskLevel - 风险等级
+   * @param {number} timeHorizon - 投资时间范围
+   * @return {string} ORDER BY子句
+   */
+  getOrderByClause(riskLevel, timeHorizon) {
+    // 根据风险等级和投资期限调整排序策略
+    if (riskLevel === 'low') {
+      // 低风险：优先选择银行、保险等稳定行业
+      return "CASE WHEN industry LIKE '%银行%' THEN 1 WHEN industry LIKE '%保险%' THEN 2 ELSE 3 END, symbol ASC";
+    } else if (riskLevel === 'high') {
+      // 高风险：优先选择科技、新能源等成长性行业
+      return "CASE WHEN industry LIKE '%科技%' THEN 1 WHEN industry LIKE '%新能源%' THEN 2 WHEN industry LIKE '%医药%' THEN 3 ELSE 4 END, symbol ASC";
+    } else if (timeHorizon <= 7) {
+      // 短期投资：随机排序增加多样性
+      return "RAND(), symbol ASC";
+    } else {
+      // 中等风险或长期投资：平衡排序
+      return "CASE WHEN industry LIKE '%白酒%' THEN 1 WHEN industry LIKE '%银行%' THEN 2 WHEN industry LIKE '%科技%' THEN 3 ELSE 4 END, symbol ASC";
+    }
+  }
+
+  /**
+   * 根据用户偏好调整股票评分
+   * @param {number} baseScore - 基础评分
+   * @param {Object} stock - 股票信息
+   * @param {Object} options - 用户偏好选项
+   * @return {number} 调整后的评分
+   */
+  adjustScoreByUserPreference(baseScore, stock, options) {
+    const { riskLevel, timeHorizon, expectedReturn, industry: userIndustry, market: userMarket, marketCap: userMarketCap } = options;
+    let adjustedScore = baseScore;
+    let adjustmentDetails = [];
+
+    // 1. 风险等级偏好调整
+    const riskAdjustment = this.getRiskAdjustment(stock, riskLevel);
+    adjustedScore += riskAdjustment;
+    if (riskAdjustment !== 0) {
+      adjustmentDetails.push(`风险偏好: ${riskAdjustment > 0 ? '+' : ''}${riskAdjustment}`);
+    }
+
+    // 2. 投资期限偏好调整
+    const timeAdjustment = this.getTimeHorizonAdjustment(stock, timeHorizon);
+    adjustedScore += timeAdjustment;
+    if (timeAdjustment !== 0) {
+      adjustmentDetails.push(`期限偏好: ${timeAdjustment > 0 ? '+' : ''}${timeAdjustment}`);
+    }
+
+    // 3. 预期收益调整
+    const returnAdjustment = this.getExpectedReturnAdjustment(stock, expectedReturn);
+    adjustedScore += returnAdjustment;
+    if (returnAdjustment !== 0) {
+      adjustmentDetails.push(`收益偏好: ${returnAdjustment > 0 ? '+' : ''}${returnAdjustment}`);
+    }
+
+    // 4. 行业偏好调整
+    if (userIndustry && userIndustry !== 'all') {
+      const industryAdjustment = this.getIndustryAdjustment(stock, userIndustry);
+      adjustedScore += industryAdjustment;
+      if (industryAdjustment !== 0) {
+        adjustmentDetails.push(`行业偏好: ${industryAdjustment > 0 ? '+' : ''}${industryAdjustment}`);
+      }
+    }
+
+    // 5. 市场板块偏好调整
+    if (userMarket && userMarket !== 'all') {
+      const marketAdjustment = this.getMarketAdjustment(stock, userMarket);
+      adjustedScore += marketAdjustment;
+      if (marketAdjustment !== 0) {
+        adjustmentDetails.push(`板块偏好: ${marketAdjustment > 0 ? '+' : ''}${marketAdjustment}`);
+      }
+    }
+
+    // 6. 市值偏好调整
+    if (userMarketCap && userMarketCap !== 'all') {
+      const marketCapAdjustment = this.getMarketCapAdjustment(stock, userMarketCap);
+      adjustedScore += marketCapAdjustment;
+      if (marketCapAdjustment !== 0) {
+        adjustmentDetails.push(`市值偏好: ${marketCapAdjustment > 0 ? '+' : ''}${marketCapAdjustment}`);
+      }
+    }
+
+    // 记录调整详情
+    if (adjustmentDetails.length > 0) {
+      this.ctx.logger.debug(`股票 ${stock.symbol} 偏好调整: ${adjustmentDetails.join(', ')}`);
+    }
+
+    return Math.max(0, Math.min(100, adjustedScore));
+  }
+
+  /**
+   * 获取偏好调整值（用于日志显示）
+   */
+  getPreferenceAdjustment(stock, options) {
+    return this.adjustScoreByUserPreference(0, stock, options);
+  }
+
+  /**
+   * 获取风险偏好调整分数
+   */
+  getRiskAdjustment(stock, riskLevel) {
+    const industry = stock.industry || '';
+    const symbol = stock.symbol || '';
+
+    switch (riskLevel) {
+      case 'low':
+        // 低风险偏好：银行、保险、公用事业加分
+        if (industry.includes('银行')) return 8;
+        if (industry.includes('保险')) return 6;
+        if (industry.includes('电力') || industry.includes('水务')) return 5;
+        if (industry.includes('白酒')) return 4;
+        // 高风险行业减分
+        if (industry.includes('科技') || industry.includes('新能源')) return -3;
+        if (symbol.startsWith('300') || symbol.startsWith('688')) return -2;
+        return 0;
+
+      case 'high':
+        // 高风险偏好：科技、新能源、医药加分
+        if (industry.includes('科技') || industry.includes('软件')) return 8;
+        if (industry.includes('新能源') || industry.includes('电池')) return 7;
+        if (industry.includes('医药') || industry.includes('生物')) return 6;
+        if (symbol.startsWith('300') || symbol.startsWith('688')) return 5;
+        // 传统稳定行业减分
+        if (industry.includes('银行') || industry.includes('保险')) return -2;
+        return 0;
+
+      case 'medium':
+      default:
+        // 中等风险：平衡配置，白酒、消费略加分
+        if (industry.includes('白酒')) return 3;
+        if (industry.includes('消费') || industry.includes('食品')) return 2;
+        return 0;
+    }
+  }
+
+  /**
+   * 获取投资期限偏好调整分数
+   */
+  getTimeHorizonAdjustment(stock, timeHorizon) {
+    const industry = stock.industry || '';
+    const symbol = stock.symbol || '';
+
+    if (timeHorizon <= 7) {
+      // 短期投资：偏好活跃股票
+      if (symbol.startsWith('300') || symbol.startsWith('688')) return 4;
+      if (industry.includes('科技') || industry.includes('新能源')) return 3;
+      if (industry.includes('银行')) return -2; // 银行股短期波动小
+      return 0;
+    } else if (timeHorizon >= 30) {
+      // 长期投资：偏好价值股
+      if (industry.includes('白酒')) return 5;
+      if (industry.includes('银行') || industry.includes('保险')) return 4;
+      if (industry.includes('消费')) return 3;
+      return 0;
+    } else {
+      // 中期投资：平衡
+      return 0;
+    }
+  }
+
+  /**
+   * 获取预期收益调整分数
+   */
+  getExpectedReturnAdjustment(stock, expectedReturn) {
+    const industry = stock.industry || '';
+
+    if (expectedReturn >= 0.08) {
+      // 高收益期望：偏好成长股
+      if (industry.includes('科技') || industry.includes('新能源')) return 5;
+      if (industry.includes('医药')) return 4;
+      return 0;
+    } else if (expectedReturn <= 0.03) {
+      // 低收益期望：偏好稳定股
+      if (industry.includes('银行') || industry.includes('保险')) return 4;
+      if (industry.includes('公用事业')) return 3;
+      return 0;
+    } else {
+      // 中等收益期望
+      return 0;
+    }
+  }
+
+  /**
+   * 获取行业偏好调整分数
+   */
+  getIndustryAdjustment(stock, userIndustry) {
+    const industry = stock.industry || '';
+
+    // 如果股票行业匹配用户选择的行业，给予高分
+    if (industry.includes(userIndustry)) {
+      return 10; // 行业匹配给予较高加分
+    }
+    return 0;
+  }
+
+  /**
+   * 获取市场板块偏好调整分数
+   */
+  getMarketAdjustment(stock, userMarket) {
+    const symbol = stock.symbol || '';
+
+    switch (userMarket) {
+      case 'main': // 主板
+        if (symbol.startsWith('600') || symbol.startsWith('601') || symbol.startsWith('603') || symbol.startsWith('000')) {
+          return 8;
+        }
+        break;
+      case 'sme': // 中小板
+        if (symbol.startsWith('002')) {
+          return 8;
+        }
+        break;
+      case 'gem': // 创业板
+        if (symbol.startsWith('300')) {
+          return 8;
+        }
+        break;
+      case 'star': // 科创板
+        if (symbol.startsWith('688')) {
+          return 8;
+        }
+        break;
+    }
+    return 0;
+  }
+
+  /**
+   * 获取市值偏好调整分数
+   */
+  getMarketCapAdjustment(stock, userMarketCap) {
+    const symbol = stock.symbol || '';
+    const industry = stock.industry || '';
+
+    switch (userMarketCap) {
+      case 'large': // 大盘股偏好
+        if (symbol.startsWith('600') || symbol.includes('000001') || symbol.includes('000002')) {
+          return 6;
+        }
+        if (industry.includes('银行') || industry.includes('白酒')) {
+          return 4;
+        }
+        break;
+      case 'medium': // 中盘股偏好
+        if (symbol.startsWith('002')) {
+          return 6;
+        }
+        break;
+      case 'small': // 小盘股偏好
+        if (symbol.startsWith('300') || symbol.startsWith('688')) {
+          return 6;
+        }
+        break;
+    }
+    return 0;
   }
 }
 

@@ -206,7 +206,15 @@ function logError(appError: AppError): void {
  * 显示用户友好的错误消息
  */
 function showErrorMessage(appError: AppError): void {
-  const { severity, message, details } = appError;
+  const { severity, message, details, code } = appError;
+
+  // 对于Vue组件错误，只在开发环境显示，生产环境只记录到控制台
+  if (code === 'VUE_ERROR') {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Vue组件错误]', message, details);
+    }
+    return; // 不显示用户消息
+  }
 
   // 将应用严重程度映射到Element Plus消息类型
   let messageType: 'success' | 'warning' | 'info' | 'error' = 'error';
@@ -231,8 +239,8 @@ function showErrorMessage(appError: AppError): void {
     showClose: true,
   });
 
-  // 对于验证错误，显示详细信息
-  if (details && Object.keys(details).length > 0) {
+  // 对于验证错误，显示详细信息（但排除Vue组件错误）
+  if (details && Object.keys(details).length > 0 && appError.code !== 'VUE_ERROR') {
     const detailsMessage = Object.entries(details)
       .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
       .join('\n');
@@ -253,7 +261,7 @@ function handleSpecificError(appError: AppError): void {
   // 处理身份验证错误
   if (type === ErrorType.AUTHENTICATION) {
     const userStore = useUserStore();
-    
+
     // 如果是身份验证失败，清除用户会话并重定向到登录页面
     if (code === 'AUTH_FAILED') {
       userStore.logout();

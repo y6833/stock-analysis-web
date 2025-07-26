@@ -3,7 +3,7 @@
  * 提供用于增强组件安全性的Vue指令
  */
 
-import { DirectiveBinding } from 'vue';
+import type { DirectiveBinding } from 'vue';
 import { securityService } from '@/services/securityService';
 
 /**
@@ -62,10 +62,10 @@ export const safeHtml = {
 export const maskData = {
   beforeMount(el: HTMLElement, binding: DirectiveBinding) {
     if (!binding.value) return;
-    
+
     const data = binding.value;
     let maskedData = data;
-    
+
     // 根据参数选择掩码方式
     switch (binding.arg) {
       case 'email':
@@ -87,15 +87,15 @@ export const maskData = {
         // 默认掩码
         maskedData = maskSensitiveData(data);
     }
-    
+
     el.textContent = maskedData;
   },
   updated(el: HTMLElement, binding: DirectiveBinding) {
     if (!binding.value) return;
-    
+
     const data = binding.value;
     let maskedData = data;
-    
+
     // 根据参数选择掩码方式
     switch (binding.arg) {
       case 'email':
@@ -117,7 +117,7 @@ export const maskData = {
         // 默认掩码
         maskedData = maskSensitiveData(data);
     }
-    
+
     el.textContent = maskedData;
   }
 };
@@ -132,19 +132,19 @@ export const maskData = {
 export const rateLimit = {
   beforeMount(el: HTMLElement, binding: DirectiveBinding) {
     const { key, limit, window: windowMs } = binding.value || {};
-    
+
     if (!key || !limit || !windowMs) {
       console.error('v-rate-limit 指令需要 key, limit 和 window 参数');
       return;
     }
-    
-    el.addEventListener('click', function(event) {
+
+    el.addEventListener('click', function (event) {
       const allowed = securityService.rateLimit(key, limit, windowMs);
-      
+
       if (!allowed) {
         event.preventDefault();
         event.stopPropagation();
-        
+
         // 显示提示
         const existingTooltip = document.getElementById(`rate-limit-tooltip-${key}`);
         if (!existingTooltip) {
@@ -160,9 +160,9 @@ export const rateLimit = {
           tooltip.style.top = `${event.clientY + 10}px`;
           tooltip.style.left = `${event.clientX + 10}px`;
           tooltip.textContent = '操作频率过高，请稍后再试';
-          
+
           document.body.appendChild(tooltip);
-          
+
           // 3秒后移除提示
           setTimeout(() => {
             if (tooltip.parentNode) {
@@ -178,24 +178,24 @@ export const rateLimit = {
 // 掩码函数
 function maskSensitiveData(data: string, visibleStartChars: number = 3, visibleEndChars: number = 4): string {
   if (!data) return '';
-  
+
   if (data.length <= visibleStartChars + visibleEndChars) {
     return '*'.repeat(data.length);
   }
-  
+
   const start = data.substring(0, visibleStartChars);
   const end = data.substring(data.length - visibleEndChars);
   const masked = '*'.repeat(data.length - visibleStartChars - visibleEndChars);
-  
+
   return `${start}${masked}${end}`;
 }
 
 function maskEmail(email: string): string {
   if (!email || !email.includes('@')) return email;
-  
+
   const [username, domain] = email.split('@');
   const maskedUsername = maskSensitiveData(username, 2, 1);
-  
+
   return `${maskedUsername}@${domain}`;
 }
 
@@ -213,18 +213,18 @@ function maskBankCard(cardNumber: string): string {
 
 function maskName(name: string): string {
   if (!name || name.length <= 1) return name;
-  
+
   if (/[\u4e00-\u9fa5]/.test(name)) {
     return name.substring(0, 1) + '*'.repeat(name.length - 1);
   }
-  
+
   const nameParts = name.split(' ');
   if (nameParts.length > 1) {
     const firstName = nameParts[0].substring(0, 1) + '*'.repeat(nameParts[0].length - 1);
     const lastName = nameParts[nameParts.length - 1].substring(0, 1) + '*'.repeat(nameParts[nameParts.length - 1].length - 1);
     return `${firstName} ${lastName}`;
   }
-  
+
   return name.substring(0, 1) + '*'.repeat(name.length - 1);
 }
 

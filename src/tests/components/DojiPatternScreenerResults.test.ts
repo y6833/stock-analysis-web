@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { h } from 'vue'
 import DojiPatternScreenerResults from '../../components/technical-analysis/DojiPatternScreenerResults.vue'
 import type { StockScreenResult } from '../../types/technical-analysis/screener'
 

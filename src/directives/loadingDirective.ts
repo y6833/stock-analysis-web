@@ -7,7 +7,7 @@
  * <div v-loading="{ loading: isLoading, text: '加载中...', fullscreen: false }"></div>
  */
 
-import { Directive, DirectiveBinding, VNode, createApp, h } from 'vue';
+import { createApp, h, type Directive, type DirectiveBinding, type VNode } from 'vue';
 import LoadingIndicator from '@/components/common/LoadingIndicator.vue';
 
 interface LoadingOptions {
@@ -20,6 +20,7 @@ interface LoadingOptions {
 
 // 存储加载实例的Map
 const loadingInstances = new Map<HTMLElement, {
+  app: any;
   instance: any;
   container: HTMLElement;
 }>();
@@ -28,11 +29,11 @@ const loadingInstances = new Map<HTMLElement, {
 const createLoadingContainer = (el: HTMLElement, binding: DirectiveBinding): HTMLElement => {
   // 获取选项
   const options = getOptions(binding);
-  
+
   // 创建容器
   const container = document.createElement('div');
   container.className = 'v-loading-container';
-  
+
   // 设置样式
   container.style.position = options.fullscreen ? 'fixed' : 'absolute';
   container.style.top = '0';
@@ -43,7 +44,7 @@ const createLoadingContainer = (el: HTMLElement, binding: DirectiveBinding): HTM
   container.style.alignItems = 'center';
   container.style.justifyContent = 'center';
   container.style.zIndex = options.fullscreen ? '9999' : '100';
-  
+
   // 如果是全屏，添加到body，否则添加到目标元素
   if (options.fullscreen) {
     document.body.appendChild(container);
@@ -53,10 +54,10 @@ const createLoadingContainer = (el: HTMLElement, binding: DirectiveBinding): HTM
     if (elPosition === 'static') {
       el.style.position = 'relative';
     }
-    
+
     el.appendChild(container);
   }
-  
+
   return container;
 };
 
@@ -74,15 +75,15 @@ const getOptions = (binding: DirectiveBinding): LoadingOptions => {
 const createLoadingInstance = (el: HTMLElement, binding: DirectiveBinding) => {
   // 获取选项
   const options = getOptions(binding);
-  
+
   // 如果不是加载状态，不创建实例
   if (!options.loading) {
     return;
   }
-  
+
   // 创建容器
   const container = createLoadingContainer(el, binding);
-  
+
   // 创建加载组件实例
   const app = createApp({
     render() {
@@ -95,31 +96,35 @@ const createLoadingInstance = (el: HTMLElement, binding: DirectiveBinding) => {
       });
     }
   });
-  
+
   // 挂载组件
   const instance = app.mount(document.createElement('div'));
   container.appendChild(instance.$el);
-  
+
   // 存储实例
-  loadingInstances.set(el, { instance, container });
+  loadingInstances.set(el, { app, instance, container });
 };
 
 // 移除加载实例
 const removeLoadingInstance = (el: HTMLElement) => {
   const loadingInstance = loadingInstances.get(el);
   if (loadingInstance) {
-    const { instance, container } = loadingInstance;
-    
-    // 卸载组件
-    if (instance && instance.$) {
-      instance.$unmount();
+    const { app, instance, container } = loadingInstance;
+
+    // 卸载组件 - Vue 3 中正确的方式
+    try {
+      if (app && typeof app.unmount === 'function') {
+        app.unmount();
+      }
+    } catch (error) {
+      console.warn('卸载加载组件时出错:', error);
     }
-    
+
     // 移除容器
-    if (container.parentNode) {
+    if (container && container.parentNode) {
       container.parentNode.removeChild(container);
     }
-    
+
     // 从Map中移除
     loadingInstances.delete(el);
   }
@@ -133,11 +138,11 @@ export const vLoading: Directive = {
       createLoadingInstance(el, binding);
     }
   },
-  
+
   updated(el: HTMLElement, binding: DirectiveBinding) {
     const options = getOptions(binding);
     const loadingInstance = loadingInstances.get(el);
-    
+
     if (options.loading) {
       if (!loadingInstance) {
         createLoadingInstance(el, binding);
@@ -146,7 +151,7 @@ export const vLoading: Directive = {
       removeLoadingInstance(el);
     }
   },
-  
+
   unmounted(el: HTMLElement) {
     removeLoadingInstance(el);
   }

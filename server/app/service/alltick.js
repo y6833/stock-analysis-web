@@ -169,30 +169,30 @@ class AlltickService extends Service {
       // 映射周期类型
       let klineType = 8; // 默认日K
       switch (period) {
-      case 'minute':
-        klineType = 1;
-        break;
-      case '5min':
-        klineType = 2;
-        break;
-      case '15min':
-        klineType = 3;
-        break;
-      case '30min':
-        klineType = 4;
-        break;
-      case 'hour':
-        klineType = 5;
-        break;
-      case 'day':
-        klineType = 8;
-        break;
-      case 'week':
-        klineType = 9;
-        break;
-      case 'month':
-        klineType = 10;
-        break;
+        case 'minute':
+          klineType = 1;
+          break;
+        case '5min':
+          klineType = 2;
+          break;
+        case '15min':
+          klineType = 3;
+          break;
+        case '30min':
+          klineType = 4;
+          break;
+        case 'hour':
+          klineType = 5;
+          break;
+        case 'day':
+          klineType = 8;
+          break;
+        case 'week':
+          klineType = 9;
+          break;
+        case 'month':
+          klineType = 10;
+          break;
       }
 
       const params = {
@@ -231,28 +231,36 @@ class AlltickService extends Service {
    * 获取股票列表
    */
   async getStocks() {
-    // AllTick没有直接的股票列表接口，返回常用股票
-    const popularStocks = [
-      { symbol: '000001', name: '平安银行', market: 'SZ', industry: '银行', area: 'CN' },
-      { symbol: '000002', name: '万科A', market: 'SZ', industry: '房地产', area: 'CN' },
-      { symbol: '600000', name: '浦发银行', market: 'SH', industry: '银行', area: 'CN' },
-      { symbol: '600036', name: '招商银行', market: 'SH', industry: '银行', area: 'CN' },
-      { symbol: '00700', name: '腾讯控股', market: 'HK', industry: '科技', area: 'HK' },
-      { symbol: '00941', name: '中国移动', market: 'HK', industry: '通信', area: 'HK' },
-      { symbol: 'AAPL', name: 'Apple Inc.', market: 'US', industry: 'Technology', area: 'US' },
-      { symbol: 'MSFT', name: 'Microsoft Corporation', market: 'US', industry: 'Technology', area: 'US' },
-      { symbol: 'GOOGL', name: 'Alphabet Inc.', market: 'US', industry: 'Technology', area: 'US' },
-      { symbol: 'TSLA', name: 'Tesla, Inc.', market: 'US', industry: 'Automotive', area: 'US' }
-    ];
+    const { ctx, app } = this;
 
-    return popularStocks.map(stock => ({
-      symbol: stock.symbol,
-      name: stock.name,
-      market: stock.market,
-      listDate: '',
-      industry: stock.industry,
-      area: stock.area
-    }));
+    try {
+      // 从数据库获取真实股票列表
+      const [results] = await app.model.query(
+        'SELECT symbol, name, area, industry, market FROM stock_basic WHERE list_status = "L" ORDER BY symbol LIMIT 100',
+        { type: app.model.QueryTypes.SELECT }
+      );
+
+      if (!results || results.length === 0) {
+        ctx.logger.error('❌ AllTick服务：数据库中没有股票数据');
+        return [];
+      }
+
+      // 转换为AllTick格式
+      const stocks = results.map(stock => ({
+        symbol: stock.symbol,
+        name: stock.name,
+        market: stock.market || 'CN',
+        industry: stock.industry || '未知',
+        area: stock.area || 'CN'
+      }));
+
+      ctx.logger.info(`✅ AllTick服务：从数据库获取到 ${stocks.length} 只股票`);
+      return stocks;
+
+    } catch (error) {
+      ctx.logger.error('❌ AllTick服务：获取股票列表失败', error.message);
+      return [];
+    }
   }
 
   /**

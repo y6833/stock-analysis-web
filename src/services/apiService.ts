@@ -3,10 +3,11 @@
  * 负责处理与后端API的通信，支持离线模式和弱网络优化
  */
 
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { 
-  saveOfflineData, 
-  getOfflineData, 
+import axios from 'axios';
+import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import {
+  saveOfflineData,
+  getOfflineData,
   isOnline,
   savePendingWatchlistChange,
   savePendingPortfolioChange
@@ -17,7 +18,7 @@ import loadingService from './loadingService';
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: 'http://localhost:7001/api',
   timeout: 8000,
   headers: {
     'Content-Type': 'application/json'
@@ -29,13 +30,13 @@ api.interceptors.request.use(
   async (config) => {
     // 根据网络状态调整超时时间
     config.timeout = getNetworkAwareTimeout();
-    
+
     // 从localStorage获取认证令牌
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // 添加CSRF令牌到非GET请求
     if (config.method?.toLowerCase() !== 'get') {
       try {
@@ -47,7 +48,7 @@ api.interceptors.request.use(
         console.error('获取CSRF令牌失败:', error);
       }
     }
-    
+
     return config;
   },
   (error) => {
@@ -62,13 +63,13 @@ api.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const originalRequest = error.config;
-    
+
     // 如果是网络错误或请求超时，尝试从缓存获取数据
     if (!originalRequest || error.message === 'Network Error' || error.code === 'ECONNABORTED') {
       if (originalRequest && originalRequest.method?.toLowerCase() === 'get') {
         const url = originalRequest.url || '';
         const cacheKey = `api_cache:${url}`;
-        
+
         try {
           const cachedData = await getOfflineData(cacheKey);
           if (cachedData) {
@@ -88,11 +89,11 @@ api.interceptors.response.use(
         }
       }
     }
-    
+
     // 创建应用错误对象并处理
     const appError = errorHandlingService.createErrorFromAxiosError(error);
     errorHandlingService.handleError(appError);
-    
+
     return Promise.reject(error);
   }
 );
@@ -106,8 +107,8 @@ api.interceptors.response.use(
  * @param loadingText 加载文本
  */
 export async function get<T>(
-  url: string, 
-  params?: any, 
+  url: string,
+  params?: any,
   config?: AxiosRequestConfig,
   showLoading: boolean = false,
   loadingText: string = '加载中...'
@@ -117,19 +118,19 @@ export async function get<T>(
     if (showLoading) {
       loadingService.showGlobalLoading(loadingText);
     }
-    
+
     // 构建缓存键
     const queryString = params ? new URLSearchParams(params).toString() : '';
     const fullUrl = `${url}${queryString ? `?${queryString}` : ''}`;
     const cacheKey = `api_cache:${fullUrl}`;
-    
+
     // 如果离线，尝试从缓存获取数据
     if (!isOnline()) {
       const cachedData = await getOfflineData<T>(cacheKey);
       if (cachedData) {
         return cachedData;
       }
-      
+
       const offlineError = errorHandlingService.createAppError(
         ErrorType.OFFLINE,
         '您当前处于离线状态，且没有可用的缓存数据',
@@ -138,13 +139,13 @@ export async function get<T>(
       errorHandlingService.handleError(offlineError);
       throw offlineError;
     }
-    
+
     // 发送请求
     const response = await api.get<T>(url, { ...config, params });
-    
+
     // 缓存响应数据
     await saveOfflineData(cacheKey, response.data);
-    
+
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -153,7 +154,7 @@ export async function get<T>(
         const queryString = params ? new URLSearchParams(params).toString() : '';
         const fullUrl = `${url}${queryString ? `?${queryString}` : ''}`;
         const cacheKey = `api_cache:${fullUrl}`;
-        
+
         const cachedData = await getOfflineData<T>(cacheKey);
         if (cachedData) {
           return cachedData;
@@ -178,8 +179,8 @@ export async function get<T>(
  * @param loadingText 加载文本
  */
 export async function post<T>(
-  url: string, 
-  data?: any, 
+  url: string,
+  data?: any,
   config?: AxiosRequestConfig,
   showLoading: boolean = false,
   loadingText: string = '提交中...'
@@ -189,7 +190,7 @@ export async function post<T>(
     if (showLoading) {
       loadingService.showGlobalLoading(loadingText);
     }
-    
+
     // 如果离线，保存请求以便稍后同步
     if (!isOnline()) {
       // 处理特定的API端点
@@ -202,7 +203,7 @@ export async function post<T>(
         await savePendingPortfolioChange('POST', data, token);
         return { success: true, pendingSync: true } as unknown as T;
       }
-      
+
       const offlineError = errorHandlingService.createAppError(
         ErrorType.OFFLINE,
         '您当前处于离线状态，无法发送数据',
@@ -211,7 +212,7 @@ export async function post<T>(
       errorHandlingService.handleError(offlineError);
       throw offlineError;
     }
-    
+
     // 发送请求
     const response = await api.post<T>(url, data, config);
     return response.data;
@@ -234,8 +235,8 @@ export async function post<T>(
  * @param loadingText 加载文本
  */
 export async function put<T>(
-  url: string, 
-  data?: any, 
+  url: string,
+  data?: any,
   config?: AxiosRequestConfig,
   showLoading: boolean = false,
   loadingText: string = '更新中...'
@@ -245,7 +246,7 @@ export async function put<T>(
     if (showLoading) {
       loadingService.showGlobalLoading(loadingText);
     }
-    
+
     // 如果离线，保存请求以便稍后同步
     if (!isOnline()) {
       // 处理特定的API端点
@@ -258,7 +259,7 @@ export async function put<T>(
         await savePendingPortfolioChange('PUT', data, token);
         return { success: true, pendingSync: true } as unknown as T;
       }
-      
+
       const offlineError = errorHandlingService.createAppError(
         ErrorType.OFFLINE,
         '您当前处于离线状态，无法发送数据',
@@ -267,7 +268,7 @@ export async function put<T>(
       errorHandlingService.handleError(offlineError);
       throw offlineError;
     }
-    
+
     // 发送请求
     const response = await api.put<T>(url, data, config);
     return response.data;
@@ -289,7 +290,7 @@ export async function put<T>(
  * @param loadingText 加载文本
  */
 export async function del<T>(
-  url: string, 
+  url: string,
   config?: AxiosRequestConfig,
   showLoading: boolean = false,
   loadingText: string = '删除中...'
@@ -299,7 +300,7 @@ export async function del<T>(
     if (showLoading) {
       loadingService.showGlobalLoading(loadingText);
     }
-    
+
     // 如果离线，保存请求以便稍后同步
     if (!isOnline()) {
       // 处理特定的API端点
@@ -312,7 +313,7 @@ export async function del<T>(
         await savePendingPortfolioChange('DELETE', { url }, token);
         return { success: true, pendingSync: true } as unknown as T;
       }
-      
+
       const offlineError = errorHandlingService.createAppError(
         ErrorType.OFFLINE,
         '您当前处于离线状态，无法发送数据',
@@ -321,7 +322,7 @@ export async function del<T>(
       errorHandlingService.handleError(offlineError);
       throw offlineError;
     }
-    
+
     // 发送请求
     const response = await api.delete<T>(url, config);
     return response.data;
@@ -344,7 +345,7 @@ export async function preloadApiData(urls: string[]): Promise<void> {
     console.log('离线状态，跳过预加载');
     return;
   }
-  
+
   try {
     const promises = urls.map(async (url) => {
       try {
@@ -356,7 +357,7 @@ export async function preloadApiData(urls: string[]): Promise<void> {
         console.error(`预加载失败: ${url}`, error);
       }
     });
-    
+
     await Promise.allSettled(promises);
   } catch (error) {
     console.error('预加载API数据时出错:', error);

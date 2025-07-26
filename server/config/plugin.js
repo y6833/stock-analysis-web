@@ -37,4 +37,4 @@ module.exports = {
     enable: false, // 临时禁用 Redis
     package: 'egg-redis',
   },
-}
+};

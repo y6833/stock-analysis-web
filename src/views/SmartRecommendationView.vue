@@ -12,16 +12,13 @@
 
       <!-- 配置面板 -->
       <div class="config-panel">
+        <!-- 第一行：基础筛选条件 -->
         <div class="config-row">
           <div class="config-item">
             <label>风险偏好</label>
             <el-select v-model="options.riskLevel" placeholder="选择风险等级">
-              <el-option
-                v-for="level in config.riskLevels"
-                :key="level.value"
-                :label="level.label"
-                :value="level.value"
-              >
+              <el-option v-for="level in config.riskLevels" :key="level.value" :label="level.label"
+                :value="level.value">
                 <span>{{ level.label }}</span>
                 <span class="option-desc">{{ level.description }}</span>
               </el-option>
@@ -31,30 +28,77 @@
           <div class="config-item">
             <label>预期收益</label>
             <el-select v-model="options.expectedReturn" placeholder="选择预期收益">
-              <el-option
-                v-for="ret in config.expectedReturns"
-                :key="ret.value"
-                :label="ret.label"
-                :value="ret.value"
-              />
+              <el-option v-for="ret in config.expectedReturns" :key="ret.value" :label="ret.label" :value="ret.value" />
             </el-select>
           </div>
 
           <div class="config-item">
             <label>投资周期</label>
             <el-select v-model="options.timeHorizons" placeholder="选择投资周期">
-              <el-option
-                v-for="horizon in config.timeHorizons"
-                :key="horizon.value"
-                :label="horizon.label"
-                :value="horizon.value"
-              />
+              <el-option v-for="horizon in config.timeHorizons" :key="horizon.value" :label="horizon.label"
+                :value="horizon.value" />
             </el-select>
           </div>
 
           <div class="config-item">
             <label>推荐数量</label>
             <el-input-number v-model="options.limit" :min="1" :max="20" :step="1" />
+          </div>
+        </div>
+
+        <!-- 第二行：新增筛选条件 -->
+        <div class="config-row">
+          <div class="config-item">
+            <label>行业分类</label>
+            <el-select v-model="options.industry" placeholder="选择行业" clearable>
+              <el-option label="全部行业" value="all" />
+              <el-option label="银行" value="银行" />
+              <el-option label="科技" value="科技" />
+              <el-option label="白酒" value="白酒" />
+              <el-option label="医药" value="医药" />
+              <el-option label="新能源" value="新能源" />
+              <el-option label="消费" value="消费" />
+              <el-option label="房地产" value="房地产" />
+              <el-option label="制造业" value="制造业" />
+              <el-option label="电力" value="电力" />
+              <el-option label="通信" value="通信" />
+            </el-select>
+          </div>
+
+          <div class="config-item">
+            <label>交易板块</label>
+            <el-select v-model="options.market" placeholder="选择板块" clearable>
+              <el-option label="全部板块" value="all" />
+              <el-option label="主板" value="main" />
+              <el-option label="创业板" value="gem" />
+              <el-option label="科创板" value="star" />
+              <el-option label="中小板" value="sme" />
+            </el-select>
+          </div>
+
+          <div class="config-item">
+            <label>市值规模</label>
+            <el-select v-model="options.marketCap" placeholder="选择市值" clearable>
+              <el-option label="全部规模" value="all" />
+              <el-option label="大盘股" value="large" />
+              <el-option label="中盘股" value="medium" />
+              <el-option label="小盘股" value="small" />
+            </el-select>
+          </div>
+
+          <div class="config-item">
+            <label>筛选说明</label>
+            <div class="filter-tips">
+              <el-tooltip content="选择行业可以专注于特定领域的投资机会" placement="top">
+                <el-tag size="small" type="info">行业筛选</el-tag>
+              </el-tooltip>
+              <el-tooltip content="不同板块有不同的风险收益特征" placement="top">
+                <el-tag size="small" type="warning">板块筛选</el-tag>
+              </el-tooltip>
+              <el-tooltip content="市值大小影响股票的流动性和波动性" placement="top">
+                <el-tag size="small" type="success">市值筛选</el-tag>
+              </el-tooltip>
+            </div>
           </div>
         </div>
 
@@ -110,12 +154,8 @@
 
       <!-- 推荐卡片列表 -->
       <div v-else-if="recommendations.length > 0" class="recommendations-grid">
-        <RecommendationCard
-          v-for="stock in recommendations"
-          :key="stock.symbol"
-          :stock="stock"
-          @analyze="analyzeStock"
-        />
+        <RecommendationCard v-for="stock in recommendations" :key="stock.symbol" :stock="stock"
+          @analyze="analyzeStock" />
       </div>
 
       <!-- 空状态 -->
@@ -163,6 +203,9 @@ const options = reactive<RecommendationOptions>({
   expectedReturn: 0.05,
   timeHorizon: 7,
   limit: 10,
+  industry: 'all',
+  market: 'all',
+  marketCap: 'all',
 })
 
 // 配置信息
@@ -487,6 +530,17 @@ onMounted(async () => {
 
 .empty-state p {
   margin: 0 0 24px 0;
+}
+
+.filter-tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.filter-tips .el-tag {
+  cursor: help;
 }
 
 .disclaimer {

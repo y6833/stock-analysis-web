@@ -54,31 +54,42 @@ export interface DashboardLayout {
   }
 }
 
-// 关注列表项
+// 关注列表项 (更新以匹配后端API)
 export interface WatchlistItem {
-  symbol: string
-  name: string
-  price: number
-  change: number
-  changePercent: number
-  volume: number
-  turnover: number
+  id: number
+  watchlistId: number
+  stockCode: string
+  stockName: string
+  symbol?: string // 兼容性字段
+  name?: string // 兼容性字段
+  price?: number
+  change?: number
+  changePercent?: number
+  volume?: number
+  turnover?: number
   marketCap?: number
   pe?: number
   notes?: string
-  addedAt: string
+  addedAt?: string
   alerts?: WatchlistAlert[]
   tags?: string[]
+  createdAt?: string
+  updatedAt?: string
 }
 
-// 关注列表
+// 关注列表 (更新以匹配后端API)
 export interface Watchlist {
-  id: string
+  id: number
   name: string
-  items: WatchlistItem[]
+  description?: string
+  userId?: number
+  watchlist_items?: WatchlistItem[] // 后端返回的字段名
+  items?: WatchlistItem[] // 兼容性字段
   sortBy?: string
   sortDirection?: 'asc' | 'desc'
   columns?: string[] // 要显示的列
+  createdAt?: string
+  updatedAt?: string
 }
 
 // 关注列表提醒

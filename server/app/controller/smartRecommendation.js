@@ -20,7 +20,10 @@ class SmartRecommendationController extends Controller {
         riskLevel = 'medium',
         expectedReturn = 0.05,
         timeHorizon = 7,
-        limit = 10
+        limit = 10,
+        industry = null,
+        market = null,
+        marketCap = null
       } = ctx.query;
 
       // 参数验证
@@ -62,7 +65,10 @@ class SmartRecommendationController extends Controller {
         riskLevel,
         expectedReturn: parseFloat(expectedReturn),
         timeHorizon: parseInt(timeHorizon),
-        limit: actualLimit
+        limit: actualLimit,
+        industry: industry && industry !== 'all' ? industry : null,
+        market: market && market !== 'all' ? market : null,
+        marketCap: marketCap && marketCap !== 'all' ? marketCap : null
       });
 
       ctx.status = 200;

@@ -478,9 +478,9 @@ const routes = [
         path: 'roles-permissions',
         name: 'roles-permissions-management',
         component: () => import('../views/admin/RolePermissionView.vue'),
-        meta: { 
-          requiresAuth: true, 
-          requiresAdmin: true, 
+        meta: {
+          requiresAuth: true,
+          requiresAdmin: true,
           title: '角色与权限管理',
           requiredPermissions: ['admin:manage_roles', 'admin:manage_permissions']
         },
@@ -553,6 +553,12 @@ const routes = [
           name: 'tushare-test2',
           component: () => import('../views/TushareTestView.vue'),
           meta: { requiresAuth: true, requiresAdmin: true, title: 'Tushare测试2' },
+        },
+        {
+          path: 'tushare-integration-test',
+          name: 'tushare-integration-test',
+          component: () => import('../views/TushareTestPage.vue'),
+          meta: { requiresAuth: false, title: 'Tushare集成测试' },
         },
       ],
     },

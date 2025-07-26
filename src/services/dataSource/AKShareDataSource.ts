@@ -57,36 +57,9 @@ export class AKShareDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取股票列表失败，使用预定义列表:', proxyError)
       }
 
-      // 如果后端代理未实现或返回格式不正确，使用预定义的主要股票列表
-      const mainStocks: Stock[] = [
-        { symbol: '000001.SH', name: '上证指数', market: '上海', industry: '指数' },
-        { symbol: '399001.SZ', name: '深证成指', market: '深圳', industry: '指数' },
-        { symbol: '600519.SH', name: '贵州茅台', market: '上海', industry: '白酒' },
-        { symbol: '601318.SH', name: '中国平安', market: '上海', industry: '保险' },
-        { symbol: '600036.SH', name: '招商银行', market: '上海', industry: '银行' },
-        { symbol: '000858.SZ', name: '五粮液', market: '深圳', industry: '白酒' },
-        { symbol: '000333.SZ', name: '美的集团', market: '深圳', industry: '家电' },
-        { symbol: '601166.SH', name: '兴业银行', market: '上海', industry: '银行' },
-        { symbol: '002415.SZ', name: '海康威视', market: '深圳', industry: '电子' },
-        { symbol: '600276.SH', name: '恒瑞医药', market: '上海', industry: '医药' },
-        { symbol: '601398.SH', name: '工商银行', market: '上海', industry: '银行' },
-        { symbol: '600000.SH', name: '浦发银行', market: '上海', industry: '银行' },
-        { symbol: '000001.SZ', name: '平安银行', market: '深圳', industry: '银行' },
-        { symbol: '601668.SH', name: '中国建筑', market: '上海', industry: '建筑' },
-        { symbol: '600030.SH', name: '中信证券', market: '上海', industry: '证券' },
-        { symbol: '600887.SH', name: '伊利股份', market: '上海', industry: '食品饮料' },
-        { symbol: '601288.SH', name: '农业银行', market: '上海', industry: '银行' },
-        { symbol: '000651.SZ', name: '格力电器', market: '深圳', industry: '家电' },
-        { symbol: '601857.SH', name: '中国石油', market: '上海', industry: '石油石化' },
-        { symbol: '600028.SH', name: '中国石化', market: '上海', industry: '石油石化' },
-      ]
-
-      // 更新缓存
-      this.stockListCache = mainStocks
-      this.stockListCacheTime = Date.now()
-
-      console.log('使用预定义的股票列表数据')
-      return mainStocks
+      // 如果后端代理未实现或返回格式不正确，返回空数组而不是硬编码数据
+      console.warn('AKShare数据源：后端代理未实现或返回格式不正确，返回空结果');
+      return [];
     } catch (error) {
       console.error('AKShare获取股票列表失败:', error)
       throw error

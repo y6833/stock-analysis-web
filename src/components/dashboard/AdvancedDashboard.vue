@@ -2,198 +2,302 @@
   <div class="advanced-dashboard">
     <!-- 顶部控制栏 -->
     <div class="dashboard-header">
-      <div class="header-left">
-        <h2 class="dashboard-title">
-          <span class="title-icon">📊</span>
-          智能投资仪表盘
-        </h2>
-        <div class="market-status">
-          <span class="status-indicator" :class="marketStatus.class"></span>
-          <span class="status-text">{{ marketStatus.text }}</span>
+      <div class="container">
+        <div class="header-content">
+          <div class="header-left">
+            <div class="dashboard-title">
+              <div class="title-icon">📊</div>
+              <div class="title-content">
+                <h1>高级投资仪表盘</h1>
+                <p class="title-subtitle">专业级数据分析与决策支持</p>
+              </div>
+            </div>
+            <div class="market-status">
+              <div class="status-indicator" :class="marketStatus.class">
+                <div class="status-pulse"></div>
+              </div>
+              <div class="status-content">
+                <span class="status-text">{{ marketStatus.text }}</span>
+                <span class="status-time">{{ currentTime }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="header-right">
+            <div class="header-controls">
+              <div class="control-group">
+                <label class="control-label">时间周期</label>
+                <el-select v-model="selectedTimeframe" size="default" @change="onTimeframeChange">
+                  <el-option label="1分钟" value="1m" />
+                  <el-option label="5分钟" value="5m" />
+                  <el-option label="15分钟" value="15m" />
+                  <el-option label="1小时" value="1h" />
+                  <el-option label="日线" value="1d" />
+                </el-select>
+              </div>
+
+              <div class="control-group">
+                <el-button type="primary" size="default" @click="refreshData" :loading="isRefreshing"
+                  class="refresh-btn">
+                  <span class="refresh-icon">🔄</span>
+                  <span>刷新数据</span>
+                </el-button>
+              </div>
+
+              <div class="control-group">
+                <el-button size="default" @click="toggleFullscreen" class="fullscreen-btn">
+                  <span class="fullscreen-icon">⛶</span>
+                </el-button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="header-right">
-        <div class="time-selector">
-          <el-select v-model="selectedTimeframe" size="small" @change="onTimeframeChange">
-            <el-option label="1分钟" value="1m" />
-            <el-option label="5分钟" value="5m" />
-            <el-option label="15分钟" value="15m" />
-            <el-option label="1小时" value="1h" />
-            <el-option label="日线" value="1d" />
-          </el-select>
-        </div>
-        <el-button type="primary" size="small" @click="refreshData" :loading="isRefreshing">
-          <span class="refresh-icon">🔄</span>
-          刷新数据
-        </el-button>
       </div>
     </div>
 
-    <!-- 核心指标卡片 -->
-    <div class="metrics-grid">
-      <div class="metric-card" v-for="metric in coreMetrics" :key="metric.id">
-        <div class="metric-header">
-          <span class="metric-icon">{{ metric.icon }}</span>
-          <span class="metric-title">{{ metric.title }}</span>
-          <span class="metric-trend" :class="metric.trend">{{ metric.trendIcon }}</span>
-        </div>
-        <div class="metric-value">{{ metric.value }}</div>
-        <div class="metric-change" :class="metric.changeClass">
-          {{ metric.change }}
-        </div>
-        <div class="metric-chart">
-          <div class="mini-chart" :ref="el => setChartRef(metric.id, el)"></div>
+    <!-- 核心指标概览 -->
+    <div class="metrics-section">
+      <div class="container">
+        <div class="metrics-grid">
+          <div class="metric-card" v-for="metric in coreMetrics" :key="metric.id"
+            :class="{ 'metric-card--highlight': metric.isHighlight }">
+            <div class="metric-header">
+              <div class="metric-icon" :class="metric.iconClass">
+                {{ metric.icon }}
+              </div>
+              <div class="metric-info">
+                <h3 class="metric-title">{{ metric.title }}</h3>
+                <p class="metric-subtitle">{{ metric.subtitle }}</p>
+              </div>
+              <div class="metric-trend" :class="metric.trend">
+                <span class="trend-icon">{{ metric.trendIcon }}</span>
+              </div>
+            </div>
+
+            <div class="metric-body">
+              <div class="metric-value">{{ metric.value }}</div>
+              <div class="metric-change" :class="metric.changeClass">
+                <span class="change-icon">{{ metric.changeIcon }}</span>
+                <span class="change-text">{{ metric.change }}</span>
+                <span class="change-percent">{{ metric.changePercent }}</span>
+              </div>
+            </div>
+
+            <div class="metric-chart">
+              <div class="mini-chart" :ref="el => setChartRef(metric.id, el)"></div>
+              <div class="chart-overlay">
+                <div class="chart-stats">
+                  <span class="stat-item">
+                    <span class="stat-label">24h高</span>
+                    <span class="stat-value">{{ metric.high24h }}</span>
+                  </span>
+                  <span class="stat-item">
+                    <span class="stat-label">24h低</span>
+                    <span class="stat-value">{{ metric.low24h }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- 主要内容区域 -->
     <div class="dashboard-content">
-      <!-- 左侧：市场概览和热点 -->
-      <div class="left-panel">
-        <!-- 市场热力图 -->
-        <div class="panel-card">
-          <div class="card-header">
-            <h3>市场热力图</h3>
-            <div class="card-actions">
-              <el-button size="small" @click="toggleHeatmapView">
-                {{ heatmapView === 'sector' ? '切换到个股' : '切换到板块' }}
-              </el-button>
-            </div>
-          </div>
-          <div class="heatmap-container" ref="heatmapChart"></div>
-        </div>
-
-        <!-- 资金流向 -->
-        <div class="panel-card">
-          <div class="card-header">
-            <h3>资金流向</h3>
-          </div>
-          <div class="money-flow">
-            <div class="flow-item" v-for="flow in moneyFlow" :key="flow.type">
-              <div class="flow-label">{{ flow.label }}</div>
-              <div class="flow-value" :class="flow.class">{{ flow.value }}</div>
-              <div class="flow-bar">
-                <div class="flow-progress" :style="{ width: flow.percentage + '%', backgroundColor: flow.color }"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 中间：主图表区域 -->
-      <div class="center-panel">
-        <!-- 主图表 -->
-        <div class="panel-card main-chart-card">
-          <div class="card-header">
-            <h3>市场走势</h3>
-            <div class="chart-controls">
-              <el-radio-group v-model="chartType" size="small">
-                <el-radio-button label="candlestick">K线</el-radio-button>
-                <el-radio-button label="line">分时</el-radio-button>
-                <el-radio-button label="volume">成交量</el-radio-button>
-              </el-radio-group>
-            </div>
-          </div>
-          <div class="main-chart" ref="mainChart"></div>
-        </div>
-
-        <!-- 技术指标面板 -->
-        <div class="panel-card indicators-card">
-          <div class="card-header">
-            <h3>技术指标</h3>
-            <div class="indicator-tabs">
-              <span 
-                v-for="indicator in technicalIndicators" 
-                :key="indicator.name"
-                class="indicator-tab"
-                :class="{ active: activeIndicator === indicator.name }"
-                @click="activeIndicator = indicator.name"
-              >
-                {{ indicator.label }}
-              </span>
-            </div>
-          </div>
-          <div class="indicators-content">
-            <div class="indicator-values">
-              <div 
-                v-for="value in getCurrentIndicatorValues()" 
-                :key="value.name"
-                class="indicator-value"
-              >
-                <span class="value-label">{{ value.label }}:</span>
-                <span class="value-number" :class="value.class">{{ value.value }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 右侧：关注列表和交易信号 -->
-      <div class="right-panel">
-        <!-- 关注列表 -->
-        <div class="panel-card">
-          <div class="card-header">
-            <h3>关注列表</h3>
-            <div class="card-actions">
-              <el-button size="small" type="primary" @click="showAddStock = true">
-                <span>+</span> 添加
-              </el-button>
-            </div>
-          </div>
-          <div class="watchlist">
-            <div 
-              v-for="stock in watchlist" 
-              :key="stock.symbol"
-              class="watchlist-item"
-              @click="selectStock(stock)"
-            >
-              <div class="stock-info">
-                <div class="stock-name">{{ stock.name }}</div>
-                <div class="stock-symbol">{{ stock.symbol }}</div>
-              </div>
-              <div class="stock-price">
-                <div class="price">{{ stock.price }}</div>
-                <div class="change" :class="stock.changeClass">{{ stock.change }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 交易信号 -->
-        <div class="panel-card">
-          <div class="card-header">
-            <h3>交易信号</h3>
-            <div class="signal-filter">
-              <el-select v-model="signalFilter" size="small">
-                <el-option label="全部" value="all" />
-                <el-option label="买入" value="buy" />
-                <el-option label="卖出" value="sell" />
-                <el-option label="观望" value="hold" />
-              </el-select>
-            </div>
-          </div>
-          <div class="signals-list">
-            <div 
-              v-for="signal in filteredSignals" 
-              :key="signal.id"
-              class="signal-item"
-              :class="signal.type"
-            >
-              <div class="signal-icon">{{ signal.icon }}</div>
-              <div class="signal-content">
-                <div class="signal-title">{{ signal.title }}</div>
-                <div class="signal-desc">{{ signal.description }}</div>
-                <div class="signal-time">{{ signal.time }}</div>
-              </div>
-              <div class="signal-confidence">
-                <div class="confidence-bar">
-                  <div 
-                    class="confidence-fill" 
-                    :style="{ width: signal.confidence + '%' }"
-                  ></div>
+      <div class="container">
+        <div class="content-grid">
+          <!-- 左侧面板：市场概览 -->
+          <div class="left-panel">
+            <!-- 市场热力图 -->
+            <div class="panel-card heatmap-card">
+              <div class="card-header">
+                <div class="header-content">
+                  <div class="header-icon">🌡️</div>
+                  <div class="header-text">
+                    <h3>市场热力图</h3>
+                    <p>实时板块与个股表现</p>
+                  </div>
                 </div>
-                <span class="confidence-text">{{ signal.confidence }}%</span>
+                <div class="card-actions">
+                  <div class="action-group">
+                    <el-radio-group v-model="heatmapView" size="small">
+                      <el-radio-button label="sector">板块</el-radio-button>
+                      <el-radio-button label="stock">个股</el-radio-button>
+                    </el-radio-group>
+                  </div>
+                  <el-button size="small" type="text" @click="refreshHeatmap">
+                    <span class="refresh-icon">🔄</span>
+                  </el-button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="heatmap-container" ref="heatmapChart">
+                  <div class="heatmap-loading" v-if="heatmapLoading">
+                    <el-loading :loading="true" />
+                  </div>
+                </div>
+                <div class="heatmap-legend">
+                  <div class="legend-item">
+                    <span class="legend-color legend-positive"></span>
+                    <span class="legend-text">上涨</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-color legend-negative"></span>
+                    <span class="legend-text">下跌</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-color legend-neutral"></span>
+                    <span class="legend-text">平盘</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 资金流向 -->
+            <div class="panel-card money-flow-card">
+              <div class="card-header">
+                <div class="header-content">
+                  <div class="header-icon">💰</div>
+                  <div class="header-text">
+                    <h3>资金流向</h3>
+                    <p>主力资金动向分析</p>
+                  </div>
+                </div>
+                <div class="card-actions">
+                  <el-select v-model="flowTimeframe" size="small">
+                    <el-option label="今日" value="today" />
+                    <el-option label="3日" value="3d" />
+                    <el-option label="5日" value="5d" />
+                  </el-select>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="money-flow">
+                  <div class="flow-summary">
+                    <div class="summary-item">
+                      <div class="summary-label">净流入</div>
+                      <div class="summary-value positive">+12.5亿</div>
+                    </div>
+                    <div class="summary-item">
+                      <div class="summary-label">流入率</div>
+                      <div class="summary-value">65.2%</div>
+                    </div>
+                  </div>
+
+                  <div class="flow-details">
+                    <div class="flow-item" v-for="flow in moneyFlow" :key="flow.type">
+                      <div class="flow-header">
+                        <span class="flow-label">{{ flow.label }}</span>
+                        <span class="flow-value" :class="flow.class">{{ flow.value }}</span>
+                      </div>
+                      <div class="flow-bar">
+                        <div class="flow-progress" :style="{
+                          width: Math.abs(flow.percentage) + '%',
+                          backgroundColor: flow.color
+                        }"></div>
+                      </div>
+                      <div class="flow-percentage">{{ flow.percentage }}%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 中间：主图表区域 -->
+          <div class="center-panel">
+            <!-- 主图表 -->
+            <div class="panel-card main-chart-card">
+              <div class="card-header">
+                <h3>市场走势</h3>
+                <div class="chart-controls">
+                  <el-radio-group v-model="chartType" size="small">
+                    <el-radio-button label="candlestick">K线</el-radio-button>
+                    <el-radio-button label="line">分时</el-radio-button>
+                    <el-radio-button label="volume">成交量</el-radio-button>
+                  </el-radio-group>
+                </div>
+              </div>
+              <div class="main-chart" ref="mainChart"></div>
+            </div>
+
+            <!-- 技术指标面板 -->
+            <div class="panel-card indicators-card">
+              <div class="card-header">
+                <h3>技术指标</h3>
+                <div class="indicator-tabs">
+                  <span v-for="indicator in technicalIndicators" :key="indicator.name" class="indicator-tab"
+                    :class="{ active: activeIndicator === indicator.name }" @click="activeIndicator = indicator.name">
+                    {{ indicator.label }}
+                  </span>
+                </div>
+              </div>
+              <div class="indicators-content">
+                <div class="indicator-values">
+                  <div v-for="value in getCurrentIndicatorValues()" :key="value.name" class="indicator-value">
+                    <span class="value-label">{{ value.label }}:</span>
+                    <span class="value-number" :class="value.class">{{ value.value }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧：关注列表和交易信号 -->
+          <div class="right-panel">
+            <!-- 关注列表 -->
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>关注列表</h3>
+                <div class="card-actions">
+                  <el-button size="small" type="primary" @click="showAddStock = true">
+                    <span>+</span> 添加
+                  </el-button>
+                </div>
+              </div>
+              <div class="watchlist">
+                <div v-for="stock in watchlist" :key="stock.symbol" class="watchlist-item" @click="selectStock(stock)">
+                  <div class="stock-info">
+                    <div class="stock-name">{{ stock.name }}</div>
+                    <div class="stock-symbol">{{ stock.symbol }}</div>
+                  </div>
+                  <div class="stock-price">
+                    <div class="price">{{ stock.price }}</div>
+                    <div class="change" :class="stock.changeClass">{{ stock.change }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 交易信号 -->
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>交易信号</h3>
+                <div class="signal-filter">
+                  <el-select v-model="signalFilter" size="small">
+                    <el-option label="全部" value="all" />
+                    <el-option label="买入" value="buy" />
+                    <el-option label="卖出" value="sell" />
+                    <el-option label="观望" value="hold" />
+                  </el-select>
+                </div>
+              </div>
+              <div class="signals-list">
+                <div v-for="signal in filteredSignals" :key="signal.id" class="signal-item" :class="signal.type">
+                  <div class="signal-icon">{{ signal.icon }}</div>
+                  <div class="signal-content">
+                    <div class="signal-title">{{ signal.title }}</div>
+                    <div class="signal-desc">{{ signal.description }}</div>
+                    <div class="signal-time">{{ signal.time }}</div>
+                  </div>
+                  <div class="signal-confidence">
+                    <div class="confidence-bar">
+                      <div class="confidence-fill" :style="{ width: signal.confidence + '%' }"></div>
+                    </div>
+                    <span class="confidence-text">{{ signal.confidence }}%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -775,7 +879,7 @@ onMounted(() => {
     grid-template-columns: 1fr;
     height: auto;
   }
-  
+
   .metrics-grid {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }

@@ -8,14 +8,14 @@ if (typeof window !== 'undefined') {
     // 使用requestIdleCallback在浏览器空闲时加载非关键样式
     if ('requestIdleCallback' in window) {
         window.requestIdleCallback(() => {
-            loadStyle('./assets/theme.css')
-            loadStyle('./assets/payment.css')
+            loadStyle('/src/assets/theme.css')
+            loadStyle('/src/assets/payment.css')
         }, { timeout: 2000 })
     } else {
         // 降级为setTimeout
         setTimeout(() => {
-            loadStyle('./assets/theme.css')
-            loadStyle('./assets/payment.css')
+            loadStyle('/src/assets/theme.css')
+            loadStyle('/src/assets/payment.css')
         }, 1000)
     }
 }

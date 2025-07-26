@@ -3,7 +3,7 @@
  * 为Vue应用提供安全功能，包括CSRF保护、XSS防护和输入验证
  */
 
-import { App } from 'vue';
+import type { App } from 'vue';
 import axios from 'axios';
 import { securityService } from '@/services/securityService';
 import errorHandlingService, { ErrorType, ErrorSeverity } from '@/services/errorHandlingService';
@@ -37,8 +37,8 @@ export default {
       },
       error => {
         // 处理CSRF令牌错误
-        if (error.response && error.response.status === 403 && 
-            error.response.data && error.response.data.error === 'invalid_csrf_token') {
+        if (error.response && error.response.status === 403 &&
+          error.response.data && error.response.data.error === 'invalid_csrf_token') {
           // 刷新CSRF令牌并重试请求
           return securityService.refreshCsrfToken().then(token => {
             if (token && error.config) {
@@ -104,7 +104,7 @@ export default {
     });
 
     // 在应用卸载时清理资源
-    app.unmount = function() {
+    app.unmount = function () {
       securityService.cleanup();
       return app.unmount();
     };

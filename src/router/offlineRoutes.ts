@@ -2,7 +2,7 @@
  * 离线模式路由配置
  */
 
-import { RouteRecordRaw } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
 
 // 离线模式路由
 const offlineRoutes: RouteRecordRaw[] = [

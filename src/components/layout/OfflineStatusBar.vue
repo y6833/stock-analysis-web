@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { WarningFilled, Warning } from '@element-plus/icons-vue';
 import { useOfflineMode } from '@/composables/useOfflineMode';

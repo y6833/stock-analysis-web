@@ -52,6 +52,9 @@ module.exports = app => {
       allowNull: false,
       field: 'updated_at',
     },
+  }, {
+    tableName: 'notifications',
+    underscored: true,
   });
 
   Notification.associate = function () {    // 获取模型关联唯一前缀，确保别名唯一性

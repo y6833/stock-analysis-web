@@ -145,51 +145,9 @@ export async function getSectorLeadingStocks(
       return await tushareService.getSectorLeadingStocks(sectorCode, type, count)
     }
 
-    // 使用模拟数据
-    const sectorStocks: Record<string, any[]> = {
-      BK0475: [
-        // 银行
-        { symbol: '600036.SH', name: '招商银行', changePercent: Math.random() * 5 },
-        { symbol: '601166.SH', name: '兴业银行', changePercent: Math.random() * 4.5 },
-        { symbol: '601398.SH', name: '工商银行', changePercent: Math.random() * -3 },
-        { symbol: '601288.SH', name: '农业银行', changePercent: Math.random() * -2.5 },
-      ],
-      BK0428: [
-        // 保险
-        { symbol: '601318.SH', name: '中国平安', changePercent: Math.random() * 4 },
-        { symbol: '601628.SH', name: '中国人寿', changePercent: Math.random() * 3.5 },
-        { symbol: '601336.SH', name: '新华保险', changePercent: Math.random() * -2 },
-        { symbol: '601601.SH', name: '中国太保', changePercent: Math.random() * -1.5 },
-      ],
-      BK0477: [
-        // 白酒
-        { symbol: '600519.SH', name: '贵州茅台', changePercent: Math.random() * 5 },
-        { symbol: '000858.SZ', name: '五粮液', changePercent: Math.random() * 4.5 },
-        { symbol: '000568.SZ', name: '泸州老窖', changePercent: Math.random() * -2 },
-        { symbol: '600779.SH', name: '水井坊', changePercent: Math.random() * -1.5 },
-      ],
-    }
-
-    // 如果没有特定行业的数据，使用通用数据
-    const stocks = sectorStocks[sectorCode] || [
-      { symbol: '600519.SH', name: '贵州茅台', changePercent: Math.random() * 5 },
-      { symbol: '000858.SZ', name: '五粮液', changePercent: Math.random() * 4.5 },
-      { symbol: '601318.SH', name: '中国平安', changePercent: Math.random() * 4 },
-      { symbol: '600036.SH', name: '招商银行', changePercent: Math.random() * 3.5 },
-      { symbol: '000333.SZ', name: '美的集团', changePercent: Math.random() * 3 },
-      { symbol: '601398.SH', name: '工商银行', changePercent: Math.random() * -3 },
-      { symbol: '601288.SH', name: '农业银行', changePercent: Math.random() * -2.5 },
-      { symbol: '600887.SH', name: '伊利股份', changePercent: Math.random() * -2 },
-      { symbol: '000568.SZ', name: '泸州老窖', changePercent: Math.random() * -1.5 },
-      { symbol: '600276.SH', name: '恒瑞医药', changePercent: Math.random() * -1 },
-    ]
-
-    // 根据涨跌幅排序
-    const sortedStocks = [...stocks].sort((a, b) => {
-      return type === 'up' ? b.changePercent - a.changePercent : a.changePercent - b.changePercent
-    })
-
-    return sortedStocks.slice(0, count)
+    // 如果没有真实数据，返回空结果而不是模拟数据
+    console.warn(`板块 ${sectorCode} 没有真实数据源，返回空结果`);
+    return [];
   } catch (error) {
     console.error(`获取行业 ${sectorCode} ${type === 'up' ? '领涨' : '领跌'}股票失败:`, error)
     return []

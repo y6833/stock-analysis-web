@@ -32,7 +32,11 @@ class WatchlistService extends Service {
       return [defaultWatchlist]
     }
 
-    return watchlists
+    // 转换为普通对象，避免循环引用
+    return watchlists.map(watchlist => {
+      const plainWatchlist = watchlist.toJSON()
+      return plainWatchlist
+    })
   }
 
   /**
@@ -54,7 +58,8 @@ class WatchlistService extends Service {
       updatedAt: new Date(),
     })
 
-    return watchlist
+    // 返回普通对象，避免循环引用
+    return watchlist.toJSON()
   }
 
   /**
@@ -325,7 +330,8 @@ class WatchlistService extends Service {
       return null
     }
 
-    return watchlist
+    // 返回普通对象，避免循环引用
+    return watchlist.toJSON()
   }
 
   /**

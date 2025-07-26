@@ -3,7 +3,7 @@
  * Initializes monitoring and error tracking
  */
 
-import { App } from 'vue';
+import type { App } from 'vue';
 import config from '../utils/config';
 import logger from '../utils/logger';
 import performance from '../utils/performance';
@@ -18,10 +18,10 @@ export default {
   install: (app: App, options = {}) => {
     // Initialize logger
     logger.info('Initializing monitoring plugin', 'Monitoring');
-    
+
     // Set up global error handling
     errorTracking.setupGlobalErrorHandling();
-    
+
     // Track page navigation performance
     const router = app.config.globalProperties.$router;
     if (router) {
@@ -31,12 +31,12 @@ export default {
           from: from.path,
           to: to.path
         });
-        
+
         // Store timer ID in the route meta
         to.meta.perfTimerId = id;
         next();
       });
-      
+
       router.afterEach((to) => {
         // Stop timing page navigation
         const id = to.meta.perfTimerId;
@@ -46,7 +46,7 @@ export default {
         }
       });
     }
-    
+
     // Track component render performance
     app.mixin({
       beforeCreate() {
@@ -63,7 +63,7 @@ export default {
         }
       }
     });
-    
+
     // Track API calls
     const axios = app.config.globalProperties.$axios;
     if (axios) {
@@ -73,12 +73,12 @@ export default {
           url: config.url,
           method: config.method
         });
-        
+
         // Store timer ID in the request config
         config.perfTimerId = id;
         return config;
       });
-      
+
       axios.interceptors.response.use(
         (response) => {
           // Stop timing API request on success
@@ -95,7 +95,7 @@ export default {
           if (id) {
             performance.stopTimer(id);
           }
-          
+
           // Track API error
           errorTracking.trackError(
             error,
@@ -111,22 +111,22 @@ export default {
               }
             }
           );
-          
+
           return Promise.reject(error);
         }
       );
     }
-    
+
     // Expose monitoring utilities to the Vue instance
     app.config.globalProperties.$logger = logger;
     app.config.globalProperties.$performance = performance;
     app.config.globalProperties.$errorTracking = errorTracking;
-    
+
     // Provide monitoring utilities to the app
     app.provide('logger', logger);
     app.provide('performance', performance);
     app.provide('errorTracking', errorTracking);
-    
+
     // Log initialization complete
     logger.info('Monitoring plugin initialized', 'Monitoring');
   }

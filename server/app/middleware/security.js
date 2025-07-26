@@ -65,7 +65,7 @@ module.exports = (options, app) => {
     }
 
     // 速率限制
-    if (config.rateLimit.enable && !config.rateLimit.skip(ctx)) {
+    if (config.rateLimit.enable && !(typeof config.rateLimit.skip === 'function' && config.rateLimit.skip(ctx))) {
       const limited = await handleRateLimit(ctx);
       if (limited) return;
     }
@@ -94,20 +94,20 @@ module.exports = (options, app) => {
    */
   function addSecurityHeaders(ctx) {
     // 内容安全策略
-    ctx.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'");
-    
+    ctx.set('Content-Security-Policy', 'default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\'; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data:; font-src \'self\' data:; connect-src \'self\'');
+
     // XSS保护
     ctx.set('X-XSS-Protection', '1; mode=block');
-    
+
     // 禁止MIME类型嗅探
     ctx.set('X-Content-Type-Options', 'nosniff');
-    
+
     // 点击劫持保护
     ctx.set('X-Frame-Options', 'SAMEORIGIN');
-    
+
     // 引荐来源策略
     ctx.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
+
     // HTTP严格传输安全
     if (app.config.env !== 'local') {
       ctx.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
@@ -143,16 +143,16 @@ module.exports = (options, app) => {
    */
   async function handleCsrfValidation(ctx) {
     const { headerName, bodyName, queryName, cookieName } = config.csrf;
-    
+
     // 获取CSRF令牌
     const cookieToken = ctx.cookies.get(cookieName);
     const headerToken = ctx.get(headerName);
     const bodyToken = ctx.request.body && ctx.request.body[bodyName];
     const queryToken = ctx.query[queryName];
-    
+
     // 使用的令牌
     const token = headerToken || bodyToken || queryToken;
-    
+
     // 验证令牌
     if (!cookieToken || !token || cookieToken !== token) {
       ctx.status = 403;
@@ -163,7 +163,7 @@ module.exports = (options, app) => {
       };
       return true;
     }
-    
+
     return false;
   }
 
@@ -172,10 +172,10 @@ module.exports = (options, app) => {
    */
   async function handleRateLimit(ctx) {
     const { windowMs, max, message, statusCode, headers, keyGenerator } = config.rateLimit;
-    
+
     // 生成键
-    const key = keyGenerator(ctx);
-    
+    const key = typeof keyGenerator === 'function' ? keyGenerator(ctx) : ctx.ip;
+
     // 获取或创建限制器
     let limiter = rateLimiters.get(key);
     if (!limiter) {
@@ -185,23 +185,23 @@ module.exports = (options, app) => {
       };
       rateLimiters.set(key, limiter);
     }
-    
+
     // 检查是否需要重置
     if (Date.now() > limiter.resetTime) {
       limiter.count = 0;
       limiter.resetTime = Date.now() + windowMs;
     }
-    
+
     // 增加计数
     limiter.count++;
-    
+
     // 添加响应头
     if (headers) {
       ctx.set('X-RateLimit-Limit', max.toString());
       ctx.set('X-RateLimit-Remaining', Math.max(0, max - limiter.count).toString());
       ctx.set('X-RateLimit-Reset', Math.ceil(limiter.resetTime / 1000).toString());
     }
-    
+
     // 检查是否超过限制
     if (limiter.count > max) {
       ctx.status = statusCode;
@@ -212,7 +212,7 @@ module.exports = (options, app) => {
       };
       return true;
     }
-    
+
     return false;
   }
 
@@ -228,10 +228,10 @@ module.exports = (options, app) => {
    */
   async function handleBruteForceProtection(ctx) {
     const { maxAttempts, blockDuration, keyGenerator } = config.bruteForce;
-    
+
     // 生成键
-    const key = keyGenerator(ctx);
-    
+    const key = typeof keyGenerator === 'function' ? keyGenerator(ctx) : ctx.ip;
+
     // 获取或创建防护记录
     let protection = bruteForceProtection.get(key);
     if (!protection) {
@@ -241,11 +241,11 @@ module.exports = (options, app) => {
       };
       bruteForceProtection.set(key, protection);
     }
-    
+
     // 检查是否被阻止
     if (protection.blockedUntil > Date.now()) {
       const remainingSeconds = Math.ceil((protection.blockedUntil - Date.now()) / 1000);
-      
+
       ctx.status = 429;
       ctx.body = {
         success: false,
@@ -256,17 +256,17 @@ module.exports = (options, app) => {
       ctx.set('Retry-After', remainingSeconds.toString());
       return true;
     }
-    
+
     // 增加尝试次数
     protection.attempts++;
-    
+
     // 检查是否超过最大尝试次数
     if (protection.attempts >= maxAttempts) {
       protection.blockedUntil = Date.now() + blockDuration;
       protection.attempts = 0;
-      
+
       const remainingSeconds = Math.ceil(blockDuration / 1000);
-      
+
       ctx.status = 429;
       ctx.body = {
         success: false,
@@ -277,7 +277,7 @@ module.exports = (options, app) => {
       ctx.set('Retry-After', remainingSeconds.toString());
       return true;
     }
-    
+
     return false;
   }
 
@@ -293,7 +293,7 @@ module.exports = (options, app) => {
         }
       });
     }
-    
+
     // 清理请求体
     if (ctx.request.body) {
       sanitizeObject(ctx.request.body);
@@ -303,17 +303,24 @@ module.exports = (options, app) => {
   /**
    * 清理响应数据，防止XSS攻击
    */
-  function sanitizeResponseData(data) {
-    if (Array.isArray(data)) {
-      return data.map(item => sanitizeResponseData(item));
-    } else if (data && typeof data === 'object') {
-      const result = {};
-      Object.keys(data).forEach(key => {
-        result[key] = sanitizeResponseData(data[key]);
-      });
-      return result;
-    } else if (typeof data === 'string') {
+  function sanitizeResponseData(data, seen = new Set()) {
+    if (typeof data === 'string') {
       return xss(data, config.xss.whiteList);
+    } else if (Array.isArray(data)) {
+      return data.map(item => sanitizeResponseData(item, seen));
+    } else if (typeof data === 'object' && data !== null) {
+      if (seen.has(data)) return data; // 防止循环引用
+      seen.add(data);
+      const result = Array.isArray(data) ? [] : {};
+      Object.keys(data).forEach(key => {
+        try {
+          result[key] = sanitizeResponseData(data[key], seen);
+        } catch (e) {
+          result[key] = data[key]; // 只读属性保留原值
+        }
+      });
+      seen.delete(data);
+      return result;
     }
     return data;
   }
@@ -323,7 +330,7 @@ module.exports = (options, app) => {
    */
   function sanitizeObject(obj) {
     if (!obj || typeof obj !== 'object') return;
-    
+
     Object.keys(obj).forEach(key => {
       if (typeof obj[key] === 'string') {
         obj[key] = xss(obj[key], config.xss.whiteList);

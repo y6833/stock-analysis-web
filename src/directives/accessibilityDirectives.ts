@@ -1,4 +1,4 @@
-import { DirectiveBinding } from 'vue';
+import type { DirectiveBinding } from 'vue';
 
 /**
  * 焦点陷阱指令
@@ -74,15 +74,15 @@ export const vFocusTrap = {
 export const vTouchFeedback = {
   mounted(el: HTMLElement) {
     // 检查是否为触摸设备
-    const isTouchDevice = 'ontouchstart' in window || 
+    const isTouchDevice = 'ontouchstart' in window ||
       navigator.maxTouchPoints > 0 ||
       (navigator as any).msMaxTouchPoints > 0;
-    
+
     if (!isTouchDevice) return;
-    
+
     // 添加触摸反馈类
     el.classList.add('touch-feedback');
-    
+
     // 确保元素有足够的触摸区域
     const rect = el.getBoundingClientRect();
     if (rect.width < 44 || rect.height < 44) {
@@ -99,10 +99,10 @@ export const vA11yLabel = {
   mounted(el: HTMLElement, binding: DirectiveBinding) {
     const label = binding.value;
     if (!label) return;
-    
+
     // 设置aria-label属性
     el.setAttribute('aria-label', label);
-    
+
     // 如果元素没有role属性，尝试设置一个合适的role
     if (!el.hasAttribute('role')) {
       if (el.tagName === 'BUTTON' || el.tagName === 'A') {
@@ -114,7 +114,7 @@ export const vA11yLabel = {
       }
     }
   },
-  
+
   updated(el: HTMLElement, binding: DirectiveBinding) {
     if (binding.value !== binding.oldValue) {
       el.setAttribute('aria-label', binding.value);
@@ -130,26 +130,26 @@ export const vA11yDescribe = {
   mounted(el: HTMLElement, binding: DirectiveBinding) {
     const description = binding.value;
     if (!description) return;
-    
+
     // 创建唯一ID
     const id = `aria-desc-${Math.random().toString(36).substring(2, 9)}`;
-    
+
     // 创建描述元素
     const descEl = document.createElement('span');
     descEl.id = id;
     descEl.className = 'sr-only';
     descEl.textContent = description;
-    
+
     // 添加到DOM
     el.parentNode?.appendChild(descEl);
-    
+
     // 设置aria-describedby
     el.setAttribute('aria-describedby', id);
-    
+
     // 存储ID以便清理
     el._a11yDescribeId = id;
   },
-  
+
   beforeUnmount(el: HTMLElement & { _a11yDescribeId?: string }) {
     if (el._a11yDescribeId) {
       const descEl = document.getElementById(el._a11yDescribeId);
@@ -159,7 +159,7 @@ export const vA11yDescribe = {
       delete el._a11yDescribeId;
     }
   },
-  
+
   updated(el: HTMLElement & { _a11yDescribeId?: string }, binding: DirectiveBinding) {
     if (binding.value !== binding.oldValue) {
       // 移除旧描述
@@ -169,17 +169,17 @@ export const vA11yDescribe = {
           oldDescEl.parentNode?.removeChild(oldDescEl);
         }
       }
-      
+
       // 创建新描述
       const description = binding.value;
       if (!description) return;
-      
+
       const id = `aria-desc-${Math.random().toString(36).substring(2, 9)}`;
       const descEl = document.createElement('span');
       descEl.id = id;
       descEl.className = 'sr-only';
       descEl.textContent = description;
-      
+
       el.parentNode?.appendChild(descEl);
       el.setAttribute('aria-describedby', id);
       el._a11yDescribeId = id;
@@ -195,7 +195,7 @@ export const vKeyNav = {
   mounted(el: HTMLElement, binding: DirectiveBinding) {
     const options = binding.value || {};
     const keys = options.keys || {};
-    
+
     const handleKeydown = (event: KeyboardEvent) => {
       const key = event.key;
       if (keys[key] && typeof keys[key] === 'function') {
@@ -203,31 +203,31 @@ export const vKeyNav = {
         keys[key](event);
       }
     };
-    
+
     el.addEventListener('keydown', handleKeydown);
     el._keyNavCleanup = () => {
       el.removeEventListener('keydown', handleKeydown);
     };
   },
-  
+
   beforeUnmount(el: HTMLElement & { _keyNavCleanup?: () => void }) {
     if (el._keyNavCleanup) {
       el._keyNavCleanup();
       delete el._keyNavCleanup;
     }
   },
-  
+
   updated(el: HTMLElement & { _keyNavCleanup?: () => void }, binding: DirectiveBinding) {
     if (binding.value !== binding.oldValue) {
       // 清理旧事件监听器
       if (el._keyNavCleanup) {
         el._keyNavCleanup();
       }
-      
+
       // 设置新事件监听器
       const options = binding.value || {};
       const keys = options.keys || {};
-      
+
       const handleKeydown = (event: KeyboardEvent) => {
         const key = event.key;
         if (keys[key] && typeof keys[key] === 'function') {
@@ -235,7 +235,7 @@ export const vKeyNav = {
           keys[key](event);
         }
       };
-      
+
       el.addEventListener('keydown', handleKeydown);
       el._keyNavCleanup = () => {
         el.removeEventListener('keydown', handleKeydown);

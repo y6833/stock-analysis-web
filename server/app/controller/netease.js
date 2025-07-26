@@ -154,30 +154,35 @@ class NetEaseController extends Controller {
 
   // 获取股票列表
   async stockList() {
-    const { ctx } = this;
+    const { ctx, app } = this;
 
     try {
-      // 由于网易财经API不提供完整的股票列表，我们使用预定义的主要股票列表
-      const mainStocks = [
-        { symbol: '0000001', name: '上证指数', market: '上海', industry: '指数' },
-        { symbol: '1399001', name: '深证成指', market: '深圳', industry: '指数' },
-        { symbol: '0600519', name: '贵州茅台', market: '上海', industry: '白酒' },
-        { symbol: '0601318', name: '中国平安', market: '上海', industry: '保险' },
-        { symbol: '0600036', name: '招商银行', market: '上海', industry: '银行' },
-        { symbol: '1000858', name: '五粮液', market: '深圳', industry: '白酒' },
-        { symbol: '1000333', name: '美的集团', market: '深圳', industry: '家电' },
-        { symbol: '0601166', name: '兴业银行', market: '上海', industry: '银行' },
-        { symbol: '1002415', name: '海康威视', market: '深圳', industry: '电子' },
-        { symbol: '0600276', name: '恒瑞医药', market: '上海', industry: '医药' },
-        { symbol: '0601398', name: '工商银行', market: '上海', industry: '银行' },
-        { symbol: '0600000', name: '浦发银行', market: '上海', industry: '银行' },
-        { symbol: '1000001', name: '平安银行', market: '深圳', industry: '银行' },
-        // 可以添加更多股票
-      ];
+      // 从数据库获取真实股票列表
+      const [results] = await app.model.query(
+        'SELECT symbol, name, area as market, industry FROM stock_basic WHERE list_status = "L" ORDER BY symbol LIMIT 100',
+        { type: app.model.QueryTypes.SELECT }
+      );
+
+      if (!results || results.length === 0) {
+        ctx.status = 404;
+        ctx.body = {
+          success: false,
+          message: '未找到股票数据，请检查数据库'
+        };
+        return;
+      }
+
+      // 转换为网易财经格式
+      const stockList = results.map(stock => ({
+        symbol: this.formatSymbolForNetease(stock.symbol),
+        name: stock.name,
+        market: stock.market || '未知',
+        industry: stock.industry || '未知'
+      }));
 
       ctx.body = {
         success: true,
-        data: mainStocks
+        data: stockList
       };
     } catch (error) {
       ctx.status = 500;
@@ -191,7 +196,7 @@ class NetEaseController extends Controller {
 
   // 搜索股票
   async search() {
-    const { ctx } = this;
+    const { ctx, app } = this;
     const { keyword } = ctx.query;
 
     if (!keyword) {
@@ -204,33 +209,35 @@ class NetEaseController extends Controller {
     }
 
     try {
-      // 获取股票列表
-      const mainStocks = [
-        { symbol: '0000001', name: '上证指数', market: '上海', industry: '指数' },
-        { symbol: '1399001', name: '深证成指', market: '深圳', industry: '指数' },
-        { symbol: '0600519', name: '贵州茅台', market: '上海', industry: '白酒' },
-        { symbol: '0601318', name: '中国平安', market: '上海', industry: '保险' },
-        { symbol: '0600036', name: '招商银行', market: '上海', industry: '银行' },
-        { symbol: '1000858', name: '五粮液', market: '深圳', industry: '白酒' },
-        { symbol: '1000333', name: '美的集团', market: '深圳', industry: '家电' },
-        { symbol: '0601166', name: '兴业银行', market: '上海', industry: '银行' },
-        { symbol: '1002415', name: '海康威视', market: '深圳', industry: '电子' },
-        { symbol: '0600276', name: '恒瑞医药', market: '上海', industry: '医药' },
-        { symbol: '0601398', name: '工商银行', market: '上海', industry: '银行' },
-        { symbol: '0600000', name: '浦发银行', market: '上海', industry: '银行' },
-        { symbol: '1000001', name: '平安银行', market: '深圳', industry: '银行' },
-      ];
-
-      // 在本地过滤
-      const results = mainStocks.filter(
-        (stock) =>
-          stock.symbol.toLowerCase().includes(keyword.toLowerCase()) ||
-          stock.name.toLowerCase().includes(keyword.toLowerCase())
+      // 从数据库搜索股票
+      const [results] = await app.model.query(
+        'SELECT symbol, name, area as market, industry FROM stock_basic WHERE list_status = "L" AND (symbol LIKE ? OR name LIKE ?) ORDER BY symbol LIMIT 50',
+        {
+          type: app.model.QueryTypes.SELECT,
+          replacements: [`%${keyword}%`, `%${keyword}%`]
+        }
       );
+
+      if (!results || results.length === 0) {
+        ctx.body = {
+          success: true,
+          data: [],
+          message: '未找到匹配的股票'
+        };
+        return;
+      }
+
+      // 转换为网易财经格式
+      const stockList = results.map(stock => ({
+        symbol: this.formatSymbolForNetease(stock.symbol),
+        name: stock.name,
+        market: stock.market || '未知',
+        industry: stock.industry || '未知'
+      }));
 
       ctx.body = {
         success: true,
-        data: results
+        data: stockList
       };
     } catch (error) {
       ctx.status = 500;
@@ -434,7 +441,7 @@ class NetEaseController extends Controller {
     }
   }
 
-  // 辅助方法：格式化股票代码
+  // 辅助方法：格式化股票代码（用于API调用）
   formatSymbol(symbol) {
     // 如果已经是网易财经格式（0开头上海，1开头深圳），直接返回
     if (/^[01]\d{6}$/.test(symbol)) {
@@ -468,6 +475,24 @@ class NetEaseController extends Controller {
 
     // 默认返回原始代码
     return symbol;
+  }
+
+  // 辅助方法：将数据库股票代码转换为网易财经格式（用于显示）
+  formatSymbolForNetease(symbol) {
+    // 移除.SH和.SZ后缀
+    const cleanSymbol = symbol.replace(/\.(SH|SZ)$/, '');
+
+    // 根据股票代码规则添加前缀
+    if (symbol.endsWith('.SH') || cleanSymbol.startsWith('6')) {
+      return '0' + cleanSymbol; // 上海股票
+    } else if (symbol.endsWith('.SZ') || cleanSymbol.startsWith('0') || cleanSymbol.startsWith('3')) {
+      return '1' + cleanSymbol; // 深圳股票
+    } else if (cleanSymbol.startsWith('4') || cleanSymbol.startsWith('8')) {
+      return '2' + cleanSymbol; // 北交所
+    }
+
+    // 默认返回原始代码
+    return cleanSymbol;
   }
 }
 

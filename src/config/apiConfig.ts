@@ -13,6 +13,7 @@ export interface ApiConfig {
 }
 
 export interface DataSourceApiConfigs {
+  tushare: ApiConfig
   zhitu: ApiConfig
   yahoo_finance: ApiConfig
   google_finance: ApiConfig
@@ -25,13 +26,8 @@ export interface DataSourceApiConfigs {
  * 获取环境变量，支持默认值
  */
 function getEnvVar(key: string, defaultValue: string = ''): string {
-  // 在浏览器环境中，从 import.meta.env 获取
-  if (typeof window !== 'undefined') {
-    return (import.meta.env as any)[`VITE_${key}`] || defaultValue
-  }
-
-  // 在Node.js环境中，从 process.env 获取
-  return process.env[key] || defaultValue
+  // 在前端环境中，从 import.meta.env 获取
+  return (import.meta.env as any)[`VITE_${key}`] || defaultValue
 }
 
 /**
@@ -52,7 +48,21 @@ function getEnvBoolean(key: string, defaultValue: boolean): boolean {
 }
 
 /**
- * 智兔数服API配置
+ * Tushare API配置
+ */
+export const tushareConfig: ApiConfig = {
+  baseUrl: getEnvVar('TUSHARE_BASE_URL', 'http://api.tushare.pro'),
+  apiKey: getEnvVar('TUSHARE_TOKEN', '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61'),
+  timeout: getEnvNumber('API_REQUEST_TIMEOUT', 30000),
+  retryCount: getEnvNumber('API_RETRY_COUNT', 3),
+  headers: {
+    'Content-Type': 'application/json',
+    'User-Agent': 'HappyStockMarket/1.0',
+  },
+}
+
+/**
+ * 智兔数服API配置 (已禁用)
  */
 export const zhituConfig: ApiConfig = {
   baseUrl: getEnvVar('ZHITU_BASE_URL', 'https://api.zhitudata.com'),
@@ -79,17 +89,17 @@ export const yahooFinanceConfig: ApiConfig = {
   retryCount: getEnvNumber('API_RETRY_COUNT', 3),
   headers: getEnvBoolean('YAHOO_FINANCE_FREE', true)
     ? {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; HappyStockMarket/1.0)',
-      }
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (compatible; HappyStockMarket/1.0)',
+    }
     : {
-        'Content-Type': 'application/json',
-        'X-RapidAPI-Key': getEnvVar('YAHOO_FINANCE_RAPIDAPI_KEY'),
-        'X-RapidAPI-Host': getEnvVar(
-          'YAHOO_FINANCE_RAPIDAPI_HOST',
-          'yahoo-finance1.p.rapidapi.com'
-        ),
-      },
+      'Content-Type': 'application/json',
+      'X-RapidAPI-Key': getEnvVar('YAHOO_FINANCE_RAPIDAPI_KEY'),
+      'X-RapidAPI-Host': getEnvVar(
+        'YAHOO_FINANCE_RAPIDAPI_HOST',
+        'yahoo-finance1.p.rapidapi.com'
+      ),
+    },
 }
 
 /**
@@ -149,14 +159,16 @@ export const alltickConfig: ApiConfig = {
 
 /**
  * 所有数据源API配置
+ * 注意：当前只启用 Tushare 数据源，其他数据源已暂时禁用
  */
 export const dataSourceConfigs: DataSourceApiConfigs = {
-  zhitu: zhituConfig,
-  yahoo_finance: yahooFinanceConfig,
-  google_finance: googleFinanceConfig,
-  juhe: juheConfig,
-  alphavantage: alphavantageConfig,
-  alltick: alltickConfig,
+  tushare: tushareConfig,
+  zhitu: zhituConfig, // 已禁用
+  yahoo_finance: yahooFinanceConfig, // 已禁用
+  google_finance: googleFinanceConfig, // 已禁用
+  juhe: juheConfig, // 已禁用
+  alphavantage: alphavantageConfig, // 已禁用
+  alltick: alltickConfig, // 已禁用
 }
 
 /**
@@ -178,12 +190,18 @@ export function validateApiConfig(sourceType: keyof DataSourceApiConfigs): {
 
   // 根据不同数据源检查特定配置
   switch (sourceType) {
+    case 'tushare':
+      if (!config.apiKey) missingFields.push('apiKey (token)')
+      break
+
     case 'zhitu':
+      warnings.push('数据源已禁用 - 当前只使用 Tushare')
       if (!config.apiKey) missingFields.push('apiKey (token)')
       // 智兔数服只需要token，不需要单独的secret
       break
 
     case 'yahoo_finance':
+      warnings.push('数据源已禁用 - 当前只使用 Tushare')
       if (!getEnvBoolean('YAHOO_FINANCE_FREE', true) && !config.apiKey) {
         missingFields.push('apiKey (for paid version)')
       }
@@ -193,22 +211,26 @@ export function validateApiConfig(sourceType: keyof DataSourceApiConfigs): {
       break
 
     case 'google_finance':
+      warnings.push('数据源已禁用 - 当前只使用 Tushare')
       if (!config.apiKey) {
         warnings.push('No Alpha Vantage API key, using limited access')
       }
       break
 
     case 'juhe':
+      warnings.push('数据源已禁用 - 当前只使用 Tushare')
       if (!config.apiKey) missingFields.push('apiKey')
       break
 
     case 'alphavantage':
+      warnings.push('数据源已禁用 - 当前只使用 Tushare')
       if (!config.apiKey) {
         warnings.push('No Alpha Vantage API key, using demo key with limited access')
       }
       break
 
     case 'alltick':
+      warnings.push('数据源已禁用 - 当前只使用 Tushare')
       if (!config.apiKey) {
         warnings.push('No AllTick API key, using demo key with limited access')
       }
@@ -230,6 +252,7 @@ export function getApiConfigStatus(): Record<
   ReturnType<typeof validateApiConfig>
 > {
   return {
+    tushare: validateApiConfig('tushare'),
     zhitu: validateApiConfig('zhitu'),
     yahoo_finance: validateApiConfig('yahoo_finance'),
     google_finance: validateApiConfig('google_finance'),

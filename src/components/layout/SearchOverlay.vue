@@ -6,26 +6,14 @@
         <button class="close-btn" @click="close">×</button>
       </div>
       <div class="search-input-container">
-        <input
-          type="text"
-          v-model="searchQuery"
-          placeholder="输入股票代码或名称..."
-          class="search-input"
-          @input="handleInput"
-          @keydown.enter="handleSearch"
-          ref="searchInputRef"
-        />
+        <input type="text" v-model="searchQuery" placeholder="输入股票代码或名称..." class="search-input" @input="handleInput"
+          @keydown.enter="handleSearch" ref="searchInputRef" />
         <button class="search-btn" @click="handleSearch">
           <span class="search-icon">🔍</span>
         </button>
       </div>
       <div class="search-results" v-if="results.length > 0">
-        <div
-          v-for="result in results"
-          :key="result.symbol"
-          class="search-result-item"
-          @click="selectStock(result)"
-        >
+        <div v-for="result in results" :key="result.symbol" class="search-result-item" @click="selectStock(result)">
           <div class="result-symbol">{{ result.symbol }}</div>
           <div class="result-name">{{ result.name }}</div>
         </div>
@@ -40,12 +28,7 @@
       <div class="search-history" v-if="!searchQuery && searchHistory.length > 0">
         <h3>最近搜索</h3>
         <div class="history-list">
-          <div
-            v-for="item in searchHistory"
-            :key="item.symbol"
-            class="history-item"
-            @click="selectStock(item)"
-          >
+          <div v-for="item in searchHistory" :key="item.symbol" class="history-item" @click="selectStock(item)">
             <div class="history-symbol">{{ item.symbol }}</div>
             <div class="history-name">{{ item.name }}</div>
           </div>
@@ -84,26 +67,16 @@ const searchStocks = async (query: string): Promise<any[]> => {
         resolve([])
         return
       }
-      
+
       const mockResults = [
-        { symbol: '000001', name: '平安银行' },
-        { symbol: '000002', name: '万科A' },
-        { symbol: '000063', name: '中兴通讯' },
-        { symbol: '000333', name: '美的集团' },
-        { symbol: '000651', name: '格力电器' },
-        { symbol: '000858', name: '五粮液' },
-        { symbol: '002594', name: '比亚迪' },
-        { symbol: '600036', name: '招商银行' },
-        { symbol: '600276', name: '恒瑞医药' },
-        { symbol: '600519', name: '贵州茅台' },
       ]
-      
+
       const filteredResults = mockResults.filter(
         (stock) =>
           stock.symbol.includes(query) ||
           stock.name.includes(query)
       )
-      
+
       resolve(filteredResults.slice(0, 5))
     }, 300)
   })
@@ -115,7 +88,7 @@ const handleInput = async () => {
     results.value = []
     return
   }
-  
+
   loading.value = true
   results.value = await searchStocks(searchQuery.value)
   loading.value = false
@@ -139,10 +112,10 @@ const selectStock = (stock: any) => {
   if (searchHistory.value.length > 5) {
     searchHistory.value.pop()
   }
-  
+
   // 保存到本地存储
   localStorage.setItem('searchHistory', JSON.stringify(searchHistory.value))
-  
+
   // 导航到股票详情页
   router.push(`/stock?symbol=${stock.symbol}`)
   close()

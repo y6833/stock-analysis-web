@@ -49,23 +49,9 @@ export class SinaDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取股票列表失败，使用预定义列表:', proxyError)
       }
 
-      // 如果后端代理未实现或返回格式不正确，使用预定义的主要股票列表
-      const mainStocks: Stock[] = [
-        { symbol: 'sh000001', name: '上证指数', market: '上海', industry: '指数' },
-        { symbol: 'sz399001', name: '深证成指', market: '深圳', industry: '指数' },
-        { symbol: 'sh600519', name: '贵州茅台', market: '上海', industry: '白酒' },
-        { symbol: 'sh601318', name: '中国平安', market: '上海', industry: '保险' },
-        { symbol: 'sh600036', name: '招商银行', market: '上海', industry: '银行' },
-        { symbol: 'sz000858', name: '五粮液', market: '深圳', industry: '白酒' },
-        { symbol: 'sz000333', name: '美的集团', market: '深圳', industry: '家电' },
-        { symbol: 'sh601166', name: '兴业银行', market: '上海', industry: '银行' },
-        { symbol: 'sz002415', name: '海康威视', market: '深圳', industry: '电子' },
-        { symbol: 'sh600276', name: '恒瑞医药', market: '上海', industry: '医药' },
-        { symbol: 'sh601398', name: '工商银行', market: '上海', industry: '银行' },
-        { symbol: 'sh600000', name: '浦发银行', market: '上海', industry: '银行' },
-        { symbol: 'sz000001', name: '平安银行', market: '深圳', industry: '银行' },
-        // 可以添加更多股票
-      ]
+      // 如果后端代理未实现或返回格式不正确，返回空数组而不是硬编码数据
+      console.warn('Sina数据源：后端代理未实现或返回格式不正确，返回空结果');
+      return [];
 
       // 更新缓存
       this.stockListCache = mainStocks

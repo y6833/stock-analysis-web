@@ -30,7 +30,7 @@ export interface DojiPattern {
     /**
      * 形态类型
      */
-    type: DojiType
+    patternType: DojiType
 
     /**
      * K线数据
@@ -58,13 +58,13 @@ export interface DojiPattern {
         trend: 'uptrend' | 'downtrend' | 'sideways'
 
         /**
-         * 是否接近支撑/阻力位
+         * 成交量状态
          */
-        nearSupportResistance: boolean
+        volume: 'high' | 'normal' | 'low'
 
         /**
-         * 成交量变化百分比
+         * 位置信息
          */
-        volumeChange: number
+        position: 'top' | 'middle' | 'bottom'
     }
 }

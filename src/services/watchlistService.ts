@@ -135,3 +135,150 @@ export async function updateWatchlistItemNotes(
   )
   return response.data
 }
+
+/**
+ * 获取用户的关注股票列表（简化版本）
+ * @returns 关注股票列表
+ */
+export async function getWatchlist(): Promise<WatchlistItem[]> {
+  const watchlists = await getUserWatchlists()
+  if (watchlists.length === 0) return []
+
+  // 返回第一个关注分组的股票
+  return await getWatchlistItems(watchlists[0].id)
+}
+
+/**
+ * 添加股票到关注列表（简化版本）
+ * @param symbol 股票代码
+ * @param options 选项
+ * @returns 添加的股票
+ */
+export async function addToWatchlist(
+  symbol: string,
+  options?: { name?: string; notes?: string }
+): Promise<WatchlistItem> {
+  const watchlists = await getUserWatchlists()
+  if (watchlists.length === 0) {
+    throw new Error('没有可用的关注分组')
+  }
+
+  return await addStockToWatchlist(watchlists[0].id, {
+    stockCode: symbol,
+    stockName: options?.name || symbol,
+    notes: options?.notes
+  })
+}
+
+/**
+ * 从关注列表移除股票（简化版本）
+ * @param symbol 股票代码
+ */
+export async function removeFromWatchlist(symbol: string): Promise<void> {
+  const watchlists = await getUserWatchlists()
+  if (watchlists.length === 0) return
+
+  const items = await getWatchlistItems(watchlists[0].id)
+  const item = items.find(item => item.stockCode === symbol)
+
+  if (item) {
+    await removeStockFromWatchlist(watchlists[0].id, item.id)
+  }
+}
+
+/**
+ * 更新关注列表项（简化版本）
+ * @param symbol 股票代码
+ * @param updates 更新数据
+ * @returns 更新后的股票
+ */
+export async function updateWatchlistItem(
+  symbol: string,
+  updates: { notes?: string }
+): Promise<WatchlistItem> {
+  const watchlists = await getUserWatchlists()
+  if (watchlists.length === 0) {
+    throw new Error('没有可用的关注分组')
+  }
+
+  const items = await getWatchlistItems(watchlists[0].id)
+  const item = items.find(item => item.stockCode === symbol)
+
+  if (!item) {
+    throw new Error('股票不在关注列表中')
+  }
+
+  if (updates.notes !== undefined) {
+    return await updateWatchlistItemNotes(watchlists[0].id, item.id, updates.notes)
+  }
+
+  return item
+}
+
+/**
+ * 批量添加股票到关注列表
+ * @param symbols 股票代码列表
+ * @returns 添加结果
+ */
+export async function addMultipleToWatchlist(symbols: string[]): Promise<{
+  success: WatchlistItem[]
+  failed: string[]
+}> {
+  const watchlists = await getUserWatchlists()
+  if (watchlists.length === 0) {
+    throw new Error('没有可用的关注分组')
+  }
+
+  const success: WatchlistItem[] = []
+  const failed: string[] = []
+
+  for (const symbol of symbols) {
+    try {
+      const item = await addStockToWatchlist(watchlists[0].id, {
+        stockCode: symbol,
+        stockName: symbol
+      })
+      success.push(item)
+    } catch (error) {
+      failed.push(symbol)
+    }
+  }
+
+  return { success, failed }
+}
+
+/**
+ * 清空关注列表
+ */
+export async function clearWatchlist(): Promise<void> {
+  const watchlists = await getUserWatchlists()
+  if (watchlists.length === 0) return
+
+  const items = await getWatchlistItems(watchlists[0].id)
+
+  for (const item of items) {
+    await removeStockFromWatchlist(watchlists[0].id, item.id)
+  }
+}
+
+// 默认导出的服务对象
+export const watchlistService = {
+  getUserWatchlists,
+  createWatchlist,
+  updateWatchlist,
+  deleteWatchlist,
+  getWatchlistItems,
+  addStockToWatchlist,
+  removeStockFromWatchlist,
+  updateWatchlistItemNotes,
+  // 简化版本的方法
+  getWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+  updateWatchlistItem,
+  addMultipleToWatchlist,
+  clearWatchlist
+}
+
+// 也提供默认导出
+export default watchlistService

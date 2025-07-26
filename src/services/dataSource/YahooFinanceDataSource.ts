@@ -69,17 +69,9 @@ export class YahooFinanceDataSource implements DataSourceInterface {
         console.warn('通过后端代理获取股票列表失败，使用预定义列表:', proxyError)
       }
 
-      // 如果API调用失败，返回预定义的美股列表
-      const fallbackStocks: Stock[] = [
-        { symbol: 'AAPL', name: 'Apple Inc.', market: '纳斯达克', industry: '科技' },
-        { symbol: 'MSFT', name: 'Microsoft Corporation', market: '纳斯达克', industry: '科技' },
-        { symbol: 'GOOGL', name: 'Alphabet Inc.', market: '纳斯达克', industry: '科技' },
-        { symbol: 'AMZN', name: 'Amazon.com Inc.', market: '纳斯达克', industry: '消费' },
-        { symbol: 'TSLA', name: 'Tesla Inc.', market: '纳斯达克', industry: '汽车' },
-        { symbol: 'NVDA', name: 'NVIDIA Corporation', market: '纳斯达克', industry: '科技' },
-        { symbol: 'META', name: 'Meta Platforms Inc.', market: '纳斯达克', industry: '科技' },
-        { symbol: 'BRK-B', name: 'Berkshire Hathaway Inc.', market: '纽交所', industry: '金融' },
-      ]
+      // 如果API调用失败，返回空数组而不是硬编码数据
+      console.warn('Yahoo Finance数据源：API调用失败，返回空结果');
+      return [];
 
       console.log('使用预定义美股列表')
       return fallbackStocks

@@ -73,10 +73,15 @@ class RealtimeService {
     this.connectionError.value = null
 
     try {
+      // 暂时禁用WebSocket连接，因为后端还没有WebSocket支持
+      console.log('WebSocket功能暂时禁用')
+      this.isConnecting.value = false
+      return
+
       // 在实际环境中，这里应该是真实的WebSocket服务器地址
       const wsUrl = process.env.NODE_ENV === 'production'
         ? 'wss://api.yourstock.com/ws'
-        : 'ws://localhost:8080/ws'
+        : 'ws://localhost:7001/ws'
 
       this.ws = new WebSocket(wsUrl)
 

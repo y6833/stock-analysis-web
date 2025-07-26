@@ -43,6 +43,8 @@
     "start": "egg-scripts start --daemon --title=egg-server-stock-analysis-server",
     "stop": "egg-scripts stop --title=egg-server-stock-analysis-server",
     "dev": "egg-bin dev",
+    "dev:win": "set EGG_SKIP_MIGRATION=true && egg-bin dev",
+    "dev-no-migrate": "egg-bin dev --ignore-migration",
     "debug": "egg-bin debug",
     "test": "npm run lint -- --fix && npm run test-local",
     "test-local": "egg-bin test",

@@ -15,6 +15,9 @@ export interface RecommendationOptions {
   expectedReturn?: number
   timeHorizon?: number
   limit?: number
+  industry?: string
+  market?: string
+  marketCap?: string
 }
 
 // 推荐结果接口
@@ -118,11 +121,14 @@ export const smartRecommendationService = {
   async getRecommendations(options: RecommendationOptions = {}): Promise<RecommendationResponse> {
     try {
       const params = new URLSearchParams()
-      
+
       if (options.riskLevel) params.append('riskLevel', options.riskLevel)
       if (options.expectedReturn) params.append('expectedReturn', options.expectedReturn.toString())
       if (options.timeHorizon) params.append('timeHorizon', options.timeHorizon.toString())
       if (options.limit) params.append('limit', options.limit.toString())
+      if (options.industry && options.industry !== 'all') params.append('industry', options.industry)
+      if (options.market && options.market !== 'all') params.append('market', options.market)
+      if (options.marketCap && options.marketCap !== 'all') params.append('marketCap', options.marketCap)
 
       const response = await axios.get(`${API_URL}?${params.toString()}`)
       return response.data
@@ -204,7 +210,7 @@ export const smartRecommendationService = {
       moderate_buy: { text: '适度买入', color: '#38b2ac', icon: '👍' },
       hold: { text: '持有观望', color: '#ed8936', icon: '⏸️' }
     }
-    
+
     return levels[recommendation as keyof typeof levels] || levels.hold
   },
 
@@ -219,7 +225,7 @@ export const smartRecommendationService = {
       medium: { text: '中等风险', color: '#ed8936', icon: '⚖️' },
       high: { text: '高风险', color: '#f56565', icon: '⚠️' }
     }
-    
+
     return levels[riskLevel as keyof typeof levels] || levels.medium
   },
 

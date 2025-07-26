@@ -1,2062 +1,753 @@
-<script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { stockService } from '@/services/stockService'
-import { dashboardService } from '@/services/dashboardService'
-import type { Stock } from '@/types/stock'
-import type { DashboardSettings, Watchlist, WatchlistItem, MarketOverview } from '@/types/dashboard'
-import * as echarts from 'echarts'
-import WatchlistManager from '@/components/dashboard/WatchlistManager.vue'
-import AddStockDialog from '@/components/dashboard/AddStockDialog.vue'
-import EnhancedMarketOverviewWidget from '@/components/dashboard/EnhancedMarketOverviewWidget.vue'
-import EnhancedPopularStocksWidget from '@/components/dashboard/EnhancedPopularStocksWidget.vue'
-import EnhancedNewsWidget from '@/components/dashboard/EnhancedNewsWidget.vue'
-import ThemeToggle from '@/components/dashboard/ThemeToggle.vue'
-import QuickSearchWidget from '@/components/dashboard/QuickSearchWidget.vue'
-import eventBus from '@/utils/eventBus'
-import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
-import { performanceMonitor } from '@/utils/performanceMonitor'
-
-// 导入消息服务类型
-declare global {
-  interface Window {
-    $message?: {
-      info(text: string, timeout?: number): void
-      success(text: string, timeout?: number): void
-      warning(text: string, timeout?: number): void
-      error(text: string, timeout?: number): void
-    }
-  }
-}
-
-const router = useRouter()
-const popularStocks = ref<Stock[]>([])
-const watchlistStocks = ref<WatchlistItem[]>([])
-const marketIndices = ref<any[]>([])
-const newsItems = ref<any[]>([])
-const isLoading = ref(true)
-const marketTrend = ref<string>('up') // 'up', 'down', 'neutral'
-const marketSentiment = ref<string>('bullish') // 'bullish', 'bearish', 'neutral'
-// 数据来源信息
-const dataSourceInfo = ref<{ type: 'api' | 'cache' | 'mock'; message: string } | null>(null)
-const marketOverviewChart = ref<HTMLElement | null>(null)
-const chart = ref<echarts.ECharts | null>(null)
-
-// 仪表盘设置
-const dashboardSettings = ref<DashboardSettings | null>(null)
-// 当前活动的关注列表
-const activeWatchlist = ref<Watchlist | null>(null)
-// 是否显示关注列表管理器
-const showWatchlistManager = ref(false)
-// 是否显示添加股票对话框
-const showAddStockDialog = ref(false)
-// 数据刷新定时器
-let refreshTimer: number | null = null
-// 布局模式
-const layoutMode = ref<'grid' | 'enhanced'>('enhanced')
-// 是否显示设置面板
-const showSettings = ref(false)
-// 主题设置
-const currentTheme = ref('auto')
-
-// 获取市场数据 - 优化版本：并行加载和渐进式显示
-onMounted(async () => {
-  await performanceMonitor.measure('dashboard-total-load', async () => {
-    console.log('[Dashboard] 开始加载仪表盘数据...')
-
-    try {
-      // 第一阶段：立即显示缓存数据（如果有）
-      await performanceMonitor.measure('load-cached-data', loadCachedDataFirst)
-
-      // 第二阶段：并行加载核心数据
-      const coreDataPromises = [
-        performanceMonitor.measure('load-dashboard-settings', loadDashboardSettings),
-        performanceMonitor.measure('load-popular-stocks', loadPopularStocksOptimized),
-        performanceMonitor.measure('refresh-market-data', () => refreshMarketData(false)) // 优先使用缓存
-      ]
-
-      // 等待核心数据加载完成
-      await Promise.allSettled(coreDataPromises)
-
-      // 第三阶段：初始化图表和设置
-      performanceMonitor.measureSync('init-chart', initMarketOverviewChart)
-      performanceMonitor.measureSync('setup-refresh-timer', setupRefreshTimer)
-
-      // 第四阶段：后台刷新数据（如果需要）
-      refreshDataInBackground()
-
-      // 监听数据源变化事件
-      eventBus.on('data-source-changed', async (type: DataSourceType) => {
-        console.log(`数据源已切换到: ${type}，正在更新仪表盘数据...`)
-
-        // 强制刷新数据
-        await refreshMarketData(true)
-
-        // 更新图表
-        if (chart.value) {
-          updateMarketOverviewChart()
-        }
-
-        // 显示提示
-        if (window.$message) {
-          window.$message.success(`数据源已切换到: ${type}，仪表盘数据已更新`)
-        }
-      })
-
-      console.log('[Dashboard] 仪表盘核心数据加载完成')
-
-    } catch (error) {
-      console.error('获取数据失败:', error)
-
-      // 显示错误提示
-      if (window.$message) {
-        window.$message.error(
-          '加载仪表盘数据失败: ' + (error instanceof Error ? error.message : String(error))
-        )
-      }
-    } finally {
-      isLoading.value = false
-
-      // 打印性能报告
-      setTimeout(() => {
-        performanceMonitor.printReport()
-      }, 1000)
-    }
-  })
-})
-
-// 优化：立即加载缓存数据
-const loadCachedDataFirst = async () => {
-  try {
-    // 尝试从缓存加载市场概览数据
-    const cachedMarketData = localStorage.getItem('market_overview_data')
-    if (cachedMarketData) {
-      try {
-        const { data, timestamp } = JSON.parse(cachedMarketData)
-        const isRecent = Date.now() - timestamp < 10 * 60 * 1000 // 10分钟内的数据
-        if (isRecent) {
-          console.log('[Dashboard] 使用缓存的市场概览数据')
-          // 立即显示缓存数据
-          marketIndices.value = data.indices || []
-          dataSourceInfo.value = {
-            type: 'cache',
-            message: '显示缓存数据，正在后台更新...'
-          }
-        }
-      } catch (e) {
-        console.warn('解析缓存的市场数据失败:', e)
-      }
-    }
-
-    // 尝试从缓存加载股票列表
-    const cachedStocks = localStorage.getItem('tushare_stock_basic_cache')
-    if (cachedStocks) {
-      try {
-        const { data, timestamp } = JSON.parse(cachedStocks)
-        const isRecent = Date.now() - timestamp < 24 * 60 * 60 * 1000 // 24小时内的数据
-        if (isRecent && data && data.length > 0) {
-          console.log('[Dashboard] 使用缓存的股票列表数据')
-          popularStocks.value = data.slice(0, 10)
-        }
-      } catch (e) {
-        console.warn('解析缓存的股票数据失败:', e)
-      }
-    }
-  } catch (error) {
-    console.warn('加载缓存数据失败:', error)
-  }
-}
-
-// 优化：加载热门股票（减少API调用）
-const loadPopularStocksOptimized = async () => {
-  try {
-    console.log('[Dashboard] 开始加载热门股票数据...')
-    const stocks = await stockService.getStocks()
-
-    // 只取前10个，避免加载过多数据
-    popularStocks.value = stocks.slice(0, 10)
-    console.log('[Dashboard] 热门股票数据加载完成')
-  } catch (error) {
-    console.error('加载热门股票失败:', error)
-    // 如果已有缓存数据，保持不变；否则显示空数组
-    if (popularStocks.value.length === 0) {
-      popularStocks.value = []
-    }
-  }
-}
-
-// 优化：后台刷新数据
-const refreshDataInBackground = async () => {
-  try {
-    console.log('[Dashboard] 开始后台刷新数据...')
-
-    // 延迟执行，避免阻塞UI
-    setTimeout(async () => {
-      try {
-        // 强制刷新市场数据
-        await refreshMarketData(true)
-
-        // 更新图表
-        if (chart.value) {
-          updateMarketOverviewChart()
-        }
-
-        console.log('[Dashboard] 后台数据刷新完成')
-      } catch (error) {
-        console.warn('后台刷新数据失败:', error)
-      }
-    }, 1000) // 1秒后开始后台刷新
-  } catch (error) {
-    console.warn('启动后台刷新失败:', error)
-  }
-}
-
-// 加载仪表盘设置
-const loadDashboardSettings = async () => {
-  try {
-    console.log('[Dashboard] 开始加载仪表盘设置...')
-
-    // 获取仪表盘设置（包括从数据库获取的关注列表）
-    const settings = await dashboardService.getDashboardSettings()
-    dashboardSettings.value = settings
-
-    // 获取活动的关注列表
-    const watchlist = settings.watchlists.find(
-      (w: Watchlist) => w.id === settings.activeWatchlistId
-    )
-    if (watchlist) {
-      activeWatchlist.value = watchlist
-      watchlistStocks.value = watchlist.items
-    }
-
-    console.log('[Dashboard] 仪表盘设置加载完成')
-  } catch (error) {
-    console.error('加载仪表盘设置失败:', error)
-    // 使用默认设置
-    dashboardSettings.value = dashboardService.createDefaultDashboardSettings()
-    activeWatchlist.value = dashboardSettings.value.watchlists[0]
-    watchlistStocks.value = activeWatchlist.value.items
-  }
-}
-
-// 刷新市场数据
-const refreshMarketData = async (forceRefresh = true) => {
-  try {
-    // 获取市场概览数据，传递 forceRefresh 参数
-    // forceRefresh 为 true 时，强制从外部数据源获取数据
-    // forceRefresh 为 false 时，优先从缓存获取数据
-    const marketOverview = await dashboardService.getMarketOverview(forceRefresh)
-
-    // 在控制台显示数据来源信息
-    if (marketOverview.dataSource) {
-      console.log(`数据来源: ${marketOverview.dataSource.name}`, marketOverview.dataSource)
-
-      // 更新数据来源信息显示
-      dataSourceInfo.value = {
-        type: marketOverview.dataSource.type,
-        message: marketOverview.dataSource.message,
-      }
-    }
-
-    // 更新市场指数数据
-    marketIndices.value = marketOverview.indices
-      .map((index: any) => ({
-        name: index.name,
-        code: index.symbol,
-        value: index.price.toFixed(2),
-        change: (index.change > 0 ? '+' : '') + index.change.toFixed(2),
-        changePercent: (index.changePercent > 0 ? '+' : '') + index.changePercent.toFixed(2) + '%',
-        status: index.changePercent > 0 ? 'up' : index.changePercent < 0 ? 'down' : 'neutral',
-      }))
-      .slice(0, 4)
-
-    // 更新市场趋势和情绪
-    const advancingRatio =
-      marketOverview.breadth.advancing /
-      (marketOverview.breadth.advancing + marketOverview.breadth.declining)
-    if (advancingRatio > 0.6) {
-      marketTrend.value = 'up'
-      marketSentiment.value = 'bullish'
-    } else if (advancingRatio < 0.4) {
-      marketTrend.value = 'down'
-      marketSentiment.value = 'bearish'
-    } else {
-      marketTrend.value = 'neutral'
-      marketSentiment.value = 'neutral'
-    }
-
-    // 更新关注列表价格
-    if (activeWatchlist.value) {
-      try {
-        // 获取关注列表中所有股票的最新价格
-        const updatedItems = await Promise.all(
-          activeWatchlist.value.items.map(async (item: WatchlistItem) => {
-            try {
-              // 获取股票最新行情，传递 forceRefresh 参数
-              const stockQuote = await stockService.getStockQuote(item.symbol, forceRefresh)
-
-              if (stockQuote) {
-                const previousPrice = item.price || stockQuote.pre_close
-                const newPrice = stockQuote.price
-                const change = newPrice - previousPrice
-                const changePercent = (change / previousPrice) * 100
-
-                return {
-                  ...item,
-                  price: newPrice,
-                  change,
-                  changePercent,
-                  volume: stockQuote.vol || 0,
-                  turnover: stockQuote.amount || 0,
-                  data_source: stockQuote.data_source || stockQuote.source_type || 'unknown',
-                }
-              }
-
-              return item
-            } catch (error) {
-              console.error(`获取股票 ${item.symbol} 行情失败:`, error)
-              // 保留原有数据，不更新
-              return {
-                ...item,
-                data_source: 'error',
-              }
-            }
-          })
-        )
-
-        const updatedWatchlist = {
-          ...activeWatchlist.value,
-          items: updatedItems,
-        }
-
-        activeWatchlist.value = updatedWatchlist
-        watchlistStocks.value = updatedWatchlist.items
-
-        // 更新仪表盘设置中的关注列表
-        if (dashboardSettings.value) {
-          const index = dashboardSettings.value.watchlists.findIndex(
-            (w: Watchlist) => w.id === updatedWatchlist.id
-          )
-          if (index !== -1) {
-            dashboardSettings.value.watchlists[index] = updatedWatchlist
-          }
-        }
-      } catch (error) {
-        console.error('更新关注列表价格失败:', error)
-      }
-    }
-
-    // 获取最新财经新闻
-    try {
-      // 传递 forceRefresh 参数，控制是否强制刷新
-      const news = await stockService.getFinancialNews(5)
-      if (news && news.length > 0) {
-        newsItems.value = news.map((item: any) => ({
-          title: item.title,
-          time: item.time,
-          source: item.source,
-          url: item.url,
-          important: item.important,
-          data_source: item.data_source || item.source_type || 'unknown',
-        }))
-      } else {
-        console.log('未获取到新闻数据')
-        // 如果没有获取到新闻，显示空状态而不是模拟数据
-        newsItems.value = []
-
-        // 显示友好的错误提示
-        if (window.$message) {
-          window.$message.warning('暂时无法获取新闻数据，请稍后重试')
-        }
-      }
-    } catch (error) {
-      console.error('获取财经新闻失败:', error)
-      // 显示空状态而不是模拟数据
-      newsItems.value = []
-
-      // 显示友好的错误提示
-      if (window.$message) {
-        window.$message.error('获取新闻数据失败: ' + (error instanceof Error ? error.message : String(error)))
-      }
-    }
-  } catch (error) {
-    console.error('刷新市场数据失败:', error)
-  }
-}
-
-// 设置定时刷新
-const setupRefreshTimer = () => {
-  // 清除现有定时器
-  if (refreshTimer !== null) {
-    clearInterval(refreshTimer)
-  }
-
-  // 设置新定时器，但只从缓存获取数据
-  const interval = dashboardSettings.value?.refreshInterval || 60
-  console.log(`设置定时刷新，间隔 ${interval} 秒，只从缓存获取数据`)
-
-  refreshTimer = setInterval(async () => {
-    try {
-      // 调用刷新市场数据，但指定只从缓存获取
-      await refreshMarketData(false) // false 表示不强制刷新，只从缓存获取
-
-      if (chart.value) {
-        updateMarketOverviewChart()
-      }
-    } catch (error) {
-      console.error('自动刷新市场数据失败:', error)
-    }
-  }, interval * 1000) as unknown as number
-}
-
-// 初始化市场概览图表
-const initMarketOverviewChart = () => {
-  if (!marketOverviewChart.value) return
-
-  if (chart.value) {
-    chart.value.dispose()
-  }
-
-  chart.value = echarts.init(marketOverviewChart.value)
-  updateMarketOverviewChart()
-
-  // 响应窗口大小变化
-  window.addEventListener('resize', () => {
-    chart.value?.resize()
-  })
-}
-
-// 更新市场概览图表
-const updateMarketOverviewChart = () => {
-  if (!chart.value) return
-
-  // 模拟上证指数数据
-  const dates = []
-  const data = []
-  const volumes = []
-
-  // 生成30天的模拟数据
-  const baseValue = 3200
-  let value = baseValue
-
-  for (let i = 0; i < 30; i++) {
-    const date = new Date()
-    date.setDate(date.getDate() - (30 - i))
-    dates.push([date.getMonth() + 1, date.getDate()].join('/'))
-
-    value = value + Math.random() * 50 - 25
-    data.push(value.toFixed(2))
-
-    volumes.push(Math.floor(Math.random() * 500000000 + 100000000))
-  }
-
-  const option = {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'cross',
-      },
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '3%',
-      containLabel: true,
-    },
-    xAxis: {
-      type: 'category',
-      data: dates,
-      scale: true,
-      boundaryGap: false,
-      axisLine: { onZero: false },
-      splitLine: { show: false },
-      axisLabel: {
-        formatter: function (value: string) {
-          return value
-        },
-      },
-    },
-    yAxis: {
-      type: 'value',
-      scale: true,
-      splitArea: { show: true },
-    },
-    dataZoom: [
-      {
-        type: 'inside',
-        start: 50,
-        end: 100,
-      },
-      {
-        show: true,
-        type: 'slider',
-        bottom: '0%',
-        start: 50,
-        end: 100,
-      },
-    ],
-    series: [
-      {
-        name: '上证指数',
-        type: 'line',
-        data: data,
-        smooth: true,
-        symbol: 'none',
-        lineStyle: {
-          width: 2,
-          color: '#e74c3c',
-        },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            {
-              offset: 0,
-              color: 'rgba(231, 76, 60, 0.3)',
-            },
-            {
-              offset: 1,
-              color: 'rgba(231, 76, 60, 0.1)',
-            },
-          ]),
-        },
-      },
-    ],
-  }
-
-  chart.value.setOption(option)
-}
-
-// 跳转到股票分析页面
-const goToStockAnalysis = (symbol: string) => {
-  router.push({
-    path: '/stock',
-    query: { symbol },
-  })
-}
-
-// 跳转到指数分析页面
-const goToIndexAnalysis = (symbol: string) => {
-  // 目前指向相同的分析页面，后续可以开发专门的指数分析页面
-  router.push({
-    path: '/stock',
-    query: { symbol },
-  })
-
-  // 显示提示
-  if (window.$message) {
-    window.$message.info(`正在查看指数: ${symbol}`)
-  }
-}
-
-// 计算市场趋势图标和颜色
-const marketTrendIcon = computed(() => {
-  switch (marketTrend.value) {
-    case 'up':
-      return '📈'
-    case 'down':
-      return '📉'
-    case 'neutral':
-      return '📊'
-    default:
-      return '📊'
-  }
-})
-
-const marketTrendColor = computed(() => {
-  switch (marketTrend.value) {
-    case 'up':
-      return 'var(--stock-up)'
-    case 'down':
-      return 'var(--stock-down)'
-    case 'neutral':
-      return 'var(--text-primary)'
-    default:
-      return 'var(--text-primary)'
-  }
-})
-
-// 计算市场情绪图标和颜色
-const marketSentimentIcon = computed(() => {
-  switch (marketSentiment.value) {
-    case 'bullish':
-      return '🐂'
-    case 'bearish':
-      return '🐻'
-    case 'neutral':
-      return '🦊'
-    default:
-      return '🦊'
-  }
-})
-
-const marketSentimentColor = computed(() => {
-  switch (marketSentiment.value) {
-    case 'bullish':
-      return 'var(--stock-up)'
-    case 'bearish':
-      return 'var(--stock-down)'
-    case 'neutral':
-      return 'var(--text-primary)'
-    default:
-      return 'var(--text-primary)'
-  }
-})
-
-// 格式化数字（用于模板中）
-function formatNumber(num: number): string {
-  return new Intl.NumberFormat('zh-CN').format(num)
-}
-
-// 打开新闻详情
-const openNewsDetail = (news: any) => {
-  // 如果有URL，则打开链接
-  if (news.url && news.url !== '#') {
-    window.open(news.url, '_blank')
-    return
-  }
-
-  // 否则显示提示
-  if (window.$message) {
-    window.$message.info(`查看新闻: ${news.title}`)
-  }
-}
-
-// 添加到关注列表
-const addToWatchlist = async (stock: Stock) => {
-  if (!activeWatchlist.value) {
-    // 添加错误提示
-    if (window.$message) {
-      window.$message.error('未找到活动的关注列表')
-    }
-    return
-  }
-
-  // 检查是否已存在
-  const exists = activeWatchlist.value.items.some(
-    (item: WatchlistItem) => item.symbol === stock.symbol
-  )
-
-  if (exists) {
-    // 添加提示
-    if (window.$message) {
-      window.$message.info(`${stock.name}(${stock.symbol}) 已在关注列表中`)
-    }
-    return
-  }
-
-  try {
-    // 调用API添加股票到关注列表
-    const success = await dashboardService.addStockToWatchlist(activeWatchlist.value.id, {
-      symbol: stock.symbol,
-      name: stock.name,
-    })
-
-    if (success) {
-      // 重新加载仪表盘设置以获取最新数据
-      await loadDashboardSettings()
-
-      // 添加成功提示
-      if (window.$message) {
-        window.$message.success(`已将 ${stock.name}(${stock.symbol}) 添加到关注列表`)
-      }
-    } else {
-      // 添加失败提示
-      if (window.$message) {
-        window.$message.error(`添加 ${stock.name}(${stock.symbol}) 到关注列表失败`)
-      }
-    }
-  } catch (error) {
-    console.error('添加到关注列表失败:', error)
-
-    // 添加失败提示
-    if (window.$message) {
-      window.$message.error(`添加 ${stock.name}(${stock.symbol}) 到关注列表失败: ${error}`)
-    }
-  }
-}
-
-// 打开关注列表管理器
-const openWatchlistManager = () => {
-  showWatchlistManager.value = true
-}
-
-// 打开添加股票对话框
-const openAddStockDialog = () => {
-  showAddStockDialog.value = true
-}
-
-// 处理股票添加完成事件
-const handleStockAdded = async (success: boolean) => {
-  if (success) {
-    // 重新加载仪表盘设置以获取最新数据
-    await loadDashboardSettings()
-  }
-}
-
-// 显示新闻页面
-const showNewsPage = () => {
-  // 目前简单实现，使用提示消息
-  if (window.$message) {
-    window.$message.info('新闻资讯功能即将上线')
-  }
-
-  // 后续可以实现专门的新闻页面
-}
-
-// 显示日期范围选择器
-const showDateRangePicker = () => {
-  // 目前简单实现，使用提示消息
-  if (window.$message) {
-    window.$message.info('日期范围选择功能即将上线')
-  }
-
-  // 后续可以实现日期范围选择器
-}
-
-// 显示市场设置
-const showMarketSettings = () => {
-  // 目前简单实现，使用提示消息
-  if (window.$message) {
-    window.$message.info('市场设置功能即将上线')
-  }
-
-  // 后续可以实现市场设置对话框
-}
-
-// 显示更多新闻
-const showMoreNews = () => {
-  // 目前简单实现，使用提示消息
-  if (window.$message) {
-    window.$message.info('更多新闻功能即将上线')
-  }
-
-  // 后续可以实现新闻列表页面
-  showNewsPage()
-}
-
-// 显示移动端应用
-const showMobileApp = () => {
-  // 目前简单实现，使用提示消息
-  if (window.$message) {
-    window.$message.info('移动端应用即将上线，敬请期待')
-  }
-
-  // 后续可以实现二维码扫描下载移动端应用
-}
-
-// 切换布局模式
-const toggleLayoutMode = () => {
-  layoutMode.value = layoutMode.value === 'grid' ? 'enhanced' : 'grid'
-
-  if (window.$message) {
-    window.$message.success(`已切换到${layoutMode.value === 'enhanced' ? '增强' : '网格'}布局`)
-  }
-}
-
-// 处理主题变化
-const handleThemeChange = (theme: string) => {
-  currentTheme.value = theme
-
-  if (window.$message) {
-    window.$message.success(`主题已切换到: ${theme}`)
-  }
-}
-
-// 处理股票点击
-const handleStockClick = (stock: any) => {
-  goToStockAnalysis(stock.symbol)
-}
-
-// 处理指数点击
-const handleIndexClick = (index: any) => {
-  goToIndexAnalysis(index.symbol)
-}
-
-// 处理新闻点击
-const handleNewsClick = (news: any) => {
-  openNewsDetail(news)
-}
-
-// 查看全部新闻
-const handleViewAllNews = () => {
-  router.push('/news')
-}
-
-// 显示设置面板
-const toggleSettings = () => {
-  showSettings.value = !showSettings.value
-}
-
-// 获取数据源类名
-const getDataSourceClass = (dataSource: string): string => {
-  if (!dataSource) return ''
-
-  if (dataSource.includes('api')) return 'api'
-  if (dataSource.includes('cache')) return 'cache'
-  if (dataSource.includes('mock')) return 'mock'
-
-  return ''
-}
-
-// 获取数据源图标
-const getDataSourceIcon = (dataSource: string): string => {
-  if (!dataSource) return ''
-
-  if (dataSource.includes('api')) return '🔄'
-  if (dataSource.includes('cache')) return '💾'
-  if (dataSource.includes('mock')) return '📊'
-
-  return ''
-}
-
-// 保存关注列表
-const saveWatchlists = async (watchlists: Watchlist[], activeWatchlistId: string) => {
-  if (!dashboardSettings.value) return
-
-  try {
-    // 更新设置
-    dashboardSettings.value.watchlists = watchlists
-    dashboardSettings.value.activeWatchlistId = activeWatchlistId
-
-    // 保存设置
-    await dashboardService.saveDashboardSettings(dashboardSettings.value)
-
-    // 重新加载仪表盘设置以获取最新数据
-    await loadDashboardSettings()
-
-    // 显示成功提示
-    if (window.$message) {
-      window.$message.success('关注列表已保存')
-    }
-  } catch (error) {
-    console.error('保存关注列表失败:', error)
-
-    // 显示错误提示
-    if (window.$message) {
-      window.$message.error(
-        '保存关注列表失败: ' + (error instanceof Error ? error.message : String(error))
-      )
-    }
-
-    // 更新活动的关注列表（使用本地数据）
-    const watchlist = watchlists.find((w) => w.id === activeWatchlistId)
-    if (watchlist) {
-      activeWatchlist.value = watchlist
-      watchlistStocks.value = watchlist.items
-    }
-  }
-}
-
-// 刷新数据（手动刷新按钮）
-const refreshData = async () => {
-  isLoading.value = true
-  try {
-    // 强制从外部数据源获取最新数据
-    await refreshMarketData(true) // true 表示强制刷新，从外部数据源获取
-
-    if (chart.value) {
-      updateMarketOverviewChart()
-    }
-
-    // 添加成功提示
-    if (window.$message) {
-      window.$message.success(`数据已从外部数据源刷新成功 (${new Date().toLocaleTimeString()})`)
-    }
-  } catch (error) {
-    console.error('刷新数据失败:', error)
-    // 添加错误提示
-    if (window.$message) {
-      window.$message.error(
-        '刷新数据失败: ' + (error instanceof Error ? error.message : String(error))
-      )
-    }
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// 组件卸载时清理
-onUnmounted(() => {
-  // 清除定时器
-  if (refreshTimer !== null) {
-    clearInterval(refreshTimer)
-  }
-
-  // 清除图表实例
-  if (chart.value) {
-    chart.value.dispose()
-  }
-
-  // 移除事件监听
-  eventBus.off('data-source-changed')
-})
-</script>
-
 <template>
-  <div class="dashboard-view">
+  <div class="modern-dashboard">
+    <!-- Dashboard Header -->
     <div class="dashboard-header">
       <div class="header-left">
-        <h1>市场仪表盘</h1>
-        <div class="data-source-indicator" v-if="dataSourceInfo">
-          <span class="data-source-icon" :class="dataSourceInfo.type">
-            {{ dataSourceInfo.type === 'api' ? '🔄' : dataSourceInfo.type === 'cache' ? '💾' : '📊' }}
+        <h1 class="dashboard-title">
+          <el-icon class="title-icon">
+            <Grid />
+          </el-icon>
+          市场仪表盘
+        </h1>
+        <div class="dashboard-stats">
+          <span class="stat-item">
+            <span class="stat-label">关注列表:</span>
+            <span class="stat-value">{{ dashboardStats.totalWatchlists }}</span>
           </span>
-          <span class="data-source-text">{{ dataSourceInfo.message }}</span>
-        </div>
-
-        <!-- 快速搜索 -->
-        <div class="quick-search-container">
-          <QuickSearchWidget
-            :max-results="8"
-            @stock-selected="handleStockClick"
-            @add-to-watchlist="addToWatchlist"
-          />
+          <span class="stat-item">
+            <span class="stat-label">关注股票:</span>
+            <span class="stat-value">{{ dashboardStats.totalStocks }}</span>
+          </span>
+          <span class="stat-item">
+            <span class="stat-label">市场状态:</span>
+            <span class="stat-value" :class="marketStatusClass">{{ dashboardStats.marketStatus }}</span>
+          </span>
         </div>
       </div>
 
       <div class="header-right">
-        <div class="dashboard-controls">
-          <button
-            class="btn btn-outline btn-sm"
-            @click="toggleLayoutMode"
-            :title="layoutMode === 'enhanced' ? '切换到网格布局' : '切换到增强布局'"
-          >
-            <span class="btn-icon">{{ layoutMode === 'enhanced' ? '⊞' : '⊟' }}</span>
-            <span>{{ layoutMode === 'enhanced' ? '网格' : '增强' }}</span>
-          </button>
+        <div class="header-actions">
+          <!-- 刷新按钮 -->
+          <el-button type="primary" :icon="Refresh" :loading="state.isRefreshing" @click="handleRefresh"
+            class="action-btn">
+            刷新数据
+          </el-button>
 
-          <ThemeToggle
-            :show-dropdown="true"
-            @theme-changed="handleThemeChange"
-          />
+          <!-- 布局切换 -->
+          <el-button-group class="layout-toggle">
+            <el-button :type="state.layoutMode === 'grid' ? 'primary' : 'default'" :icon="Grid"
+              @click="state.layoutMode = 'grid'" />
+            <el-button :type="state.layoutMode === 'list' ? 'primary' : 'default'" :icon="List"
+              @click="state.layoutMode = 'list'" />
+          </el-button-group>
 
-          <button class="btn btn-outline btn-sm" @click="toggleSettings">
-            <span class="btn-icon">⚙️</span>
-            <span>设置</span>
-          </button>
+          <!-- 全屏按钮 -->
+          <el-button :icon="FullScreen" @click="toggleFullscreen" class="action-btn" />
+
+          <!-- 设置按钮 -->
+          <el-button :icon="Setting" @click="state.showSettings = true" class="action-btn" />
         </div>
 
-        <div class="dashboard-actions">
-          <button class="btn btn-outline" @click="refreshData" :disabled="isLoading">
-            <span class="btn-icon" v-if="!isLoading">🔄</span>
-            <span class="loading-spinner-small" v-else></span>
-            <span>刷新数据</span>
-          </button>
-          <button class="btn btn-outline" @click="openWatchlistManager">
-            <span class="btn-icon">⭐</span>
-            <span>管理关注列表</span>
-          </button>
+        <!-- 最后更新时间 -->
+        <div class="last-update" v-if="state.lastUpdateTime">
+          <span class="update-label">最后更新:</span>
+          <span class="update-time">{{ dashboardStats.lastUpdate }}</span>
         </div>
       </div>
     </div>
 
-    <div v-if="isLoading" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>正在加载市场数据...</p>
+    <!-- Loading State -->
+    <div v-if="state.isLoading" class="dashboard-loading">
+      <el-skeleton :rows="6" animated />
+      <div class="loading-text">正在加载仪表盘数据...</div>
     </div>
 
-    <!-- 增强版布局 -->
-    <div v-else-if="layoutMode === 'enhanced'" class="enhanced-dashboard">
-      <div class="enhanced-grid">
-        <!-- 市场概览 -->
-        <div class="widget-container market-overview-container">
-          <EnhancedMarketOverviewWidget
-            :refresh-interval="60000"
-            @index-click="handleIndexClick"
-          />
-        </div>
-
-        <!-- 热门股票 -->
-        <div class="widget-container popular-stocks-container">
-          <EnhancedPopularStocksWidget
-            :refresh-interval="300000"
-            @stock-click="handleStockClick"
-            @add-to-watchlist="addToWatchlist"
-            @view-detail="handleStockClick"
-          />
-        </div>
-
-        <!-- 我的关注 -->
-        <div class="widget-container watchlist-container">
-          <div class="dashboard-card watchlist">
-            <div class="card-header">
-              <h2>我的关注</h2>
-              <div class="card-actions">
-                <button class="btn-icon-only" @click="openAddStockDialog" title="添加股票">
-                  <span>➕</span>
-                </button>
-                <button class="btn-icon-only" @click="openWatchlistManager" title="管理关注列表">
-                  <span>⚙️</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="watchlist-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>代码</th>
-                    <th>名称</th>
-                    <th>最新价</th>
-                    <th>涨跌幅</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="stock in watchlistStocks" :key="stock.symbol">
-                    <td>
-                      {{ stock.symbol }}
-                      <span
-                        v-if="stock.data_source"
-                        class="stock-data-source"
-                        :class="getDataSourceClass(stock.data_source)"
-                        :title="'数据来源: ' + stock.data_source"
-                      >
-                        {{ getDataSourceIcon(stock.data_source) }}
-                      </span>
-                    </td>
-                    <td>{{ stock.name }}</td>
-                    <td>
-                      {{ typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price }}
-                    </td>
-                    <td :class="stock.changePercent > 0 ? 'up' : 'down'">
-                      {{
-                        stock.changePercent > 0
-                          ? '+' + stock.changePercent.toFixed(2)
-                          : stock.changePercent.toFixed(2)
-                      }}%
-                    </td>
-                    <td>
-                      <button class="btn-icon-only" @click="goToStockAnalysis(stock.symbol)">
-                        <span>📊</span>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="card-footer">
-              <button class="btn btn-outline btn-sm" @click="openWatchlistManager">管理关注列表</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 财经资讯 -->
-        <div class="widget-container news-container">
-          <EnhancedNewsWidget
-            :max-items="10"
-            :refresh-interval="300000"
-            :show-summary="true"
-            @news-click="handleNewsClick"
-            @view-all="handleViewAllNews"
-          />
-        </div>
-
-        <!-- 功能快捷入口 -->
-        <div class="widget-container quick-actions-container">
-          <div class="dashboard-card quick-actions">
-            <div class="card-header">
-              <h2>功能入口</h2>
-            </div>
-
-            <div class="action-grid">
-              <div class="action-card" @click="router.push('/stock')">
-                <div class="action-icon">📈</div>
-                <div class="action-name">股票分析</div>
-              </div>
-              <div class="action-card" @click="router.push('/portfolio')">
-                <div class="action-icon">💼</div>
-                <div class="action-name">仓位管理</div>
-              </div>
-              <div class="action-card" @click="router.push('/market-heatmap')">
-                <div class="action-icon">🌎</div>
-                <div class="action-name">大盘云图</div>
-              </div>
-              <div class="action-card" @click="router.push('/industry-analysis')">
-                <div class="action-icon">📊</div>
-                <div class="action-name">行业分析</div>
-              </div>
-              <div class="action-card" @click="handleViewAllNews">
-                <div class="action-icon">📰</div>
-                <div class="action-name">新闻资讯</div>
-              </div>
-              <div class="action-card" @click="showMobileApp">
-                <div class="action-icon">📱</div>
-                <div class="action-name">移动端</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Error State -->
+    <div v-else-if="state.hasError" class="dashboard-error">
+      <el-result icon="error" title="加载失败" :sub-title="state.errorMessage">
+        <template #extra>
+          <el-button type="primary" @click="initializeDashboard">
+            重新加载
+          </el-button>
+        </template>
+      </el-result>
     </div>
 
-    <!-- 传统网格布局 -->
-    <div v-else class="dashboard-grid">
+    <!-- Dashboard Content -->
+    <div v-else class="dashboard-content"
+      :class="{ 'layout-grid': state.layoutMode === 'grid', 'layout-list': state.layoutMode === 'list' }">
       <!-- 市场概览 -->
-      <div class="dashboard-card market-overview">
-        <div class="card-header">
-          <h2>市场概览</h2>
-          <div class="card-actions">
-            <button class="btn-icon-only" @click="showDateRangePicker" title="选择日期范围">
-              <span>📅</span>
-            </button>
-            <button class="btn-icon-only" @click="showMarketSettings" title="市场设置">
-              <span>⚙️</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="market-indices">
-          <div
-            v-for="index in marketIndices"
-            :key="index.code"
-            class="market-index"
-            @click="goToIndexAnalysis(index.code)"
-            title="点击查看详情"
-          >
-            <div class="index-name">{{ index.name }}</div>
-            <div class="index-value">{{ index.value }}</div>
-            <div class="index-change" :class="index.status">{{ index.change }}</div>
-          </div>
-        </div>
-
-        <div class="market-chart-container">
-          <div ref="marketOverviewChart" class="market-chart"></div>
-        </div>
-
-        <div class="market-indicators">
-          <div class="market-indicator">
-            <div class="indicator-label">市场趋势</div>
-            <div class="indicator-value" :style="{ color: marketTrendColor }">
-              <span class="indicator-icon">{{ marketTrendIcon }}</span>
-              <span>{{
-                marketTrend === 'up' ? '上涨' : marketTrend === 'down' ? '下跌' : '震荡'
-              }}</span>
-            </div>
-          </div>
-
-          <div class="market-indicator">
-            <div class="indicator-label">市场情绪</div>
-            <div class="indicator-value" :style="{ color: marketSentimentColor }">
-              <span class="indicator-icon">{{ marketSentimentIcon }}</span>
-              <span>{{
-                marketSentiment === 'bullish'
-                  ? '看多'
-                  : marketSentiment === 'bearish'
-                  ? '看空'
-                  : '中性'
-              }}</span>
-            </div>
-          </div>
-        </div>
+      <div class="widget-container market-overview">
+        <ModernMarketOverview :data="marketData" :loading="state.isRefreshing" @refresh="loadMarketData" />
       </div>
 
-      <!-- 我的关注 -->
-      <div class="dashboard-card watchlist">
-        <div class="card-header">
-          <h2>我的关注</h2>
-          <div class="card-actions">
-            <button class="btn-icon-only" @click="openAddStockDialog" title="添加股票">
-              <span>➕</span>
-            </button>
-            <button class="btn-icon-only" @click="openWatchlistManager" title="管理关注列表">
-              <span>⚙️</span>
-            </button>
-          </div>
-        </div>
+      <!-- 关注列表 -->
+      <div class="widget-container watchlist">
+        <ModernWatchlistWidget :watchlists="watchlists" :active-watchlist-id="activeWatchlistId"
+          :loading="state.isRefreshing" @watchlist-change="handleWatchlistChange" @stock-click="handleStockClick"
+          @refresh="loadWatchlists" />
+      </div>
 
-        <div class="watchlist-table">
-          <table>
-            <thead>
-              <tr>
-                <th>代码</th>
-                <th>名称</th>
-                <th>最新价</th>
-                <th>涨跌幅</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="stock in watchlistStocks" :key="stock.symbol">
-                <td>
-                  {{ stock.symbol }}
-                  <span
-                    v-if="stock.data_source"
-                    class="stock-data-source"
-                    :class="getDataSourceClass(stock.data_source)"
-                    :title="'数据来源: ' + stock.data_source"
-                  >
-                    {{ getDataSourceIcon(stock.data_source) }}
-                  </span>
-                </td>
-                <td>{{ stock.name }}</td>
-                <td>
-                  {{ typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price }}
-                </td>
-                <td :class="stock.changePercent > 0 ? 'up' : 'down'">
-                  {{
-                    stock.changePercent > 0
-                      ? '+' + stock.changePercent.toFixed(2)
-                      : stock.changePercent.toFixed(2)
-                  }}%
-                </td>
-                <td>
-                  <button class="btn-icon-only" @click="goToStockAnalysis(stock.symbol)">
-                    <span>📊</span>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="card-footer">
-          <button class="btn btn-outline btn-sm" @click="openWatchlistManager">管理关注列表</button>
-        </div>
+      <!-- 快速操作 -->
+      <div class="widget-container quick-actions">
+        <ModernQuickActions @doji-scan="handleDojiScan" @ai-recommend="handleAIRecommend"
+          @risk-monitor="handleRiskMonitor" />
       </div>
 
       <!-- 热门股票 -->
-      <div class="dashboard-card popular-stocks">
-        <div class="card-header">
-          <h2>热门股票</h2>
-          <div class="card-actions">
-            <button class="btn-icon-only" @click="refreshData" title="刷新数据">
-              <span>🔄</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="stock-grid">
-          <div
-            v-for="stock in popularStocks"
-            :key="stock.symbol"
-            class="stock-card"
-            @click="goToStockAnalysis(stock.symbol)"
-          >
-            <div class="stock-info">
-              <h3>{{ stock.name }}</h3>
-              <p class="stock-symbol">{{ stock.symbol }}</p>
-              <p class="stock-market">{{ stock.market }}</p>
-            </div>
-            <div class="stock-actions">
-              <button class="btn-icon-only" @click.stop="addToWatchlist(stock)">
-                <span>⭐</span>
-              </button>
-              <button class="btn-icon-only" @click.stop="goToStockAnalysis(stock.symbol)">
-                <span>📈</span>
-              </button>
-            </div>
-          </div>
-        </div>
+      <div class="widget-container popular-stocks">
+        <ModernPopularStocks :stocks="popularStocks" :loading="state.isRefreshing" @stock-click="handleStockClick"
+          @add-to-watchlist="handleAddToWatchlist" @refresh="loadPopularStocks" />
       </div>
 
-      <!-- 市场资讯 -->
-      <div class="dashboard-card market-news">
-        <div class="card-header">
-          <h2>市场资讯</h2>
-          <div class="card-actions">
-            <button class="btn-icon-only" @click="refreshData" title="刷新数据">
-              <span>🔄</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="news-list">
-          <div
-            v-for="(news, index) in newsItems"
-            :key="index"
-            class="news-item"
-            :class="{ important: news.important }"
-            @click="openNewsDetail(news)"
-            title="点击查看详情"
-          >
-            <div class="news-content">
-              <h3 class="news-title">{{ news.title }}</h3>
-              <div class="news-meta">
-                <span class="news-time">{{ news.time }}</span>
-                <span class="news-source">{{ news.source }}</span>
-                <span
-                  v-if="news.data_source"
-                  class="news-data-source"
-                  :class="getDataSourceClass(news.data_source)"
-                >
-                  {{ getDataSourceIcon(news.data_source) }}
-                </span>
-              </div>
-            </div>
-            <div class="news-actions">
-              <button class="btn-icon-only" @click.stop="openNewsDetail(news)">
-                <span>📰</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="card-footer">
-          <button class="btn btn-outline btn-sm" @click="showMoreNews">查看更多</button>
-        </div>
+      <!-- 新闻资讯 -->
+      <div class="widget-container news">
+        <ModernNewsWidget :news="newsItems" :loading="state.isRefreshing" @news-click="handleNewsClick"
+          @refresh="loadNewsItems" />
       </div>
 
-      <!-- 功能快捷入口 -->
-      <div class="dashboard-card quick-actions">
-        <div class="card-header">
-          <h2>功能入口</h2>
-        </div>
-
-        <div class="action-grid">
-          <div class="action-card" @click="router.push('/stock')">
-            <div class="action-icon">📈</div>
-            <div class="action-name">股票分析</div>
-          </div>
-          <div class="action-card" @click="router.push('/portfolio')">
-            <div class="action-icon">💼</div>
-            <div class="action-name">仓位管理</div>
-          </div>
-          <div class="action-card" @click="router.push('/market-heatmap')">
-            <div class="action-icon">🌎</div>
-            <div class="action-name">大盘云图</div>
-          </div>
-          <div class="action-card" @click="router.push('/industry-analysis')">
-            <div class="action-icon">📊</div>
-            <div class="action-name">行业分析</div>
-          </div>
-          <div class="action-card" @click="showNewsPage">
-            <div class="action-icon">📰</div>
-            <div class="action-name">新闻资讯</div>
-          </div>
-          <div class="action-card" @click="showMobileApp">
-            <div class="action-icon">📱</div>
-            <div class="action-name">移动端</div>
-          </div>
-        </div>
+      <!-- 交易信号 -->
+      <div class="widget-container trading-signals">
+        <ModernTradingSignals :signals="tradingSignals" :loading="state.isRefreshing" @signal-click="handleSignalClick"
+          @refresh="loadTradingSignals" />
       </div>
     </div>
-  </div>
-  <!-- 关注列表管理器 -->
-  <WatchlistManager
-    v-if="dashboardSettings"
-    :show="showWatchlistManager"
-    :watchlists="dashboardSettings.watchlists"
-    :activeWatchlistId="dashboardSettings.activeWatchlistId"
-    @close="showWatchlistManager = false"
-    @save="saveWatchlists"
-  />
 
-  <!-- 添加股票对话框 -->
-  <AddStockDialog
-    v-if="dashboardSettings"
-    v-model:visible="showAddStockDialog"
-    :watchlists="dashboardSettings.watchlists"
-    :activeWatchlistId="dashboardSettings.activeWatchlistId"
-    @close="showAddStockDialog = false"
-    @added="handleStockAdded"
-  />
+    <!-- 设置面板 -->
+    <el-drawer v-model="state.showSettings" title="仪表盘设置" direction="rtl" size="400px">
+      <div class="settings-content">
+        <el-form label-position="top">
+          <el-form-item label="自动刷新">
+            <el-switch v-model="state.autoRefreshEnabled" @change="handleAutoRefreshToggle" />
+          </el-form-item>
+
+          <el-form-item label="刷新间隔(秒)" v-if="state.autoRefreshEnabled">
+            <el-input-number v-model="state.refreshInterval" :min="10" :max="300" :step="10"
+              @change="handleRefreshIntervalChange" />
+          </el-form-item>
+
+          <el-form-item label="默认布局">
+            <el-radio-group v-model="state.layoutMode">
+              <el-radio label="grid">网格布局</el-radio>
+              <el-radio label="list">列表布局</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+      </div>
+    </el-drawer>
+  </div>
 </template>
 
-<style scoped>
-.dashboard-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElNotification } from 'element-plus'
+import { Refresh, Setting, FullScreen, Grid, List } from '@element-plus/icons-vue'
+
+// 服务导入
+import { stockService } from '@/services/stockService'
+import { dashboardService } from '@/services/dashboardService'
+import { watchlistService } from '@/services/watchlistService'
+import { marketDataService } from '@/services/marketDataService'
+
+// 类型导入
+import type { Stock } from '@/types/stock'
+import type { DashboardSettings, Watchlist, WatchlistItem, MarketOverview } from '@/types/dashboard'
+
+// 组件导入
+import ModernMarketOverview from '@/components/dashboard/ModernMarketOverview.vue'
+import ModernWatchlistWidget from '@/components/dashboard/ModernWatchlistWidget.vue'
+import ModernQuickActions from '@/components/dashboard/ModernQuickActions.vue'
+import ModernNewsWidget from '@/components/dashboard/ModernNewsWidget.vue'
+import ModernPopularStocks from '@/components/dashboard/ModernPopularStocks.vue'
+import ModernTradingSignals from '@/components/dashboard/ModernTradingSignals.vue'
+
+// 工具导入
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useDashboardStore } from '@/stores/dashboardStore'
+import { performanceMonitor } from '@/utils/performanceMonitor'
+
+// 初始化
+const router = useRouter()
+const dashboardStore = useDashboardStore()
+const { handleError, showError, clearError } = useErrorHandling()
+
+// 响应式状态
+const state = reactive({
+  // 加载状态
+  isLoading: true,
+  isRefreshing: false,
+
+  // 布局设置
+  layoutMode: 'grid' as 'grid' | 'list',
+  isFullscreen: false,
+  showSettings: false,
+
+  // 数据状态
+  lastUpdateTime: null as Date | null,
+  autoRefreshEnabled: true,
+  refreshInterval: 30000, // 30秒
+
+  // 错误状态
+  hasError: false,
+  errorMessage: '',
+})
+
+// 数据引用
+const marketData = ref<MarketOverview | null>(null)
+const watchlists = ref<Watchlist[]>([])
+const activeWatchlistId = ref<number | null>(null)
+const popularStocks = ref<Stock[]>([])
+const newsItems = ref<any[]>([])
+const tradingSignals = ref<any[]>([])
+
+// 定时器
+let refreshTimer: number | null = null
+let autoRefreshTimer: number | null = null
+
+// 计算属性
+const activeWatchlist = computed(() => {
+  if (!activeWatchlistId.value) return null
+  return watchlists.value.find(w => w.id === activeWatchlistId.value) || null
+})
+
+const dashboardStats = computed(() => ({
+  totalWatchlists: watchlists.value.length,
+  totalStocks: watchlists.value.reduce((sum, w) => sum + (w.watchlist_items?.length || 0), 0),
+  marketStatus: marketData.value ? '开市' : '闭市',
+  lastUpdate: state.lastUpdateTime?.toLocaleTimeString() || '未更新'
+}))
+
+const marketStatusClass = computed(() => ({
+  'status-open': dashboardStats.value.marketStatus === '开市',
+  'status-closed': dashboardStats.value.marketStatus === '闭市'
+}))
+
+// 数据加载函数
+const loadWatchlists = async () => {
+  try {
+    const data = await watchlistService.getUserWatchlists()
+    watchlists.value = data
+    if (data.length > 0 && !activeWatchlistId.value) {
+      activeWatchlistId.value = data[0].id
+    }
+  } catch (error) {
+    console.error('加载关注列表失败:', error)
+    handleError(error, '加载关注列表失败')
+  }
 }
 
+const loadMarketData = async () => {
+  try {
+    console.log('[Dashboard] 开始加载市场数据...')
+    const data = await dashboardService.getMarketOverview(true)
+    marketData.value = data
+    console.log('[Dashboard] 市场数据加载成功')
+  } catch (error) {
+    console.error('加载市场数据失败:', error)
+    marketData.value = []
+    handleError(error, '加载市场数据失败')
+  }
+}
+
+const loadPopularStocks = async () => {
+  try {
+    console.log('[Dashboard] 开始加载热门股票...')
+    const data = await stockService.getHotStocks()
+    popularStocks.value = data.slice(0, 10)
+    console.log('[Dashboard] 热门股票加载成功')
+  } catch (error) {
+    console.error('加载热门股票失败:', error)
+    popularStocks.value = []
+    handleError(error, '加载热门股票失败')
+  }
+}
+
+const loadNewsItems = async () => {
+  try {
+    console.log('[Dashboard] 开始加载新闻数据...')
+    const data = await marketDataService.getFinancialNews()
+    newsItems.value = data.slice(0, 8) // 只显示前8条
+    console.log('[Dashboard] 新闻数据加载成功')
+  } catch (error) {
+    console.error('加载新闻失败:', error)
+    newsItems.value = []
+    handleError(error, '加载新闻失败')
+  }
+}
+
+const loadTradingSignals = async () => {
+  try {
+    console.log('[Dashboard] 开始加载交易信号...')
+
+    // 调用技术分析API获取交易信号
+    const response = await fetch('http://localhost:7001/api/technical-indicators/scan', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        stockCodes: ['000002.SZ', '000001.SZ', '600036.SH', '000858.SZ', '002415.SZ'],
+        signalTypes: ['d2', 'hunting', 'reversal', 'sell', 'turtle']
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success && data.data && data.data.length > 0) {
+        // 转换后端数据格式为前端组件期望的格式
+        const convertedSignals = []
+        data.data.forEach(stockResult => {
+          if (stockResult && stockResult.signals) {
+            stockResult.signals.forEach((signal, index) => {
+              convertedSignals.push({
+                id: `${stockResult.stockCode}_${index}_${Date.now()}`,
+                stockName: stockResult.stockName || stockResult.stockCode,
+                stockCode: stockResult.stockCode,
+                type: signal.type === 'buy' ? 'buy' : signal.type === 'sell' ? 'sell' : 'hold',
+                price: stockResult.currentPrice || signal.price || 0,
+                strategy: signal.signal || signal.strategy || '技术分析',
+                confidence: signal.strength || signal.confidence || 75,
+                timestamp: signal.timestamp || stockResult.lastUpdate || new Date().toISOString()
+              })
+            })
+          }
+        })
+
+        tradingSignals.value = convertedSignals.slice(0, 10) // 只显示前10个信号
+        console.log('[Dashboard] 交易信号加载成功:', tradingSignals.value.length, '个信号')
+      } else {
+        console.warn('[Dashboard] 交易信号API返回空数据或失败:', data.message)
+        tradingSignals.value = []
+      }
+    } else {
+      console.warn('[Dashboard] 交易信号API请求失败:', response.status)
+      tradingSignals.value = []
+    }
+  } catch (error) {
+    console.error('加载交易信号失败:', error)
+    tradingSignals.value = []
+    handleError(error, '加载交易信号失败')
+  }
+}
+
+// 初始化函数
+const initializeDashboard = async () => {
+  try {
+    state.isLoading = true
+    clearError()
+
+    console.log('[Dashboard] 开始初始化仪表盘...')
+
+    // 并行加载所有数据
+    const loadPromises = [
+      loadWatchlists(),
+      loadMarketData(),
+      loadPopularStocks(),
+      loadNewsItems(),
+      loadTradingSignals()
+    ]
+
+    await Promise.allSettled(loadPromises)
+
+    // 设置自动刷新
+    setupAutoRefresh()
+
+    state.lastUpdateTime = new Date()
+    console.log('[Dashboard] 仪表盘初始化完成')
+
+    ElNotification({
+      title: '仪表盘加载完成',
+      message: '所有数据已成功加载',
+      type: 'success',
+      duration: 3000
+    })
+
+  } catch (error) {
+    console.error('[Dashboard] 初始化失败:', error)
+    handleError(error, '仪表盘初始化失败')
+    state.hasError = true
+    state.errorMessage = '仪表盘初始化失败，请刷新页面重试'
+  } finally {
+    state.isLoading = false
+  }
+}
+
+// 自动刷新设置
+const setupAutoRefresh = () => {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+  }
+
+  if (state.autoRefreshEnabled) {
+    autoRefreshTimer = window.setInterval(() => {
+      handleRefresh(true) // 静默刷新
+    }, state.refreshInterval)
+  }
+}
+
+// 事件处理函数
+const handleRefresh = async (silent = false) => {
+  if (state.isRefreshing) return
+
+  try {
+    state.isRefreshing = true
+
+    if (!silent) {
+      ElMessage.info('正在刷新数据...')
+    }
+
+    // 并行刷新所有数据
+    const refreshPromises = [
+      loadWatchlists(),
+      loadMarketData(),
+      loadPopularStocks(),
+      loadNewsItems(),
+      loadTradingSignals()
+    ]
+
+    await Promise.allSettled(refreshPromises)
+
+    state.lastUpdateTime = new Date()
+
+    if (!silent) {
+      ElMessage.success('数据刷新完成')
+    }
+
+  } catch (error) {
+    console.error('刷新数据失败:', error)
+    handleError(error, '刷新数据失败')
+  } finally {
+    state.isRefreshing = false
+  }
+}
+
+const handleWatchlistChange = (watchlistId: number) => {
+  activeWatchlistId.value = watchlistId
+}
+
+const handleStockClick = (stock: Stock) => {
+  router.push(`/stock?symbol=${stock.symbol}`)
+}
+
+const handleAddToWatchlist = async (stock: Stock) => {
+  if (!activeWatchlist.value) {
+    ElMessage.warning('请先选择一个关注列表')
+    return
+  }
+
+  try {
+    await watchlistService.addStockToWatchlist(activeWatchlist.value.id, {
+      stockCode: stock.symbol,
+      stockName: stock.name
+    })
+
+    ElMessage.success(`已将 ${stock.name} 添加到关注列表`)
+    await loadWatchlists() // 重新加载关注列表
+
+  } catch (error) {
+    console.error('添加到关注列表失败:', error)
+    handleError(error, '添加到关注列表失败')
+  }
+}
+
+const handleDojiScan = () => {
+  router.push('/doji-pattern/screener')
+}
+
+const handleAIRecommend = () => {
+  router.push('/strategies/smart-recommendation')
+}
+
+const handleRiskMonitor = () => {
+  router.push('/risk/monitoring')
+}
+
+const handleNewsClick = (news: any) => {
+  if (news.url) {
+    window.open(news.url, '_blank')
+  }
+}
+
+const handleSignalClick = (signal: any) => {
+  router.push(`/stock?symbol=${signal.symbol}`)
+}
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen()
+    state.isFullscreen = true
+  } else {
+    document.exitFullscreen()
+    state.isFullscreen = false
+  }
+}
+
+const handleAutoRefreshToggle = () => {
+  setupAutoRefresh()
+}
+
+const handleRefreshIntervalChange = () => {
+  setupAutoRefresh()
+}
+
+// 生命周期
+onMounted(() => {
+  initializeDashboard()
+})
+
+onUnmounted(() => {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+  }
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
+})
+</script>
+
+<style scoped>
+.modern-dashboard {
+  min-height: 100vh;
+  background: var(--el-bg-color-page);
+  padding: var(--spacing-lg);
+}
+
+/* Dashboard Header */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: var(--spacing-lg) 0;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--el-bg-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--el-border-color-light);
 }
 
 .header-left {
   display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.dashboard-title {
+  display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  flex: 1;
+  gap: var(--spacing-sm);
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--el-text-color-primary);
+}
+
+.title-icon {
+  color: var(--color-primary);
+}
+
+.dashboard-stats {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+}
+
+.stat-label {
+  color: var(--el-text-color-regular);
+}
+
+.stat-value {
+  font-weight: var(--font-weight-medium);
+  color: var(--el-text-color-primary);
+}
+
+.stat-value.status-open {
+  color: var(--color-success);
+}
+
+.stat-value.status-closed {
+  color: var(--color-danger);
 }
 
 .header-right {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
 }
 
-.dashboard-controls {
+.header-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
-.quick-search-container {
-  margin-left: var(--spacing-lg);
-  flex: 1;
-  max-width: 400px;
+.action-btn {
+  border-radius: var(--border-radius-md);
 }
 
-.dashboard-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin: 0;
-  font-weight: 600;
+.layout-toggle {
+  border-radius: var(--border-radius-md);
 }
 
-.data-source-indicator {
+.last-update {
   display: flex;
   align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background-color: var(--bg-secondary);
-  margin-left: 16px;
+  gap: var(--spacing-xs);
   font-size: var(--font-size-sm);
+  color: var(--el-text-color-regular);
 }
 
-.data-source-icon {
-  margin-right: 6px;
-  font-size: 16px;
+.update-time {
+  font-weight: var(--font-weight-medium);
+  color: var(--el-text-color-primary);
 }
 
-.data-source-icon.api {
-  color: var(--accent-color);
+/* Loading and Error States */
+.dashboard-loading {
+  padding: var(--spacing-xl);
+  text-align: center;
 }
 
-.data-source-icon.cache {
-  color: var(--info-color);
+.loading-text {
+  margin-top: var(--spacing-lg);
+  font-size: var(--font-size-lg);
+  color: var(--el-text-color-regular);
 }
 
-.data-source-icon.mock {
-  color: var(--warning-color);
+.dashboard-error {
+  padding: var(--spacing-xl);
 }
 
-.data-source-text {
-  color: var(--text-secondary);
-}
-
-.dashboard-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  margin-left: auto;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 400px;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(66, 185, 131, 0.1);
-  border-radius: 50%;
-  border-top: 4px solid var(--accent-color);
-  animation: spin 1s linear infinite;
-  margin-bottom: var(--spacing-md);
-}
-
-.loading-spinner-small {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(66, 185, 131, 0.1);
-  border-radius: 50%;
-  border-top: 2px solid var(--accent-color);
-  animation: spin 1s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* 仪表盘网格布局 */
-.dashboard-grid {
+/* Dashboard Content */
+.dashboard-content {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: auto;
   gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-  grid-template-areas:
-    'market-overview market-overview watchlist'
-    'popular-stocks market-news market-news'
-    'quick-actions quick-actions quick-actions';
+  transition: all 0.3s ease;
 }
 
-/* 卡片基础样式 */
-.dashboard-card {
-  background-color: var(--bg-primary);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-light);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--border-light);
-}
-
-.card-header h2 {
-  font-size: var(--font-size-lg);
-  color: var(--primary-color);
-  margin: 0;
-  font-weight: 600;
-}
-
-.card-actions {
-  display: flex;
-  gap: var(--spacing-xs);
-}
-
-.btn-icon-only {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: transparent;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-size: var(--font-size-md);
-}
-
-.btn-icon-only:hover {
-  background-color: var(--bg-secondary);
-  border-color: var(--border-color);
-}
-
-.card-footer {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--border-light);
-  display: flex;
-  justify-content: center;
-}
-
-.btn-sm {
-  padding: var(--spacing-xs) var(--spacing-md);
-  font-size: var(--font-size-sm);
-}
-
-/* 市场概览卡片 */
-.market-overview {
-  grid-area: market-overview;
-}
-
-.market-indices {
-  display: flex;
-  justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-lg);
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-}
-
-.market-index {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 120px;
-}
-
-.index-name {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.index-value {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.index-change {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-}
-
-.index-change.up {
-  color: var(--stock-up);
-}
-
-.index-change.down {
-  color: var(--stock-down);
-}
-
-.market-chart-container {
-  padding: 0 var(--spacing-md);
-  height: 250px;
-}
-
-.market-chart {
-  width: 100%;
-  height: 100%;
-}
-
-.market-indicators {
-  display: flex;
-  justify-content: space-around;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--border-light);
-}
-
-.market-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.indicator-label {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.indicator-value {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.indicator-icon {
-  font-size: 1.2em;
-}
-
-/* 关注列表卡片 */
-.watchlist {
-  grid-area: watchlist;
-}
-
-.watchlist-table {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--spacing-md);
-}
-
-.watchlist-table table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.watchlist-table th,
-.watchlist-table td {
-  padding: var(--spacing-sm);
-  text-align: left;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.watchlist-table th {
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.watchlist-table td {
-  font-size: var(--font-size-sm);
-}
-
-.watchlist-table td.up {
-  color: var(--stock-up);
-}
-
-.watchlist-table td.down {
-  color: var(--stock-down);
-}
-
-.stock-data-source {
-  font-size: 10px;
-  padding: 1px 3px;
-  border-radius: 3px;
-  background-color: var(--bg-tertiary);
-  margin-left: 4px;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.stock-data-source.api {
-  color: var(--accent-color);
-}
-
-.stock-data-source.cache {
-  color: var(--info-color);
-}
-
-.stock-data-source.mock {
-  color: var(--warning-color);
-}
-
-/* 热门股票卡片 */
-.popular-stocks {
-  grid-area: popular-stocks;
-}
-
-.stock-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  overflow-y: auto;
-  max-height: 400px;
-}
-
-.stock-card {
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
-  border: 1px solid var(--border-light);
-  transition: all var(--transition-fast);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.stock-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-  border-color: var(--accent-light);
-}
-
-.stock-info h3 {
-  font-size: var(--font-size-md);
-  color: var(--primary-color);
-  margin: 0 0 var(--spacing-xs) 0;
-  font-weight: 600;
-}
-
-.stock-symbol {
-  color: var(--accent-color);
-  font-size: var(--font-size-sm);
-  margin: 0 0 var(--spacing-xs) 0;
-  font-weight: 500;
-}
-
-.stock-market {
-  color: var(--text-muted);
-  font-size: var(--font-size-xs);
-  margin: 0;
-}
-
-.stock-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-xs);
-  margin-top: var(--spacing-sm);
-  padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--border-light);
-}
-
-/* 市场资讯卡片 */
-.market-news {
-  grid-area: market-news;
-}
-
-.news-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--spacing-md) var(--spacing-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  max-height: 400px;
-}
-
-.news-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius-md);
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  transition: all var(--transition-fast);
-}
-
-.news-item:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.news-item.important {
-  border-left: 3px solid var(--accent-color);
-}
-
-.news-content {
-  flex: 1;
-}
-
-.news-title {
-  font-size: var(--font-size-md);
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-xs) 0;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.news-meta {
-  display: flex;
-  gap: var(--spacing-md);
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  align-items: center;
-}
-
-.news-data-source {
-  font-size: 12px;
-  padding: 2px 4px;
-  border-radius: 3px;
-  background-color: var(--bg-tertiary);
-}
-
-.news-data-source.api {
-  color: var(--accent-color);
-}
-
-.news-data-source.cache {
-  color: var(--info-color);
-}
-
-.news-data-source.mock {
-  color: var(--warning-color);
-}
-
-.news-actions {
-  margin-left: var(--spacing-sm);
-}
-
-/* 功能快捷入口卡片 */
-.quick-actions {
-  grid-area: quick-actions;
-}
-
-.action-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-}
-
-.action-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--spacing-md);
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius-md);
-  border: 1px solid var(--border-light);
-  transition: all var(--transition-fast);
-  cursor: pointer;
-}
-
-.action-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-  border-color: var(--accent-light);
-  background-color: var(--bg-tertiary);
-}
-
-.action-icon {
-  font-size: 2rem;
-  margin-bottom: var(--spacing-sm);
-}
-
-.action-name {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-/* 增强版布局样式 */
-.enhanced-dashboard {
-  width: 100%;
-}
-
-.enhanced-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
+.dashboard-content.layout-grid {
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   grid-template-rows: auto;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
 }
 
+.dashboard-content.layout-list {
+  grid-template-columns: 1fr;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Widget Containers */
 .widget-container {
-  background: transparent;
+  background: var(--el-bg-color);
   border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--el-border-color-light);
   overflow: hidden;
-  height: fit-content;
+  transition: all 0.3s ease;
 }
 
-.market-overview-container {
-  grid-column: 1 / 9;
-  grid-row: 1;
-  min-height: 400px;
+.widget-container:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
-.popular-stocks-container {
-  grid-column: 9 / 13;
-  grid-row: 1 / 3;
-  min-height: 500px;
+/* Grid Layout Specific */
+.layout-grid .market-overview {
+  grid-column: span 2;
 }
 
-.watchlist-container {
-  grid-column: 1 / 5;
-  grid-row: 2;
-  min-height: 300px;
+.layout-grid .watchlist {
+  grid-column: span 1;
 }
 
-.news-container {
-  grid-column: 5 / 9;
-  grid-row: 2;
-  min-height: 300px;
+.layout-grid .quick-actions {
+  grid-column: span 1;
 }
 
-.quick-actions-container {
-  grid-column: 1 / 13;
-  grid-row: 3;
-  min-height: 200px;
+.layout-grid .popular-stocks {
+  grid-column: span 1;
 }
 
-/* 响应式设计 */
+.layout-grid .news {
+  grid-column: span 1;
+}
+
+.layout-grid .trading-signals {
+  grid-column: span 2;
+}
+
+/* Settings Panel */
+.settings-content {
+  padding: var(--spacing-lg);
+}
+
+/* Responsive Design */
 @media (max-width: 1200px) {
-  .enhanced-grid {
-    grid-template-columns: repeat(8, 1fr);
+  .dashboard-content.layout-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   }
 
-  .market-overview-container {
-    grid-column: 1 / 9;
-    grid-row: 1;
-  }
-
-  .popular-stocks-container {
-    grid-column: 1 / 5;
-    grid-row: 2;
-  }
-
-  .watchlist-container {
-    grid-column: 5 / 9;
-    grid-row: 2;
-  }
-
-  .news-container {
-    grid-column: 1 / 9;
-    grid-row: 3;
-  }
-
-  .quick-actions-container {
-    grid-column: 1 / 9;
-    grid-row: 4;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      'market-overview market-overview'
-      'watchlist popular-stocks'
-      'market-news market-news'
-      'quick-actions quick-actions';
+  .layout-grid .market-overview,
+  .layout-grid .trading-signals {
+    grid-column: span 1;
   }
 }
 
 @media (max-width: 768px) {
-  .enhanced-grid {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-md);
-  }
-
-  .market-overview-container,
-  .popular-stocks-container,
-  .watchlist-container,
-  .news-container,
-  .quick-actions-container {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      'market-overview'
-      'watchlist'
-      'popular-stocks'
-      'market-news'
-      'quick-actions';
+  .modern-dashboard {
+    padding: var(--spacing-md);
   }
 
   .dashboard-header {
     flex-direction: column;
-    align-items: flex-start;
     gap: var(--spacing-md);
+    align-items: stretch;
   }
 
   .header-left,
   .header-right {
-    width: 100%;
+    align-items: center;
   }
 
-  .header-right {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .dashboard-controls {
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .dashboard-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .market-indices {
+  .dashboard-stats {
     justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-content.layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .widget-container {
+    margin-bottom: var(--spacing-md);
   }
 }
 
-/* 小屏幕优化 */
 @media (max-width: 480px) {
-  .dashboard-view {
-    padding: 0 var(--spacing-md);
-  }
-
-  .enhanced-grid {
+  .dashboard-stats {
+    flex-direction: column;
     gap: var(--spacing-sm);
   }
 
-  .dashboard-header {
-    margin: var(--spacing-md) 0;
+  .header-actions {
+    flex-direction: column;
+    gap: var(--spacing-sm);
   }
 
-  .dashboard-controls {
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
-  }
-
-  .btn {
-    font-size: var(--font-size-sm);
-    padding: var(--spacing-xs) var(--spacing-sm);
-  }
-
-  .btn-sm {
-    font-size: var(--font-size-xs);
-    padding: 4px var(--spacing-xs);
+  .action-btn {
+    width: 100%;
   }
 }
 </style>

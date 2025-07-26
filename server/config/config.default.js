@@ -1,5 +1,20 @@
 'use strict'
 
+// Load environment variables from .env file
+try {
+  require('fs')
+    .readFileSync('.env', 'utf8')
+    .split('\n')
+    .forEach((line) => {
+      const [key, value] = line.split('=')
+      if (key && value) {
+        process.env[key.trim()] = value.trim()
+      }
+    })
+} catch (err) {
+  // .env file not found or error reading it
+}
+
 /**
  * 默认配置
  */

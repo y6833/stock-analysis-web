@@ -6,11 +6,7 @@
     </div>
 
     <div class="stock-search">
-      <UnifiedStockSearch
-        placeholder="输入股票代码或名称搜索..."
-        @select="onStockSelect"
-        @clear="onStockClear"
-      />
+      <UnifiedStockSearch placeholder="输入股票代码或名称搜索..." @select="onStockSelect" @clear="onStockClear" />
     </div>
 
     <div v-if="isLoading" class="loading-container">
@@ -23,19 +19,15 @@
         <div class="stock-title">
           <h2>{{ currentStock.name }}</h2>
           <span class="stock-code">{{ currentStock.symbol }}</span>
-          <span
-            v-if="currentStock.data_source"
-            class="stock-data-source"
-            :class="getDataSourceClass(currentStock.data_source)"
-            :title="'数据来源: ' + currentStock.data_source"
-          >
+          <span v-if="currentStock.data_source" class="stock-data-source"
+            :class="getDataSourceClass(currentStock.data_source)" :title="'数据来源: ' + currentStock.data_source">
             {{ getDataSourceIcon(currentStock.data_source) }}
           </span>
         </div>
         <div class="stock-price-container">
-          <div class="stock-price">{{ currentStock.price.toFixed(2) }}</div>
-          <div class="stock-change" :class="currentStock.pct_chg >= 0 ? 'up' : 'down'">
-            {{ currentStock.pct_chg >= 0 ? '+' : '' }}{{ currentStock.pct_chg.toFixed(2) }}%
+          <div class="stock-price">{{ (currentStock.price || 0).toFixed(2) }}</div>
+          <div class="stock-change" :class="(currentStock.pct_chg || 0) >= 0 ? 'up' : 'down'">
+            {{ (currentStock.pct_chg || 0) >= 0 ? '+' : '' }}{{ (currentStock.pct_chg || 0).toFixed(2) }}%
           </div>
         </div>
       </div>
@@ -43,27 +35,27 @@
       <div class="stock-details">
         <div class="detail-item">
           <span class="detail-label">开盘价</span>
-          <span class="detail-value">{{ currentStock.open.toFixed(2) }}</span>
+          <span class="detail-value">{{ (currentStock.open || 0).toFixed(2) }}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">最高价</span>
-          <span class="detail-value">{{ currentStock.high.toFixed(2) }}</span>
+          <span class="detail-value">{{ (currentStock.high || 0).toFixed(2) }}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">最低价</span>
-          <span class="detail-value">{{ currentStock.low.toFixed(2) }}</span>
+          <span class="detail-value">{{ (currentStock.low || 0).toFixed(2) }}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">昨收价</span>
-          <span class="detail-value">{{ currentStock.pre_close.toFixed(2) }}</span>
+          <span class="detail-value">{{ (currentStock.pre_close || 0).toFixed(2) }}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">成交量</span>
-          <span class="detail-value">{{ formatVolume(currentStock.vol) }}</span>
+          <span class="detail-value">{{ formatVolume(currentStock.vol || 0) }}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">成交额</span>
-          <span class="detail-value">{{ formatAmount(currentStock.amount) }}</span>
+          <span class="detail-value">{{ formatAmount(currentStock.amount || 0) }}</span>
         </div>
       </div>
 
@@ -85,11 +77,7 @@
 
       <!-- 技术信号面板 -->
       <div class="technical-signals-container">
-        <TechnicalSignals
-          v-if="currentStock"
-          :stock-code="currentStock.symbol"
-          :kline-data="preparedKlineData"
-        />
+        <TechnicalSignals v-if="currentStock" :stock-code="currentStock.symbol" :kline-data="preparedKlineData" />
       </div>
     </div>
 
@@ -301,13 +289,13 @@ onMounted(async () => {
         if (dashboardSettings && dashboardSettings.defaultSymbol) {
           await selectStock(dashboardSettings.defaultSymbol)
         } else {
-          // 如果没有默认股票，加载上证指数
-          await selectStock('000001.SH')
+          // 如果没有默认股票，加载万科A
+          await selectStock('000002.SZ')
         }
       } catch (settingsError) {
         console.error('获取仪表盘设置失败:', settingsError)
-        // 加载上证指数作为备选
-        await selectStock('000001.SH')
+        // 加载万科A作为备选
+        await selectStock('000002.SZ')
       }
     }
   } catch (error) {
@@ -423,6 +411,7 @@ onMounted(async () => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

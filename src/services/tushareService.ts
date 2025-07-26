@@ -1,14 +1,47 @@
 import axios from 'axios'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
 import { getAuthHeaders } from '@/utils/auth'
+import {
+  tushareConfigManager,
+  getTushareToken,
+  getTushareProxyUrl,
+  getTushareRateLimit,
+  getTushareRetryCount,
+  getTushareTimeout,
+  isTushareDebugEnabled,
+  isTushareConfigValid,
+  getTushareConfigErrors,
+  validateTushareToken
+} from '@/config/tushareConfig'
+import { tushareRateLimiter, retryManager } from '@/utils/rateLimiter'
+import type {
+  TushareResponse,
+  TushareRequestParams,
+  StockBasicItem,
+  DailyItem,
+  DailyBasicItem,
+  ProBarItem,
+  IncomeItem,
+  BalanceSheetItem,
+  CashFlowItem,
+  FinaIndicatorItem,
+  IndexBasicItem,
+  IndexDailyItem,
+  TradeCalItem,
+  AdjFactorItem,
+  SuspendItem,
+  StkLimitItem,
+  DividendItem,
+  ForecastItem,
+  ExpressItem
+} from '@/types/tushare'
 
-// Tushare API 配置
-// 使用本地代理服务器避免 CORS 问题
-const TUSHARE_API_URL = '/api/tushare'
-const TOKEN = '983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61'
+// Tushare API 配置 - 使用配置管理器
+const TUSHARE_API_URL = getTushareProxyUrl()
+const TOKEN = getTushareToken()
 
-// 调试模式 - 开启可以看到更多日志
-const DEBUG_MODE = true
+// 调试模式 - 从配置管理器获取
+const DEBUG_MODE = isTushareDebugEnabled()
 
 // API调用控制
 // 控制是否允许调用Tushare API
@@ -34,9 +67,10 @@ const CACHE_EXPIRE_MS = 24 * 60 * 60 * 1000 // 24小时
 const QUOTE_CACHE_EXPIRE_MS = 5 * 60 * 1000 // 5分钟
 const NEWS_CACHE_EXPIRE_MS = 30 * 60 * 1000 // 30分钟
 
-// API请求限制相关参数
-const API_RATE_LIMIT = 60 * 1000 // 每分钟只能请求一次
-const API_RETRY_COUNT = 3 // 重试次数
+// API请求限制相关参数 - 从配置管理器获取
+const API_RATE_LIMIT = getTushareRateLimit() * 1000 // 转换为毫秒
+const API_RETRY_COUNT = getTushareRetryCount() // 重试次数
+const API_TIMEOUT = getTushareTimeout() // 请求超时时间
 const API_DAILY_LIMIT_WAIT = 3600 * 1000 // 每日限制时等待时间（1小时）
 const API_HOURLY_LIMIT_WAIT = 600 * 1000 // 每小时限制时等待时间（10分钟）
 
@@ -59,24 +93,36 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// 检查是否可以发送请求
+// 检查是否可以发送请求（使用新的速率限制器）
 async function checkRateLimit(api_name: string): Promise<void> {
-  const now = Date.now()
-  const lastTime = lastRequestTime[api_name] || 0
-  const timeSinceLastRequest = now - lastTime
-
-  if (timeSinceLastRequest < API_RATE_LIMIT) {
-    const waitTime = API_RATE_LIMIT - timeSinceLastRequest
-    log(`请求频率限制，等待 ${waitTime}ms 后再请求 ${api_name}`)
-    await sleep(waitTime)
+  // 使用新的速率限制器
+  if (!tushareRateLimiter.canMakeRequest(api_name)) {
+    await tushareRateLimiter.waitForNextRequest(api_name)
   }
 
-  // 更新最后请求时间
-  lastRequestTime[api_name] = Date.now()
+  // 记录请求（在实际发送请求后调用 recordRequest）
+}
+
+// 检查配置是否有效
+function checkConfigValid(): { valid: boolean; errors: string[] } {
+  if (!isTushareConfigValid()) {
+    return {
+      valid: false,
+      errors: getTushareConfigErrors()
+    }
+  }
+  return { valid: true, errors: [] }
 }
 
 // 检查是否允许API调用
 function checkApiCallAllowed(): boolean {
+  // 首先检查配置是否有效
+  const configCheck = checkConfigValid()
+  if (!configCheck.valid) {
+    log('Tushare 配置无效:', configCheck.errors)
+    return false
+  }
+
   // 检查当前路径是否为API测试页面或数据源切换页面
   const isApiTestPage = currentPath.includes('/tushare-test') || currentPath.includes('/api-test')
   const isDataSourcePage = currentPath.includes('/data-source')
@@ -94,6 +140,87 @@ function checkApiCallAllowed(): boolean {
 export function setAllowApiCall(allow: boolean): void {
   allowApiCall = allow
   log(`API调用权限已${allow ? '开启' : '关闭'}`)
+}
+
+// 检查 Tushare 配置状态
+export function checkTushareConfig(): { valid: boolean; errors: string[]; token: string } {
+  const configCheck = checkConfigValid()
+  return {
+    valid: configCheck.valid,
+    errors: configCheck.errors,
+    token: TOKEN ? TOKEN.substring(0, 8) + '...' : '未配置'
+  }
+}
+
+// 验证 Tushare Token
+export async function validateTushareTokenAsync(): Promise<{ valid: boolean; message: string }> {
+  return await validateTushareToken(TOKEN)
+}
+
+// 获取 Tushare 配置信息
+export function getTushareConfigInfo(): {
+  hasToken: boolean
+  tokenPreview: string
+  rateLimit: number
+  dailyLimit: number
+  retryCount: number
+  timeout: number
+  debugEnabled: boolean
+} {
+  return {
+    hasToken: !!TOKEN,
+    tokenPreview: TOKEN ? TOKEN.substring(0, 8) + '...' : '未配置',
+    rateLimit: API_RATE_LIMIT / 1000, // 转换回秒
+    dailyLimit: getTushareDailyLimit(),
+    retryCount: API_RETRY_COUNT,
+    timeout: API_TIMEOUT,
+    debugEnabled: DEBUG_MODE
+  }
+}
+
+// 获取速率限制统计信息
+export function getRateLimitStats(apiName?: string) {
+  return tushareRateLimiter.getStats(apiName)
+}
+
+// 获取剩余请求数
+export function getRemainingRequests(): {
+  dailyRemaining: number
+  minuteRemaining: Record<string, number>
+} {
+  const dailyRemaining = tushareRateLimiter.getDailyRemainingRequests()
+  const minuteRemaining: Record<string, number> = {}
+
+  // 获取常用 API 的每分钟剩余请求数
+  const commonApis = ['stock_basic', 'daily', 'daily_basic', 'pro_bar']
+  for (const api of commonApis) {
+    minuteRemaining[api] = tushareRateLimiter.getMinuteRemainingRequests(api)
+  }
+
+  return {
+    dailyRemaining,
+    minuteRemaining
+  }
+}
+
+// 重置速率限制统计
+export function resetRateLimitStats(apiName?: string): void {
+  tushareRateLimiter.reset(apiName)
+}
+
+// 更新重试配置
+export function updateRetryConfig(config: {
+  maxRetries?: number
+  baseDelay?: number
+  maxDelay?: number
+  backoffMultiplier?: number
+}): void {
+  retryManager.updateConfig(config)
+}
+
+// 获取重试配置
+export function getRetryConfig() {
+  return retryManager.getConfig()
 }
 
 // 记录已经更新过的路径，避免重复日志
@@ -115,14 +242,20 @@ export function updateCurrentPath(path: string): void {
   }
 }
 
-// Tushare API 请求函数
-async function tushareRequest(
+// Tushare API 请求函数（内部实现，不包含重试）
+async function tushareRequestInternal(
   api_name: string,
   params: any = {},
-  retryCount = 0,
   dataSource: string = 'tushare'
 ): Promise<any> {
   try {
+    // 检查配置是否有效
+    const configCheck = checkConfigValid()
+    if (!configCheck.valid) {
+      logError('Tushare 配置无效:', configCheck.errors)
+      throw new Error(`Tushare 配置无效: ${configCheck.errors.join(', ')}`)
+    }
+
     // 检查是否允许API调用
     if (!checkApiCallAllowed()) {
       log(
@@ -143,14 +276,16 @@ async function tushareRequest(
       }
     }
 
-    log(`正在请求 ${dataSource.toUpperCase()} API: ${api_name}，参数:`, params)
+    // 确保 dataSource 是字符串
+    const dataSourceStr = typeof dataSource === 'string' ? dataSource : 'tushare'
+    log(`正在请求 ${dataSourceStr.toUpperCase()} API: ${api_name}，参数:`, params)
     log(`请求URL: ${TUSHARE_API_URL}`)
 
     const requestData = {
       api_name,
       token: TOKEN,
       params,
-      data_source: dataSource, // 添加数据源参数
+      data_source: dataSourceStr, // 添加数据源参数
     }
 
     log('请求数据:', JSON.stringify(requestData))
@@ -168,7 +303,7 @@ async function tushareRequest(
         'Content-Type': 'application/json',
         Accept: 'application/json, text/plain, */*',
       },
-      timeout: 15000, // 15秒超时
+      timeout: API_TIMEOUT, // 使用配置的超时时间
     })
 
     log(`响应状态码: ${response.status}`)
@@ -182,6 +317,9 @@ async function tushareRequest(
     log('响应数据:', response.data)
 
     if (response.data.code === 0) {
+      // 记录成功请求
+      tushareRateLimiter.recordRequest(api_name)
+
       // 记录数据来源信息
       const dataSource = response.data.data_source || 'Tushare API'
       const dataSourceMessage = response.data.data_source_message || '数据来源未知'
@@ -202,67 +340,19 @@ async function tushareRequest(
         is_cache: isCache,
       }
     } else {
-      // 处理各种API限制错误
-      if (response.data.code === 40203 || response.data.code === 40101) {
-        // 检查是否是频率限制错误
-        if (response.data.msg.includes('每分钟最多访问') && retryCount < API_RETRY_COUNT) {
-          const waitTime = API_RATE_LIMIT * 1.5 // 增加等待时间，确保超过限制
-          logError(
-            `分钟频率限制错误，等待 ${waitTime / 1000} 秒后重试 (${
-              retryCount + 1
-            }/${API_RETRY_COUNT})`
-          )
-          await sleep(waitTime)
-          return tushareRequest(api_name, params, retryCount + 1, dataSource)
-        }
+      // 记录错误
+      tushareRateLimiter.recordError(api_name, response.data.code)
 
-        // 检查是否是小时限制错误
-        else if (response.data.msg.includes('每小时最多访问') && retryCount < API_RETRY_COUNT) {
-          const waitTime = API_HOURLY_LIMIT_WAIT
-          logError(
-            `小时频率限制错误，等待 ${waitTime / 1000} 秒后重试 (${
-              retryCount + 1
-            }/${API_RETRY_COUNT})`
-          )
-          await sleep(waitTime)
-          return tushareRequest(api_name, params, retryCount + 1, dataSource)
-        }
-
-        // 检查是否是每日限制错误
-        else if (response.data.msg.includes('每天最多访问') && retryCount < API_RETRY_COUNT) {
-          const waitTime = API_DAILY_LIMIT_WAIT
-          logError(
-            `每日频率限制错误，等待 ${waitTime / 1000} 秒后重试 (${
-              retryCount + 1
-            }/${API_RETRY_COUNT})`
-          )
-          await sleep(waitTime)
-          return tushareRequest(api_name, params, retryCount + 1, dataSource)
-        }
-
-        // 其他API限制错误，直接抛出错误
-        else {
-          logError(`Tushare API ${api_name} 请求受限:`, response.data.msg)
-          throw new Error(`Tushare API调用受限: ${response.data.msg || 'API调用受限'}，请检查API配置或稍后重试`)
-        }
-      }
+      // 创建带错误代码的错误对象
+      const error = new Error(response.data.msg || '请求失败')
+        ; (error as any).code = response.data.code
 
       logError(`Tushare API ${api_name} 请求返回错误:`, response.data)
-      throw new Error(response.data.msg || '请求失败')
+      throw error
     }
   } catch (error: any) {
-    // 如果是超时错误或网络错误，尝试重试
-    if (
-      (error.code === 'ECONNABORTED' ||
-        error.message.includes('timeout') ||
-        error.message.includes('Network Error')) &&
-      retryCount < API_RETRY_COUNT
-    ) {
-      const waitTime = 2000 * (retryCount + 1) // 按指数退避等待
-      logError(`连接超时或网络错误，${waitTime}ms 后重试 (${retryCount + 1}/${API_RETRY_COUNT})`)
-      await sleep(waitTime)
-      return tushareRequest(api_name, params, retryCount + 1)
-    }
+    // 记录错误
+    tushareRateLimiter.recordError(api_name)
 
     if (error.response) {
       // 服务器返回了错误状态码
@@ -278,6 +368,438 @@ async function tushareRequest(
       logError(`Tushare API ${api_name} 请求错误:`, error.message)
     }
     throw error
+  }
+}
+
+// 带重试机制的 Tushare API 请求函数
+async function tushareRequest(
+  api_name: string,
+  params: any = {},
+  dataSource: string = 'tushare'
+): Promise<any> {
+  return await retryManager.executeWithRetry(
+    () => tushareRequestInternal(api_name, params, dataSource),
+    `Tushare API ${api_name}`
+  )
+}
+
+// 将 Tushare API 响应数据转换为对象数组
+function transformTushareData<T>(response: { fields: string[], items: any[][] }): T[] {
+  const { fields, items } = response
+  return items.map(item => {
+    const obj: any = {}
+    fields.forEach((field, index) => {
+      obj[field] = item[index]
+    })
+    return obj as T
+  })
+}
+
+// 股票基础信息 API
+export async function getStockBasic(params: {
+  ts_code?: string
+  name?: string
+  exchange?: string
+  market?: string
+  is_hs?: string
+  list_status?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<StockBasicItem[]> {
+  const response = await tushareRequest('stock_basic', params)
+  return transformTushareData<StockBasicItem>(response)
+}
+
+// 日线行情 API
+export async function getDaily(params: {
+  ts_code?: string
+  trade_date?: string
+  start_date?: string
+  end_date?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<DailyItem[]> {
+  const response = await tushareRequest('daily', params)
+  return transformTushareData<DailyItem>(response)
+}
+
+// 每日指标 API
+export async function getDailyBasic(params: {
+  ts_code?: string
+  trade_date?: string
+  start_date?: string
+  end_date?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<DailyBasicItem[]> {
+  const response = await tushareRequest('daily_basic', params)
+  return transformTushareData<DailyBasicItem>(response)
+}
+
+// 复权行情 API
+export async function getProBar(params: {
+  ts_code?: string
+  start_date?: string
+  end_date?: string
+  asset?: string
+  adj?: string
+  freq?: string
+  ma?: number[]
+  factors?: string[]
+  adjfactor?: boolean
+  offset?: number
+  limit?: number
+} = {}): Promise<ProBarItem[]> {
+  const response = await tushareRequest('pro_bar', params)
+  return transformTushareData<ProBarItem>(response)
+}
+
+// 利润表 API
+export async function getIncome(params: {
+  ts_code?: string
+  ann_date?: string
+  start_date?: string
+  end_date?: string
+  period?: string
+  report_type?: string
+  comp_type?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<IncomeItem[]> {
+  const response = await tushareRequest('income', params)
+  return transformTushareData<IncomeItem>(response)
+}
+
+// 资产负债表 API
+export async function getBalanceSheet(params: {
+  ts_code?: string
+  ann_date?: string
+  start_date?: string
+  end_date?: string
+  period?: string
+  report_type?: string
+  comp_type?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<BalanceSheetItem[]> {
+  const response = await tushareRequest('balancesheet', params)
+  return transformTushareData<BalanceSheetItem>(response)
+}
+
+// 现金流量表 API
+export async function getCashFlow(params: {
+  ts_code?: string
+  ann_date?: string
+  start_date?: string
+  end_date?: string
+  period?: string
+  report_type?: string
+  comp_type?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<CashFlowItem[]> {
+  const response = await tushareRequest('cashflow', params)
+  return transformTushareData<CashFlowItem>(response)
+}
+
+// 财务指标 API
+export async function getFinaIndicator(params: {
+  ts_code?: string
+  ann_date?: string
+  start_date?: string
+  end_date?: string
+  period?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<FinaIndicatorItem[]> {
+  const response = await tushareRequest('fina_indicator', params)
+  return transformTushareData<FinaIndicatorItem>(response)
+}
+
+// 指数基础信息 API
+export async function getIndexBasic(params: {
+  market?: string
+  publisher?: string
+  category?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<IndexBasicItem[]> {
+  const response = await tushareRequest('index_basic', params)
+  return transformTushareData<IndexBasicItem>(response)
+}
+
+// 指数日线行情 API
+export async function getIndexDaily(params: {
+  ts_code?: string
+  trade_date?: string
+  start_date?: string
+  end_date?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<IndexDailyItem[]> {
+  const response = await tushareRequest('index_daily', params)
+  return transformTushareData<IndexDailyItem>(response)
+}
+
+// 交易日历 API
+export async function getTradeCal(params: {
+  exchange?: string
+  start_date?: string
+  end_date?: string
+  is_open?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<TradeCalItem[]> {
+  const response = await tushareRequest('trade_cal', params)
+  return transformTushareData<TradeCalItem>(response)
+}
+
+// ============ 核心业务 API 端点 ============
+
+// 获取所有股票列表（简化接口）
+export async function getAllStocks(params: {
+  exchange?: 'SSE' | 'SZSE' | 'BSE'
+  market?: string
+  list_status?: 'L' | 'D' | 'P'
+  limit?: number
+} = {}): Promise<Stock[]> {
+  try {
+    const stockBasicData = await getStockBasic({
+      exchange: params.exchange,
+      market: params.market,
+      list_status: params.list_status || 'L', // 默认只获取上市股票
+      limit: params.limit || 5000
+    })
+
+    return convertStockList({ fields: ['ts_code', 'name', 'market', 'industry'], items: stockBasicData.map(item => [item.ts_code, item.name, item.market, item.industry]) })
+  } catch (error) {
+    logError('获取股票列表失败:', error)
+    throw new Error('获取股票列表失败，请检查网络连接和API配置')
+  }
+}
+
+// 获取股票历史数据（简化接口）
+export async function getStockHistory(
+  symbol: string,
+  startDate?: string,
+  endDate?: string,
+  limit?: number
+): Promise<StockData> {
+  try {
+    const dailyData = await getDaily({
+      ts_code: symbol,
+      start_date: startDate,
+      end_date: endDate,
+      limit: limit || 1000
+    })
+
+    return convertStockData(symbol, { fields: ['trade_date', 'open', 'close', 'high', 'low', 'vol'], items: dailyData.map(item => [item.trade_date, item.open, item.close, item.high, item.low, item.vol]) })
+  } catch (error) {
+    logError(`获取股票 ${symbol} 历史数据失败:`, error)
+    throw new Error(`获取股票 ${symbol} 历史数据失败，请检查股票代码和网络连接`)
+  }
+}
+
+// 获取股票基础信息（简化接口）
+export async function getStockInfo(symbol: string): Promise<StockBasicItem | null> {
+  try {
+    const stockData = await getStockBasic({ ts_code: symbol })
+    return stockData.length > 0 ? stockData[0] : null
+  } catch (error) {
+    logError(`获取股票 ${symbol} 基础信息失败:`, error)
+    return null
+  }
+}
+
+// 获取最新交易日
+export async function getLatestTradeDate(exchange: string = 'SSE'): Promise<string | null> {
+  try {
+    const tradeCal = await getTradeCal({
+      exchange,
+      is_open: '1',
+      limit: 1
+    })
+
+    return tradeCal.length > 0 ? tradeCal[0].cal_date : null
+  } catch (error) {
+    logError('获取最新交易日失败:', error)
+    return null
+  }
+}
+
+// 批量获取股票数据
+export async function getBatchStockData(
+  symbols: string[],
+  startDate?: string,
+  endDate?: string
+): Promise<Record<string, StockData>> {
+  const result: Record<string, StockData> = {}
+
+  // 分批处理，避免一次请求太多数据
+  const batchSize = 10
+  for (let i = 0; i < symbols.length; i += batchSize) {
+    const batch = symbols.slice(i, i + batchSize)
+
+    const promises = batch.map(async (symbol) => {
+      try {
+        const data = await getStockHistory(symbol, startDate, endDate)
+        return { symbol, data }
+      } catch (error) {
+        logError(`批量获取股票 ${symbol} 数据失败:`, error)
+        return { symbol, data: null }
+      }
+    })
+
+    const batchResults = await Promise.all(promises)
+
+    for (const { symbol, data } of batchResults) {
+      if (data) {
+        result[symbol] = data
+      }
+    }
+
+    // 批次间稍作延迟，避免触发频率限制
+    if (i + batchSize < symbols.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+  }
+
+  return result
+}
+
+// 获取股票财务数据（简化接口）
+export async function getStockFinancials(
+  symbol: string,
+  period?: string,
+  startDate?: string,
+  endDate?: string
+): Promise<{
+  income: IncomeItem[]
+  balance: BalanceSheetItem[]
+  cashflow: CashFlowItem[]
+  indicators: FinaIndicatorItem[]
+}> {
+  try {
+    const params = {
+      ts_code: symbol,
+      period,
+      start_date: startDate,
+      end_date: endDate,
+      limit: 20
+    }
+
+    const [income, balance, cashflow, indicators] = await Promise.all([
+      getIncome(params),
+      getBalanceSheet(params),
+      getCashFlow(params),
+      getFinaIndicator(params)
+    ])
+
+    return { income, balance, cashflow, indicators }
+  } catch (error) {
+    logError(`获取股票 ${symbol} 财务数据失败:`, error)
+    throw new Error(`获取股票 ${symbol} 财务数据失败，请检查股票代码和网络连接`)
+  }
+}
+
+// 获取行业股票列表
+export async function getIndustryStocks(industry: string, limit: number = 100): Promise<Stock[]> {
+  try {
+    const stockBasicData = await getStockBasic({
+      industry,
+      list_status: 'L',
+      limit
+    })
+
+    return convertStockList({
+      fields: ['ts_code', 'name', 'market', 'industry'],
+      items: stockBasicData.map(item => [item.ts_code, item.name, item.market, item.industry])
+    })
+  } catch (error) {
+    logError(`获取行业 ${industry} 股票列表失败:`, error)
+    throw new Error(`获取行业 ${industry} 股票列表失败，请检查网络连接`)
+  }
+}
+
+// 获取指数成分股（需要权限）
+export async function getIndexComponents(indexCode: string): Promise<Stock[]> {
+  try {
+    // 注意：这个API需要特定权限，可能需要付费账户
+    const response = await tushareRequest('index_weight', {
+      index_code: indexCode,
+      trade_date: await getLatestTradeDate()
+    })
+
+    if (response && response.items) {
+      const stockCodes = response.items.map((item: any[]) => item[1]) // 假设第二列是股票代码
+      const stocksData = await Promise.all(
+        stockCodes.slice(0, 50).map((code: string) => getStockInfo(code))
+      )
+
+      return stocksData
+        .filter(stock => stock !== null)
+        .map(stock => ({
+          symbol: stock!.ts_code,
+          name: stock!.name,
+          market: stock!.market,
+          industry: stock!.industry
+        }))
+    }
+
+    return []
+  } catch (error) {
+    logError(`获取指数 ${indexCode} 成分股失败:`, error)
+    // 如果没有权限，返回空数组而不是抛出错误
+    return []
+  }
+}
+
+// 搜索股票
+export async function searchStocks(keyword: string, limit: number = 20): Promise<Stock[]> {
+  try {
+    // 先尝试按股票代码搜索
+    if (/^\d{6}/.test(keyword)) {
+      const codePattern = keyword.padEnd(6, '0')
+      const stockData = await getStockBasic({
+        ts_code: `${codePattern}.SZ`,
+        limit: 1
+      })
+
+      if (stockData.length > 0) {
+        return convertStockList({
+          fields: ['ts_code', 'name', 'market', 'industry'],
+          items: stockData.map(item => [item.ts_code, item.name, item.market, item.industry])
+        })
+      }
+
+      // 尝试上海交易所
+      const stockDataSH = await getStockBasic({
+        ts_code: `${codePattern}.SH`,
+        limit: 1
+      })
+
+      if (stockDataSH.length > 0) {
+        return convertStockList({
+          fields: ['ts_code', 'name', 'market', 'industry'],
+          items: stockDataSH.map(item => [item.ts_code, item.name, item.market, item.industry])
+        })
+      }
+    }
+
+    // 按名称搜索
+    const stockData = await getStockBasic({
+      name: keyword,
+      list_status: 'L',
+      limit
+    })
+
+    return convertStockList({
+      fields: ['ts_code', 'name', 'market', 'industry'],
+      items: stockData.map(item => [item.ts_code, item.name, item.market, item.industry])
+    })
+  } catch (error) {
+    logError(`搜索股票 "${keyword}" 失败:`, error)
+    return []
   }
 }
 
@@ -430,63 +952,28 @@ export const tushareService = {
   // 获取股票列表
   async getStocks(): Promise<Stock[]> {
     try {
-      // 获取当前数据源类型
-      const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
-
       // 尝试从缓存获取
       const cachedData = getCachedStockBasic()
       if (cachedData) {
-        log(`从缓存获取股票基础数据 (数据源: ${currentDataSource})`)
+        log('从缓存获取股票基础数据')
         return cachedData
       }
 
-      // 使用新的后端接口获取股票基本信息
-      log(`从后端获取股票基本信息 (数据源: ${currentDataSource})`)
-      const response = await axios.get(`${TUSHARE_API_URL}/stock-basic`, {
-        params: { data_source: currentDataSource },
+      // 使用新的简化 API 获取股票列表
+      log('从 Tushare API 获取股票基本信息')
+      const stocks = await getAllStocks({
+        list_status: 'L',
+        limit: 5000
       })
 
-      if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        const stocks = response.data.data.map((item: any) => ({
-          symbol: item.ts_code,
-          name: item.name,
-          market: item.market || (item.ts_code.includes('SH') ? '上海' : '深圳'),
-          industry: item.industry || '未知',
-        }))
+      // 缓存数据
+      cacheStockBasic(stocks)
 
-        // 缓存数据
-        cacheStockBasic(stocks)
-
-        log(`成功获取 ${stocks.length} 条股票基本信息 (来源: ${response.data.source})`)
-        return stocks
-      } else {
-        throw new Error(response.data?.message || '获取股票列表失败')
-      }
+      log(`成功获取 ${stocks.length} 条股票基本信息`)
+      return stocks
     } catch (error) {
-      // 如果后端接口失败，尝试使用原来的方法
-      try {
-        log('后端接口失败，尝试使用原来的方法获取股票列表')
-        // 获取当前数据源类型
-        const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
-
-        const data = await tushareRequest(
-          'stock_basic',
-          {
-            exchange: '',
-            list_status: 'L',
-            fields: 'ts_code,name,industry,market,list_date',
-          },
-          0,
-          currentDataSource
-        )
-        const stocks = convertStockList(data)
-        cacheStockBasic(stocks)
-        return stocks
-      } catch (fallbackError) {
-        logError('获取股票列表失败:', error)
-        logError('原来的方法也失败:', fallbackError)
-        return []
-      }
+      logError('获取股票列表失败:', error)
+      return []
     }
   },
 
@@ -523,25 +1010,13 @@ export const tushareService = {
 
       log(`请求股票数据: ${symbol}, 时间范围: ${formatDate(startDate)} 至 ${formatDate(endDate)}`)
 
-      // 获取当前数据源类型
-      const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
-
-      const data = await tushareRequest(
-        'daily',
-        {
-          ts_code: symbol,
-          start_date: formatDate(startDate),
-          end_date: formatDate(endDate),
-        },
-        0,
-        currentDataSource
+      // 使用新的简化 API 获取股票历史数据
+      const stockData = await getStockHistory(
+        symbol,
+        formatDate(startDate),
+        formatDate(endDate),
+        days
       )
-
-      if (!data || !data.items || data.items.length === 0) {
-        throw new Error('未获取到有效数据，请检查时间范围或股票代码')
-      }
-
-      const stockData = convertStockData(symbol, data)
 
       // 缓存数据
       cacheStockDaily(symbol, stockData)
@@ -556,15 +1031,8 @@ export const tushareService = {
   // 搜索股票
   async searchStocks(query: string): Promise<Stock[]> {
     try {
-      // 先获取所有股票
-      const allStocks = await this.getStocks()
-
-      // 在本地过滤
-      return allStocks.filter(
-        (stock) =>
-          stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
-          stock.name.toLowerCase().includes(query.toLowerCase())
-      )
+      // 使用新的搜索 API
+      return await searchStocks(query, 20)
     } catch (error) {
       console.error('搜索股票失败:', error)
       return []
@@ -736,75 +1204,10 @@ export const tushareService = {
           return indexInfo
         }
       } catch (apiError) {
-        log(`API调用失败，使用模拟数据代替: ${indexCode}`, apiError)
+        log(`Tushare API获取指数${indexCode} 基本信息失败: ${apiError} `)
+        // 如果API调用失败，直接抛出错误，不使用模拟数据
+        throw new Error(`Tushare API获取指数${indexCode} 基本信息失败，请检查API配置或网络连接`)
       }
-
-      // 模拟指数基本信息
-      const mockIndexInfo: Record<string, any> = {
-        '000001.SH': {
-          code: '000001.SH',
-          name: '上证指数',
-          market: 'SZSE',
-          publisher: '上海证券交易所',
-          category: '综合指数',
-          components: 1800,
-        },
-        '399001.SZ': {
-          code: '399001.SZ',
-          name: '深证成指',
-          market: 'SZSE',
-          publisher: '深圳证券交易所',
-          category: '综合指数',
-          components: 500,
-        },
-        '399006.SZ': {
-          code: '399006.SZ',
-          name: '创业板指',
-          market: 'SZSE',
-          publisher: '深圳证券交易所',
-          category: '综合指数',
-          components: 100,
-        },
-        '000016.SH': {
-          code: '000016.SH',
-          name: '上证50',
-          market: 'SSE',
-          publisher: '上海证券交易所',
-          category: '规模指数',
-          components: 50,
-        },
-        '000300.SH': {
-          code: '000300.SH',
-          name: '沪深300',
-          market: 'SSE',
-          publisher: '中证指数有限公司',
-          category: '规模指数',
-          components: 300,
-        },
-        '000905.SH': {
-          code: '000905.SH',
-          name: '中证500',
-          market: 'SSE',
-          publisher: '中证指数有限公司',
-          category: '规模指数',
-          components: 500,
-        },
-      }
-
-      // 获取指定指数的信息，如果不存在则返回默认值
-      const indexInfo = mockIndexInfo[indexCode] || {
-        code: indexCode,
-        name: `指数${indexCode}`,
-        market: '未知',
-        publisher: '未知',
-        category: '未知',
-        components: 0,
-      }
-
-      // 缓存数据
-      cacheData(cacheKey, indexInfo, CACHE_EXPIRE_MS)
-
-      return indexInfo
 
       /* 原始API调用代码，暂时注释掉
       // 获取指数基本信息
@@ -813,19 +1216,19 @@ export const tushareService = {
         fields:
           'ts_code,name,market,publisher,category,base_date,base_point,list_date,weight_rule,desc,exp_date',
       })
-
+  
       if (!data || !data.items || data.items.length === 0) {
-        throw new Error(`未获取到指数 ${indexCode} 的基本信息`)
+        throw new Error(`未获取到指数 ${ indexCode } 的基本信息`)
       }
-
+  
       const { fields, items } = data
       const indexData = items[0]
-
+  
       const nameIndex = fields.indexOf('name')
       const marketIndex = fields.indexOf('market')
       const publisherIndex = fields.indexOf('publisher')
       const categoryIndex = fields.indexOf('category')
-
+  
       const indexInfo = {
         code: indexCode,
         name: indexData[nameIndex],
@@ -834,14 +1237,14 @@ export const tushareService = {
         category: indexData[categoryIndex],
         components: 0, // 暂时无法获取成分股数量
       }
-
+  
       // 缓存数据
       cacheData(cacheKey, indexInfo, CACHE_EXPIRE_MS)
-
+  
       return indexInfo
       */
     } catch (error) {
-      console.error(`获取指数 ${indexCode} 信息失败:`, error)
+      console.error(`获取指数 ${indexCode} 信息失败: `, error)
       return null
     }
   },
@@ -850,19 +1253,19 @@ export const tushareService = {
   async getIndexQuote(indexCode: string, forceRefresh = false): Promise<any> {
     try {
       // 定义缓存键
-      const cacheKey = `${INDEX_CACHE_PREFIX}quote_${indexCode}`
+      const cacheKey = `${INDEX_CACHE_PREFIX}quote_${indexCode} `
 
       // 如果不强制刷新，尝试从缓存获取
       if (!forceRefresh) {
         const cachedData = getCachedData(cacheKey, QUOTE_CACHE_EXPIRE_MS)
         if (cachedData) {
-          log(`使用缓存的指数行情: ${indexCode}`)
+          log(`使用缓存的指数行情: ${indexCode} `)
           return cachedData
         }
       }
 
       // 尝试使用API调用，如果失败则使用模拟数据
-      log(`尝试获取指数行情: ${indexCode}`)
+      log(`尝试获取指数行情: ${indexCode} `)
 
       try {
         // 获取当前日期
@@ -911,8 +1314,8 @@ export const tushareService = {
           return quoteData
         }
       } catch (apiError) {
-        log(`API调用失败: ${indexCode}`, apiError)
-        throw new Error(`无法获取指数${indexCode}的行情数据，请检查API配置或网络连接`)
+        log(`API调用失败: ${indexCode} `, apiError)
+        throw new Error(`无法获取指数${indexCode} 的行情数据，请检查API配置或网络连接`)
       }
 
       // 不使用模拟数据，返回null
@@ -933,7 +1336,7 @@ export const tushareService = {
       })
 
       if (!data || !data.items || data.items.length === 0) {
-        throw new Error(`未获取到指数 ${indexCode} 的行情数据`)
+        throw new Error(`未获取到指数 ${ indexCode } 的行情数据`)
       }
 
       // 获取最新一天的数据
@@ -968,7 +1371,7 @@ export const tushareService = {
       return quoteData
       */
     } catch (error) {
-      console.error(`获取指数 ${indexCode} 行情失败:`, error)
+      console.error(`获取指数 ${indexCode} 行情失败: `, error)
       return null
     }
   },
@@ -1011,44 +1414,10 @@ export const tushareService = {
           return sectorList
         }
       } catch (apiError) {
-        log(`API调用失败，使用模拟数据代替: 行业板块列表`, apiError)
+        log(`Tushare API获取行业板块列表失败: ${apiError} `)
+        // 如果API调用失败，直接抛出错误，不使用模拟数据
+        throw new Error(`Tushare API获取行业板块列表失败，请检查API配置或网络连接`)
       }
-
-      // 模拟行业板块列表
-      const mockSectors = [
-        { code: '801010', name: '农林牧渔' },
-        { code: '801020', name: '采掘' },
-        { code: '801030', name: '化工' },
-        { code: '801040', name: '钢铁' },
-        { code: '801050', name: '有色金属' },
-        { code: '801080', name: '电子' },
-        { code: '801110', name: '家用电器' },
-        { code: '801120', name: '食品饮料' },
-        { code: '801130', name: '纺织服装' },
-        { code: '801150', name: '医药生物' },
-        { code: '801160', name: '公用事业' },
-        { code: '801170', name: '交通运输' },
-        { code: '801180', name: '房地产' },
-        { code: '801200', name: '商业贸易' },
-        { code: '801210', name: '休闲服务' },
-        { code: '801230', name: '综合' },
-        { code: '801710', name: '建筑材料' },
-        { code: '801720', name: '建筑装饰' },
-        { code: '801730', name: '电气设备' },
-        { code: '801740', name: '国防军工' },
-        { code: '801750', name: '计算机' },
-        { code: '801760', name: '传媒' },
-        { code: '801770', name: '通信' },
-        { code: '801780', name: '银行' },
-        { code: '801790', name: '非银金融' },
-        { code: '801880', name: '汽车' },
-        { code: '801890', name: '机械设备' },
-      ]
-
-      // 缓存数据
-      cacheSectorList(mockSectors)
-
-      return mockSectors
 
       /* 原始API调用代码，暂时注释掉
       // 获取行业板块列表
@@ -1085,7 +1454,7 @@ export const tushareService = {
   async getSectorQuote(sectorCode: string, forceRefresh = false): Promise<any> {
     try {
       // 定义缓存键
-      const CACHE_KEY = `sector_quote_${sectorCode}`
+      const CACHE_KEY = `sector_quote_${sectorCode} `
       const CACHE_EXPIRY = 5 * 60 * 1000 // 5分钟缓存
 
       // 如果不强制刷新，尝试从缓存获取
@@ -1098,7 +1467,7 @@ export const tushareService = {
 
             // 检查缓存是否过期
             if (now - timestamp < CACHE_EXPIRY) {
-              log(`使用缓存的行业板块行情: ${sectorCode}`)
+              log(`使用缓存的行业板块行情: ${sectorCode} `)
               return data
             }
           }
@@ -1107,30 +1476,10 @@ export const tushareService = {
         }
       }
 
-      // 由于Tushare没有直接提供行业板块行情，这里模拟一个
-      const quoteData = {
-        change: Math.random() * 2 - 1,
-        pct_chg: Math.random() * 3 - 1.5,
-        vol: Math.round(Math.random() * 20000000000),
-        amount: Math.round(Math.random() * 100000000000),
-      }
-
-      // 缓存数据
-      try {
-        localStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({
-            data: quoteData,
-            timestamp: new Date().getTime(),
-          })
-        )
-      } catch (cacheError) {
-        console.warn('缓存行业板块行情数据失败:', cacheError)
-      }
-
-      return quoteData
+      // Tushare 不直接提供行业板块行情，抛出错误
+      throw new Error('Tushare API 不提供行业板块行情功能，请使用其他数据源')
     } catch (error) {
-      console.error(`获取行业板块 ${sectorCode} 行情失败:`, error)
+      console.error(`获取行业板块 ${sectorCode} 行情失败: `, error)
       return null
     }
   },
@@ -1161,7 +1510,7 @@ export const tushareService = {
 
       return type === 'up' ? upStocks.slice(0, count) : downStocks.slice(0, count)
     } catch (error) {
-      console.error(`获取行业 ${sectorCode} ${type === 'up' ? '领涨' : '领跌'}股票失败:`, error)
+      console.error(`获取行业 ${sectorCode} ${type === 'up' ? '领涨' : '领跌'} 股票失败: `, error)
       return []
     }
   },
@@ -1254,7 +1603,7 @@ export const tushareService = {
         // 再次尝试从缓存获取
         const cachedNews = getCachedNews()
         if (cachedNews) {
-          log(`使用缓存的财经新闻 (API调用被禁止)`)
+          log(`使用缓存的财经新闻(API调用被禁止)`)
           return cachedNews.slice(0, count).map((item) => ({
             ...item,
             data_source: 'cache (API禁止)',
@@ -1271,95 +1620,15 @@ export const tushareService = {
         // 我们使用模拟数据，但标记为API数据
         log('从API获取财经新闻')
 
-        // 模拟API延迟
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        // 由于Tushare没有直接提供财经新闻，这里模拟一些
-        const mockNews: FinancialNews[] = [
-          {
-            title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
-            time: '10分钟前',
-            source: '财经日报',
-            url: '#',
-            important: true,
-            content:
-              '中国人民银行今日宣布，决定于下周一起下调金融机构存款准备金率0.5个百分点，预计将释放长期资金约1万亿元。',
-            data_source: 'tushare_api',
-          },
-          {
-            title: '科技板块全线上涨，半导体行业领涨',
-            time: '30分钟前',
-            source: '证券时报',
-            url: '#',
-            important: false,
-            content:
-              '今日A股市场，科技板块表现强势，全线上涨。其中，半导体行业领涨，多只个股涨停。',
-            data_source: 'tushare_api',
-          },
-          {
-            title: '多家券商上调A股目标位，看好下半年行情',
-            time: '1小时前',
-            source: '上海证券报',
-            url: '#',
-            important: false,
-            content: '近日，多家券商发布研报，上调A股目标位，普遍看好下半年市场行情。',
-            data_source: 'tushare_api',
-          },
-          {
-            title: '外资连续三日净流入，北向资金今日净买入超50亿',
-            time: '2小时前',
-            source: '中国证券报',
-            url: '#',
-            important: false,
-            content:
-              '据统计数据显示，外资已连续三个交易日净流入A股市场，今日北向资金净买入超过50亿元。',
-            data_source: 'tushare_api',
-          },
-          {
-            title: '新能源汽车销量创新高，相关概念股受关注',
-            time: '3小时前',
-            source: '第一财经',
-            url: '#',
-            important: false,
-            content:
-              '据中国汽车工业协会最新数据，上月我国新能源汽车销量再创历史新高，同比增长超过50%。',
-            data_source: 'tushare_api',
-          },
-          {
-            title: '国常会：进一步扩大内需，促进消费持续恢复',
-            time: '4小时前',
-            source: '新华社',
-            url: '#',
-            important: true,
-            content: '国务院常务会议今日召开，会议强调要进一步扩大内需，促进消费持续恢复和升级。',
-            data_source: 'tushare_api',
-          },
-          {
-            title: '两部门：加大对先进制造业支持力度，优化融资环境',
-            time: '5小时前',
-            source: '经济参考报',
-            url: '#',
-            important: false,
-            content: '财政部、工信部联合发文，要求加大对先进制造业的支持力度，优化融资环境。',
-            data_source: 'tushare_api',
-          },
-        ]
-
-        // 随机打乱新闻顺序
-        const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
-
-        // 缓存新闻数据
-        cacheNews(shuffledNews)
-
-        // 返回指定数量的新闻
-        return shuffledNews.slice(0, count)
+        // Tushare 不直接提供财经新闻，抛出错误提示用户使用其他新闻源
+        throw new Error('Tushare API 不提供财经新闻功能，请使用其他新闻数据源')
       } catch (apiError) {
         logError('API获取财经新闻失败:', apiError)
 
         // 尝试从缓存获取
         const cachedNews = getCachedNews()
         if (cachedNews) {
-          log(`使用缓存的财经新闻 (API失败后)`)
+          log(`使用缓存的财经新闻(API失败后)`)
           return cachedNews.slice(0, count).map((item) => ({
             ...item,
             data_source: 'cache (API失败)',

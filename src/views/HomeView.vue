@@ -80,125 +80,375 @@ const goToStockAnalysis = (symbol: string) => {
 
 <template>
   <main class="home-view">
+    <!-- Hero 区域 -->
     <section class="hero">
-      <div class="hero-content">
-        <div class="hero-badge">
-          <span class="badge-icon">🚀</span>
-          <span>专业版 3.0</span>
-          <span class="badge-new">NEW</span>
-        </div>
-        <h1>
-          <span class="gradient-text">智能股票分析平台</span>
-          <span class="subtitle">AI驱动的投资决策助手</span>
-        </h1>
-        <p class="hero-description">
-          集成多维度技术分析、实时市场监控、智能量化策略和风险管理于一体的专业投资平台
-          <br />
-          <span class="highlight">让数据驱动您的每一个投资决策</span>
-        </p>
-
-        <div class="hero-stats">
-          <div class="stat-item">
-            <div class="stat-icon">📊</div>
-            <div class="stat-value">5000+</div>
-            <div class="stat-label">A股全覆盖</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-icon">🔧</div>
-            <div class="stat-value">30+</div>
-            <div class="stat-label">技术指标</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-icon">⚡</div>
-            <div class="stat-value">实时</div>
-            <div class="stat-label">数据更新</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-icon">🎯</div>
-            <div class="stat-value">99.9%</div>
-            <div class="stat-label">准确率</div>
-          </div>
-        </div>
-
-        <div class="hero-buttons">
-          <button class="btn btn-accent" @click="router.push('/dashboard')">
-            <span class="btn-icon">📊</span>
-            <span>基础仪表盘</span>
-          </button>
-          <button class="btn btn-premium" @click="router.push('/advanced-dashboard')">
-            <span class="btn-icon">🚀</span>
-            <span>高级仪表盘</span>
-          </button>
-          <button class="btn btn-outline" @click="router.push('/smart-recommendation')">
-            <span class="btn-icon">🤖</span>
-            <span>AI推荐</span>
-          </button>
-          <button class="btn btn-outline" @click="router.push('/stock-monitor')">
-            <span class="btn-icon">📈</span>
-            <span>爱盯盘</span>
-          </button>
-        </div>
+      <div class="hero-background">
+        <div class="hero-gradient"></div>
+        <div class="hero-pattern"></div>
       </div>
-      <div class="hero-image">
-        <img src="@/assets/stock-chart.svg" alt="股票图表" class="main-image" />
-        <div class="image-overlay"></div>
+
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-text">
+            <div class="hero-badge">
+              <span class="badge-icon">💎</span>
+              <span class="badge-text">专业版 4.0</span>
+              <span class="badge-new">NEW</span>
+            </div>
+
+            <h1 class="hero-title">
+              <span class="title-main gradient-text">智能股票分析平台</span>
+              <span class="title-sub">AI驱动的专业投资决策系统</span>
+            </h1>
+
+            <p class="hero-description">
+              融合前沿人工智能技术与专业金融分析，为投资者提供全方位的市场洞察和决策支持。
+              <strong class="highlight">让智能分析成就投资价值</strong>
+            </p>
+
+            <!-- 核心数据展示 -->
+            <div class="hero-stats">
+              <div class="stat-item">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                  <div class="stat-value">5,000+</div>
+                  <div class="stat-label">A股全覆盖</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">🔧</div>
+                <div class="stat-content">
+                  <div class="stat-value">50+</div>
+                  <div class="stat-label">技术指标</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-content">
+                  <div class="stat-value">实时</div>
+                  <div class="stat-label">数据推送</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-content">
+                  <div class="stat-value">99.9%</div>
+                  <div class="stat-label">系统稳定性</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 快速入口按钮 -->
+            <div class="hero-actions">
+              <button class="btn btn-primary btn-lg" @click="router.push('/dashboard')">
+                <span class="btn-icon">📊</span>
+                <span>开始分析</span>
+              </button>
+              <button class="btn btn-outline btn-lg" @click="router.push('/strategies/smart-recommendation')">
+                <span class="btn-icon">🤖</span>
+                <span>AI推荐</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <div class="visual-container">
+              <div class="chart-preview">
+                <img src="@/assets/stock-chart.svg" alt="专业股票分析图表" class="chart-image" />
+                <div class="chart-overlay">
+                  <div class="data-point data-point-1">
+                    <div class="point-value">+12.5%</div>
+                    <div class="point-label">今日涨幅</div>
+                  </div>
+                  <div class="data-point data-point-2">
+                    <div class="point-value">RSI: 65</div>
+                    <div class="point-label">技术指标</div>
+                  </div>
+                  <div class="data-point data-point-3">
+                    <div class="point-value">买入</div>
+                    <div class="point-label">AI建议</div>
+                  </div>
+                </div>
+              </div>
+              <div class="floating-cards">
+                <div class="floating-card card-1">
+                  <div class="card-icon">📈</div>
+                  <div class="card-text">实时监控</div>
+                </div>
+                <div class="floating-card card-2">
+                  <div class="card-icon">🔔</div>
+                  <div class="card-text">智能提醒</div>
+                </div>
+                <div class="floating-card card-3">
+                  <div class="card-icon">💼</div>
+                  <div class="card-text">组合管理</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
+    <!-- 功能快捷入口 -->
+    <section class="quick-access">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">功能快捷入口</h2>
+          <p class="section-description">快速访问核心功能，提升投资效率</p>
+        </div>
+
+        <div class="quick-access-grid">
+          <div class="quick-access-card primary" @click="router.push('/dashboard')">
+            <div class="card-icon">📊</div>
+            <div class="card-content">
+              <h3>基础仪表盘</h3>
+              <p>核心数据概览</p>
+            </div>
+            <div class="card-arrow">→</div>
+          </div>
+
+          <div class="quick-access-card premium" @click="router.push('/advanced-dashboard')">
+            <div class="card-icon">🚀</div>
+            <div class="card-content">
+              <h3>高级仪表盘</h3>
+              <p>专业级分析</p>
+            </div>
+            <span class="feature-badge premium">高级</span>
+            <div class="card-arrow">→</div>
+          </div>
+
+          <div class="quick-access-card" @click="router.push('/strategies/smart-recommendation')">
+            <div class="card-icon">🤖</div>
+            <div class="card-content">
+              <h3>AI智能推荐</h3>
+              <p>智能选股建议</p>
+            </div>
+            <span class="feature-badge basic">基础</span>
+            <div class="card-arrow">→</div>
+          </div>
+
+          <div class="quick-access-card" @click="router.push('/doji-pattern/screener')">
+            <div class="card-icon">✨</div>
+            <div class="card-content">
+              <h3>十字星选股</h3>
+              <p>形态筛选工具</p>
+            </div>
+            <span class="feature-badge basic">基础</span>
+            <div class="card-arrow">→</div>
+          </div>
+
+          <div class="quick-access-card" @click="router.push('/stock')">
+            <div class="card-icon">📈</div>
+            <div class="card-content">
+              <h3>股票分析</h3>
+              <p>技术指标分析</p>
+            </div>
+            <div class="card-arrow">→</div>
+          </div>
+
+          <div class="quick-access-card" @click="router.push('/tools/export')">
+            <div class="card-icon">📤</div>
+            <div class="card-content">
+              <h3>数据导出</h3>
+              <p>导出分析数据</p>
+            </div>
+            <span class="feature-badge premium">高级</span>
+            <div class="card-arrow">→</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 核心功能展示 -->
     <section class="features">
-      <h2>主要功能</h2>
-      <div class="feature-cards">
-        <div class="feature-card" @click="router.push('/advanced-dashboard')">
-          <div class="icon">🚀</div>
-          <h3>高级仪表盘</h3>
-          <p>专业级投资仪表盘，集成实时数据、技术指标和智能分析</p>
-          <div class="feature-badge premium">高级功能</div>
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">核心功能</h2>
+          <p class="section-description">专业的投资分析工具，助力您的投资决策</p>
         </div>
-        <div class="feature-card" @click="router.push('/smart-recommendation')">
-          <div class="icon">🤖</div>
-          <h3>AI智能推荐</h3>
-          <p>基于机器学习算法的个性化股票推荐和投资建议</p>
-          <div class="feature-badge basic">基础功能</div>
-        </div>
-        <div class="feature-card" @click="router.push('/realtime-monitor')">
-          <div class="icon">⚡</div>
-          <h3>实时监控中心</h3>
-          <p>WebSocket实时数据推送，市场异动即时提醒</p>
-          <div class="feature-badge premium">高级功能</div>
-        </div>
-        <div class="feature-card" @click="router.push('/stock')">
-          <div class="icon">📈</div>
-          <h3>股票走势分析</h3>
-          <p>查看详细的股票价格走势图表，包含多种时间周期和技术指标</p>
-        </div>
-        <div class="feature-card" @click="router.push('/portfolio')">
-          <div class="icon">💼</div>
-          <h3>仓位管理</h3>
-          <p>跟踪您的投资组合，监控收益和风险，智能资产配置</p>
-          <div class="feature-badge basic">基础功能</div>
-        </div>
-        <div class="feature-card" @click="router.push('/market-heatmap')">
-          <div class="icon">🌎</div>
-          <h3>大盘云图</h3>
-          <p>直观展示市场整体情况，快速把握行业板块和热点趋势</p>
-        </div>
-        <div class="feature-card" @click="router.push('/backtest')">
-          <div class="icon">🔄</div>
-          <h3>策略回测</h3>
-          <p>历史数据验证投资策略，量化分析策略表现</p>
-          <div class="feature-badge premium">高级功能</div>
-        </div>
-        <div class="feature-card" @click="router.push('/stock-monitor')">
-          <div class="icon">📈</div>
-          <h3>爱盯盘监控</h3>
-          <p>模仿爱盯盘插件的股票监控功能，支持浮动窗口和实时价格显示</p>
-          <div class="feature-badge basic">基础功能</div>
-        </div>
-        <div class="feature-card" @click="router.push('/alerts')">
-          <div class="icon">🔔</div>
-          <h3>智能提醒</h3>
-          <p>价格突破、技术指标信号等多维度智能提醒系统</p>
-          <div class="feature-badge basic">基础功能</div>
+
+        <div class="feature-categories">
+          <!-- 仪表盘类 -->
+          <div class="feature-category">
+            <div class="category-header">
+              <div class="category-icon">📊</div>
+              <h3 class="category-title">数据仪表盘</h3>
+            </div>
+            <div class="category-cards">
+              <div class="feature-card" @click="router.push('/dashboard')">
+                <div class="card-header">
+                  <div class="icon">📊</div>
+                  <h4>基础仪表盘</h4>
+                </div>
+                <p>核心市场数据概览，快速了解市场动态</p>
+                <div class="card-footer">
+                  <span class="access-level free">免费</span>
+                </div>
+              </div>
+
+              <div class="feature-card premium-card" @click="router.push('/advanced-dashboard')">
+                <div class="card-header">
+                  <div class="icon">🚀</div>
+                  <h4>高级仪表盘</h4>
+                </div>
+                <p>专业级投资仪表盘，集成实时数据和智能分析</p>
+                <div class="card-footer">
+                  <span class="feature-badge premium">高级</span>
+                </div>
+              </div>
+
+              <div class="feature-card premium-card" @click="router.push('/stock/realtime-monitor')">
+                <div class="card-header">
+                  <div class="icon">⚡</div>
+                  <h4>实时监控</h4>
+                </div>
+                <p>WebSocket实时数据推送，市场异动即时提醒</p>
+                <div class="card-footer">
+                  <span class="feature-badge premium">高级</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 分析工具类 -->
+          <div class="feature-category">
+            <div class="category-header">
+              <div class="category-icon">📈</div>
+              <h3 class="category-title">分析工具</h3>
+            </div>
+            <div class="category-cards">
+              <div class="feature-card" @click="router.push('/stock')">
+                <div class="card-header">
+                  <div class="icon">📈</div>
+                  <h4>股票分析</h4>
+                </div>
+                <p>详细的技术指标分析和价格走势图表</p>
+                <div class="card-footer">
+                  <span class="access-level free">免费</span>
+                </div>
+              </div>
+
+              <div class="feature-card" @click="router.push('/market/heatmap')">
+                <div class="card-header">
+                  <div class="icon">🌎</div>
+                  <h4>大盘云图</h4>
+                </div>
+                <p>直观展示市场整体情况和行业板块趋势</p>
+                <div class="card-footer">
+                  <span class="access-level free">免费</span>
+                </div>
+              </div>
+
+              <div class="feature-card basic-card" @click="router.push('/position-management')">
+                <div class="card-header">
+                  <div class="icon">💼</div>
+                  <h4>仓位管理</h4>
+                </div>
+                <p>投资组合跟踪，收益风险监控和资产配置</p>
+                <div class="card-footer">
+                  <span class="feature-badge basic">基础</span>
+                </div>
+              </div>
+
+              <div class="feature-card basic-card" @click="router.push('/strategies/turtle-trading')">
+                <div class="card-header">
+                  <div class="icon">🐢</div>
+                  <h4>海龟交易法</h4>
+                </div>
+                <p>经典的趋势跟踪交易策略系统</p>
+                <div class="card-footer">
+                  <span class="feature-badge basic">基础</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 智能工具类 -->
+          <div class="feature-category">
+            <div class="category-header">
+              <div class="category-icon">🤖</div>
+              <h3 class="category-title">智能工具</h3>
+            </div>
+            <div class="category-cards">
+              <div class="feature-card basic-card" @click="router.push('/strategies/smart-recommendation')">
+                <div class="card-header">
+                  <div class="icon">🤖</div>
+                  <h4>AI智能推荐</h4>
+                </div>
+                <p>基于机器学习算法的个性化股票推荐系统，智能分析市场趋势</p>
+                <div class="card-footer">
+                  <span class="access-level free">基础</span>
+                </div>
+              </div>
+
+              <div class="feature-card basic-card" @click="router.push('/doji-pattern/screener')">
+                <div class="card-header">
+                  <div class="icon">✨</div>
+                  <h4>十字星选股</h4>
+                </div>
+                <p>专业的十字星形态识别与筛选工具，发现潜在的反转机会</p>
+                <div class="card-footer">
+                  <span class="access-level free">基础</span>
+                </div>
+              </div>
+
+              <div class="feature-card basic-card" @click="router.push('/alerts')">
+                <div class="card-header">
+                  <div class="icon">🔔</div>
+                  <h4>智能提醒</h4>
+                </div>
+                <p>价格突破和技术指标信号的智能提醒</p>
+                <div class="card-footer">
+                  <span class="access-level free">基础</span>
+                </div>
+              </div>
+
+              <div class="feature-card basic-card" @click="router.push('/doji-pattern/alerts')">
+                <div class="card-header">
+                  <div class="icon">⚡</div>
+                  <h4>十字星提醒</h4>
+                </div>
+                <p>十字星形态出现时的专业提醒服务，不错过关键信号</p>
+                <div class="card-footer">
+                  <span class="access-level free">基础</span>
+                </div>
+              </div>
+
+              <div class="feature-card premium-card" @click="router.push('/backtest')">
+                <div class="card-header">
+                  <div class="icon">🔄</div>
+                  <h4>策略回测</h4>
+                </div>
+                <p>历史数据验证投资策略，量化分析表现</p>
+                <div class="card-footer">
+                  <span class="feature-badge premium">高级</span>
+                </div>
+              </div>
+
+              <div class="feature-card premium-card" @click="router.push('/risk/monitoring')">
+                <div class="card-header">
+                  <div class="icon">🛡️</div>
+                  <h4>风险管理</h4>
+                </div>
+                <p>全方位的风险监控与控制系统，保护投资安全</p>
+                <div class="card-footer">
+                  <span class="feature-badge premium">高级</span>
+                </div>
+              </div>
+
+              <div class="feature-card premium-card" @click="router.push('/risk/simulation')">
+                <div class="card-header">
+                  <div class="icon">🎮</div>
+                  <h4>模拟交易</h4>
+                </div>
+                <p>虚拟交易环境，无风险练习投资策略</p>
+                <div class="card-footer">
+                  <span class="feature-badge premium">高级</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -207,26 +457,17 @@ const goToStockAnalysis = (symbol: string) => {
       <h2>热门股票</h2>
 
       <!-- 数据来源信息 -->
-      <DataSourceInfo
-        v-if="!isLoading && dataSource !== '未知'"
-        :dataSource="dataSource"
-        :dataSourceMessage="dataSourceMessage"
-        :isRealTime="isRealTime"
-        :isCache="isCache"
-        class="data-source-info-container"
-      />
+      <DataSourceInfo v-if="!isLoading && dataSource !== '未知'" :dataSource="dataSource"
+        :dataSourceMessage="dataSourceMessage" :isRealTime="isRealTime" :isCache="isCache"
+        class="data-source-info-container" />
 
       <div v-if="isLoading" class="loading">
         <div class="loading-spinner"></div>
         <p>正在加载热门股票...</p>
       </div>
       <div v-else class="stock-cards">
-        <div
-          v-for="stock in popularStocks"
-          :key="stock.symbol"
-          class="stock-card"
-          @click="goToStockAnalysis(stock.symbol)"
-        >
+        <div v-for="stock in popularStocks" :key="stock.symbol" class="stock-card"
+          @click="goToStockAnalysis(stock.symbol)">
           <div class="stock-info">
             <h3>{{ stock.name }}</h3>
             <p class="stock-symbol">{{ stock.symbol }}</p>
@@ -243,278 +484,514 @@ const goToStockAnalysis = (symbol: string) => {
 </template>
 
 <style scoped>
+/* ===== 首页样式 ===== */
 .home-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
+  min-height: 100vh;
+  background: var(--bg-primary);
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* 英雄区域 */
+/* ===== 通用容器 ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-6);
+}
+
+/* ===== Hero 区域 ===== */
 .hero {
+  position: relative;
+  min-height: 100vh;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin: var(--spacing-xl) 0;
-  gap: var(--spacing-xl);
-  position: relative;
-  background: linear-gradient(to right, var(--bg-primary) 60%, var(--bg-secondary) 40%);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-xl);
-  box-shadow: var(--shadow-md);
   overflow: hidden;
 }
 
-.hero::before {
-  content: '';
+.hero-background {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  opacity: 0.5;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+}
+
+.hero-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-hero);
+  opacity: 0.95;
+}
+
+.hero-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  background-size: 100px 100px, 150px 150px;
+  animation: patternMove 20s ease-in-out infinite;
+}
+
+@keyframes patternMove {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(20px, 20px);
+  }
 }
 
 .hero-content {
-  flex: 1;
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-16);
+  align-items: center;
+  width: 100%;
+}
+
+/* Hero 文本区域 */
+.hero-text {
+  color: var(--text-inverse);
 }
 
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, var(--accent-color), #4ecdc4);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 25px;
+  gap: var(--spacing-2);
+  background: rgba(255, 255, 255, 0.15);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-full);
   font-size: var(--font-size-sm);
-  font-weight: 600;
-  margin-bottom: var(--spacing-lg);
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 15px rgba(66, 185, 131, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.hero-badge::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  animation: shimmer 2s infinite;
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-lg);
 }
 
 .badge-icon {
-  font-size: 1.2em;
+  font-size: var(--font-size-lg);
+}
+
+.badge-text {
+  font-weight: var(--font-weight-semibold);
 }
 
 .badge-new {
-  background: #ff6b6b;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 0.8em;
-  font-weight: 700;
-  animation: pulse 2s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 100%;
-  }
+  background: var(--gradient-warning);
+  color: var(--text-inverse);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  box-shadow: var(--shadow-sm);
+  animation: pulse 2s ease-in-out infinite;
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     transform: scale(1);
+    opacity: 1;
   }
+
   50% {
-    transform: scale(1.1);
+    transform: scale(1.05);
+    opacity: 0.9;
   }
 }
 
-.hero-content h1 {
-  margin-bottom: var(--spacing-lg);
-  line-height: 1.2;
+.hero-title {
+  margin-bottom: var(--spacing-6);
 }
 
-.gradient-text {
+.title-main {
   display: block;
-  font-size: var(--font-size-xxl);
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--primary-color), var(--accent-color), #4ecdc4);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  margin-bottom: var(--spacing-xs);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: var(--font-weight-black);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--spacing-2);
 }
 
-.subtitle {
+.title-sub {
   display: block;
-  font-size: var(--font-size-lg);
-  font-weight: 400;
-  color: var(--text-secondary);
-  opacity: 0.8;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  font-weight: var(--font-weight-normal);
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
 }
 
 .hero-description {
-  font-size: var(--font-size-md);
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-xl);
-  line-height: 1.8;
-  max-width: 95%;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-8);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .highlight {
-  color: var(--accent-color);
-  font-weight: 600;
-  position: relative;
+  color: #ffd700;
+  font-weight: var(--font-weight-semibold);
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
 }
 
-.highlight::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent-color), transparent);
-}
-
+/* Hero 统计数据 */
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-8);
 }
 
 .stat-item {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-lg);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-xl);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  transition: all var(--transition-normal);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-color), #4ecdc4);
+  transition: var(--transition-normal);
 }
 
 .stat-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: var(--shadow-xl);
 }
 
 .stat-icon {
-  font-size: 2rem;
-  margin-bottom: var(--spacing-sm);
-  display: block;
+  font-size: var(--font-size-2xl);
+  flex-shrink: 0;
+}
+
+.stat-content {
+  flex: 1;
 }
 
 .stat-value {
   font-size: var(--font-size-xl);
-  font-weight: 800;
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-inverse);
+  line-height: var(--line-height-tight);
+  font-family: var(--font-family-number);
 }
 
 .stat-label {
   font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: var(--font-weight-medium);
 }
 
-.hero-buttons {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--spacing-md);
-  max-width: 600px;
-}
-
-.btn-premium {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  color: white;
-  border: none;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-radius: var(--border-radius-md);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-normal);
+/* Hero 操作按钮 */
+.hero-actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
 }
 
-.btn-premium:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+.btn-lg {
+  padding: var(--spacing-4) var(--spacing-8);
+  font-size: var(--font-size-base);
+  min-height: 56px;
 }
 
-.hero-image {
-  flex: 1;
+.btn-icon {
+  font-size: var(--font-size-lg);
+}
+
+/* Hero 视觉区域 */
+.hero-visual {
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1;
 }
 
-.main-image {
-  max-width: 100%;
+.visual-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+}
+
+.chart-preview {
+  position: relative;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-2xl);
+  padding: var(--spacing-6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-2xl);
+}
+
+.chart-image {
+  width: 100%;
   height: auto;
-  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1));
-  transition: transform var(--transition-normal);
-  transform: perspective(1000px) rotateY(-5deg);
-  z-index: 2;
+  border-radius: var(--border-radius-lg);
+  filter: brightness(1.1) contrast(1.1);
 }
 
-.hero:hover .main-image {
-  transform: perspective(1000px) rotateY(0deg);
-}
-
-.image-overlay {
+.chart-overlay {
   position: absolute;
-  bottom: -20px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.data-point {
+  position: absolute;
+  background: var(--gradient-accent);
+  color: var(--text-inverse);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-lg);
+  animation: float 3s ease-in-out infinite;
+}
+
+.data-point-1 {
+  top: 20%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.data-point-2 {
+  top: 50%;
+  left: 5%;
+  animation-delay: 1s;
+}
+
+.data-point-3 {
+  bottom: 25%;
+  right: 20%;
+  animation-delay: 2s;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.point-value {
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-1);
+}
+
+.point-label {
+  font-size: var(--font-size-xs);
+  opacity: 0.9;
+}
+
+.floating-cards {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.floating-card {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.card-1 {
+  top: 10%;
+  left: -10%;
+  animation-delay: 0s;
+}
+
+.card-2 {
+  top: 60%;
+  right: -15%;
+  animation-delay: 1.5s;
+}
+
+.card-3 {
+  bottom: 15%;
+  left: -5%;
+  animation-delay: 3s;
+}
+
+@keyframes floatSlow {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(10px, -15px);
+  }
+}
+
+.card-icon {
+  font-size: var(--font-size-base);
+}
+
+.card-text {
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* ===== 快捷入口区域 ===== */
+.quick-access {
+  padding: var(--spacing-16) 0;
+  background: var(--bg-secondary);
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: var(--spacing-12);
+}
+
+.section-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-4);
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 80%;
-  height: 20px;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
-  z-index: 1;
+  width: 60px;
+  height: 4px;
+  background: var(--gradient-accent);
+  border-radius: var(--border-radius-full);
 }
 
-.btn-icon {
-  font-size: 1.2em;
-  margin-right: var(--spacing-xs);
+.section-description {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.quick-access-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-6);
+}
+
+.quick-access-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-6);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-normal);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-access-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-accent);
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.quick-access-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--accent-color);
+}
+
+.quick-access-card:hover::before {
+  transform: scaleX(1);
+}
+
+.quick-access-card.primary {
+  border-color: var(--primary-color);
+}
+
+.quick-access-card.premium {
+  border-color: var(--warning-color);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(214, 158, 46, 0.05) 100%);
+}
+
+.quick-access-card .card-icon {
+  font-size: var(--font-size-3xl);
+  flex-shrink: 0;
+}
+
+.quick-access-card .card-content {
+  flex: 1;
+}
+
+.quick-access-card h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.quick-access-card p {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.quick-access-card .card-arrow {
+  font-size: var(--font-size-xl);
+  color: var(--accent-color);
+  transition: transform var(--transition-fast);
+}
+
+.quick-access-card:hover .card-arrow {
+  transform: translateX(4px);
 }
 
 /* 功能区域 */
@@ -607,15 +1084,13 @@ const goToStockAnalysis = (symbol: string) => {
 }
 
 .feature-badge.basic {
-  background: linear-gradient(135deg, #2ecc71, #27ae60);
-  color: white;
-  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+  background: var(--gradient-success);
+  color: var(--text-inverse);
 }
 
 .feature-badge.premium {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  color: white;
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+  background: var(--gradient-premium);
+  color: var(--text-inverse);
 }
 
 /* 热门股票区域 */
@@ -735,6 +1210,109 @@ const goToStockAnalysis = (symbol: string) => {
 
   .hero:hover .main-image {
     transform: none;
+  }
+}
+
+/* ===== 响应式设计 ===== */
+@media (max-width: 1024px) {
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-12);
+    text-align: center;
+  }
+
+  .hero-visual {
+    order: -1;
+  }
+
+  .quick-access-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+
+  .category-cards {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--spacing-4);
+  }
+
+  .hero {
+    min-height: 80vh;
+    padding: var(--spacing-8) 0;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-3);
+  }
+
+  .hero-actions {
+    justify-content: center;
+  }
+
+  .btn-lg {
+    padding: var(--spacing-3) var(--spacing-6);
+    min-height: 48px;
+  }
+
+  .title-main {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  .title-sub {
+    font-size: clamp(1rem, 4vw, 1.5rem);
+  }
+
+  .quick-access-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .category-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-categories {
+    gap: var(--spacing-8);
+  }
+
+  .category-header {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-2);
+  }
+
+  .floating-cards {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-badge {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-1) var(--spacing-3);
+  }
+
+  .hero-description {
+    font-size: var(--font-size-base);
+  }
+
+  .section-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .section-description {
+    font-size: var(--font-size-base);
+  }
+
+  .quick-access-card {
+    padding: var(--spacing-4);
+  }
+
+  .feature-card {
+    padding: var(--spacing-4);
   }
 }
 </style>

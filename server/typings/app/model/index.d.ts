@@ -36,6 +36,7 @@ import ExportSimulationAccount = require('../../../app/model/simulation_account'
 import ExportSimulationPosition = require('../../../app/model/simulation_position');
 import ExportSimulationTransaction = require('../../../app/model/simulation_transaction');
 import ExportStock = require('../../../app/model/stock');
+import ExportStockDailyData = require('../../../app/model/stock_daily_data');
 import ExportStopLossConfig = require('../../../app/model/stop_loss_config');
 import ExportStopLossExecution = require('../../../app/model/stop_loss_execution');
 import ExportStopLossOrder = require('../../../app/model/stop_loss_order');
@@ -94,6 +95,7 @@ declare module 'egg' {
     SimulationPosition: ReturnType<typeof ExportSimulationPosition>;
     SimulationTransaction: ReturnType<typeof ExportSimulationTransaction>;
     Stock: ReturnType<typeof ExportStock>;
+    StockDailyData: ReturnType<typeof ExportStockDailyData>;
     StopLossConfig: ReturnType<typeof ExportStopLossConfig>;
     StopLossExecution: ReturnType<typeof ExportStopLossExecution>;
     StopLossOrder: ReturnType<typeof ExportStopLossOrder>;

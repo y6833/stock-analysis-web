@@ -359,6 +359,8 @@
         "start": "egg-scripts start --daemon --title=egg-server-stock-analysis-server",
         "stop": "egg-scripts stop --title=egg-server-stock-analysis-server",
         "dev": "egg-bin dev",
+        "dev:win": "set EGG_SKIP_MIGRATION=true && egg-bin dev",
+        "dev-no-migrate": "egg-bin dev --ignore-migration",
         "debug": "egg-bin debug",
         "test": "npm run lint -- --fix && npm run test-local",
         "test-local": "egg-bin test",
@@ -534,7 +536,7 @@
       }
     },
     "tushare": {
-      "token": "demo_token",
+      "token": "983b25aa025eee598034c4741dc776dd73356ddc53ddcffbb180cf61",
       "baseUrl": "http://api.tushare.pro"
     },
     "dataSource": {
@@ -963,6 +965,8 @@
         "start": "egg-scripts start --daemon --title=egg-server-stock-analysis-server",
         "stop": "egg-scripts stop --title=egg-server-stock-analysis-server",
         "dev": "egg-bin dev",
+        "dev:win": "set EGG_SKIP_MIGRATION=true && egg-bin dev",
+        "dev-no-migrate": "egg-bin dev --ignore-migration",
         "debug": "egg-bin debug",
         "test": "npm run lint -- --fix && npm run test-local",
         "test-local": "egg-bin test",

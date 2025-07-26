@@ -278,7 +278,7 @@ class TushareController extends Controller {
             };
 
             // 检查是否启用自动刷新缓存（默认禁用）
-            const enableAutoRefresh = ctx.app.config.tushare && ctx.app.config.tushare.enableAutoRefresh === true;
+            const enableAutoRefresh = ctx.app.config && ctx.app.config.tushare && ctx.app.config.tushare.enableAutoRefresh === true;
 
             // 如果缓存接近过期且启用了自动刷新，在后台异步刷新缓存
             if (enableAutoRefresh && isNearExpiry && !ctx.app.cacheRefreshing) {

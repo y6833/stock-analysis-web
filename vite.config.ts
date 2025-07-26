@@ -176,7 +176,6 @@ export default defineConfig(({ mode }) => {
           ],
           // 自定义Service Worker
           swDest: 'dist/sw.js',
-          swSrc: 'public/sw.js',
           inlineWorkboxRuntime: true
         },
         devOptions: {

@@ -2,7 +2,7 @@
  * 渲染优化模块
  * 提供组件渲染优化、虚拟滚动和动画优化功能
  */
-import { App } from 'vue';
+import type { App } from 'vue';
 import { createMemoComponent } from './memoComponent';
 import { createVirtualScrollDirective } from './virtualScroll';
 import { createAnimationOptimizer } from './animationOptimizer';

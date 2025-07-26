@@ -84,29 +84,30 @@ export class DataSourceManager {
 
   /**
    * 初始化数据源配置
+   * 注意：当前只启用 Tushare 数据源，其他数据源已暂时禁用
    */
   private initializeConfigs() {
     const defaultConfigs: DataSourceConfig[] = [
       {
-        type: 'zhitu',
+        type: 'tushare',
         priority: 1,
-        enabled: true,
+        enabled: true, // 只有 Tushare 启用
+        maxRetries: 3,
+        timeout: 30000, // Tushare 需要更长的超时时间
+        healthCheckInterval: 60000,
+      },
+      {
+        type: 'zhitu',
+        priority: 2,
+        enabled: false, // 已禁用
         maxRetries: 3,
         timeout: 10000,
         healthCheckInterval: 60000, // 1分钟
       },
       {
-        type: 'tushare',
-        priority: 2,
-        enabled: true,
-        maxRetries: 3,
-        timeout: 10000,
-        healthCheckInterval: 60000,
-      },
-      {
         type: 'yahoo_finance',
         priority: 3,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 3,
         timeout: 12000,
         healthCheckInterval: 60000,
@@ -114,7 +115,7 @@ export class DataSourceManager {
       {
         type: 'eastmoney',
         priority: 4,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 2,
         timeout: 8000,
         healthCheckInterval: 30000,
@@ -122,7 +123,7 @@ export class DataSourceManager {
       {
         type: 'akshare',
         priority: 5,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 3,
         timeout: 15000,
         healthCheckInterval: 60000,
@@ -130,7 +131,7 @@ export class DataSourceManager {
       {
         type: 'google_finance',
         priority: 6,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 2,
         timeout: 10000,
         healthCheckInterval: 45000,
@@ -138,7 +139,7 @@ export class DataSourceManager {
       {
         type: 'sina',
         priority: 7,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 2,
         timeout: 8000,
         healthCheckInterval: 30000, // 30秒
@@ -146,7 +147,7 @@ export class DataSourceManager {
       {
         type: 'juhe',
         priority: 8,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 2,
         timeout: 8000,
         healthCheckInterval: 30000,
@@ -154,7 +155,7 @@ export class DataSourceManager {
       {
         type: 'alphavantage',
         priority: 9,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 3,
         timeout: 15000,
         healthCheckInterval: 60000, // 1分钟
@@ -162,7 +163,7 @@ export class DataSourceManager {
       {
         type: 'alltick',
         priority: 10,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 3,
         timeout: 15000,
         healthCheckInterval: 60000, // 1分钟
@@ -170,7 +171,7 @@ export class DataSourceManager {
       {
         type: 'futu',
         priority: 11,
-        enabled: true,
+        enabled: false, // 已禁用
         maxRetries: 3,
         timeout: 15000,
         healthCheckInterval: 60000, // 1分钟

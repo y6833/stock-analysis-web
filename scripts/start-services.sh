@@ -142,7 +142,7 @@ start_frontend() {
     fi
     
     # 启动前端服务
-    npm run dev > logs/frontend.log 2>&1 &
+    npm run start > logs/frontend.log 2>&1 &
     FRONTEND_PID=$!
     echo $FRONTEND_PID > .frontend.pid
     

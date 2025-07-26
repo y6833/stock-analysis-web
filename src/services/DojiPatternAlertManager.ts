@@ -52,7 +52,8 @@ export class DojiPatternAlertManager {
             console.log('十字星形态提醒管理器初始化完成')
         } catch (error) {
             console.error('初始化十字星形态提醒管理器失败:', error)
-            throw error
+            // 不抛出错误，允许应用继续运行
+            this.isInitialized = true
         }
     }
 
@@ -62,11 +63,20 @@ export class DojiPatternAlertManager {
     async loadActiveAlerts(): Promise<void> {
         try {
             const alerts = await dojiPatternAlertService.getDojiPatternAlerts()
+
+            // 确保 alerts 是数组
+            if (!Array.isArray(alerts)) {
+                console.warn('获取的提醒数据不是数组格式:', alerts)
+                this.activeAlerts = []
+                return
+            }
+
             this.activeAlerts = alerts.filter(alert => alert.isActive)
             console.log(`已加载 ${this.activeAlerts.length} 个活跃的十字星形态提醒`)
         } catch (error) {
             console.error('加载活跃提醒失败:', error)
-            throw error
+            // 设置为空数组而不是抛出错误，避免阻塞应用启动
+            this.activeAlerts = []
         }
     }
 

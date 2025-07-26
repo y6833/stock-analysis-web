@@ -87,6 +87,8 @@ module.exports = (app) => {
       type: DATE,
       allowNull: false,
     },
+  }, {
+    tableName: 'users',
   });
 
   User.associate = function () {
@@ -212,9 +214,21 @@ module.exports = (app) => {
       as: `${prefix}_userHasManyStressTestScenarios`,
     });
 
+    // 十字星形态性能统计
+    this.hasMany(app.model.DojiPatternPerformanceStats, {
+      foreignKey: 'userId',
+      as: `${prefix}_dojiPatternPerformanceStats`,
+    });
+
+    // 十字星形态用户设置
+    this.hasMany(app.model.DojiPatternUserSettings, {
+      foreignKey: 'userId',
+      as: `${prefix}_dojiPatternUserSettings`,
+    });
+
     // 充值请求关联暂时注释，避免循环依赖
     // TODO: 在解决模型加载顺序问题后重新启用
-    /*
+
     // 充值请求 - 用户发起的充值请求
     this.hasMany(app.model.CoinRechargeRequest, {
       as: `${prefix}_userHasManyCoinRechargeRequests`,
@@ -226,7 +240,7 @@ module.exports = (app) => {
       as: `${prefix}_userHasManyProcessedRechargeRequests`,
       foreignKey: 'processedBy'
     });
-    */
+
   };
 
   return User;

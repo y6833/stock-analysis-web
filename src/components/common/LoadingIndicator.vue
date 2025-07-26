@@ -1,13 +1,9 @@
 <template>
-  <div 
-    v-if="loading" 
-    class="loading-indicator" 
-    :class="{ 
-      'is-fullscreen': fullscreen, 
-      'is-overlay': overlay && !fullscreen,
-      [`size-${size}`]: true
-    }"
-  >
+  <div v-if="loading" class="loading-indicator" :class="{
+    'is-fullscreen': fullscreen,
+    'is-overlay': overlay && !fullscreen,
+    [`size-${size}`]: true
+  }">
     <div class="loading-spinner">
       <el-icon class="loading-icon" :size="iconSize">
         <component :is="icon" />
@@ -15,12 +11,7 @@
     </div>
     <div v-if="text" class="loading-text">{{ text }}</div>
     <div v-if="showProgress && progress !== null" class="loading-progress">
-      <el-progress 
-        :percentage="progress" 
-        :stroke-width="4" 
-        :text-inside="true" 
-        :show-text="showProgressText"
-      />
+      <el-progress :percentage="progress" :stroke-width="4" :text-inside="true" :show-text="showProgressText" />
     </div>
   </div>
 </template>
@@ -28,6 +19,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Loading } from '@element-plus/icons-vue';
+import { ElIcon, ElProgress } from 'element-plus';
 
 const props = defineProps({
   // 是否显示加载状态
@@ -168,6 +160,7 @@ const iconSize = computed(() => {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
