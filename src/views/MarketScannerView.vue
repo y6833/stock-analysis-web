@@ -418,12 +418,7 @@ onMounted(() => {
         <div class="saved-filters">
           <h3>保存的筛选方案</h3>
           <div class="filter-chips">
-            <div
-              v-for="filter in savedFilters"
-              :key="filter.name"
-              class="filter-chip"
-              @click="loadSavedFilter(filter)"
-            >
+            <div v-for="filter in savedFilters" :key="filter.name" class="filter-chip" @click="loadSavedFilter(filter)">
               {{ filter.name }}
             </div>
             <div class="filter-chip add-filter" @click="saveCurrentFilter">
@@ -438,43 +433,23 @@ onMounted(() => {
             <h4>📊 传统指标</h4>
             <div class="filter-grid">
               <div class="filter-item">
-                <input
-                  type="checkbox"
-                  id="macdCrossover"
-                  v-model="filterConditions.technical.macdCrossover"
-                />
+                <input type="checkbox" id="macdCrossover" v-model="filterConditions.technical.macdCrossover" />
                 <label for="macdCrossover">MACD金叉</label>
               </div>
               <div class="filter-item">
-                <input
-                  type="checkbox"
-                  id="macdCrossunder"
-                  v-model="filterConditions.technical.macdCrossunder"
-                />
+                <input type="checkbox" id="macdCrossunder" v-model="filterConditions.technical.macdCrossunder" />
                 <label for="macdCrossunder">MACD死叉</label>
               </div>
               <div class="filter-item">
-                <input
-                  type="checkbox"
-                  id="rsiOverbought"
-                  v-model="filterConditions.technical.rsiOverbought"
-                />
+                <input type="checkbox" id="rsiOverbought" v-model="filterConditions.technical.rsiOverbought" />
                 <label for="rsiOverbought">RSI超买(>70)</label>
               </div>
               <div class="filter-item">
-                <input
-                  type="checkbox"
-                  id="rsiOversold"
-                  v-model="filterConditions.technical.rsiOversold"
-                />
+                <input type="checkbox" id="rsiOversold" v-model="filterConditions.technical.rsiOversold" />
                 <label for="rsiOversold">RSI超卖(&lt;30)</label>
               </div>
               <div class="filter-item">
-                <input
-                  type="checkbox"
-                  id="bollingerBreakout"
-                  v-model="filterConditions.technical.bollingerBreakout"
-                />
+                <input type="checkbox" id="bollingerBreakout" v-model="filterConditions.technical.bollingerBreakout" />
                 <label for="bollingerBreakout">布林带突破</label>
               </div>
             </div>
@@ -484,55 +459,35 @@ onMounted(() => {
             <h4>🎯 通达信专业信号</h4>
             <div class="filter-grid">
               <div class="filter-item tdx-signal">
-                <input
-                  type="checkbox"
-                  id="d2Signal"
-                  v-model="filterConditions.technical.d2Signal"
-                />
+                <input type="checkbox" id="d2Signal" v-model="filterConditions.technical.d2Signal" />
                 <label for="d2Signal">
                   <span class="signal-name">D2买入信号</span>
                   <span class="signal-desc">短期回调后的买入机会</span>
                 </label>
               </div>
               <div class="filter-item tdx-signal">
-                <input
-                  type="checkbox"
-                  id="huntingSignal"
-                  v-model="filterConditions.technical.huntingSignal"
-                />
+                <input type="checkbox" id="huntingSignal" v-model="filterConditions.technical.huntingSignal" />
                 <label for="huntingSignal">
                   <span class="signal-name">猎庄信号</span>
                   <span class="signal-desc">主力建仓信号</span>
                 </label>
               </div>
               <div class="filter-item tdx-signal">
-                <input
-                  type="checkbox"
-                  id="reversalSignal"
-                  v-model="filterConditions.technical.reversalSignal"
-                />
+                <input type="checkbox" id="reversalSignal" v-model="filterConditions.technical.reversalSignal" />
                 <label for="reversalSignal">
                   <span class="signal-name">反转信号</span>
                   <span class="signal-desc">强势反转买点</span>
                 </label>
               </div>
               <div class="filter-item tdx-signal">
-                <input
-                  type="checkbox"
-                  id="pivotSignal"
-                  v-model="filterConditions.technical.pivotSignal"
-                />
+                <input type="checkbox" id="pivotSignal" v-model="filterConditions.technical.pivotSignal" />
                 <label for="pivotSignal">
                   <span class="signal-name">拐点信号</span>
                   <span class="signal-desc">趋势转折买点</span>
                 </label>
               </div>
               <div class="filter-item tdx-signal">
-                <input
-                  type="checkbox"
-                  id="sellSignal"
-                  v-model="filterConditions.technical.sellSignal"
-                />
+                <input type="checkbox" id="sellSignal" v-model="filterConditions.technical.sellSignal" />
                 <label for="sellSignal">
                   <span class="signal-name">卖出信号</span>
                   <span class="signal-desc">技术指标超买</span>
@@ -547,57 +502,33 @@ onMounted(() => {
           <div class="filter-grid">
             <div class="filter-item">
               <label for="peLessThan">市盈率小于</label>
-              <input
-                type="number"
-                id="peLessThan"
-                v-model="filterConditions.fundamental.peLessThan"
-                placeholder="例如: 20"
-              />
+              <input type="number" id="peLessThan" v-model="filterConditions.fundamental.peLessThan"
+                placeholder="例如: 20" />
             </div>
             <div class="filter-item">
               <label for="peGreaterThan">市盈率大于</label>
-              <input
-                type="number"
-                id="peGreaterThan"
-                v-model="filterConditions.fundamental.peGreaterThan"
-                placeholder="例如: 5"
-              />
+              <input type="number" id="peGreaterThan" v-model="filterConditions.fundamental.peGreaterThan"
+                placeholder="例如: 5" />
             </div>
             <div class="filter-item">
               <label for="pbLessThan">市净率小于</label>
-              <input
-                type="number"
-                id="pbLessThan"
-                v-model="filterConditions.fundamental.pbLessThan"
-                placeholder="例如: 3"
-              />
+              <input type="number" id="pbLessThan" v-model="filterConditions.fundamental.pbLessThan"
+                placeholder="例如: 3" />
             </div>
             <div class="filter-item">
               <label for="pbGreaterThan">市净率大于</label>
-              <input
-                type="number"
-                id="pbGreaterThan"
-                v-model="filterConditions.fundamental.pbGreaterThan"
-                placeholder="例如: 0.5"
-              />
+              <input type="number" id="pbGreaterThan" v-model="filterConditions.fundamental.pbGreaterThan"
+                placeholder="例如: 0.5" />
             </div>
             <div class="filter-item">
               <label for="marketCapMin">市值下限(亿)</label>
-              <input
-                type="number"
-                id="marketCapMin"
-                v-model="filterConditions.fundamental.marketCapMin"
-                placeholder="例如: 50"
-              />
+              <input type="number" id="marketCapMin" v-model="filterConditions.fundamental.marketCapMin"
+                placeholder="例如: 50" />
             </div>
             <div class="filter-item">
               <label for="marketCapMax">市值上限(亿)</label>
-              <input
-                type="number"
-                id="marketCapMax"
-                v-model="filterConditions.fundamental.marketCapMax"
-                placeholder="例如: 1000"
-              />
+              <input type="number" id="marketCapMax" v-model="filterConditions.fundamental.marketCapMax"
+                placeholder="例如: 1000" />
             </div>
           </div>
         </div>
@@ -607,30 +538,16 @@ onMounted(() => {
           <div class="filter-grid">
             <div class="filter-item">
               <label for="priceMin">价格下限</label>
-              <input
-                type="number"
-                id="priceMin"
-                v-model="filterConditions.price.priceMin"
-                placeholder="例如: 10"
-              />
+              <input type="number" id="priceMin" v-model="filterConditions.price.priceMin" placeholder="例如: 10" />
             </div>
             <div class="filter-item">
               <label for="priceMax">价格上限</label>
-              <input
-                type="number"
-                id="priceMax"
-                v-model="filterConditions.price.priceMax"
-                placeholder="例如: 100"
-              />
+              <input type="number" id="priceMax" v-model="filterConditions.price.priceMax" placeholder="例如: 100" />
             </div>
             <div class="filter-item">
               <label for="changePercent">涨跌幅大于(%)</label>
-              <input
-                type="number"
-                id="changePercent"
-                v-model="filterConditions.price.changePercent"
-                placeholder="例如: 5 或 -5"
-              />
+              <input type="number" id="changePercent" v-model="filterConditions.price.changePercent"
+                placeholder="例如: 5 或 -5" />
             </div>
           </div>
         </div>
@@ -682,10 +599,7 @@ onMounted(() => {
                 <td>{{ stock.industry }}</td>
                 <td>{{ stock.market }}</td>
                 <td>
-                  <button
-                    class="btn-small btn-primary"
-                    @click="$router.push(`/stock?symbol=${stock.symbol}`)"
-                  >
+                  <button class="btn-small btn-primary" @click="$router.push(`/stock?symbol=${stock.symbol}`)">
                     分析
                   </button>
                 </td>
@@ -934,6 +848,7 @@ onMounted(() => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -980,8 +895,6 @@ th {
   background-color: var(--bg-secondary);
   color: var(--text-secondary);
   font-weight: 600;
-  position: sticky;
-  top: 0;
 }
 
 tr:hover {
@@ -1044,16 +957,16 @@ tr:hover {
   line-height: 1.4;
 }
 
-.tdx-signal input[type='checkbox']:checked + label {
+.tdx-signal input[type='checkbox']:checked+label {
   color: var(--primary-color);
 }
 
-.tdx-signal input[type='checkbox']:checked + label .signal-name {
+.tdx-signal input[type='checkbox']:checked+label .signal-name {
   color: var(--primary-color);
   font-weight: 700;
 }
 
-.tdx-signal input[type='checkbox']:checked + label .signal-desc {
+.tdx-signal input[type='checkbox']:checked+label .signal-desc {
   color: var(--primary-dark);
 }
 

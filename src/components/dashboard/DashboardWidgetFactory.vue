@@ -2,22 +2,22 @@
 import { defineAsyncComponent } from 'vue'
 import type { DashboardWidget } from '@/stores/dashboardStore'
 
-// 异步加载组件
-const MarketOverviewWidget = defineAsyncComponent(() => import('./MarketOverviewWidget.vue'))
-const WatchlistWidget = defineAsyncComponent(() => import('./WatchlistWidget.vue'))
-const NewsWidget = defineAsyncComponent(() => import('./NewsWidget.vue'))
-const PopularStocksWidget = defineAsyncComponent(() => import('./PopularStocksWidget.vue'))
-const QuickActionsWidget = defineAsyncComponent(() => import('./QuickActionsWidget.vue'))
-const IndustryOverviewWidget = defineAsyncComponent(() => import('./IndustryOverviewWidget.vue'))
+// 异步加载组件 - 只保留有实际功能的组件
+const ModernMarketOverview = defineAsyncComponent(() => import('./ModernMarketOverview.vue'))
+const ModernWatchlistWidget = defineAsyncComponent(() => import('./ModernWatchlistWidget.vue'))
+const ModernNewsWidget = defineAsyncComponent(() => import('./ModernNewsWidget.vue'))
+const ModernPopularStocks = defineAsyncComponent(() => import('./ModernPopularStocks.vue'))
+const ModernQuickActions = defineAsyncComponent(() => import('./ModernQuickActions.vue'))
+const ModernTradingSignals = defineAsyncComponent(() => import('./ModernTradingSignals.vue'))
 
-// 组件映射
+// 组件映射 - 只包含有真实数据的组件
 const widgetComponents = {
-  'market-overview': MarketOverviewWidget,
-  'watchlist': WatchlistWidget,
-  'news': NewsWidget,
-  'popular-stocks': PopularStocksWidget,
-  'quick-actions': QuickActionsWidget,
-  'industry-overview': IndustryOverviewWidget
+  'market-overview': ModernMarketOverview,
+  'watchlist': ModernWatchlistWidget,
+  'news': ModernNewsWidget,
+  'popular-stocks': ModernPopularStocks,
+  'quick-actions': ModernQuickActions,
+  'trading-signals': ModernTradingSignals
 }
 
 const props = defineProps<{

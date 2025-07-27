@@ -95,9 +95,9 @@ export class AlternativeFactorEngine {
 
       // 综合情绪评分
       const newsScore = (sentiment.positiveRatio - sentiment.negativeRatio) *
-                       Math.log(1 + sentiment.newsCount)
+        Math.log(1 + sentiment.newsCount)
       const socialScore = Math.tanh(sentiment.socialMediaMentions / 1000) *
-                         (sentiment.positiveRatio - sentiment.negativeRatio)
+        (sentiment.positiveRatio - sentiment.negativeRatio)
       const analystScore = (sentiment.analystRatings - 3) / 2 // 标准化到[-1,1]
 
       return (newsScore + socialScore + analystScore) / 3

@@ -20,18 +20,14 @@ const selectedLayoutId = ref<string>('')
 const isEditingLayout = ref(false)
 // 新布局名称
 const newLayoutName = ref('')
-// 可用的小部件类型
+// 可用的小部件类型 - 只包含有实际功能的类型
 const availableWidgetTypes = ref<{ type: WidgetType, name: string, description: string }[]>([
   { type: 'watchlist', name: '关注列表', description: '显示您关注的股票列表' },
   { type: 'market_overview', name: '市场概览', description: '显示主要指数和市场状况' },
-  { type: 'index_chart', name: '指数图表', description: '显示指数走势图' },
-  { type: 'stock_chart', name: '股票图表', description: '显示特定股票的走势图' },
   { type: 'news', name: '新闻', description: '显示最新的市场新闻' },
-  { type: 'calendar', name: '日历', description: '显示重要的市场事件' },
-  { type: 'performance', name: '表现分析', description: '分析您的投资表现' },
-  { type: 'heatmap', name: '热力图', description: '显示市场热力图' },
-  { type: 'sector_rotation', name: '板块轮动', description: '显示行业板块轮动情况' },
-  { type: 'custom_chart', name: '自定义图表', description: '创建自定义图表' }
+  { type: 'popular_stocks', name: '热门股票', description: '显示当前热门股票' },
+  { type: 'quick_actions', name: '快捷操作', description: '提供快速分析和操作功能' },
+  { type: 'trading_signals', name: '交易信号', description: '显示技术分析交易信号' },
 ])
 
 // 当前选中的布局
@@ -59,14 +55,14 @@ const loadSettings = () => {
 // 保存设置
 const saveSettings = () => {
   if (!settings.value) return
-  
+
   try {
     // 更新活动布局ID
     settings.value.activeLayoutId = selectedLayoutId.value
-    
+
     // 保存设置
     dashboardService.saveDashboardSettings(settings.value)
-    
+
     // 通知父组件
     emit('save', settings.value)
     emit('close')
@@ -78,7 +74,7 @@ const saveSettings = () => {
 // 创建新布局
 const createLayout = () => {
   if (!settings.value || !newLayoutName.value.trim()) return
-  
+
   const newLayout = dashboardService.createNewLayout(newLayoutName.value.trim())
   settings.value.layouts.push(newLayout)
   selectedLayoutId.value = newLayout.id
@@ -89,14 +85,14 @@ const createLayout = () => {
 // 删除布局
 const deleteLayout = (layoutId: string) => {
   if (!settings.value) return
-  
+
   // 不允许删除默认布局
   const layoutToDelete = settings.value.layouts.find(layout => layout.id === layoutId)
   if (!layoutToDelete || layoutToDelete.isDefault) return
-  
+
   // 从布局列表中移除
   settings.value.layouts = settings.value.layouts.filter(layout => layout.id !== layoutId)
-  
+
   // 如果删除的是当前选中的布局，则选中默认布局
   if (selectedLayoutId.value === layoutId) {
     const defaultLayout = settings.value.layouts.find(layout => layout.isDefault)
@@ -111,14 +107,14 @@ const deleteLayout = (layoutId: string) => {
 // 添加小部件
 const addWidget = (type: WidgetType) => {
   if (!settings.value || !selectedLayout.value) return
-  
+
   // 创建新的小部件
   const newWidget = dashboardService.createNewWidget(
     type,
     availableWidgetTypes.value.find(w => w.type === type)?.name || '新小部件',
     { x: 0, y: 0 } // 默认位置，实际位置会在拖放时确定
   )
-  
+
   // 添加到当前布局
   selectedLayout.value.widgets.push(newWidget)
 }
@@ -126,7 +122,7 @@ const addWidget = (type: WidgetType) => {
 // 删除小部件
 const removeWidget = (widgetId: string) => {
   if (!settings.value || !selectedLayout.value) return
-  
+
   // 从当前布局中移除小部件
   selectedLayout.value.widgets = selectedLayout.value.widgets.filter(widget => widget.id !== widgetId)
 }
@@ -146,73 +142,52 @@ const closeSettings = () => {
           <span>✖</span>
         </button>
       </div>
-      
+
       <div v-if="!settings" class="settings-loading">
         <div class="loading-spinner"></div>
         <p>加载设置中...</p>
       </div>
-      
+
       <div v-else class="settings-content">
         <div class="settings-section">
           <h3>布局管理</h3>
-          
+
           <div class="layout-selector">
             <div class="layout-list">
-              <div 
-                v-for="layout in settings.layouts" 
-                :key="layout.id"
-                class="layout-item"
-                :class="{ active: selectedLayoutId === layout.id }"
-                @click="selectedLayoutId = layout.id"
-              >
+              <div v-for="layout in settings.layouts" :key="layout.id" class="layout-item"
+                :class="{ active: selectedLayoutId === layout.id }" @click="selectedLayoutId = layout.id">
                 <div class="layout-name">{{ layout.name }}</div>
                 <div class="layout-actions">
-                  <button 
-                    v-if="!layout.isDefault" 
-                    class="btn-icon-only btn-sm" 
-                    @click.stop="deleteLayout(layout.id)"
-                  >
+                  <button v-if="!layout.isDefault" class="btn-icon-only btn-sm" @click.stop="deleteLayout(layout.id)">
                     <span>🗑️</span>
                   </button>
                 </div>
               </div>
             </div>
-            
+
             <div v-if="isEditingLayout" class="new-layout-form">
-              <input 
-                v-model="newLayoutName" 
-                type="text" 
-                placeholder="输入布局名称" 
-                class="input-field"
-              />
+              <input v-model="newLayoutName" type="text" placeholder="输入布局名称" class="input-field" />
               <div class="form-actions">
                 <button class="btn btn-primary btn-sm" @click="createLayout">创建</button>
                 <button class="btn btn-outline btn-sm" @click="isEditingLayout = false">取消</button>
               </div>
             </div>
-            
-            <button 
-              v-else 
-              class="btn btn-outline btn-sm add-layout-btn" 
-              @click="isEditingLayout = true"
-            >
+
+            <button v-else class="btn btn-outline btn-sm add-layout-btn" @click="isEditingLayout = true">
               <span>➕</span> 新建布局
             </button>
           </div>
         </div>
-        
+
         <div v-if="selectedLayout" class="settings-section">
           <h3>小部件管理</h3>
-          
+
           <div class="widget-manager">
             <div class="widget-list">
-              <div 
-                v-for="widget in selectedLayout.widgets" 
-                :key="widget.id"
-                class="widget-item"
-              >
+              <div v-for="widget in selectedLayout.widgets" :key="widget.id" class="widget-item">
                 <div class="widget-info">
-                  <div class="widget-type">{{ availableWidgetTypes.find(w => w.type === widget.type)?.name || widget.type }}</div>
+                  <div class="widget-type">{{availableWidgetTypes.find(w => w.type === widget.type)?.name ||
+                    widget.type}}</div>
                   <div class="widget-title">{{ widget.title }}</div>
                 </div>
                 <div class="widget-actions">
@@ -222,16 +197,12 @@ const closeSettings = () => {
                 </div>
               </div>
             </div>
-            
+
             <div class="widget-selector">
               <h4>添加小部件</h4>
               <div class="available-widgets">
-                <div 
-                  v-for="widgetType in availableWidgetTypes" 
-                  :key="widgetType.type"
-                  class="widget-type-item"
-                  @click="addWidget(widgetType.type)"
-                >
+                <div v-for="widgetType in availableWidgetTypes" :key="widgetType.type" class="widget-type-item"
+                  @click="addWidget(widgetType.type)">
                   <div class="widget-type-name">{{ widgetType.name }}</div>
                   <div class="widget-type-description">{{ widgetType.description }}</div>
                 </div>
@@ -239,10 +210,10 @@ const closeSettings = () => {
             </div>
           </div>
         </div>
-        
+
         <div class="settings-section">
           <h3>其他设置</h3>
-          
+
           <div class="setting-item">
             <label class="setting-label">主题</label>
             <select v-model="settings.theme" class="select-field">
@@ -251,20 +222,14 @@ const closeSettings = () => {
               <option value="auto">跟随系统</option>
             </select>
           </div>
-          
+
           <div class="setting-item">
             <label class="setting-label">数据刷新间隔（秒）</label>
-            <input 
-              v-model.number="settings.refreshInterval" 
-              type="number" 
-              min="10" 
-              max="3600" 
-              class="input-field"
-            />
+            <input v-model.number="settings.refreshInterval" type="number" min="10" max="3600" class="input-field" />
           </div>
         </div>
       </div>
-      
+
       <div class="settings-footer">
         <button class="btn btn-primary" @click="saveSettings">保存设置</button>
         <button class="btn btn-outline" @click="closeSettings">取消</button>
@@ -341,8 +306,13 @@ const closeSettings = () => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .settings-section {
@@ -548,17 +518,17 @@ const closeSettings = () => {
     width: 95%;
     max-height: 95vh;
   }
-  
+
   .available-widgets {
     grid-template-columns: 1fr;
   }
-  
+
   .setting-item {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-xs);
   }
-  
+
   .input-field,
   .select-field {
     width: 100%;

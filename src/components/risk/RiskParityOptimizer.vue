@@ -31,56 +31,24 @@
             <tbody>
               <tr v-for="(asset, index) in assets" :key="asset.symbol">
                 <td>
-                  <input 
-                    v-model="asset.symbol" 
-                    class="table-input"
-                    placeholder="股票代码"
-                    @blur="updateAssetInfo(index)"
-                  />
+                  <input v-model="asset.symbol" class="table-input" placeholder="股票代码" @blur="updateAssetInfo(index)" />
                 </td>
                 <td>
-                  <input 
-                    v-model="asset.name" 
-                    class="table-input"
-                    placeholder="资产名称"
-                  />
+                  <input v-model="asset.name" class="table-input" placeholder="资产名称" />
                 </td>
                 <td>
-                  <input 
-                    v-model.number="asset.expectedReturn" 
-                    type="number"
-                    class="table-input"
-                    step="0.1"
-                    min="-50"
-                    max="100"
-                  />
+                  <input v-model.number="asset.expectedReturn" type="number" class="table-input" step="0.1" min="-50"
+                    max="100" />
                 </td>
                 <td>
-                  <input 
-                    v-model.number="asset.volatility" 
-                    type="number"
-                    class="table-input"
-                    step="0.1"
-                    min="0"
-                    max="200"
-                  />
+                  <input v-model.number="asset.volatility" type="number" class="table-input" step="0.1" min="0"
+                    max="200" />
                 </td>
                 <td>
-                  <input 
-                    v-model.number="asset.weight" 
-                    type="number"
-                    class="table-input"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                  />
+                  <input v-model.number="asset.weight" type="number" class="table-input" step="0.1" min="0" max="100" />
                 </td>
                 <td>
-                  <button 
-                    class="btn btn-danger btn-small"
-                    @click="removeAsset(index)"
-                    :disabled="assets.length <= 2"
-                  >
+                  <button class="btn btn-danger btn-small" @click="removeAsset(index)" :disabled="assets.length <= 2">
                     删除
                   </button>
                 </td>
@@ -93,43 +61,25 @@
       <!-- 优化参数 -->
       <div class="params-section">
         <h4>优化参数</h4>
-        
+
         <div class="params-grid">
           <div class="param-group">
             <label>目标波动率 (%)</label>
-            <input 
-              v-model.number="params.targetVolatility" 
-              type="number"
-              class="form-control"
-              step="0.1"
-              min="1"
-              max="50"
-            />
+            <input v-model.number="params.targetVolatility" type="number" class="form-control" step="0.1" min="1"
+              max="50" />
           </div>
-          
+
           <div class="param-group">
             <label>无风险利率 (%)</label>
-            <input 
-              v-model.number="params.riskFreeRate" 
-              type="number"
-              class="form-control"
-              step="0.1"
-              min="0"
-              max="10"
-            />
+            <input v-model.number="params.riskFreeRate" type="number" class="form-control" step="0.1" min="0"
+              max="10" />
           </div>
-          
+
           <div class="param-group">
             <label>回望期 (天)</label>
-            <input 
-              v-model.number="params.lookbackPeriod" 
-              type="number"
-              class="form-control"
-              min="30"
-              max="1000"
-            />
+            <input v-model.number="params.lookbackPeriod" type="number" class="form-control" min="30" max="1000" />
           </div>
-          
+
           <div class="param-group">
             <label>再平衡频率</label>
             <select v-model="params.rebalanceFrequency" class="form-control">
@@ -139,55 +89,31 @@
               <option value="quarterly">每季度</option>
             </select>
           </div>
-          
+
           <div class="param-group">
             <label>最大权重 (%)</label>
-            <input 
-              v-model.number="params.maxWeight" 
-              type="number"
-              class="form-control"
-              step="1"
-              min="10"
-              max="100"
-            />
+            <input v-model.number="params.maxWeight" type="number" class="form-control" step="1" min="10" max="100" />
           </div>
-          
+
           <div class="param-group">
             <label>最小权重 (%)</label>
-            <input 
-              v-model.number="params.minWeight" 
-              type="number"
-              class="form-control"
-              step="0.1"
-              min="0"
-              max="20"
-            />
+            <input v-model.number="params.minWeight" type="number" class="form-control" step="0.1" min="0" max="20" />
           </div>
         </div>
       </div>
 
       <!-- 优化按钮 -->
       <div class="action-section">
-        <button 
-          class="btn btn-primary"
-          @click="optimizePortfolio"
-          :disabled="!canOptimize || isOptimizing"
-        >
+        <button class="btn btn-primary" @click="optimizePortfolio" :disabled="!canOptimize || isOptimizing">
           <span v-if="isOptimizing" class="loading-spinner"></span>
           {{ isOptimizing ? '优化中...' : '开始优化' }}
         </button>
-        
-        <button 
-          class="btn btn-secondary"
-          @click="loadSampleData"
-        >
+
+        <button class="btn btn-secondary" @click="loadSampleData">
           加载示例数据
         </button>
-        
-        <button 
-          class="btn btn-outline"
-          @click="resetData"
-        >
+
+        <button class="btn btn-outline" @click="resetData">
           重置数据
         </button>
       </div>
@@ -195,7 +121,7 @@
       <!-- 优化结果 -->
       <div v-if="result" class="result-section">
         <h4>优化结果</h4>
-        
+
         <!-- 投资组合指标 -->
         <div class="metrics-grid">
           <div class="metric-card">
@@ -204,35 +130,35 @@
               {{ (result.portfolioReturn * 100).toFixed(2) }}%
             </div>
           </div>
-          
+
           <div class="metric-card">
             <div class="metric-label">投资组合波动率</div>
             <div class="metric-value">
               {{ (result.portfolioVolatility * 100).toFixed(2) }}%
             </div>
           </div>
-          
+
           <div class="metric-card">
             <div class="metric-label">夏普比率</div>
             <div class="metric-value" :class="getSharpeClass(result.sharpeRatio)">
               {{ result.sharpeRatio.toFixed(3) }}
             </div>
           </div>
-          
+
           <div class="metric-card">
             <div class="metric-label">分散化比率</div>
             <div class="metric-value">
               {{ result.diversificationRatio.toFixed(3) }}
             </div>
           </div>
-          
+
           <div class="metric-card">
             <div class="metric-label">有效资产数</div>
             <div class="metric-value">
               {{ result.effectiveAssets.toFixed(1) }}
             </div>
           </div>
-          
+
           <div class="metric-card">
             <div class="metric-label">收敛状态</div>
             <div class="metric-value" :class="result.convergenceInfo.converged ? 'positive' : 'negative'">
@@ -272,12 +198,8 @@
         <div v-if="result.rebalanceSignals.length > 0" class="rebalance-section">
           <h5>再平衡建议</h5>
           <div class="signals-list">
-            <div 
-              v-for="signal in result.rebalanceSignals" 
-              :key="signal.symbol"
-              class="signal-item"
-              :class="signal.action"
-            >
+            <div v-for="signal in result.rebalanceSignals" :key="signal.symbol" class="signal-item"
+              :class="signal.action">
               <div class="signal-header">
                 <span class="signal-symbol">{{ signal.symbol }}</span>
                 <span class="signal-action" :class="signal.action">
@@ -377,12 +299,12 @@ const result = ref<RiskParityResult | null>(null)
 
 // 计算属性
 const canOptimize = computed(() => {
-  return assets.value.length >= 2 && 
-         assets.value.every(asset => 
-           asset.symbol && 
-           asset.expectedReturn > 0 && 
-           asset.volatility > 0
-         )
+  return assets.value.length >= 2 &&
+    assets.value.every(asset =>
+      asset.symbol &&
+      asset.expectedReturn > 0 &&
+      asset.volatility > 0
+    )
 })
 
 // 添加资产
@@ -414,114 +336,115 @@ const updateAssetInfo = async (index: number) => {
     // 暂时使用模拟数据
     asset.historicalPrices = generateMockPrices(asset.currentPrice, 252)
   }
-}
 
-// 生成模拟价格数据
-const generateMockPrices = (basePrice: number, days: number): number[] => {
-  const prices = [basePrice]
-  for (let i = 1; i < days; i++) {
-    const change = (Math.random() - 0.5) * 0.04 // ±2%的随机变动
-    const newPrice = prices[i - 1] * (1 + change)
-    prices.push(newPrice)
-  }
-  return prices
-}
 
-// 优化投资组合
-const optimizePortfolio = async () => {
-  if (!canOptimize.value) {
-    showToast('请完善资产信息', 'warning')
-    return
+  // 生成模拟价格数据
+  const generateMockPrices = (basePrice: number, days: number): number[] => {
+    const prices = [basePrice]
+    for (let i = 1; i < days; i++) {
+      const change = (Math.random() - 0.5) * 0.04 // ±2%的随机变动
+      const newPrice = prices[i - 1] * (1 + change)
+      prices.push(newPrice)
+    }
+    return prices
   }
 
-  isOptimizing.value = true
-  
-  try {
-    // 准备参数
-    const optimizationParams: RiskParityParams = {
-      ...params,
-      assets: assets.value.map(asset => ({
-        ...asset,
-        expectedReturn: asset.expectedReturn / 100,
-        volatility: asset.volatility / 100,
-        weight: asset.weight / 100,
-        historicalPrices: asset.historicalPrices.length > 0 ? 
-          asset.historicalPrices : 
-          generateMockPrices(asset.currentPrice, params.lookbackPeriod)
-      })),
-      targetVolatility: params.targetVolatility / 100,
-      riskFreeRate: params.riskFreeRate / 100,
-      maxWeight: params.maxWeight / 100,
-      minWeight: params.minWeight / 100
+  // 优化投资组合
+  const optimizePortfolio = async () => {
+    if (!canOptimize.value) {
+      showToast('请完善资产信息', 'warning')
+      return
     }
 
-    // 执行优化
-    result.value = riskParityCalculator.calculateRiskParityWeights(optimizationParams)
-    
-    showToast('风险平价优化完成!', 'success')
-  } catch (error: any) {
-    showToast('优化失败: ' + error.message, 'error')
-    console.error('Risk parity optimization failed:', error)
-  } finally {
-    isOptimizing.value = false
+    isOptimizing.value = true
+
+    try {
+      // 准备参数
+      const optimizationParams: RiskParityParams = {
+        ...params,
+        assets: assets.value.map(asset => ({
+          ...asset,
+          expectedReturn: asset.expectedReturn / 100,
+          volatility: asset.volatility / 100,
+          weight: asset.weight / 100,
+          historicalPrices: asset.historicalPrices.length > 0 ?
+            asset.historicalPrices :
+            generateMockPrices(asset.currentPrice, params.lookbackPeriod)
+        })),
+        targetVolatility: params.targetVolatility / 100,
+        riskFreeRate: params.riskFreeRate / 100,
+        maxWeight: params.maxWeight / 100,
+        minWeight: params.minWeight / 100
+      }
+
+      // 执行优化
+      result.value = riskParityCalculator.calculateRiskParityWeights(optimizationParams)
+
+      showToast('风险平价优化完成!', 'success')
+    } catch (error: any) {
+      showToast('优化失败: ' + error.message, 'error')
+      console.error('Risk parity optimization failed:', error)
+    } finally {
+      isOptimizing.value = false
+    }
   }
-}
 
-// 加载示例数据
-const loadSampleData = () => {
-  // 重置为示例数据
-  assets.value.forEach(asset => {
-    asset.historicalPrices = generateMockPrices(asset.currentPrice, params.lookbackPeriod)
-  })
-  
-  showToast('示例数据已加载')
-}
+  // 加载示例数据
+  const loadSampleData = () => {
+    // 重置为示例数据
+    assets.value.forEach(asset => {
+      asset.historicalPrices = generateMockPrices(asset.currentPrice, params.lookbackPeriod)
+    })
 
-// 重置数据
-const resetData = () => {
-  result.value = null
-  assets.value.forEach(asset => {
-    asset.weight = 25.0
-    asset.riskContribution = 0
-  })
-  
-  showToast('数据已重置')
-}
-
-// 工具函数
-const getSharpeClass = (sharpe: number) => {
-  if (sharpe >= 1.0) return 'excellent'
-  if (sharpe >= 0.5) return 'good'
-  if (sharpe >= 0.0) return 'fair'
-  return 'poor'
-}
-
-const getWeightChangeClass = (current: number, target: number) => {
-  const change = target - current
-  if (Math.abs(change) < 0.01) return 'no-change'
-  return change > 0 ? 'increase' : 'decrease'
-}
-
-const getWeightChangeText = (current: number, target: number) => {
-  const change = (target - current) * 100
-  if (Math.abs(change) < 1) return '无变化'
-  return change > 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`
-}
-
-const getActionText = (action: string) => {
-  const actions = {
-    buy: '买入',
-    sell: '卖出',
-    hold: '持有'
+    showToast('示例数据已加载')
   }
-  return actions[action as keyof typeof actions] || action
-}
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY'
-  }).format(amount)
+  // 重置数据
+  const resetData = () => {
+    result.value = null
+    assets.value.forEach(asset => {
+      asset.weight = 25.0
+      asset.riskContribution = 0
+    })
+
+    showToast('数据已重置')
+  }
+
+  // 工具函数
+  const getSharpeClass = (sharpe: number) => {
+    if (sharpe >= 1.0) return 'excellent'
+    if (sharpe >= 0.5) return 'good'
+    if (sharpe >= 0.0) return 'fair'
+    return 'poor'
+  }
+
+  const getWeightChangeClass = (current: number, target: number) => {
+    const change = target - current
+    if (Math.abs(change) < 0.01) return 'no-change'
+    return change > 0 ? 'increase' : 'decrease'
+  }
+
+  const getWeightChangeText = (current: number, target: number) => {
+    const change = (target - current) * 100
+    if (Math.abs(change) < 1) return '无变化'
+    return change > 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`
+  }
+
+  const getActionText = (action: string) => {
+    const actions = {
+      buy: '买入',
+      sell: '卖出',
+      hold: '持有'
+    }
+    return actions[action as keyof typeof actions] || action
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('zh-CN', {
+      style: 'currency',
+      currency: 'CNY'
+    }).format(amount)
+  }
 }
 </script>
 
@@ -551,7 +474,7 @@ const formatCurrency = (amount: number) => {
   background: white;
   border-radius: 8px;
   padding: 30px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .assets-section {
@@ -730,12 +653,29 @@ const formatCurrency = (amount: number) => {
   color: #333;
 }
 
-.positive { color: #52c41a; }
-.negative { color: #ff4d4f; }
-.excellent { color: #1890ff; }
-.good { color: #52c41a; }
-.fair { color: #faad14; }
-.poor { color: #ff4d4f; }
+.positive {
+  color: #52c41a;
+}
+
+.negative {
+  color: #ff4d4f;
+}
+
+.excellent {
+  color: #1890ff;
+}
+
+.good {
+  color: #52c41a;
+}
+
+.fair {
+  color: #faad14;
+}
+
+.poor {
+  color: #ff4d4f;
+}
 
 .weights-table {
   margin-bottom: 30px;
@@ -768,9 +708,17 @@ const formatCurrency = (amount: number) => {
   color: #1890ff;
 }
 
-.increase { color: #52c41a; }
-.decrease { color: #ff4d4f; }
-.no-change { color: #666; }
+.increase {
+  color: #52c41a;
+}
+
+.decrease {
+  color: #ff4d4f;
+}
+
+.no-change {
+  color: #666;
+}
 
 .rebalance-section {
   margin-bottom: 30px;
@@ -857,23 +805,28 @@ const formatCurrency = (amount: number) => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {
   .params-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .action-section {
     flex-direction: column;
   }
-  
+
   .convergence-details {
     flex-direction: column;
     gap: 5px;

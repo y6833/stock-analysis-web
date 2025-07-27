@@ -15,8 +15,8 @@ import type {
   PasswordUpdateRequest,
 } from '@/types/user'
 
-// API基础URL - 使用相对路径以利用Vite代理
-const API_URL = '/api'
+// API基础URL
+const API_URL = 'http://localhost:7001/api'
 
 // 本地存储键
 const TOKEN_KEY = 'auth_token'
@@ -56,7 +56,7 @@ class AuthService {
       const loginAttempts = parseInt(localStorage.getItem(loginAttemptKey) || '0');
       const lastAttemptTime = parseInt(localStorage.getItem('last_login_attempt') || '0');
       const now = Date.now();
-      
+
       // 检查是否被锁定（5次失败尝试后锁定15分钟）
       if (loginAttempts >= 5) {
         const lockoutDuration = 15 * 60 * 1000; // 15分钟
@@ -68,10 +68,10 @@ class AuthService {
           localStorage.setItem(loginAttemptKey, '0');
         }
       }
-      
+
       // 记录本次尝试时间
       localStorage.setItem('last_login_attempt', now.toString());
-      
+
       const response = await axios.post(`${API_URL}/auth/login`, data)
       const loginResponse = response.data as LoginResponse
 
@@ -81,13 +81,13 @@ class AuthService {
       // 存储认证信息
       this.setToken(loginResponse.token)
       this.setUser(loginResponse.user)
-      
+
       // 存储会话过期时间和刷新令牌（如果有）
       if (loginResponse.expiresAt) {
         const expiryTime = new Date(loginResponse.expiresAt).getTime()
         localStorage.setItem(SESSION_EXPIRY_KEY, expiryTime.toString())
       }
-      
+
       if (loginResponse.refreshToken) {
         // 安全存储刷新令牌
         const encodedToken = btoa(loginResponse.refreshToken);
@@ -100,12 +100,12 @@ class AuthService {
       return loginResponse
     } catch (error) {
       console.error('登录失败:', error)
-      
+
       // 增加失败尝试计数
       const loginAttemptKey = 'login_attempts';
       const loginAttempts = parseInt(localStorage.getItem(loginAttemptKey) || '0');
       localStorage.setItem(loginAttemptKey, (loginAttempts + 1).toString());
-      
+
       throw this.handleApiError(error)
     }
   }
@@ -127,7 +127,7 @@ class AuthService {
     } finally {
       // 无论API调用是否成功，都清除本地状态
       this.clearAuthData()
-      
+
       // 禁止API调用
       tushareService.setAllowApiCall(false)
     }
@@ -140,7 +140,7 @@ class AuthService {
     try {
       const encodedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
       if (!encodedRefreshToken) return false
-      
+
       // 解码刷新令牌
       const refreshToken = atob(encodedRefreshToken)
 
@@ -149,10 +149,10 @@ class AuthService {
       })
 
       const { token, expiresAt } = response.data
-      
+
       // 更新令牌和过期时间
       this.setToken(token)
-      
+
       if (expiresAt) {
         const expiryTime = new Date(expiresAt).getTime()
         localStorage.setItem(SESSION_EXPIRY_KEY, expiryTime.toString())
@@ -185,7 +185,7 @@ class AuthService {
       const response = await axios.get(`${API_URL}/auth/validate-token`, {
         headers: this.getAuthHeader()
       })
-      
+
       return response.status === 200
     } catch (error) {
       console.error('令牌验证失败:', error)
@@ -336,7 +336,7 @@ class AuthService {
    */
   private setToken(token: string): void {
     localStorage.setItem(TOKEN_KEY, token)
-    
+
     // 设置默认Authorization头
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
   }
@@ -372,7 +372,7 @@ class AuthService {
     localStorage.removeItem(USER_KEY)
     localStorage.removeItem(SESSION_EXPIRY_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
-    
+
     // 清除默认Authorization头
     delete axios.defaults.headers.common['Authorization']
   }
@@ -426,7 +426,7 @@ class AuthService {
     if (error.response) {
       // 服务器响应了错误状态码
       const { status, data } = error.response
-      
+
       // 处理特定状态码
       switch (status) {
         case 401:

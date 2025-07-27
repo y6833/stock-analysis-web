@@ -31,14 +31,14 @@ const getIndustryStocks = (industry) => {
   // 生成该行业的模拟股票数据
   const stocks = []
   const count = Math.floor(Math.random() * 20) + 10 // 10-30只股票
-  
+
   for (let i = 0; i < count; i++) {
     const price = Math.random() * 50 + 5
     const change = (Math.random() * 10 - 5).toFixed(2)
-    
+
     stocks.push({
-      name: `${industry.name}股票${i+1}`,
-      code: `${industry.code}${i+1}`,
+      name: `${industry.name}股票${i + 1}`,
+      code: `${industry.code}${i + 1}`,
       price: price.toFixed(2),
       change: change,
       pe: (Math.random() * 40 + 5).toFixed(1),
@@ -47,7 +47,7 @@ const getIndustryStocks = (industry) => {
       volume: Math.floor(Math.random() * 1000000 + 100000)
     })
   }
-  
+
   // 按涨跌幅排序
   return stocks.sort((a, b) => parseFloat(b.change) - parseFloat(a.change))
 }
@@ -56,14 +56,14 @@ const getIndustryStocks = (industry) => {
 onMounted(() => {
   // 设置行业数据
   industries.value = industryData
-  
+
   // 默认选择第一个行业
   if (industryData.length > 0) {
     selectedIndustry.value = industryData[0]
     initIndustryChart()
     initPerformanceChart()
   }
-  
+
   isLoading.value = false
 })
 
@@ -77,19 +77,19 @@ const selectIndustry = (industry) => {
 // 初始化行业分布图表
 const initIndustryChart = () => {
   if (!industryChart.value) return
-  
+
   if (chart.value) {
     chart.value.dispose()
   }
-  
+
   chart.value = echarts.init(industryChart.value)
-  
+
   // 准备数据
   const data = industryData.map(item => ({
     name: item.name,
     value: item.stocks
   }))
-  
+
   const option = {
     tooltip: {
       trigger: 'item',
@@ -130,9 +130,9 @@ const initIndustryChart = () => {
       }
     ]
   }
-  
+
   chart.value.setOption(option)
-  
+
   // 响应窗口大小变化
   window.addEventListener('resize', () => {
     chart.value?.resize()
@@ -142,18 +142,18 @@ const initIndustryChart = () => {
 // 初始化行业表现图表
 const initPerformanceChart = () => {
   if (!performanceChart.value) return
-  
+
   if (performanceChartInstance.value) {
     performanceChartInstance.value.dispose()
   }
-  
+
   performanceChartInstance.value = echarts.init(performanceChart.value)
-  
+
   // 准备数据
   const industries = industryData.map(item => item.name)
   const monthReturn = industryData.map(item => item.monthReturn)
   const yearReturn = industryData.map(item => item.yearReturn)
-  
+
   const option = {
     tooltip: {
       trigger: 'axis',
@@ -192,7 +192,7 @@ const initPerformanceChart = () => {
           position: 'right'
         },
         itemStyle: {
-          color: function(params) {
+          color: function (params) {
             return params.data >= 0 ? '#e74c3c' : '#2ecc71'
           }
         }
@@ -207,16 +207,16 @@ const initPerformanceChart = () => {
           position: 'right'
         },
         itemStyle: {
-          color: function(params) {
+          color: function (params) {
             return params.data >= 0 ? '#e74c3c' : '#2ecc71'
           }
         }
       }
     ]
   }
-  
+
   performanceChartInstance.value.setOption(option)
-  
+
   // 响应窗口大小变化
   window.addEventListener('resize', () => {
     performanceChartInstance.value?.resize()
@@ -254,31 +254,31 @@ const formatVolume = (value) => {
       <h1>行业分析</h1>
       <p class="subtitle">深入分析各行业板块表现，发现投资机会</p>
     </div>
-    
+
     <div v-if="isLoading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>正在加载行业数据...</p>
     </div>
-    
+
     <div v-else class="industry-content">
       <!-- 行业概览 -->
       <div class="card industry-overview">
         <div class="card-header">
           <h2>行业概览</h2>
         </div>
-        
+
         <div class="overview-content">
           <div class="industry-chart-container">
             <div ref="industryChart" class="industry-chart"></div>
           </div>
-          
+
           <div class="industry-performance-container">
             <h3>行业表现</h3>
             <div ref="performanceChart" class="performance-chart"></div>
           </div>
         </div>
       </div>
-      
+
       <!-- 行业列表 -->
       <div class="card industry-list">
         <div class="card-header">
@@ -287,7 +287,7 @@ const formatVolume = (value) => {
             <input type="text" placeholder="搜索行业..." class="search-input" />
           </div>
         </div>
-        
+
         <div class="industry-table-container">
           <table class="industry-table">
             <thead>
@@ -301,12 +301,8 @@ const formatVolume = (value) => {
               </tr>
             </thead>
             <tbody>
-              <tr 
-                v-for="industry in industries" 
-                :key="industry.code"
-                :class="{ 'selected': selectedIndustry === industry }"
-                @click="selectIndustry(industry)"
-              >
+              <tr v-for="industry in industries" :key="industry.code"
+                :class="{ 'selected': selectedIndustry === industry }" @click="selectIndustry(industry)">
                 <td>{{ industry.name }}</td>
                 <td>{{ industry.stocks }}</td>
                 <td>{{ industry.avgPE }}</td>
@@ -322,7 +318,7 @@ const formatVolume = (value) => {
           </table>
         </div>
       </div>
-      
+
       <!-- 行业详情 -->
       <div v-if="selectedIndustry" class="card industry-detail">
         <div class="card-header">
@@ -354,7 +350,7 @@ const formatVolume = (value) => {
             </div>
           </div>
         </div>
-        
+
         <div class="industry-stocks">
           <h3>行业成分股</h3>
           <table class="stocks-table">
@@ -437,8 +433,13 @@ const formatVolume = (value) => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .industry-content {
@@ -629,7 +630,7 @@ const formatVolume = (value) => {
   .overview-content {
     grid-template-columns: 1fr;
   }
-  
+
   .industry-chart-container,
   .industry-performance-container {
     height: 300px;
@@ -641,15 +642,15 @@ const formatVolume = (value) => {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .search-box {
     width: 100%;
   }
-  
+
   .search-input {
     width: 100%;
   }
-  
+
   .industry-stats {
     justify-content: center;
     width: 100%;

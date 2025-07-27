@@ -27,29 +27,24 @@ onMounted(async () => {
 // 加载关注列表数据
 const loadWatchlistData = async () => {
   isLoading.value = true
-  
+
   try {
-    // 如果关注列表为空，使用模拟数据
+    // 只使用真实的关注列表数据，不使用模拟数据
     if (watchlist.value.length === 0) {
-      const stocks = await stockService.getStocks()
-      watchlistStocks.value = stocks.slice(0, 5).map(stock => ({
-        ...stock,
-        price: Math.random() * 100 + 10,
-        change: (Math.random() * 10 - 5).toFixed(2),
-        volume: Math.floor(Math.random() * 10000000)
-      }))
+      watchlistStocks.value = []
+      console.log('关注列表为空，请添加股票到关注列表')
     } else {
       // 获取关注列表中的股票数据
       const promises = watchlist.value.map(async (symbol) => {
         try {
           const stockData = await stockService.getStockData(symbol)
           const stockInfo = (await stockService.getStocks()).find(s => s.symbol === symbol)
-          
+
           if (stockInfo && stockData) {
             const lastPrice = stockData.prices[stockData.prices.length - 1]
             const prevPrice = stockData.prices[stockData.prices.length - 2] || stockData.prices[0]
             const change = ((lastPrice - prevPrice) / prevPrice * 100).toFixed(2)
-            
+
             return {
               ...stockInfo,
               price: lastPrice,
@@ -63,7 +58,7 @@ const loadWatchlistData = async () => {
           return null
         }
       })
-      
+
       const results = await Promise.all(promises)
       watchlistStocks.value = results.filter(Boolean) as any[]
     }
@@ -101,14 +96,14 @@ const manageWatchlist = () => {
       <div class="loading-spinner"></div>
       <p>加载关注列表...</p>
     </div>
-    
+
     <div v-else-if="watchlistStocks.length === 0" class="empty-watchlist">
       <p>您的关注列表为空</p>
       <button class="btn btn-outline btn-sm" @click="manageWatchlist">
         添加股票
       </button>
     </div>
-    
+
     <div v-else class="watchlist-table">
       <table>
         <thead>
@@ -142,7 +137,7 @@ const manageWatchlist = () => {
         </tbody>
       </table>
     </div>
-    
+
     <div class="widget-footer">
       <button class="btn btn-outline btn-sm" @click="manageWatchlist">
         管理关注列表
@@ -182,8 +177,13 @@ const manageWatchlist = () => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .watchlist-table {
@@ -196,7 +196,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   padding: var(--spacing-sm);
   text-align: left;
   border-bottom: 1px solid var(--border-light);
@@ -206,9 +207,6 @@ th {
   font-weight: 600;
   color: var(--text-primary);
   background-color: var(--bg-secondary);
-  position: sticky;
-  top: 0;
-  z-index: 1;
 }
 
 tr:hover {

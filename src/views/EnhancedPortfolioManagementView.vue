@@ -4,12 +4,8 @@
       <h1>增强投资组合管理</h1>
       <div class="header-actions">
         <el-select v-model="selectedPortfolio" placeholder="选择投资组合" @change="loadPortfolio">
-          <el-option
-            v-for="portfolio in portfolios"
-            :key="portfolio.id"
-            :label="portfolio.name"
-            :value="portfolio.id"
-          />
+          <el-option v-for="portfolio in portfolios" :key="portfolio.id" :label="portfolio.name"
+            :value="portfolio.id" />
         </el-select>
         <el-button type="primary" @click="createNewPortfolio">创建新投资组合</el-button>
       </div>
@@ -35,30 +31,21 @@
               <div class="summary-card">
                 <div class="card-title">总资产</div>
                 <div class="card-value">{{ formatCurrency(portfolioSummary.totalValue) }}</div>
-                <div
-                  class="card-change"
-                  :class="getChangeClass(portfolioSummary.totalProfitPercentage)"
-                >
+                <div class="card-change" :class="getChangeClass(portfolioSummary.totalProfitPercentage)">
                   {{ formatPercent(portfolioSummary.totalProfitPercentage) }}
                 </div>
               </div>
               <div class="summary-card">
                 <div class="card-title">日收益</div>
                 <div class="card-value">{{ formatCurrency(portfolioSummary.dailyProfit) }}</div>
-                <div
-                  class="card-change"
-                  :class="getChangeClass(portfolioSummary.dailyProfitPercentage)"
-                >
+                <div class="card-change" :class="getChangeClass(portfolioSummary.dailyProfitPercentage)">
                   {{ formatPercent(portfolioSummary.dailyProfitPercentage) }}
                 </div>
               </div>
               <div class="summary-card">
                 <div class="card-title">总收益</div>
                 <div class="card-value">{{ formatCurrency(portfolioSummary.totalProfit) }}</div>
-                <div
-                  class="card-change"
-                  :class="getChangeClass(portfolioSummary.totalProfitPercentage)"
-                >
+                <div class="card-change" :class="getChangeClass(portfolioSummary.totalProfitPercentage)">
                   {{ formatPercent(portfolioSummary.totalProfitPercentage) }}
                 </div>
               </div>
@@ -70,11 +57,7 @@
             </div>
 
             <div class="chart-section">
-              <PortfolioPerformanceChart
-                :portfolioId="selectedPortfolio"
-                :height="400"
-                :showBenchmarkSelector="true"
-              />
+              <PortfolioPerformanceChart :portfolioId="selectedPortfolio" :height="400" :showBenchmarkSelector="true" />
             </div>
 
             <div class="holdings-section">
@@ -108,9 +91,7 @@
                 <el-table-column label="操作" width="150">
                   <template #default="scope">
                     <el-button size="small" @click="editPosition(scope.row)">编辑</el-button>
-                    <el-button size="small" type="danger" @click="deletePosition(scope.row)"
-                      >删除</el-button
-                    >
+                    <el-button size="small" type="danger" @click="deletePosition(scope.row)">删除</el-button>
                   </template>
                 </el-table-column>
               </el-table>
@@ -206,13 +187,7 @@
                 </el-select>
               </el-form-item>
               <el-form-item label="风险等级">
-                <el-slider
-                  v-model="portfolioSettings.riskLevel"
-                  :min="1"
-                  :max="10"
-                  :step="1"
-                  show-stops
-                />
+                <el-slider v-model="portfolioSettings.riskLevel" :min="1" :max="10" :step="1" show-stops />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="savePortfolioSettings">保存设置</el-button>
@@ -255,10 +230,7 @@
     </el-dialog>
 
     <!-- 添加交易对话框 -->
-    <el-dialog
-      v-model="transactionDialogVisible"
-      :title="isEditingTransaction ? '编辑交易' : '添加交易'"
-    >
+    <el-dialog v-model="transactionDialogVisible" :title="isEditingTransaction ? '编辑交易' : '添加交易'">
       <el-form :model="transactionForm" label-width="100px">
         <el-form-item label="股票代码">
           <el-input v-model="transactionForm.symbol" />

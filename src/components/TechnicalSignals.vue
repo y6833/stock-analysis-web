@@ -244,6 +244,19 @@ const enabledSignals = reactive({
   turtle: true, // 默认启用海龟交易信号
 })
 
+// 技术指标数据
+const movingAverages = ref({})
+const allSignals = ref([])
+const buySignals = ref([])
+const sellSignals = ref([])
+const turtleSignals = ref([])
+
+// 移动平均线参数
+const maParams = reactive({
+  period: 20, // 默认20天均线
+  type: 'sma' // 简单移动平均线
+})
+
 // 海龟交易参数
 const turtleParams = reactive({
   period: 20, // 默认20天突破周期
@@ -374,16 +387,12 @@ const loadRealSignals = async () => {
 
 const calculateTechnicalSignals = async () => {
   try {
-    const response = await fetch(`/api/technical-indicators/${props.stockCode}`, {
-      method: 'POST',
+    // 使用正确的后端API端点
+    const response = await fetch(`http://localhost:7001/api/v1/stocks/${props.stockCode}/indicators`, {
+      method: 'GET',  // 后端API是GET请求
       headers: {
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        klineData: props.klineData,
-        enabledSignals: enabledSignals,
-        turtleParams: turtleParams, // 传递海龟交易参数
-      }),
+      }
     })
 
     const result = await response.json()
@@ -434,15 +443,78 @@ const calculateTechnicalSignals = async () => {
       )
     } else {
       console.warn('API 返回失败:', result.message)
+      // 显示友好的错误信息
+      if (result.message?.includes('暂无数据') || result.message?.includes('数据不足')) {
+        showToast(`股票 ${props.stockCode} 暂无技术指标数据，显示模拟数据供参考`, 'info')
+      } else {
+        showToast('获取技术指标失败，显示模拟数据', 'warning')
+      }
       // 如果 API 失败，生成一些模拟信号用于演示
       generateMockSignals()
     }
   } catch (error) {
     console.error('计算技术指标失败:', error)
-    showToast('计算技术指标失败，使用模拟数据', 'warning')
+    showToast('网络连接失败，显示模拟技术指标数据', 'warning')
     // 生成模拟信号
     generateMockSignals()
   }
+}
+
+// 生成模拟信号数据
+const generateMockSignals = () => {
+  console.log('生成模拟技术指标数据')
+
+  // 模拟移动平均线数据
+  const mockMA = {
+    ma5: Array.from({ length: 20 }, (_, i) => 6.5 + Math.random() * 1),
+    ma10: Array.from({ length: 20 }, (_, i) => 6.6 + Math.random() * 0.8),
+    ma30: Array.from({ length: 20 }, (_, i) => 6.7 + Math.random() * 0.6),
+    ma60: Array.from({ length: 20 }, (_, i) => 6.8 + Math.random() * 0.4)
+  }
+
+  // 模拟技术信号
+  const mockSignals = [
+    {
+      index: 15,
+      signal: '海龟买入',
+      type: 'buy',
+      price: 7.25,
+      strength: 75,
+      confidence: 85,
+      reason: '价格突破20周期高点',
+      riskManagement: {
+        positionSize: { shares: 2000, positionValue: 14500 },
+        stopLoss: { stopPrice: 6.95, riskPercent: 4.1 },
+        riskReward: { risk: 4.1, target: 8.2 }
+      }
+    },
+    {
+      index: 18,
+      signal: 'MA金叉',
+      type: 'buy',
+      price: 7.31,
+      strength: 60,
+      confidence: 70,
+      reason: 'MA5上穿MA10',
+      riskManagement: {
+        positionSize: { shares: 1500, positionValue: 10965 },
+        stopLoss: { stopPrice: 7.05, riskPercent: 3.6 },
+        riskReward: { risk: 3.6, target: 7.2 }
+      }
+    }
+  ]
+
+  // 更新响应式数据
+  movingAverages.value = mockMA
+  allSignals.value = mockSignals
+  buySignals.value = mockSignals.filter(s => s.type === 'buy')
+  sellSignals.value = mockSignals.filter(s => s.type === 'sell')
+  turtleSignals.value = mockSignals.filter(s => s.signal?.includes('海龟'))
+
+  // 更新图表
+  updateChart({ movingAverages: mockMA })
+
+  showToast('已加载模拟技术指标数据', 'info')
 }
 
 const updateChart = (data) => {
@@ -564,12 +636,108 @@ const updateChart = (data) => {
     series: series,
   }
 
-  chart.value.setOption(option)
+  try {
+    if (chart.value && !chart.value.isDisposed()) {
+      // 验证series数据
+      const validatedSeries = series.filter(s => {
+        if (!s || typeof s !== 'object') return false
+        if (!s.type || !s.name) return false
+        if (!Array.isArray(s.data)) s.data = []
+        return true
+      }).map(s => ({
+        ...s,
+        animation: false, // 禁用动画
+        data: s.data || []
+      }))
+
+      // 更新option中的series
+      const safeOption = {
+        ...option,
+        series: validatedSeries,
+        animation: false,
+        animationDuration: 0
+      }
+
+      console.log('[TechnicalSignals] 设置技术指标图表配置:', {
+        seriesCount: validatedSeries.length,
+        xAxisDataLength: (data.dates || []).length,
+        hasValidData: validatedSeries.some(s => s.data && s.data.length > 0)
+      })
+
+      // 安全地清空和设置图表
+      try {
+        chart.value.clear()
+        chart.value.setOption(safeOption, true)
+        console.log('[TechnicalSignals] 技术指标图表渲染成功')
+      } catch (setOptionError) {
+        console.error('[TechnicalSignals] setOption失败，重新创建图表:', setOptionError)
+        chart.value.dispose()
+        if (chartContainer.value) {
+          chart.value = echarts.init(chartContainer.value)
+        }
+        chart.value.setOption(safeOption, true)
+        console.log('[TechnicalSignals] 技术指标图表重新创建成功')
+      }
+    } else {
+      console.error('[TechnicalSignals] 图表实例无效或已销毁，重新创建')
+      if (chartContainer.value) {
+        chart.value = echarts.init(chartContainer.value)
+        chart.value.setOption(option, true)
+        console.log('[TechnicalSignals] 技术指标图表重新创建成功')
+      }
+    }
+  } catch (err) {
+    console.error('[TechnicalSignals] 图表渲染失败:', err)
+
+    // 最后的尝试：完全重置图表
+    try {
+      if (chartContainer.value) {
+        if (chart.value) {
+          chart.value.dispose()
+        }
+        chart.value = echarts.init(chartContainer.value)
+        console.log('[TechnicalSignals] 技术指标图表完全重置成功')
+      }
+    } catch (resetError) {
+      console.error('[TechnicalSignals] 图表重置也失败了:', resetError)
+    }
+  }
 }
 
 const initChart = () => {
-  if (chartContainer.value) {
+  if (!chartContainer.value) {
+    console.warn('[TechnicalSignals] 图表容器不存在')
+    return
+  }
+
+  // 检查容器尺寸
+  const containerRect = chartContainer.value.getBoundingClientRect()
+  if (containerRect.width === 0 || containerRect.height === 0) {
+    console.warn('[TechnicalSignals] 容器尺寸为0，延迟初始化')
+    setTimeout(() => {
+      if (chartContainer.value) {
+        const newRect = chartContainer.value.getBoundingClientRect()
+        console.log('[TechnicalSignals] 重试时容器尺寸:', newRect.width, 'x', newRect.height)
+        if (newRect.width > 0 && newRect.height > 0) {
+          initChart()
+        }
+      }
+    }, 200)
+    return
+  }
+
+  console.log('[TechnicalSignals] 初始化图表，容器尺寸:', containerRect.width, 'x', containerRect.height)
+
+  try {
+    // 销毁旧图表
+    if (chart.value) {
+      chart.value.dispose()
+    }
+
     chart.value = echarts.init(chartContainer.value)
+    console.log('[TechnicalSignals] 图表初始化成功')
+  } catch (error) {
+    console.error('[TechnicalSignals] 图表初始化失败:', error)
   }
 }
 
@@ -698,10 +866,14 @@ watch(
 }
 
 .indicators-chart {
+  width: 100%;
   height: 400px;
+  min-height: 400px;
   background: white;
   border-radius: 8px;
   margin-bottom: 16px;
+  border: 1px solid #e0e0e0;
+  position: relative;
 }
 
 .signal-config {

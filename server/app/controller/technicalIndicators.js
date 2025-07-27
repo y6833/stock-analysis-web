@@ -12,8 +12,13 @@ class TechnicalIndicatorsController extends Controller {
    */
   async calculateIndicators() {
     const { ctx, service } = this
-    const { stockCode } = ctx.params
-    const { klineData, enabledSignals, period = '1d', turtleParams } = ctx.request.body
+    const { symbol } = ctx.params // 路由参数是symbol，不是stockCode
+    const stockCode = symbol // 为了保持后续代码兼容性
+
+    // 支持GET和POST请求，从query或body获取参数
+    const isGetRequest = ctx.method === 'GET'
+    const params = isGetRequest ? ctx.query : ctx.request.body
+    const { klineData, enabledSignals, period = '1d', turtleParams } = params || {}
 
     try {
       // 参数验证

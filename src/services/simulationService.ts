@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
 
-const API_URL = '/api'
+const API_URL = 'http://localhost:7001/api'
 
 // 模拟账户类型
 export interface SimulationAccount {

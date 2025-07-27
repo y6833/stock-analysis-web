@@ -6,27 +6,15 @@
     </div>
 
     <div class="test-controls">
-      <button 
-        @click="runQuickTest" 
-        :disabled="isRunning"
-        class="btn btn-primary"
-      >
+      <button @click="runQuickTest" :disabled="isRunning" class="btn btn-primary">
         {{ isRunning ? '测试中...' : '快速测试' }}
       </button>
-      
-      <button 
-        @click="runFullTest" 
-        :disabled="isRunning"
-        class="btn btn-secondary"
-      >
+
+      <button @click="runFullTest" :disabled="isRunning" class="btn btn-secondary">
         {{ isRunning ? '测试中...' : '完整测试' }}
       </button>
-      
-      <button 
-        @click="clearResults"
-        :disabled="isRunning"
-        class="btn btn-outline"
-      >
+
+      <button @click="clearResults" :disabled="isRunning" class="btn btn-outline">
         清除结果
       </button>
     </div>
@@ -104,11 +92,8 @@
       </div>
 
       <div class="test-results">
-        <div 
-          v-for="result in testResults" 
-          :key="result.name"
-          :class="['test-result', result.passed ? 'test-passed' : 'test-failed']"
-        >
+        <div v-for="result in testResults" :key="result.name"
+          :class="['test-result', result.passed ? 'test-passed' : 'test-failed']">
           <div class="test-header">
             <span class="test-icon">{{ result.passed ? '✅' : '❌' }}</span>
             <span class="test-name">{{ result.name }}</span>
@@ -138,14 +123,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { 
-  getTushareConfigInfo,
-  getRemainingRequests,
+import {
   type TestResult,
   type TestSuiteResult,
   tushareTestSuite,
   quickTest
 } from '@/utils/tushareTestSuite'
+import { getTushareConfigInfo, getRemainingRequests } from '@/services/tushareService'
 
 // 响应式数据
 const isRunning = ref(false)
@@ -196,11 +180,11 @@ const loadConfigInfo = async () => {
 
 const runQuickTest = async () => {
   if (isRunning.value) return
-  
+
   isRunning.value = true
   clearResults()
   addLog('info', '开始快速测试...')
-  
+
   try {
     const success = await quickTest()
     addLog(success ? 'success' : 'error', `快速测试${success ? '通过' : '失败'}`)
@@ -214,11 +198,11 @@ const runQuickTest = async () => {
 
 const runFullTest = async () => {
   if (isRunning.value) return
-  
+
   isRunning.value = true
   clearResults()
   addLog('info', '开始完整测试套件...')
-  
+
   try {
     const result: TestSuiteResult = await tushareTestSuite.runAllTests()
     testResults.value = result.results
@@ -321,26 +305,34 @@ onMounted(async () => {
   color: white;
 }
 
-.config-section, .rate-limit-section, .results-section, .logs-section {
+.config-section,
+.rate-limit-section,
+.results-section,
+.logs-section {
   background: white;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.config-section h2, .rate-limit-section h2, .results-section h2, .logs-section h2 {
+.config-section h2,
+.rate-limit-section h2,
+.results-section h2,
+.logs-section h2 {
   margin-bottom: 15px;
   color: #2c3e50;
 }
 
-.config-grid, .rate-limit-grid {
+.config-grid,
+.rate-limit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 15px;
 }
 
-.config-item, .rate-limit-item {
+.config-item,
+.rate-limit-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -349,15 +341,27 @@ onMounted(async () => {
   border-radius: 5px;
 }
 
-.config-item label, .rate-limit-item label {
+.config-item label,
+.rate-limit-item label {
   font-weight: bold;
   color: #495057;
 }
 
-.status-success { color: #27ae60; }
-.status-error { color: #e74c3c; }
-.status-warning { color: #f39c12; }
-.status-info { color: #3498db; }
+.status-success {
+  color: #27ae60;
+}
+
+.status-error {
+  color: #e74c3c;
+}
+
+.status-warning {
+  color: #f39c12;
+}
+
+.status-info {
+  color: #3498db;
+}
 
 .results-summary {
   display: flex;
@@ -465,10 +469,21 @@ onMounted(async () => {
   font-weight: bold;
 }
 
-.log-info { color: #3498db; }
-.log-success { color: #27ae60; }
-.log-error { color: #e74c3c; }
-.log-warning { color: #f39c12; }
+.log-info {
+  color: #3498db;
+}
+
+.log-success {
+  color: #27ae60;
+}
+
+.log-error {
+  color: #e74c3c;
+}
+
+.log-warning {
+  color: #f39c12;
+}
 
 .log-message {
   flex: 1;

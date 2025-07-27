@@ -20,6 +20,11 @@ export function useErrorHandling() {
     suggestion: ''
   });
 
+  // Loading state management
+  const isLoading = ref(false);
+  const retryCount = ref(0);
+  const maxRetries = 3;
+
   /**
    * 显示错误消息
    */
@@ -129,11 +134,74 @@ export function useErrorHandling() {
     };
   };
 
+  /**
+   * 带加载状态的异步函数包装器
+   */
+  const withLoading = async <T>(
+    fn: () => Promise<T>,
+    errorMessage: string = '操作失败'
+  ): Promise<T | null> => {
+    try {
+      isLoading.value = true;
+      clearError();
+      const result = await fn();
+      return result;
+    } catch (error) {
+      handleError(error, errorMessage);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * 带重试机制的异步函数包装器
+   */
+  const withRetry = async <T>(
+    fn: () => Promise<T>,
+    errorMessage: string = '操作失败',
+    maxRetryAttempts: number = maxRetries
+  ): Promise<T | null> => {
+    for (let attempt = 0; attempt <= maxRetryAttempts; attempt++) {
+      try {
+        isLoading.value = true;
+        if (attempt > 0) {
+          console.log(`重试第 ${attempt} 次...`);
+          // 指数退避延迟
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        }
+
+        const result = await fn();
+        clearError();
+        retryCount.value = 0;
+        return result;
+      } catch (error) {
+        retryCount.value = attempt + 1;
+
+        if (attempt === maxRetryAttempts) {
+          // 最后一次尝试失败
+          handleError(error, `${errorMessage} (重试 ${maxRetryAttempts} 次后失败)`);
+          return null;
+        }
+
+        console.warn(`第 ${attempt + 1} 次尝试失败:`, error);
+      } finally {
+        isLoading.value = false;
+      }
+    }
+
+    return null;
+  };
+
   return {
     errorState,
+    isLoading,
+    retryCount,
     showError,
     clearError,
     handleError,
-    withErrorHandling
+    withErrorHandling,
+    withLoading,
+    withRetry
   };
 }

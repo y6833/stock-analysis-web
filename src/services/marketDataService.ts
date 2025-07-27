@@ -5,7 +5,6 @@
 
 import { tushareService } from './tushareService'
 import type { StockQuote, FinancialNews } from '@/types/stock'
-import type { MarketIndex, IndustrySector } from '@/types/dashboard'
 
 // 是否使用模拟数据
 const USE_MOCK_DATA = false // 使用真实数据
@@ -204,14 +203,53 @@ export async function getFinancialNews(
   try {
     if (!USE_MOCK_DATA) {
       try {
-        // 尝试获取真实数据，传递 forceRefresh 参数
-        const news = await tushareService.getFinancialNews(count, forceRefresh)
-        if (news && news.length > 0) {
-          console.log(`成功获取 ${news.length} 条财经新闻`)
-          return news
-        } else {
-          throw new Error('获取到的财经新闻为空')
+        // 尝试从后端API获取财经新闻（使用新浪财经或东方财富）
+        const response = await fetch('/api/sina/news', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data && result.data.length > 0) {
+            console.log(`成功从新浪财经获取 ${result.data.length} 条财经新闻`)
+            return result.data.slice(0, count).map((item: any) => ({
+              title: item.title,
+              time: item.time,
+              source: item.source || '新浪财经',
+              url: item.url || '',
+              important: item.important || false,
+              content: item.content || ''
+            }))
+          }
         }
+
+        // 如果新浪财经失败，尝试东方财富
+        const eastmoneyResponse = await fetch('/api/eastmoney/news', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (eastmoneyResponse.ok) {
+          const eastmoneyResult = await eastmoneyResponse.json()
+          if (eastmoneyResult.success && eastmoneyResult.data && eastmoneyResult.data.length > 0) {
+            console.log(`成功从东方财富获取 ${eastmoneyResult.data.length} 条财经新闻`)
+            return eastmoneyResult.data.slice(0, count).map((item: any) => ({
+              title: item.title,
+              time: item.time,
+              source: item.source || '东方财富',
+              url: item.url || '',
+              important: item.important || false,
+              content: item.content || ''
+            }))
+          }
+        }
+
+        throw new Error('所有新闻数据源都无法获取数据')
       } catch (error) {
         console.error('获取财经新闻失败:', error)
         console.warn('将使用模拟数据显示财经新闻')
@@ -361,6 +399,121 @@ export async function getStockQuote(
   }
 }
 
+/**
+ * 获取高级市场数据
+ * @returns 高级市场数据
+ */
+export async function getAdvancedMarketData(): Promise<any> {
+  try {
+    console.log('[MarketDataService] 获取高级市场数据...')
+
+    // 获取多个市场指标的综合数据
+    const [indexData, sectorData, breadthData] = await Promise.allSettled([
+      getIndexInfo('000001.SH'), // 上证指数
+      getSectorList(),
+      getMarketBreadth()
+    ])
+
+    const result = {
+      indices: indexData.status === 'fulfilled' ? indexData.value : {
+        code: '000001.SH',
+        name: '上证指数',
+        price: 3200.45,
+        change: 15.23,
+        changePercent: 0.48,
+        note: '示例数据'
+      },
+      sectors: sectorData.status === 'fulfilled' ? sectorData.value : [
+        { name: '银行', change: 1.2, changePercent: 2.1 },
+        { name: '科技', change: -0.8, changePercent: -1.5 }
+      ],
+      breadth: breadthData.status === 'fulfilled' ? breadthData.value : {
+        advancing: 1850,
+        declining: 1650,
+        unchanged: 500,
+        note: '示例数据'
+      },
+      timestamp: new Date().toISOString(),
+      note: '部分数据可能为示例数据'
+    }
+
+    return result
+  } catch (error) {
+    console.error('获取高级市场数据失败:', error)
+    return {
+      indices: null,
+      sectors: [],
+      breadth: null,
+      timestamp: new Date().toISOString(),
+      error: '获取高级市场数据失败'
+    }
+  }
+}
+
+/**
+ * 获取市场热点
+ * @returns 市场热点数据
+ */
+export async function getMarketHotspots(): Promise<any[]> {
+  console.log('[MarketDataService] 获取市场热点...')
+
+  // 直接返回示例热点数据
+  console.warn('[MarketDataService] 市场热点API暂不可用，返回示例数据')
+
+  return [
+    {
+      id: 'ai_concept',
+      name: '人工智能',
+      change: 2.35,
+      changePercent: 3.45,
+      type: 'concept',
+      stocks: ['科大讯飞', '海康威视', '大华股份'],
+      volume: 15600000000,
+      description: 'AI概念板块持续活跃'
+    },
+    {
+      id: 'new_energy',
+      name: '新能源汽车',
+      change: 1.88,
+      changePercent: 2.12,
+      type: 'industry',
+      stocks: ['比亚迪', '宁德时代', '理想汽车'],
+      volume: 23400000000,
+      description: '新能源汽车销量增长带动板块上涨'
+    },
+    {
+      id: 'semiconductor',
+      name: '半导体',
+      change: -0.65,
+      changePercent: -0.89,
+      type: 'industry',
+      stocks: ['中芯国际', '韦尔股份', '兆易创新'],
+      volume: 18900000000,
+      description: '半导体板块震荡调整'
+    },
+    {
+      id: 'medical',
+      name: '医疗器械',
+      change: 1.23,
+      changePercent: 1.67,
+      type: 'industry',
+      stocks: ['迈瑞医疗', '鱼跃医疗', '乐普医疗'],
+      volume: 8700000000,
+      description: '医疗器械需求稳定增长'
+    },
+    {
+      id: 'renewable',
+      name: '光伏概念',
+      change: 0.95,
+      changePercent: 1.34,
+      type: 'concept',
+      stocks: ['隆基绿能', '通威股份', '阳光电源'],
+      volume: 12300000000,
+      description: '光伏装机量持续增长'
+    }
+  ]
+}
+
 // 导出服务
 export const marketDataService = {
   getIndexInfo,
@@ -371,6 +524,8 @@ export const marketDataService = {
   getMarketBreadth,
   getFinancialNews,
   getStockQuote,
+  getAdvancedMarketData,
+  getMarketHotspots,
 }
 
 export default marketDataService

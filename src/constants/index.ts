@@ -5,7 +5,7 @@
 
 // API相关常量
 export const API_CONSTANTS = {
-  BASE_URL: 'http://localhost:7001/api',
+  BASE_URL: 'http://localhost:7001',
   TIMEOUT: 8000,
   RETRY_COUNT: 3,
 

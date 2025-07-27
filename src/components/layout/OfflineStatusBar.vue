@@ -1,19 +1,19 @@
 <template>
-  <div 
-    v-if="shouldShowOfflineIndicator" 
-    class="offline-status-bar"
-    :class="{ 
-      'is-offline': isOffline, 
-      'is-poor-connection': !isOffline && isPoorConnection,
-      'is-expanded': expanded
-    }"
-  >
+  <div v-if="shouldShowOfflineIndicator" class="offline-status-bar" :class="{
+    'is-offline': isOffline,
+    'is-poor-connection': !isOffline && isPoorConnection,
+    'is-expanded': expanded
+  }">
     <div class="status-content">
       <div class="status-icon">
-        <el-icon v-if="isOffline"><WarningFilled /></el-icon>
-        <el-icon v-else><Warning /></el-icon>
+        <el-icon v-if="isOffline">
+          <WarningFilled />
+        </el-icon>
+        <el-icon v-else>
+          <Warning />
+        </el-icon>
       </div>
-      
+
       <div class="status-message">
         <template v-if="isOffline">
           <strong>您当前处于离线模式</strong>
@@ -33,45 +33,28 @@
         </template>
       </div>
     </div>
-    
+
     <div class="status-actions">
       <template v-if="isOffline">
-        <el-button 
-          size="small" 
-          @click="retryConnection"
-        >
+        <el-button size="small" @click="retryConnection">
           重试连接
         </el-button>
       </template>
       <template v-else-if="isPoorConnection">
-        <el-button 
-          size="small" 
-          @click="checkNetworkQuality"
-        >
+        <el-button size="small" @click="checkNetworkQuality">
           检测网络
         </el-button>
       </template>
-      
-      <el-button 
-        size="small" 
-        @click="goToOfflineSettings"
-      >
+
+      <el-button size="small" @click="goToOfflineSettings">
         离线设置
       </el-button>
-      
-      <el-button 
-        size="small" 
-        type="text" 
-        @click="expanded = !expanded"
-      >
+
+      <el-button size="small" type="text" @click="expanded = !expanded">
         {{ expanded ? '收起' : '详情' }}
       </el-button>
-      
-      <el-button 
-        size="small" 
-        type="text" 
-        @click="dismiss"
-      >
+
+      <el-button size="small" type="text" @click="dismiss">
         关闭
       </el-button>
     </div>
@@ -79,15 +62,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
 import { WarningFilled, Warning } from '@element-plus/icons-vue';
 import { useOfflineMode } from '@/composables/useOfflineMode';
 import { checkNetworkQuality } from '@/services/networkStatusService';
 
 const router = useRouter();
-const { 
-  isOffline, 
+const {
+  isOffline,
   isPoorConnection,
   shouldShowOfflineIndicator
 } = useOfflineMode();
@@ -128,7 +112,7 @@ function dismiss() {
   dismissed.value = true;
   // 24小时内不再显示
   localStorage.setItem('offline_status_dismissed', Date.now().toString());
-  
+
   setTimeout(() => {
     // 24小时后重置
     dismissed.value = false;

@@ -309,24 +309,9 @@ export class TushareTestSuite {
 // 导出测试实例
 export const tushareTestSuite = new TushareTestSuite()
 
-// 获取 Tushare 配置信息
-export function getTushareConfigInfo() {
-  return {
-    token: getTushareToken() ? '已配置' : '未配置',
-    baseUrl: getTushareBaseUrl(),
-    proxyUrl: getTushareProxyUrl(),
-    debugMode: isTushareDebugEnabled() ? '启用' : '禁用'
-  }
-}
+// 获取 Tushare 配置信息（已从 tushareService 导入，无需重复定义）
 
-// 获取剩余请求次数（模拟）
-export function getRemainingRequests() {
-  return {
-    daily: 500, // 模拟每日限制
-    remaining: 450, // 模拟剩余次数
-    resetTime: '明日 00:00'
-  }
-}
+// 获取剩余请求次数（已从 tushareService 导入，无需重复定义）
 
 // 快速测试函数
 export async function quickTest(): Promise<boolean> {

@@ -64,14 +64,24 @@ module.exports = (appInfo) => {
     },
   }
 
-  // Redis配置
+  // Redis配置 - 可选，如果Redis不可用则禁用
   config.redis = {
     client: {
       port: 6379,
       host: '127.0.0.1',
-      password: '', // 移除密码，如果你的Redis没有设置密码
+      password: process.env.REDIS_PASSWORD || '', // 从环境变量获取密码，如果没有则为空
       db: 0,
+      // 添加连接选项以处理认证问题
+      connectTimeout: 5000,
+      lazyConnect: true,
+      retryDelayOnFailover: 100,
+      enableReadyCheck: false,
+      maxRetriesPerRequest: 3,
+      retryDelayOnClusterDown: 300,
+      enableOfflineQueue: false,
     },
+    // 如果Redis连接失败，不要阻止应用启动
+    agent: false,
   }
 
   // JWT配置

@@ -1,6 +1,7 @@
 import type DataSourceInterface from './DataSourceInterface'
 import axios from 'axios'
 import type { Stock, StockData, StockQuote, FinancialNews } from '@/types/stock'
+import type { DataSourceType } from './DataSourceFactory'
 
 /**
  * 腾讯股票数据源实现
@@ -247,12 +248,13 @@ export class TencentDataSource implements DataSourceInterface {
         }
       }
 
-      // 如果后端代理未实现或返回格式不正确，使用模拟数据
-      return this.generateMockStockQuote(symbol)
+      // 如果后端代理未实现或返回格式不正确，抛出错误
+      throw new Error(`腾讯股票获取股票${symbol}行情失败: 后端代理未实现`)
     } catch (error) {
       console.error(`腾讯股票获取股票${symbol}行情失败:`, error)
-      // 如果API请求失败，使用模拟数据
-      return this.generateMockStockQuote(symbol)
+      // 如果API请求失败，抛出错误
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      throw new Error(`腾讯股票获取股票${symbol}行情失败: ${errorMessage}`)
     }
   }
 
@@ -284,67 +286,11 @@ export class TencentDataSource implements DataSourceInterface {
           return news
         }
       } catch (proxyError) {
-        console.warn('通过后端代理获取财经新闻失败，使用模拟数据:', proxyError)
+        console.warn('通过后端代理获取财经新闻失败:', proxyError)
       }
 
-      // 如果后端代理未实现或返回格式不正确，使用模拟数据
-      const mockNews: FinancialNews[] = [
-        {
-          title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
-          time: '10分钟前',
-          source: '腾讯财经',
-          url: `${this.TENCENT_FINANCE_URL}/news/`,
-          important: true,
-        },
-        {
-          title: '科技板块全线上涨，半导体行业领涨',
-          time: '30分钟前',
-          source: '腾讯财经',
-          url: `${this.TENCENT_FINANCE_URL}/news/`,
-          important: false,
-        },
-        {
-          title: '多家券商上调A股目标位，看好下半年行情',
-          time: '1小时前',
-          source: '腾讯财经',
-          url: `${this.TENCENT_FINANCE_URL}/news/`,
-          important: false,
-        },
-        {
-          title: '外资连续三日净流入，北向资金今日净买入超50亿',
-          time: '2小时前',
-          source: '腾讯财经',
-          url: `${this.TENCENT_FINANCE_URL}/news/`,
-          important: false,
-        },
-        {
-          title: '新能源汽车销量创新高，相关概念股受关注',
-          time: '3小时前',
-          source: '腾讯财经',
-          url: `${this.TENCENT_FINANCE_URL}/news/`,
-          important: false,
-        },
-        {
-          title: '国常会：进一步扩大内需，促进消费持续恢复',
-          time: '4小时前',
-          source: '腾讯财经',
-          url: `${this.TENCENT_FINANCE_URL}/news/`,
-          important: true,
-        },
-        {
-          title: '两部门：加大对先进制造业支持力度，优化融资环境',
-          time: '5小时前',
-          source: '腾讯财经',
-          url: `${this.TENCENT_FINANCE_URL}/news/`,
-          important: false,
-        },
-      ]
-
-      // 随机打乱新闻顺序
-      const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
-
-      // 返回指定数量的新闻
-      return shuffledNews.slice(0, count)
+      // 如果后端代理未实现或返回格式不正确，抛出错误
+      throw new Error('腾讯股票获取财经新闻失败: 后端代理未实现')
     } catch (error) {
       console.error('腾讯股票获取财经新闻失败:', error)
       throw error
@@ -356,6 +302,13 @@ export class TencentDataSource implements DataSourceInterface {
    */
   getName(): string {
     return '腾讯股票'
+  }
+
+  /**
+   * 获取数据源类型
+   */
+  getType(): DataSourceType {
+    return 'tencent'
   }
 
   /**
@@ -419,81 +372,7 @@ export class TencentDataSource implements DataSourceInterface {
     return symbol
   }
 
-  /**
-   * 生成模拟股票行情
-   * @param symbol 股票代码
-   * @returns 模拟股票行情
-   */
-  private generateMockStockQuote(symbol: string): StockQuote {
-    // 查找股票基本信息
-    const stock = this.getStockInfo(symbol)
 
-    // 生成基础价格
-    let basePrice = 0
-    switch (symbol) {
-      case 'sh000001':
-        basePrice = 3000
-        break
-      case 'sz399001':
-        basePrice = 10000
-        break
-      case 'sh600519':
-        basePrice = 1800
-        break
-      case 'sh601318':
-        basePrice = 60
-        break
-      case 'sh600036':
-        basePrice = 40
-        break
-      case 'sz000858':
-        basePrice = 150
-        break
-      case 'sz000333':
-        basePrice = 80
-        break
-      case 'sh601166':
-        basePrice = 20
-        break
-      case 'sz002415':
-        basePrice = 35
-        break
-      case 'sh600276':
-        basePrice = 50
-        break
-      default:
-        basePrice = 100
-    }
-
-    // 生成当前价格（基于随机波动）
-    const price = basePrice * (1 + (Math.random() * 0.1 - 0.05)) // -5% 到 +5% 的随机波动
-    const preClose = basePrice * (1 + (Math.random() * 0.05 - 0.025)) // 昨收价
-    const open = preClose * (1 + (Math.random() * 0.03 - 0.015)) // 开盘价
-    const high = Math.max(price, open) * (1 + Math.random() * 0.02) // 最高价
-    const low = Math.min(price, open) * (1 - Math.random() * 0.02) // 最低价
-    const volume = Math.floor(Math.random() * 10000000) + 1000000 // 成交量
-    const amount = price * volume // 成交额
-
-    // 计算涨跌幅
-    const change = price - preClose
-    const pctChg = (change / preClose) * 100
-
-    return {
-      symbol,
-      name: stock.name,
-      price,
-      open,
-      high,
-      low,
-      close: price,
-      pre_close: preClose,
-      change,
-      pct_chg: pctChg,
-      vol: volume,
-      amount,
-      update_time: new Date().toISOString(),
-    }
-  }
 
   /**
    * 获取股票基本信息

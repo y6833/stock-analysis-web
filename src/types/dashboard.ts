@@ -2,18 +2,14 @@
  * 仪表盘相关类型定义
  */
 
-// 仪表盘小部件类型
+// 仪表盘小部件类型 - 只保留有实际功能的类型
 export type WidgetType =
   | 'watchlist' // 关注列表
   | 'market_overview' // 市场概览
-  | 'index_chart' // 指数图表
-  | 'stock_chart' // 股票图表
   | 'news' // 新闻
-  | 'calendar' // 日历
-  | 'performance' // 表现分析
-  | 'heatmap' // 热力图
-  | 'sector_rotation' // 板块轮动
-  | 'custom_chart' // 自定义图表
+  | 'popular_stocks' // 热门股票
+  | 'quick_actions' // 快捷操作
+  | 'trading_signals' // 交易信号
 
 // 小部件尺寸
 export interface WidgetSize {

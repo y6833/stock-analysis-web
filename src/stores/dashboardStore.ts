@@ -6,7 +6,7 @@ import { stockService } from '@/services/stockService'
 // 仪表盘组件类型
 export interface DashboardWidget {
   id: string
-  type: string // 'market-overview' | 'watchlist' | 'news' | 'popular-stocks' | 'quick-actions' | 'industry-overview'
+  type: string // 'market-overview' | 'watchlist' | 'news' | 'popular-stocks' | 'quick-actions' | 'trading-signals'
   title: string
   size: 'small' | 'medium' | 'large' | 'full'
   position: number
@@ -28,17 +28,17 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const isEditing = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  
+
   // 计算属性
   const currentLayout = computed(() => {
     return layouts.value.find(layout => layout.id === currentLayoutId.value) || layouts.value[0]
   })
-  
+
   // 初始化默认布局
   function initializeDefaultLayout() {
     // 检查是否已有默认布局
     if (layouts.value.length > 0) return
-    
+
     // 创建默认布局
     const defaultLayout: DashboardLayout = {
       id: 'default',
@@ -79,17 +79,24 @@ export const useDashboardStore = defineStore('dashboard', () => {
           title: '快捷操作',
           size: 'medium',
           position: 4
+        },
+        {
+          id: 'trading-signals',
+          type: 'trading-signals',
+          title: '交易信号',
+          size: 'medium',
+          position: 5
         }
       ]
     }
-    
+
     layouts.value.push(defaultLayout)
     currentLayoutId.value = defaultLayout.id
-    
+
     // 保存到本地存储
     saveLayouts()
   }
-  
+
   // 创建新布局
   function createLayout(name: string) {
     const newLayout: DashboardLayout = {
@@ -98,25 +105,25 @@ export const useDashboardStore = defineStore('dashboard', () => {
       isDefault: false,
       widgets: []
     }
-    
+
     layouts.value.push(newLayout)
     currentLayoutId.value = newLayout.id
-    
+
     // 保存到本地存储
     saveLayouts()
-    
+
     return newLayout
   }
-  
+
   // 删除布局
   function deleteLayout(layoutId: string) {
     // 不允许删除默认布局
     const layoutToDelete = layouts.value.find(layout => layout.id === layoutId)
     if (!layoutToDelete || layoutToDelete.isDefault) return false
-    
+
     // 删除布局
     layouts.value = layouts.value.filter(layout => layout.id !== layoutId)
-    
+
     // 如果删除的是当前布局，切换到默认布局
     if (currentLayoutId.value === layoutId) {
       const defaultLayout = layouts.value.find(layout => layout.isDefault)
@@ -126,13 +133,13 @@ export const useDashboardStore = defineStore('dashboard', () => {
         currentLayoutId.value = layouts.value[0].id
       }
     }
-    
+
     // 保存到本地存储
     saveLayouts()
-    
+
     return true
   }
-  
+
   // 切换布局
   function switchLayout(layoutId: string) {
     const layout = layouts.value.find(layout => layout.id === layoutId)
@@ -144,71 +151,71 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
     return false
   }
-  
+
   // 添加组件
   function addWidget(widget: Omit<DashboardWidget, 'id' | 'position'>) {
     if (!currentLayout.value) return null
-    
+
     const newWidget: DashboardWidget = {
       ...widget,
       id: `widget-${Date.now()}`,
       position: currentLayout.value.widgets.length
     }
-    
+
     currentLayout.value.widgets.push(newWidget)
-    
+
     // 保存到本地存储
     saveLayouts()
-    
+
     return newWidget
   }
-  
+
   // 删除组件
   function removeWidget(widgetId: string) {
     if (!currentLayout.value) return false
-    
+
     const index = currentLayout.value.widgets.findIndex(widget => widget.id === widgetId)
     if (index === -1) return false
-    
+
     currentLayout.value.widgets.splice(index, 1)
-    
+
     // 更新位置
     currentLayout.value.widgets.forEach((widget, idx) => {
       widget.position = idx
     })
-    
+
     // 保存到本地存储
     saveLayouts()
-    
+
     return true
   }
-  
+
   // 更新组件
   function updateWidget(widgetId: string, updates: Partial<DashboardWidget>) {
     if (!currentLayout.value) return false
-    
+
     const widget = currentLayout.value.widgets.find(w => w.id === widgetId)
     if (!widget) return false
-    
+
     Object.assign(widget, updates)
-    
+
     // 保存到本地存储
     saveLayouts()
-    
+
     return true
   }
-  
+
   // 重新排序组件
   function reorderWidgets(widgetIds: string[]) {
     if (!currentLayout.value) return false
-    
+
     // 验证所有ID都存在
-    const allExist = widgetIds.every(id => 
+    const allExist = widgetIds.every(id =>
       currentLayout.value!.widgets.some(widget => widget.id === id)
     )
-    
+
     if (!allExist || widgetIds.length !== currentLayout.value.widgets.length) return false
-    
+
     // 创建新的排序
     const newOrder = widgetIds.map((id, index) => {
       const widget = currentLayout.value!.widgets.find(w => w.id === id)!
@@ -217,28 +224,28 @@ export const useDashboardStore = defineStore('dashboard', () => {
         position: index
       }
     })
-    
+
     // 更新布局
     currentLayout.value.widgets = newOrder
-    
+
     // 保存到本地存储
     saveLayouts()
-    
+
     return true
   }
-  
+
   // 保存布局到本地存储
   function saveLayouts() {
     localStorage.setItem('dashboard_layouts', JSON.stringify(layouts.value))
   }
-  
+
   // 从本地存储加载布局
   function loadLayouts() {
     const savedLayouts = localStorage.getItem('dashboard_layouts')
     if (savedLayouts) {
       try {
         layouts.value = JSON.parse(savedLayouts)
-        
+
         // 加载当前布局ID
         const savedCurrentLayoutId = localStorage.getItem('current_dashboard_layout')
         if (savedCurrentLayoutId) {
@@ -258,20 +265,20 @@ export const useDashboardStore = defineStore('dashboard', () => {
       initializeDefaultLayout()
     }
   }
-  
+
   // 初始化
   function initialize() {
     loadLayouts()
-    
+
     // 如果没有布局，创建默认布局
     if (layouts.value.length === 0) {
       initializeDefaultLayout()
     }
   }
-  
+
   // 初始化
   initialize()
-  
+
   return {
     layouts,
     currentLayoutId,

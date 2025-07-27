@@ -45,7 +45,7 @@
     <!-- 演示区域 -->
     <div class="demo-section">
       <h2>🚀 功能演示</h2>
-      
+
       <!-- 股票选择 -->
       <div class="stock-selector">
         <label>选择演示股票:</label>
@@ -64,10 +64,7 @@
 
       <!-- 技术信号展示 -->
       <div v-if="stockData" class="signals-display">
-        <TechnicalSignals 
-          :stock-code="selectedStock"
-          :kline-data="stockData.klineData"
-        />
+        <TechnicalSignals :stock-code="selectedStock" :kline-data="stockData.klineData" />
       </div>
 
       <!-- 使用说明 -->
@@ -208,11 +205,11 @@ const loadStockData = async () => {
   }
 
   isLoading.value = true
-  
+
   try {
     // 模拟加载股票数据
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
+
     // 生成模拟K线数据
     const days = 100
     const basePrice = 10 + Math.random() * 20
@@ -224,7 +221,7 @@ const loadStockData = async () => {
       volume: [],
       dates: []
     }
-    
+
     let currentPrice = basePrice
     for (let i = 0; i < days; i++) {
       const change = (Math.random() - 0.5) * 0.1
@@ -233,25 +230,25 @@ const loadStockData = async () => {
       const high = Math.max(open, close) * (1 + Math.random() * 0.05)
       const low = Math.min(open, close) * (1 - Math.random() * 0.05)
       const volume = Math.floor(Math.random() * 1000000) + 100000
-      
+
       klineData.open.push(open)
       klineData.high.push(high)
       klineData.low.push(low)
       klineData.close.push(close)
       klineData.volume.push(volume)
-      
+
       const date = new Date()
       date.setDate(date.getDate() - (days - i))
       klineData.dates.push(date.toISOString().split('T')[0])
-      
+
       currentPrice = close
     }
-    
+
     stockData.value = {
       stockCode: selectedStock.value,
       klineData
     }
-    
+
     showToast('股票数据加载成功', 'success')
   } catch (error) {
     console.error('加载股票数据失败:', error)
@@ -300,7 +297,7 @@ onMounted(() => {
   background: white;
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-left: 4px solid var(--primary-color);
 }
 
@@ -339,7 +336,7 @@ onMounted(() => {
   background: white;
   border-radius: 8px;
   padding: 30px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .demo-section h2 {
@@ -526,15 +523,15 @@ onMounted(() => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .stock-selector select {
     min-width: auto;
   }
-  
+
   .guide-steps {
     grid-template-columns: 1fr;
   }
-  
+
   .indicator-cards {
     grid-template-columns: 1fr;
   }

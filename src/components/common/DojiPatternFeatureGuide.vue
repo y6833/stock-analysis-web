@@ -6,7 +6,9 @@
           <span class="header-icon">📚</span>
           <span class="header-title">十字星形态功能指南</span>
           <el-button type="text" @click="closeGuide" class="close-button">
-            <el-icon><Close /></el-icon>
+            <el-icon>
+              <Close />
+            </el-icon>
           </el-button>
         </div>
       </template>
@@ -26,11 +28,12 @@
               使用十字星筛选工具，您可以快速找到最近出现十字星形态后上涨的股票，把握潜在的交易机会。
             </p>
             <div class="feature-image">
-              <img
-                src="@/image/guide/doji-screener.png"
-                alt="十字星筛选工具"
-                class="placeholder-image"
-              />
+              <div class="placeholder-image">
+                <el-icon size="48">
+                  <TrendCharts />
+                </el-icon>
+                <p>十字星筛选工具</p>
+              </div>
             </div>
             <div class="step-actions">
               <el-button type="primary" @click="goToScreener">前往筛选工具</el-button>
@@ -42,11 +45,12 @@
             <h3>自定义十字星参数</h3>
             <p>在设置页面，您可以调整十字星识别的敏感度参数，自定义不同类型十字星的识别标准。</p>
             <div class="feature-image">
-              <img
-                src="@/image/guide/doji-settings.png"
-                alt="十字星设置"
-                class="placeholder-image"
-              />
+              <div class="placeholder-image">
+                <el-icon size="48">
+                  <Setting />
+                </el-icon>
+                <p>十字星设置</p>
+              </div>
             </div>
             <div class="step-actions">
               <el-button type="primary" @click="goToSettings">前往设置</el-button>
@@ -61,7 +65,12 @@
               创建基于十字星形态的条件提醒，当您关注的股票出现指定类型的十字星形态时，系统将自动通知您。
             </p>
             <div class="feature-image">
-              <img src="@/image/guide/doji-alerts.png" alt="十字星提醒" class="placeholder-image" />
+              <div class="placeholder-image">
+                <el-icon size="48">
+                  <Bell />
+                </el-icon>
+                <p>十字星提醒</p>
+              </div>
             </div>
             <div class="step-actions">
               <el-button type="primary" @click="goToAlerts">创建提醒</el-button>
@@ -74,11 +83,12 @@
             <h3>查看形态分析</h3>
             <p>分析十字星形态后的价格走势模式，了解不同类型十字星在各种市场环境下的成功率。</p>
             <div class="feature-image">
-              <img
-                src="@/image/guide/doji-analysis.png"
-                alt="十字星分析"
-                class="placeholder-image"
-              />
+              <div class="placeholder-image">
+                <el-icon size="48">
+                  <DataAnalysis />
+                </el-icon>
+                <p>十字星分析</p>
+              </div>
             </div>
             <div class="step-actions">
               <el-button type="primary" @click="goToScreener">查看分析</el-button>
@@ -95,7 +105,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Close, Search, Setting, Bell, DataAnalysis } from '@element-plus/icons-vue'
+import { Close, Search, Setting, Bell, DataAnalysis, TrendCharts } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const activeStep = ref(0)

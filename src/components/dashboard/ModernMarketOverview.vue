@@ -2,17 +2,13 @@
   <div class="modern-market-overview">
     <div class="widget-header">
       <h3 class="widget-title">
-        <el-icon class="title-icon"><TrendCharts /></el-icon>
+        <el-icon class="title-icon">
+          <TrendCharts />
+        </el-icon>
         市场概览
       </h3>
       <div class="header-actions">
-        <el-button
-          size="small"
-          :icon="Refresh"
-          :loading="loading"
-          @click="$emit('refresh')"
-          circle
-        />
+        <el-button size="small" :icon="Refresh" :loading="loading" @click="$emit('refresh')" circle />
       </div>
     </div>
 
@@ -33,12 +29,7 @@
         <div class="indices-section">
           <h4 class="section-title">主要指数</h4>
           <div class="indices-grid">
-            <div
-              v-for="index in data.indices"
-              :key="index.symbol"
-              class="index-card"
-              :class="getIndexClass(index)"
-            >
+            <div v-for="index in data.indices" :key="index.symbol" class="index-card" :class="getIndexClass(index)">
               <div class="index-header">
                 <span class="index-name">{{ index.name }}</span>
                 <span class="index-symbol">{{ index.symbol }}</span>
@@ -83,12 +74,8 @@
         <div class="sectors-section" v-if="data.sectors && data.sectors.length > 0">
           <h4 class="section-title">热门板块</h4>
           <div class="sectors-list">
-            <div
-              v-for="sector in data.sectors.slice(0, 6)"
-              :key="sector.code"
-              class="sector-item"
-              :class="getSectorClass(sector)"
-            >
+            <div v-for="sector in data.sectors.slice(0, 6)" :key="sector.code" class="sector-item"
+              :class="getSectorClass(sector)">
               <span class="sector-name">{{ sector.name }}</span>
               <span class="sector-change">{{ formatPercent(sector.changePercent) }}</span>
             </div>
@@ -127,32 +114,53 @@ defineEmits<{
 }>()
 
 // 格式化函数
-const formatPrice = (price: number) => {
+const formatPrice = (price: number | undefined | null) => {
+  if (price === undefined || price === null || isNaN(price)) {
+    return '--'
+  }
   return price.toFixed(2)
 }
 
-const formatChange = (change: number) => {
+const formatChange = (change: number | undefined | null) => {
+  if (change === undefined || change === null || isNaN(change)) {
+    return '--'
+  }
   const sign = change >= 0 ? '+' : ''
   return `${sign}${change.toFixed(2)}`
 }
 
-const formatPercent = (percent: number) => {
+const formatPercent = (percent: number | undefined | null) => {
+  if (percent === undefined || percent === null || isNaN(percent)) {
+    return '--'
+  }
   const sign = percent >= 0 ? '+' : ''
   return `${sign}${percent.toFixed(2)}%`
 }
 
 // 样式类计算
-const getIndexClass = (index: any) => ({
-  'index-up': index.changePercent > 0,
-  'index-down': index.changePercent < 0,
-  'index-neutral': index.changePercent === 0
-})
+const getIndexClass = (index: any) => {
+  const changePercent = index?.changePercent
+  if (changePercent === undefined || changePercent === null || isNaN(changePercent)) {
+    return { 'index-neutral': true }
+  }
+  return {
+    'index-up': changePercent > 0,
+    'index-down': changePercent < 0,
+    'index-neutral': changePercent === 0
+  }
+}
 
-const getSectorClass = (sector: any) => ({
-  'sector-up': sector.changePercent > 0,
-  'sector-down': sector.changePercent < 0,
-  'sector-neutral': sector.changePercent === 0
-})
+const getSectorClass = (sector: any) => {
+  const changePercent = sector?.changePercent
+  if (changePercent === undefined || changePercent === null || isNaN(changePercent)) {
+    return { 'sector-neutral': true }
+  }
+  return {
+    'sector-up': changePercent > 0,
+    'sector-down': changePercent < 0,
+    'sector-neutral': changePercent === 0
+  }
+}
 </script>
 
 <style scoped>
@@ -376,11 +384,11 @@ const getSectorClass = (sector: any) => ({
   .indices-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .breadth-stats {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .sectors-list {
     grid-template-columns: 1fr;
   }

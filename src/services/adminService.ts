@@ -166,6 +166,36 @@ export const adminService = {
       return response.data
     } catch (error: any) {
       console.error('获取系统统计信息失败:', error)
+
+      // 如果是数据库表不存在的错误，返回默认数据
+      if (error.response?.data?.message?.includes("doesn't exist")) {
+        console.warn('数据库表不存在，返回默认统计数据')
+        return {
+          success: true,
+          data: {
+            userStats: {
+              total: 0,
+              active: 0,
+              admin: 0,
+              premium: 0
+            },
+            membershipStats: {
+              free: 0,
+              basic: 0,
+              premium: 0,
+              enterprise: 0
+            },
+            dataStats: {
+              watchlists: 0,
+              portfolios: 0,
+              alerts: 0
+            },
+            recentUsers: [],
+            recentLogins: []
+          }
+        }
+      }
+
       throw new Error(error.response?.data?.message || '获取系统统计信息失败')
     }
   },

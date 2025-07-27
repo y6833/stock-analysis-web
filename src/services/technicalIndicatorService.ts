@@ -399,20 +399,20 @@ export function detectHighLowPoints(
 } {
   const highs: number[] = new Array(prices.length).fill(0)
   const lows: number[] = new Array(prices.length).fill(0)
-  
+
   const shortMA = calculateSMA(prices, shortPeriod)
   const longMA = calculateSMA(prices, longPeriod)
-  
+
   // 检测金叉死叉点
   for (let i = 1; i < prices.length; i++) {
-    const isCrossUp = shortMA[i] > longMA[i] && shortMA[i-1] <= longMA[i-1]
-    const isCrossDown = shortMA[i] < longMA[i] && shortMA[i-1] >= longMA[i-1]
-    
+    const isCrossUp = shortMA[i] > longMA[i] && shortMA[i - 1] <= longMA[i - 1]
+    const isCrossDown = shortMA[i] < longMA[i] && shortMA[i - 1] >= longMA[i - 1]
+
     if (isCrossUp) {
       // 从金叉点向前寻找最高点
       let highest = prices[i]
       let highestIdx = i
-      for (let j = i-1; j >= 0; j--) {
+      for (let j = i - 1; j >= 0; j--) {
         if (lows[j] === 1) break
         if (prices[j] > highest) {
           highest = prices[j]
@@ -421,12 +421,12 @@ export function detectHighLowPoints(
       }
       highs[highestIdx] = 1
     }
-    
+
     if (isCrossDown) {
       // 从死叉点向前寻找最低点
       let lowest = prices[i]
       let lowestIdx = i
-      for (let j = i-1; j >= 0; j--) {
+      for (let j = i - 1; j >= 0; j--) {
         if (highs[j] === 1) break
         if (prices[j] < lowest) {
           lowest = prices[j]
@@ -436,7 +436,7 @@ export function detectHighLowPoints(
       lows[lowestIdx] = 1
     }
   }
-  
+
   return { highs, lows }
 }
 
@@ -466,10 +466,10 @@ export function drawTrendLines(
     to: { date: string; value: number }
     color: string
   }> = []
-  
+
   let lastHighIdx = -1
   let lastLowIdx = -1
-  
+
   for (let i = 0; i < prices.length; i++) {
     if (highs[i] === 1) {
       if (lastLowIdx >= 0) {
@@ -482,7 +482,7 @@ export function drawTrendLines(
       }
       lastHighIdx = i
     }
-    
+
     if (lows[i] === 1) {
       if (lastHighIdx >= 0) {
         // 从高点到低点的下降趋势线 (红色)
@@ -495,7 +495,7 @@ export function drawTrendLines(
       lastLowIdx = i
     }
   }
-  
+
   return { lines }
 }
 
@@ -702,7 +702,7 @@ export function calculateKDJMACDOptimized(
 } {
   // Calculate KDJ
   const { k, d, j } = calculateKDJ(highPrices, lowPrices, closePrices, period, kPeriod, dPeriod)
-  
+
   // Calculate MACD
   const { macdLine, signalLine, histogram } = calculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
 
@@ -835,6 +835,8 @@ export const technicalIndicatorService = {
   calculateVWAP,
   detectHeadAndShoulders,
   detectDoubleTopBottom,
+  detectHighLowPoints,
+  drawTrendLines,
   calculateKDJMACDOptimized,
   calculateIndicators,
 }

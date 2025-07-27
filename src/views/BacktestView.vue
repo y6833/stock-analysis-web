@@ -331,34 +331,18 @@ onMounted(() => {
 
           <div class="form-group">
             <label for="start-date">开始日期</label>
-            <input
-              type="date"
-              id="start-date"
-              v-model="backtestParams.startDate"
-              class="form-control"
-            />
+            <input type="date" id="start-date" v-model="backtestParams.startDate" class="form-control" />
           </div>
 
           <div class="form-group">
             <label for="end-date">结束日期</label>
-            <input
-              type="date"
-              id="end-date"
-              v-model="backtestParams.endDate"
-              class="form-control"
-            />
+            <input type="date" id="end-date" v-model="backtestParams.endDate" class="form-control" />
           </div>
 
           <div class="form-group">
             <label for="initial-capital">初始资金</label>
-            <input
-              type="number"
-              id="initial-capital"
-              v-model="backtestParams.initialCapital"
-              class="form-control"
-              min="1000"
-              step="1000"
-            />
+            <input type="number" id="initial-capital" v-model="backtestParams.initialCapital" class="form-control"
+              min="1000" step="1000" />
           </div>
 
           <div class="form-group">
@@ -369,7 +353,7 @@ onMounted(() => {
               </option>
             </select>
             <p class="strategy-description">
-              {{ strategies.find((s) => s.id === backtestParams.strategy)?.description }}
+              {{strategies.find((s) => s.id === backtestParams.strategy)?.description}}
             </p>
           </div>
 
@@ -377,15 +361,8 @@ onMounted(() => {
           <div class="strategy-parameters">
             <div v-for="param in strategyParameters" :key="param.id" class="form-group">
               <label :for="param.id">{{ param.name }}</label>
-              <input
-                :type="param.type"
-                :id="param.id"
-                v-model="backtestParams.parameters[param.id]"
-                class="form-control"
-                :min="param.min"
-                :max="param.max"
-                step="1"
-              />
+              <input :type="param.type" :id="param.id" v-model="backtestParams.parameters[param.id]"
+                class="form-control" :min="param.min" :max="param.max" step="1" />
             </div>
           </div>
 
@@ -394,11 +371,7 @@ onMounted(() => {
               <span v-if="isBacktesting" class="loading-spinner small"></span>
               {{ isBacktesting ? '回测中...' : '运行回测' }}
             </button>
-            <button
-              class="btn btn-outline"
-              @click="resetBacktest"
-              :disabled="isBacktesting || !backtestResults"
-            >
+            <button class="btn btn-outline" @click="resetBacktest" :disabled="isBacktesting || !backtestResults">
               重置
             </button>
           </div>
@@ -428,22 +401,16 @@ onMounted(() => {
             <div class="metrics-grid">
               <div class="metric-card">
                 <div class="metric-title">总收益率</div>
-                <div
-                  class="metric-value"
-                  :class="parseFloat(backtestResults.totalReturn) >= 0 ? 'positive' : 'negative'"
-                >
+                <div class="metric-value"
+                  :class="parseFloat(backtestResults.totalReturn) >= 0 ? 'positive' : 'negative'">
                   {{ backtestResults.totalReturn }}%
                 </div>
               </div>
 
               <div class="metric-card">
                 <div class="metric-title">年化收益率</div>
-                <div
-                  class="metric-value"
-                  :class="
-                    parseFloat(backtestResults.annualizedReturn) >= 0 ? 'positive' : 'negative'
-                  "
-                >
+                <div class="metric-value" :class="parseFloat(backtestResults.annualizedReturn) >= 0 ? 'positive' : 'negative'
+                  ">
                   {{ backtestResults.annualizedReturn }}%
                 </div>
               </div>
@@ -455,10 +422,8 @@ onMounted(() => {
 
               <div class="metric-card">
                 <div class="metric-title">夏普比率</div>
-                <div
-                  class="metric-value"
-                  :class="parseFloat(backtestResults.sharpeRatio) >= 0 ? 'positive' : 'negative'"
-                >
+                <div class="metric-value"
+                  :class="parseFloat(backtestResults.sharpeRatio) >= 0 ? 'positive' : 'negative'">
                   {{ backtestResults.sharpeRatio }}
                 </div>
               </div>
@@ -486,10 +451,7 @@ onMounted(() => {
 
               <div class="metric-card">
                 <div class="metric-title">胜率</div>
-                <div
-                  class="metric-value"
-                  :class="parseFloat(backtestResults.winRate) >= 50 ? 'positive' : 'negative'"
-                >
+                <div class="metric-value" :class="parseFloat(backtestResults.winRate) >= 50 ? 'positive' : 'negative'">
                   {{ backtestResults.winRate }}%
                 </div>
               </div>
@@ -717,6 +679,7 @@ onMounted(() => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

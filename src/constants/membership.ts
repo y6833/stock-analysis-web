@@ -41,7 +41,7 @@ export const MEMBERSHIP_FEATURES = {
     name: '大盘云图',
     requiredLevel: MembershipLevel.FREE,
   },
-  
+
   // 中级功能 - 基础会员及以上可以访问
   PORTFOLIO: {
     name: '仓位管理',
@@ -55,7 +55,7 @@ export const MEMBERSHIP_FEATURES = {
     name: '自定义看板',
     requiredLevel: MembershipLevel.BASIC,
   },
-  
+
   // 高级功能 - 高级会员及以上可以访问
   MARKET_SCANNER: {
     name: '市场扫描器',
@@ -73,7 +73,7 @@ export const MEMBERSHIP_FEATURES = {
     name: '导出报告',
     requiredLevel: MembershipLevel.PREMIUM,
   },
-  
+
   // 企业功能 - 企业版会员可以访问
   API_ACCESS: {
     name: 'API访问',
@@ -88,6 +88,7 @@ export const MEMBERSHIP_FEATURES = {
 // 页面路径与功能的映射
 export const PAGE_FEATURE_MAP: Record<string, keyof typeof MEMBERSHIP_FEATURES> = {
   '/dashboard': 'DASHBOARD',
+  '/advanced-dashboard': 'CUSTOM_DASHBOARD',
   '/stock': 'STOCK_ANALYSIS',
   '/market-heatmap': 'MARKET_HEATMAP',
   '/portfolio': 'PORTFOLIO',
@@ -96,6 +97,7 @@ export const PAGE_FEATURE_MAP: Record<string, keyof typeof MEMBERSHIP_FEATURES> 
   '/market-scanner': 'MARKET_SCANNER',
   '/backtest': 'BACKTEST',
   '/simulation': 'SIMULATION',
+  '/risk-monitoring': 'SIMULATION',
   '/export': 'EXPORT',
 };
 
@@ -109,7 +111,7 @@ export function checkMembershipLevel(userLevel: string, requiredLevel: string): 
   // 获取等级顺序
   const userOrder = MEMBERSHIP_LEVEL_ORDER[userLevel as MembershipLevel] || 0;
   const requiredOrder = MEMBERSHIP_LEVEL_ORDER[requiredLevel as MembershipLevel] || 0;
-  
+
   // 用户等级顺序必须大于等于要求的等级顺序
   return userOrder >= requiredOrder;
 }
@@ -122,12 +124,12 @@ export function checkMembershipLevel(userLevel: string, requiredLevel: string): 
 export function getRequiredMembershipLevel(path: string): MembershipLevel {
   // 获取路径对应的功能
   const feature = PAGE_FEATURE_MAP[path];
-  
+
   // 如果找到功能，返回其所需的会员等级
   if (feature && MEMBERSHIP_FEATURES[feature]) {
     return MEMBERSHIP_FEATURES[feature].requiredLevel;
   }
-  
+
   // 默认返回免费等级
   return MembershipLevel.FREE;
 }

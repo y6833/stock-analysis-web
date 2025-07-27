@@ -415,8 +415,8 @@ class FactorEngineService extends Service {
     try {
       // 这里应该调用实际的财务数据API
       // 目前返回模拟数据
-      return this.generateMockFinancialData(symbol);
-    } catch (error) {
+      throw new Error(`获取数据失败: 模拟数据已移除`);
+} catch (error) {
       ctx.logger.error(`获取股票 ${symbol} 财务数据失败:`, error);
       return [];
     }

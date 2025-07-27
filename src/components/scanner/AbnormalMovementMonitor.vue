@@ -195,11 +195,8 @@ onUnmounted(() => {
     <div class="monitor-header">
       <h2>异动监控</h2>
       <div class="monitor-actions">
-        <button
-          class="btn"
-          :class="{ 'btn-primary': !autoRefreshEnabled, 'btn-danger': autoRefreshEnabled }"
-          @click="autoRefreshEnabled ? stopMonitoring() : startMonitoring()"
-        >
+        <button class="btn" :class="{ 'btn-primary': !autoRefreshEnabled, 'btn-danger': autoRefreshEnabled }"
+          @click="autoRefreshEnabled ? stopMonitoring() : startMonitoring()">
           {{ autoRefreshEnabled ? '停止监控' : '开始监控' }}
         </button>
         <button class="btn btn-outline" @click="refreshAbnormalStocks" :disabled="isLoading">
@@ -214,22 +211,12 @@ onUnmounted(() => {
         <h3>监控设置</h3>
         <div class="settings-row">
           <label for="refreshInterval">刷新间隔 (分钟):</label>
-          <input
-            type="number"
-            id="refreshInterval"
-            v-model="monitorSettings.refreshInterval"
-            min="1"
-            max="60"
-            :disabled="autoRefreshEnabled"
-          />
+          <input type="number" id="refreshInterval" v-model="monitorSettings.refreshInterval" min="1" max="60"
+            :disabled="autoRefreshEnabled" />
         </div>
         <div class="settings-row">
           <label for="notificationEnabled">启用通知:</label>
-          <input
-            type="checkbox"
-            id="notificationEnabled"
-            v-model="monitorSettings.notificationEnabled"
-          />
+          <input type="checkbox" id="notificationEnabled" v-model="monitorSettings.notificationEnabled" />
         </div>
         <div class="settings-row">
           <label for="soundEnabled">启用声音提醒:</label>
@@ -241,11 +228,7 @@ onUnmounted(() => {
         <h3>异动类型</h3>
         <div class="abnormal-types">
           <div v-for="type in abnormalTypes" :key="type.id" class="abnormal-type">
-            <input
-              type="checkbox"
-              :id="type.id"
-              v-model="selectedTypes[type.id as keyof typeof selectedTypes]"
-            />
+            <input type="checkbox" :id="type.id" v-model="selectedTypes[type.id as keyof typeof selectedTypes]" />
             <label :for="type.id" :title="type.description">{{ type.name }}</label>
           </div>
         </div>
@@ -289,25 +272,19 @@ onUnmounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="stock in abnormalStocks"
-                :key="stock.symbol"
-                :class="{
-                  'severity-high': stock.severity === 'high',
-                  'severity-medium': stock.severity === 'medium',
-                  'severity-low': stock.severity === 'low',
-                }"
-              >
+              <tr v-for="stock in abnormalStocks" :key="stock.symbol" :class="{
+                'severity-high': stock.severity === 'high',
+                'severity-medium': stock.severity === 'medium',
+                'severity-low': stock.severity === 'low',
+              }">
                 <td>{{ stock.symbol }}</td>
                 <td>{{ stock.name }}</td>
                 <td>{{ stock.abnormalType }}</td>
                 <td>{{ stock.price }}</td>
-                <td
-                  :class="{
-                    positive: parseFloat(stock.changePercent) > 0,
-                    negative: parseFloat(stock.changePercent) < 0,
-                  }"
-                >
+                <td :class="{
+                  positive: parseFloat(stock.changePercent) > 0,
+                  negative: parseFloat(stock.changePercent) < 0,
+                }">
                   {{ stock.changePercent }}
                 </td>
                 <td>{{ stock.volumeChange }}</td>
@@ -446,6 +423,7 @@ onUnmounted(() => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -490,8 +468,6 @@ th {
   background-color: var(--bg-secondary);
   color: var(--text-secondary);
   font-weight: 600;
-  position: sticky;
-  top: 0;
 }
 
 tr:hover {

@@ -100,13 +100,21 @@ const routes = [
   {
     path: '/advanced-dashboard',
     name: 'advanced-dashboard',
-    component: () => import('../views/AdvancedDashboardView.vue'),
+    component: lazyLoadView(
+      () => import('../views/AdvancedDashboardView.vue'),
+      {
+        loadingComponent: LoadingComponent,
+        errorComponent: ErrorComponent,
+        preload: true
+      }
+    ),
     meta: {
       requiresAuth: true,
       requiredMembershipLevel: MembershipLevel.PREMIUM,
-      title: '高级仪表盘',
+      title: '高级仪表盘'
     },
   },
+
 
   // ===== STOCK ANALYSIS ROUTES =====
   {
@@ -140,6 +148,18 @@ const routes = [
         },
       },
     ],
+  },
+
+  // ===== STOCK INFO ROUTES =====
+  {
+    path: '/stock-info',
+    name: 'StockInfo',
+    component: () => import('../views/StockInfoView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: '股票信息',
+      requiredMembershipLevel: MembershipLevel.BASIC
+    }
   },
 
   // ===== MARKET ANALYSIS ROUTES =====
@@ -339,18 +359,30 @@ const routes = [
 
   // ===== RISK MANAGEMENT ROUTES =====
   {
+    path: '/risk-monitoring',
+    name: 'risk-monitoring',
+    component: lazyLoadView(
+      () => import('../views/RiskMonitoringView.vue'),
+      {
+        loadingComponent: LoadingComponent,
+        errorComponent: ErrorComponent,
+        preload: true
+      }
+    ),
+    meta: {
+      requiresAuth: true,
+      requiredMembershipLevel: MembershipLevel.PREMIUM,
+      title: '风险监控',
+    },
+  },
+  {
     path: '/risk',
     name: 'risk',
     children: [
       {
         path: 'monitoring',
-        name: 'risk-monitoring',
-        component: () => import('../views/RiskMonitoringView.vue'),
-        meta: {
-          requiresAuth: true,
-          requiredMembershipLevel: MembershipLevel.PREMIUM,
-          title: '风险监控',
-        },
+        name: 'risk-monitoring-legacy',
+        redirect: '/risk-monitoring'
       },
       {
         path: 'simulation',

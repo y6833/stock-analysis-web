@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +21,7 @@
       background-color: #f5f5f5;
       color: #333;
     }
+
     .container {
       max-width: 600px;
       background-color: white;
@@ -27,19 +29,23 @@
       padding: 30px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
+
     h1 {
       color: #4CAF50;
       margin-top: 0;
     }
+
     .icon {
       width: 80px;
       height: 80px;
       margin-bottom: 20px;
     }
+
     .message {
       margin: 20px 0;
       line-height: 1.6;
     }
+
     .button {
       background-color: #4CAF50;
       color: white;
@@ -53,21 +59,25 @@
       display: inline-block;
       margin-top: 20px;
     }
+
     .button:hover {
       background-color: #388E3C;
     }
+
     .cached-data {
       margin-top: 30px;
       text-align: left;
       border-top: 1px solid #eee;
       padding-top: 20px;
     }
+
     .data-item {
       margin-bottom: 10px;
       padding: 10px;
       background-color: #f9f9f9;
       border-radius: 4px;
     }
+
     .status {
       display: flex;
       align-items: center;
@@ -75,6 +85,7 @@
       font-size: 14px;
       color: #666;
     }
+
     .status-dot {
       width: 10px;
       height: 10px;
@@ -84,23 +95,24 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <img src="/icons/icon-192x192.png" alt="快乐股市" class="icon">
+    <img src="/icons/icon-144x144.png" alt="快乐股市" class="icon">
     <h1>您当前处于离线模式</h1>
-    
+
     <div class="message">
       <p>无法连接到服务器。请检查您的网络连接并重试。</p>
       <p>您仍然可以访问之前缓存的数据。</p>
     </div>
-    
+
     <button class="button" onclick="tryReconnect()">重试连接</button>
-    
+
     <div class="status">
       <div class="status-dot"></div>
       <span>离线</span>
     </div>
-    
+
     <div class="cached-data">
       <h3>可用的离线数据</h3>
       <div id="cached-content">
@@ -114,11 +126,11 @@
     function updateNetworkStatus() {
       const statusDot = document.querySelector('.status-dot');
       const statusText = document.querySelector('.status span');
-      
+
       if (navigator.onLine) {
         statusDot.style.backgroundColor = '#4CAF50';
         statusText.textContent = '网络已恢复';
-        
+
         // 显示重新加载按钮
         document.querySelector('.button').textContent = '重新加载应用';
       } else {
@@ -126,7 +138,7 @@
         statusText.textContent = '离线';
       }
     }
-    
+
     // 尝试重新连接
     function tryReconnect() {
       if (navigator.onLine) {
@@ -136,41 +148,41 @@
         alert('您仍处于离线状态。请检查网络连接后重试。');
       }
     }
-    
+
     // 加载缓存的数据
     async function loadCachedData() {
       const cachedContentElement = document.getElementById('cached-content');
-      
+
       try {
         // 尝试打开IndexedDB
         const request = indexedDB.open('happyStockMarketDB', 1);
-        
+
         request.onerror = () => {
           cachedContentElement.innerHTML = '<p>无法访问缓存数据</p>';
         };
-        
+
         request.onsuccess = (event) => {
           const db = event.target.result;
-          
+
           // 检查是否有offlineData存储
           if (!db.objectStoreNames.contains('offlineData')) {
             cachedContentElement.innerHTML = '<p>没有可用的缓存数据</p>';
             return;
           }
-          
+
           // 获取所有缓存的数据
           const transaction = db.transaction(['offlineData'], 'readonly');
           const store = transaction.objectStore('offlineData');
           const request = store.getAll();
-          
+
           request.onsuccess = () => {
             const data = request.result;
-            
+
             if (data.length === 0) {
               cachedContentElement.innerHTML = '<p>没有可用的缓存数据</p>';
               return;
             }
-            
+
             // 显示缓存的数据
             let html = '';
             data.forEach(item => {
@@ -181,10 +193,10 @@
                 </div>
               `;
             });
-            
+
             cachedContentElement.innerHTML = html;
           };
-          
+
           request.onerror = () => {
             cachedContentElement.innerHTML = '<p>读取缓存数据时出错</p>';
           };
@@ -193,16 +205,17 @@
         cachedContentElement.innerHTML = `<p>访问缓存数据时出错: ${error.message}</p>`;
       }
     }
-    
+
     // 初始化
     document.addEventListener('DOMContentLoaded', () => {
       updateNetworkStatus();
       loadCachedData();
-      
+
       // 监听网络状态变化
       window.addEventListener('online', updateNetworkStatus);
       window.addEventListener('offline', updateNetworkStatus);
     });
   </script>
 </body>
+
 </html>

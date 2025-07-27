@@ -193,11 +193,7 @@ const closeReportGenerator = () => {
             </div>
           </div>
           <div class="card-footer">
-            <button
-              class="btn btn-primary"
-              @click="openExportPanel('stock')"
-              :disabled="!currentStock"
-            >
+            <button class="btn btn-primary" @click="openExportPanel('stock')" :disabled="!currentStock">
               导出股票数据
             </button>
           </div>
@@ -270,24 +266,12 @@ const closeReportGenerator = () => {
     </div>
 
     <!-- 导出面板 -->
-    <ExportPanel
-      v-if="showExportPanel"
-      :type="exportType"
-      :data="exportType === 'stock' ? stockData : portfolioData"
-      :stock="currentStock"
-      :stockData="stockData"
-      :portfolio="portfolioData"
-      @close="closeExportPanel"
-    />
+    <ExportPanel v-if="showExportPanel" :type="exportType" :data="exportType === 'stock' ? stockData : portfolioData"
+      :stock="currentStock" :stockData="stockData" :portfolio="portfolioData" @close="closeExportPanel" />
 
     <!-- 报告生成器 -->
-    <ReportGenerator
-      v-if="showReportGenerator && currentStock && stockData"
-      :stock="currentStock"
-      :stockData="stockData"
-      :show="showReportGenerator"
-      @close="closeReportGenerator"
-    />
+    <ReportGenerator v-if="showReportGenerator && currentStock && stockData" :stock="currentStock"
+      :stockData="stockData" :show="showReportGenerator" @close="closeReportGenerator" />
   </div>
 </template>
 
@@ -334,6 +318,7 @@ const closeReportGenerator = () => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

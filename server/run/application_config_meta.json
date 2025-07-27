@@ -143,8 +143,16 @@
       "port": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "host": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
       "password": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "db": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
-    }
+      "db": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "connectTimeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "lazyConnect": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "retryDelayOnFailover": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "enableReadyCheck": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetriesPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "retryDelayOnClusterDown": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "enableOfflineQueue": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    },
+    "agent": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
   },
   "jwt": {
     "secret": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
@@ -490,7 +498,6 @@
       "egg-cors": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
       "egg-jwt": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
       "egg-mysql": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-rate-limiter": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
       "egg-redis": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
       "egg-scripts": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
       "egg-security": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",

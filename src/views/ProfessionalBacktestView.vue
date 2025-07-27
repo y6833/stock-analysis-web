@@ -31,13 +31,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>初始资金</label>
-              <input
-                type="number"
-                v-model="params.initialCapital"
-                class="form-control"
-                min="10000"
-                step="10000"
-              />
+              <input type="number" v-model="params.initialCapital" class="form-control" min="10000" step="10000" />
             </div>
             <div class="form-group">
               <label>回测频率</label>
@@ -56,11 +50,7 @@
 
           <div class="form-group">
             <label>策略类型</label>
-            <select
-              v-model="params.strategyType"
-              class="form-control"
-              @change="onStrategyTypeChange"
-            >
+            <select v-model="params.strategyType" class="form-control" @change="onStrategyTypeChange">
               <option value="technical">技术分析策略</option>
               <option value="factor">因子策略</option>
               <option value="ml">机器学习策略</option>
@@ -83,19 +73,10 @@
             <h4>策略参数</h4>
             <div v-for="(value, key) in strategyParams" :key="key" class="form-group">
               <label>{{ getParamLabel(key) }}</label>
-              <input
-                v-if="typeof value === 'number'"
-                type="number"
-                v-model.number="strategyParams[key]"
-                class="form-control"
-                :step="getParamStep(key)"
-              />
-              <input
-                v-else-if="typeof value === 'boolean'"
-                type="checkbox"
-                v-model="strategyParams[key]"
-                class="form-checkbox"
-              />
+              <input v-if="typeof value === 'number'" type="number" v-model.number="strategyParams[key]"
+                class="form-control" :step="getParamStep(key)" />
+              <input v-else-if="typeof value === 'boolean'" type="checkbox" v-model="strategyParams[key]"
+                class="form-checkbox" />
               <input v-else type="text" v-model="strategyParams[key]" class="form-control" />
             </div>
           </div>
@@ -107,33 +88,17 @@
           <div class="form-row">
             <div class="form-group">
               <label>佣金率 (%)</label>
-              <input
-                type="number"
-                v-model="params.commissionRate"
-                class="form-control"
-                step="0.001"
-                min="0"
-              />
+              <input type="number" v-model="params.commissionRate" class="form-control" step="0.001" min="0" />
             </div>
             <div class="form-group">
               <label>滑点率 (%)</label>
-              <input
-                type="number"
-                v-model="params.slippageRate"
-                class="form-control"
-                step="0.001"
-                min="0"
-              />
+              <input type="number" v-model="params.slippageRate" class="form-control" step="0.001" min="0" />
             </div>
           </div>
         </div>
 
         <div class="panel-actions">
-          <button
-            class="btn btn-primary"
-            @click="runBacktest"
-            :disabled="isRunning || !canRunBacktest"
-          >
+          <button class="btn btn-primary" @click="runBacktest" :disabled="isRunning || !canRunBacktest">
             <span v-if="isRunning" class="loading-spinner"></span>
             {{ isRunning ? '回测中...' : '开始回测' }}
           </button>
@@ -663,6 +628,7 @@ const formatParams = (params: any) => {
 .positive {
   color: #52c41a;
 }
+
 .negative {
   color: #ff4d4f;
 }
@@ -676,6 +642,7 @@ const formatParams = (params: any) => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

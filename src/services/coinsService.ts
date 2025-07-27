@@ -232,6 +232,21 @@ const coinsService = {
       return response.data.data
     } catch (error: any) {
       console.error('获取所有充值请求失败:', error)
+
+      // 如果是数据库表不存在的错误，返回空数据
+      if (error.response?.data?.message?.includes("doesn't exist")) {
+        console.warn('数据库表不存在，返回空充值请求列表')
+        return {
+          list: [],
+          pagination: {
+            total: 0,
+            page: options.page || 1,
+            pageSize: options.pageSize || 10,
+            totalPages: 0
+          }
+        }
+      }
+
       const { showToast } = useToast()
       showToast(`获取所有充值请求失败: ${error.response?.data?.message || error.message}`, 'error')
       throw error

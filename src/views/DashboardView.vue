@@ -78,7 +78,8 @@
       :class="{ 'layout-grid': state.layoutMode === 'grid', 'layout-list': state.layoutMode === 'list' }">
       <!-- 市场概览 -->
       <div class="widget-container market-overview">
-        <ModernMarketOverview :data="marketData" :loading="state.isRefreshing" @refresh="loadMarketData" />
+        <ModernMarketOverview :data="marketData" :loading="state.isRefreshing || globalLoading"
+          @refresh="loadMarketData" />
       </div>
 
       <!-- 关注列表 -->
@@ -96,13 +97,14 @@
 
       <!-- 热门股票 -->
       <div class="widget-container popular-stocks">
-        <ModernPopularStocks :stocks="popularStocks" :loading="state.isRefreshing" @stock-click="handleStockClick"
-          @add-to-watchlist="handleAddToWatchlist" @refresh="loadPopularStocks" />
+        <ModernPopularStocks :stocks="popularStocks" :loading="state.isRefreshing || globalLoading"
+          @stock-click="handleStockClick" @add-to-watchlist="handleAddToWatchlist" @refresh="loadPopularStocks"
+          @tab-change="handlePopularStocksTabChange" />
       </div>
 
       <!-- 新闻资讯 -->
       <div class="widget-container news">
-        <ModernNewsWidget :news="newsItems" :loading="state.isRefreshing" @news-click="handleNewsClick"
+        <ModernNewsWidget :news="newsItems" :loading="state.isRefreshing || globalLoading" @news-click="handleNewsClick"
           @refresh="loadNewsItems" />
       </div>
 
@@ -142,7 +144,7 @@
 import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
-import { Refresh, Setting, FullScreen, Grid, List } from '@element-plus/icons-vue'
+import { Refresh, Setting, FullScreen, Grid, List, Loading } from '@element-plus/icons-vue'
 
 // 服务导入
 import { stockService } from '@/services/stockService'
@@ -170,7 +172,7 @@ import { performanceMonitor } from '@/utils/performanceMonitor'
 // 初始化
 const router = useRouter()
 const dashboardStore = useDashboardStore()
-const { handleError, showError, clearError } = useErrorHandling()
+const { handleError, showError, clearError, withLoading, withRetry, isLoading: globalLoading } = useErrorHandling()
 
 // 响应式状态
 const state = reactive({
@@ -188,6 +190,11 @@ const state = reactive({
   autoRefreshEnabled: true,
   refreshInterval: 30000, // 30秒
 
+  // 性能优化
+  enableLazyLoading: true,
+  cacheEnabled: true,
+  maxCacheAge: 5 * 60 * 1000, // 5分钟缓存
+
   // 错误状态
   hasError: false,
   errorMessage: '',
@@ -204,6 +211,49 @@ const tradingSignals = ref<any[]>([])
 // 定时器
 let refreshTimer: number | null = null
 let autoRefreshTimer: number | null = null
+
+// 缓存和性能优化
+const dataCache = ref(new Map())
+const lastFetchTimes = ref(new Map())
+let refreshDebounceTimer: NodeJS.Timeout | null = null
+
+// 检查缓存是否有效
+const isCacheValid = (key: string): boolean => {
+  if (!state.cacheEnabled) return false
+
+  const lastFetch = lastFetchTimes.value.get(key)
+  if (!lastFetch) return false
+
+  return Date.now() - lastFetch < state.maxCacheAge
+}
+
+// 设置缓存
+const setCache = (key: string, data: any): void => {
+  if (state.cacheEnabled) {
+    dataCache.value.set(key, data)
+    lastFetchTimes.value.set(key, Date.now())
+  }
+}
+
+// 获取缓存
+const getCache = (key: string): any => {
+  if (isCacheValid(key)) {
+    return dataCache.value.get(key)
+  }
+  return null
+}
+
+// 防抖刷新
+const debouncedRefresh = (fn: () => Promise<void>, delay: number = 1000) => {
+  if (refreshDebounceTimer) {
+    clearTimeout(refreshDebounceTimer)
+  }
+
+  refreshDebounceTimer = setTimeout(async () => {
+    await fn()
+    refreshDebounceTimer = null
+  }, delay)
+}
 
 // 计算属性
 const activeWatchlist = computed(() => {
@@ -237,42 +287,116 @@ const loadWatchlists = async () => {
   }
 }
 
-const loadMarketData = async () => {
-  try {
-    console.log('[Dashboard] 开始加载市场数据...')
-    const data = await dashboardService.getMarketOverview(true)
-    marketData.value = data
-    console.log('[Dashboard] 市场数据加载成功')
-  } catch (error) {
-    console.error('加载市场数据失败:', error)
-    marketData.value = []
-    handleError(error, '加载市场数据失败')
+const loadMarketData = async (forceRefresh: boolean = false) => {
+  const cacheKey = 'market-data'
+
+  // 检查缓存
+  if (!forceRefresh) {
+    const cached = getCache(cacheKey)
+    if (cached) {
+      console.log('[Dashboard] 使用缓存的市场数据')
+      marketData.value = cached
+      return
+    }
+  }
+
+  const result = await withRetry(
+    async () => {
+      console.log('[Dashboard] 开始加载市场数据...')
+      const data = await dashboardService.getMarketOverview(true)
+      console.log('[Dashboard] 市场数据加载成功')
+      return data
+    },
+    '加载市场数据失败'
+  )
+
+  if (result) {
+    marketData.value = result
+    setCache(cacheKey, result)
+  } else {
+    marketData.value = null
   }
 }
 
-const loadPopularStocks = async () => {
-  try {
-    console.log('[Dashboard] 开始加载热门股票...')
-    const data = await stockService.getHotStocks()
-    popularStocks.value = data.slice(0, 10)
-    console.log('[Dashboard] 热门股票加载成功')
-  } catch (error) {
-    console.error('加载热门股票失败:', error)
+const loadPopularStocks = async (type: string = 'hot', forceRefresh: boolean = false) => {
+  const cacheKey = `popular-stocks-${type}`
+
+  // 检查缓存
+  if (!forceRefresh) {
+    const cached = getCache(cacheKey)
+    if (cached) {
+      console.log(`[Dashboard] 使用缓存的${type}股票数据`)
+      popularStocks.value = cached
+      return
+    }
+  }
+
+  const result = await withRetry(
+    async () => {
+      console.log(`[Dashboard] 开始加载${type}股票...`)
+      let data = []
+
+      switch (type) {
+        case 'hot':
+          data = await stockService.getHotStocks()
+          break
+        case 'limit-up':
+          data = await stockService.getLimitUpStocks()
+          break
+        case 'limit-down':
+          data = await stockService.getLimitDownStocks()
+          break
+        default:
+          data = await stockService.getHotStocks()
+      }
+
+      console.log(`[Dashboard] ${type}股票加载成功`)
+      return data.slice(0, 10)
+    },
+    `加载${type}股票失败`
+  )
+
+  if (result) {
+    popularStocks.value = result
+    setCache(cacheKey, result)
+  } else {
     popularStocks.value = []
-    handleError(error, '加载热门股票失败')
   }
 }
 
-const loadNewsItems = async () => {
-  try {
-    console.log('[Dashboard] 开始加载新闻数据...')
-    const data = await marketDataService.getFinancialNews()
-    newsItems.value = data.slice(0, 8) // 只显示前8条
-    console.log('[Dashboard] 新闻数据加载成功')
-  } catch (error) {
-    console.error('加载新闻失败:', error)
+// Handle popular stocks tab change
+const handlePopularStocksTabChange = (tab: string) => {
+  loadPopularStocks(tab)
+}
+
+const loadNewsItems = async (forceRefresh: boolean = false) => {
+  const cacheKey = 'news-items'
+
+  // 检查缓存
+  if (!forceRefresh) {
+    const cached = getCache(cacheKey)
+    if (cached) {
+      console.log('[Dashboard] 使用缓存的新闻数据')
+      newsItems.value = cached
+      return
+    }
+  }
+
+  const result = await withRetry(
+    async () => {
+      console.log('[Dashboard] 开始加载新闻数据...')
+      const data = await marketDataService.getFinancialNews()
+      console.log('[Dashboard] 新闻数据加载成功')
+      return data.slice(0, 8) // 只显示前8条
+    },
+    '加载新闻失败'
+  )
+
+  if (result) {
+    newsItems.value = result
+    setCache(cacheKey, result)
+  } else {
     newsItems.value = []
-    handleError(error, '加载新闻失败')
   }
 }
 
@@ -387,8 +511,16 @@ const setupAutoRefresh = () => {
 }
 
 // 事件处理函数
-const handleRefresh = async (silent = false) => {
+const handleRefresh = async (silent = false, forceRefresh = false) => {
   if (state.isRefreshing) return
+
+  // 使用防抖避免频繁刷新
+  if (!forceRefresh && !silent) {
+    debouncedRefresh(async () => {
+      await handleRefresh(silent, true)
+    })
+    return
+  }
 
   try {
     state.isRefreshing = true
@@ -397,12 +529,12 @@ const handleRefresh = async (silent = false) => {
       ElMessage.info('正在刷新数据...')
     }
 
-    // 并行刷新所有数据
+    // 并行刷新所有数据，强制刷新时清除缓存
     const refreshPromises = [
       loadWatchlists(),
-      loadMarketData(),
-      loadPopularStocks(),
-      loadNewsItems(),
+      loadMarketData(forceRefresh),
+      loadPopularStocks('hot', forceRefresh),
+      loadNewsItems(forceRefresh),
       loadTradingSignals()
     ]
 
@@ -748,6 +880,53 @@ onUnmounted(() => {
 
   .action-btn {
     width: 100%;
+  }
+}
+
+/* Performance Optimizations */
+.widget-container {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+.widget-container.lazy-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.widget-container.loaded {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Smooth animations */
+.dashboard-content {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+  .widget-container,
+  .dashboard-content {
+    animation: none;
+    transition: none;
+  }
+
+  .widget-container:hover {
+    transform: none;
   }
 }
 </style>

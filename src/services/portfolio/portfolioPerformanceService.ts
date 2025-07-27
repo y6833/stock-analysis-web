@@ -312,3 +312,6 @@ export const portfolioPerformanceService = {
     getHistoricalWeights,
     getPerformanceAttribution
 }
+
+// 确保类型也被导出
+export type { BacktestParams, BacktestResult }

@@ -3409,6 +3409,144 @@
       "GET"
     ],
     "paramNames": [],
+    "path": "/api/monitoring/metrics",
+    "regexp": "/^\\/api\\/monitoring\\/metrics(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/monitoring/system",
+    "regexp": "/^\\/api\\/monitoring\\/system(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/monitoring/errors",
+    "regexp": "/^\\/api\\/monitoring\\/errors(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/monitoring/logs",
+    "regexp": "/^\\/api\\/monitoring\\/logs(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/monitoring/logs/download",
+    "regexp": "/^\\/api\\/monitoring\\/logs\\/download(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/monitoring/track-error",
+    "regexp": "/^\\/api\\/monitoring\\/track-error(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/monitoring/track-metric",
+    "regexp": "/^\\/api\\/monitoring\\/track-metric(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/market/indices",
+    "regexp": "/^\\/api\\/market\\/indices(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/market/sectors",
+    "regexp": "/^\\/api\\/market\\/sectors(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "POST"
+    ],
+    "paramNames": [],
+    "path": "/api/market/breadth",
+    "regexp": "/^\\/api\\/market\\/breadth(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/market/overview",
+    "regexp": "/^\\/api\\/market\\/overview(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
     "path": "/api/sina/test",
     "regexp": "/^\\/api\\/sina\\/test(?:\\/(?=$))?$/",
     "stack": [

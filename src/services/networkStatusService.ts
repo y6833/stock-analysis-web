@@ -73,7 +73,7 @@ async function measureNetworkQuality() {
       const conn = (navigator as any).connection;
       if (conn) {
         connectionType.value = conn.effectiveType || 'unknown';
-        
+
         // 根据连接类型初步判断网络质量
         if (['slow-2g', '2g'].includes(conn.effectiveType)) {
           networkQuality.value = 'poor';
@@ -83,17 +83,17 @@ async function measureNetworkQuality() {
       }
     }
 
-    // 测量延迟
+    // 测量延迟 - 使用一个轻量级的资源来测试网络
     const start = Date.now();
-    const response = await fetch('/api/ping', { 
+    const response = await fetch('/manifest.json', {
       method: 'HEAD',
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' }
     });
-    
+
     if (response.ok) {
       latency.value = Date.now() - start;
-      
+
       // 根据延迟进一步判断网络质量
       if (latency.value < 300) {
         networkQuality.value = 'good';
@@ -125,7 +125,7 @@ export async function checkNetworkQuality(): Promise<void> {
 export function useNetworkStatus() {
   const isOnline = computed(() => online.value);
   const isOffline = computed(() => !online.value);
-  const isPoorConnection = computed(() => 
+  const isPoorConnection = computed(() =>
     online.value && networkQuality.value === 'poor'
   );
 
@@ -147,11 +147,11 @@ export function getNetworkAwareTimeout(): number {
   if (!online.value) {
     return 3000; // 离线状态下的短超时
   }
-  
+
   if (networkQuality.value === 'poor') {
     return 15000; // 弱网络下的长超时
   }
-  
+
   return 8000; // 正常网络下的标准超时
 }
 
@@ -163,7 +163,7 @@ export function getNetworkAwareImageQuality(): number {
   if (!online.value || networkQuality.value === 'poor') {
     return 60; // 弱网络下的低质量图片
   }
-  
+
   return 90; // 正常网络下的高质量图片
 }
 
@@ -177,7 +177,7 @@ export function getNetworkAwareLoadingStrategy() {
     batchSize: 20,
     prefetchDepth: 1
   };
-  
+
   if (!online.value) {
     return {
       ...baseStrategy,
@@ -186,7 +186,7 @@ export function getNetworkAwareLoadingStrategy() {
       prefetchDepth: 0
     };
   }
-  
+
   if (networkQuality.value === 'poor') {
     return {
       ...baseStrategy,
@@ -194,6 +194,6 @@ export function getNetworkAwareLoadingStrategy() {
       prefetchDepth: 0
     };
   }
-  
+
   return baseStrategy;
 }

@@ -6,7 +6,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Position, PositionSummary } from '@/types/portfolio'
-import * as portfolioService from '@/services/portfolioService'
+import { portfolioService } from '@/services/portfolioService'
 import { createBaseStore } from '@/stores/core/baseStore'
 import { useAuthStore } from '@/stores/user/authStore'
 import { useStockDataStore } from '@/stores/stock/stockDataStore'
@@ -14,7 +14,7 @@ import { useStockDataStore } from '@/stores/stock/stockDataStore'
 export const usePortfolioStore = defineStore('portfolio', () => {
     // 使用基础Store功能
     const baseStore = createBaseStore({
-        name: 'portfolio',
+        name: 'portfolioBase',
         cache: {
             enabled: true,
             ttl: 2 * 60 * 1000, // 2分钟缓存

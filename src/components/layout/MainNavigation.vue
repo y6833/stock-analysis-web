@@ -8,29 +8,20 @@
 
     <!-- 仪表盘菜单 -->
     <div class="dropdown-container">
-      <button
-        class="nav-link dropdown-toggle"
-        :class="{ active: dropdownOpen.dashboard }"
-        @click="toggleDropdown('dashboard')"
-        @keydown.enter="toggleDropdown('dashboard')"
-        @keydown.space.prevent="toggleDropdown('dashboard')"
-        aria-haspopup="true"
-        :aria-expanded="dropdownOpen.dashboard"
-      >
+      <button class="nav-link dropdown-toggle" :class="{ active: dropdownOpen.dashboard }"
+        @click="toggleDropdown('dashboard')" @keydown.enter="toggleDropdown('dashboard')"
+        @keydown.space.prevent="toggleDropdown('dashboard')" aria-haspopup="true"
+        :aria-expanded="dropdownOpen.dashboard">
         <span class="nav-icon">📊</span>
         <span class="nav-text">仪表盘</span>
         <span class="dropdown-arrow" :class="{ rotated: dropdownOpen.dashboard }">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
         </span>
       </button>
-      <div
-        class="dropdown-menu"
-        v-show="dropdownOpen.dashboard"
-        role="menu"
-        aria-label="仪表盘菜单"
-      >
+      <div class="dropdown-menu" v-show="dropdownOpen.dashboard" role="menu" aria-label="仪表盘菜单">
         <div class="dropdown-section">
           <div class="dropdown-section-title">基础功能</div>
           <RouterLink to="/dashboard" class="dropdown-item" role="menuitem">
@@ -42,7 +33,7 @@
           </RouterLink>
         </div>
 
-        <div class="dropdown-section" v-if="canAccessPremiumFeatures">
+        <div v-if="canAccessPremiumFeatures" class="dropdown-section">
           <div class="dropdown-section-title">高级功能</div>
           <RouterLink to="/advanced-dashboard" class="dropdown-item" role="menuitem">
             <span class="nav-icon">🚀</span>
@@ -57,6 +48,14 @@
             <div class="item-content">
               <span class="nav-text">实时监控</span>
               <span class="item-description">实时市场监控</span>
+            </div>
+            <span class="feature-badge premium">高级</span>
+          </RouterLink>
+          <RouterLink to="/risk-monitoring" class="dropdown-item" role="menuitem">
+            <span class="nav-icon">🛡️</span>
+            <div class="item-content">
+              <span class="nav-text">风险监控</span>
+              <span class="item-description">投资风险管理</span>
             </div>
             <span class="feature-badge premium">高级</span>
           </RouterLink>
@@ -79,29 +78,19 @@
 
     <!-- 分析工具菜单 -->
     <div class="dropdown-container">
-      <button
-        class="nav-link dropdown-toggle"
-        :class="{ active: dropdownOpen.analysis }"
-        @click="toggleDropdown('analysis')"
-        @keydown.enter="toggleDropdown('analysis')"
-        @keydown.space.prevent="toggleDropdown('analysis')"
-        aria-haspopup="true"
-        :aria-expanded="dropdownOpen.analysis"
-      >
+      <button class="nav-link dropdown-toggle" :class="{ active: dropdownOpen.analysis }"
+        @click="toggleDropdown('analysis')" @keydown.enter="toggleDropdown('analysis')"
+        @keydown.space.prevent="toggleDropdown('analysis')" aria-haspopup="true" :aria-expanded="dropdownOpen.analysis">
         <span class="nav-icon">📈</span>
         <span class="nav-text">分析工具</span>
         <span class="dropdown-arrow" :class="{ rotated: dropdownOpen.analysis }">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
         </span>
       </button>
-      <div
-        class="dropdown-menu"
-        v-show="dropdownOpen.analysis"
-        role="menu"
-        aria-label="分析工具菜单"
-      >
+      <div class="dropdown-menu" v-show="dropdownOpen.analysis" role="menu" aria-label="分析工具菜单">
         <div class="dropdown-section">
           <div class="dropdown-section-title">基础分析</div>
           <RouterLink to="/stock" class="dropdown-item" role="menuitem">
@@ -109,6 +98,13 @@
             <div class="item-content">
               <span class="nav-text">股票分析</span>
               <span class="item-description">个股技术分析</span>
+            </div>
+          </RouterLink>
+          <RouterLink to="/stock-info" class="dropdown-item" role="menuitem">
+            <span class="nav-icon">📊</span>
+            <div class="item-content">
+              <span class="nav-text">股票信息</span>
+              <span class="item-description">综合股票信息展示</span>
             </div>
           </RouterLink>
           <RouterLink to="/watchlist" class="dropdown-item" role="menuitem">
@@ -171,29 +167,19 @@
 
     <!-- 智能工具菜单 -->
     <div class="dropdown-container">
-      <button
-        class="nav-link dropdown-toggle"
-        :class="{ active: dropdownOpen.smart }"
-        @click="toggleDropdown('smart')"
-        @keydown.enter="toggleDropdown('smart')"
-        @keydown.space.prevent="toggleDropdown('smart')"
-        aria-haspopup="true"
-        :aria-expanded="dropdownOpen.smart"
-      >
+      <button class="nav-link dropdown-toggle" :class="{ active: dropdownOpen.smart }" @click="toggleDropdown('smart')"
+        @keydown.enter="toggleDropdown('smart')" @keydown.space.prevent="toggleDropdown('smart')" aria-haspopup="true"
+        :aria-expanded="dropdownOpen.smart">
         <span class="nav-icon">🤖</span>
         <span class="nav-text">智能工具</span>
         <span class="dropdown-arrow" :class="{ rotated: dropdownOpen.smart }">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
         </span>
       </button>
-      <div
-        class="dropdown-menu"
-        v-show="dropdownOpen.smart"
-        role="menu"
-        aria-label="智能工具菜单"
-      >
+      <div class="dropdown-menu" v-show="dropdownOpen.smart" role="menu" aria-label="智能工具菜单">
         <div class="dropdown-section" v-if="canAccessBasicFeatures">
           <div class="dropdown-section-title">智能选股工具</div>
           <RouterLink to="/strategies/smart-recommendation" class="dropdown-item" role="menuitem">
@@ -278,29 +264,19 @@
 
     <!-- 管理员菜单 -->
     <div v-if="userStore.userRole === 'admin'" class="dropdown-container">
-      <button
-        class="nav-link dropdown-toggle admin-toggle"
-        :class="{ active: dropdownOpen.admin }"
-        @click="toggleDropdown('admin')"
-        @keydown.enter="toggleDropdown('admin')"
-        @keydown.space.prevent="toggleDropdown('admin')"
-        aria-haspopup="true"
-        :aria-expanded="dropdownOpen.admin"
-      >
+      <button class="nav-link dropdown-toggle admin-toggle" :class="{ active: dropdownOpen.admin }"
+        @click="toggleDropdown('admin')" @keydown.enter="toggleDropdown('admin')"
+        @keydown.space.prevent="toggleDropdown('admin')" aria-haspopup="true" :aria-expanded="dropdownOpen.admin">
         <span class="nav-icon">👑</span>
         <span class="nav-text">管理后台</span>
         <span class="dropdown-arrow" :class="{ rotated: dropdownOpen.admin }">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
         </span>
       </button>
-      <div
-        class="dropdown-menu admin-menu"
-        v-show="dropdownOpen.admin"
-        role="menu"
-        aria-label="管理后台菜单"
-      >
+      <div class="dropdown-menu admin-menu" v-show="dropdownOpen.admin" role="menu" aria-label="管理后台菜单">
         <div class="dropdown-section">
           <div class="dropdown-section-title">系统管理</div>
           <RouterLink to="/admin" class="dropdown-item" role="menuitem">
@@ -387,7 +363,8 @@ const toggleDropdown = (menu: string) => {
   transition: var(--transition-fast);
   position: relative;
   white-space: nowrap;
-  min-height: 44px; /* 确保触摸友好 */
+  min-height: 44px;
+  /* 确保触摸友好 */
 }
 
 .nav-link:hover {

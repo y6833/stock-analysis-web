@@ -3,38 +3,35 @@
     <div class="section-header">
       <h3>风险分析</h3>
     </div>
-    
+
     <el-tabs v-model="activeTab">
       <el-tab-pane label="风险指标" name="metrics">
         <div class="metrics-grid">
           <div class="metric-card" v-for="(metric, index) in riskMetrics" :key="index">
             <div class="metric-title">{{ metric.title }}</div>
-            <div class="metric-value" :class="getValueClass(metric)">{{ formatValue(metric.value, metric.format) }}</div>
+            <div class="metric-value" :class="getValueClass(metric)">{{ formatValue(metric.value, metric.format) }}
+            </div>
             <div class="metric-desc">{{ metric.description }}</div>
           </div>
         </div>
       </el-tab-pane>
-      
+
       <el-tab-pane label="风险贡献" name="contribution">
         <div class="risk-contribution">
           <div ref="contributionChartContainer" class="chart-container"></div>
         </div>
       </el-tab-pane>
-      
+
       <el-tab-pane label="压力测试" name="stress">
         <div class="stress-test">
           <div class="stress-controls">
             <el-select v-model="selectedScenario" placeholder="选择压力测试场景" @change="runStressTest">
-              <el-option
-                v-for="scenario in stressScenarios"
-                :key="scenario.id"
-                :label="scenario.name"
-                :value="scenario.id"
-              />
+              <el-option v-for="scenario in stressScenarios" :key="scenario.id" :label="scenario.name"
+                :value="scenario.id" />
             </el-select>
             <el-button type="primary" size="small" @click="runStressTest">运行测试</el-button>
           </div>
-          
+
           <div v-if="stressTestResult" class="stress-result">
             <div class="stress-summary">
               <div class="summary-item">
@@ -52,9 +49,9 @@
                 </div>
               </div>
             </div>
-            
+
             <div ref="stressChartContainer" class="chart-container"></div>
-            
+
             <el-table :data="stressTestResult.positionImpacts" stripe style="width: 100%">
               <el-table-column prop="symbol" label="代码" width="100" />
               <el-table-column prop="name" label="名称" />
@@ -77,13 +74,13 @@
               </el-table-column>
             </el-table>
           </div>
-          
+
           <div v-else class="no-data">
             <p>请选择压力测试场景并运行测试</p>
           </div>
         </div>
       </el-tab-pane>
-      
+
       <el-tab-pane label="风险价值(VaR)" name="var">
         <div class="var-analysis">
           <div class="var-controls">
@@ -92,22 +89,22 @@
               <el-option label="参数法" value="parametric" />
               <el-option label="蒙特卡洛模拟" value="monteCarlo" />
             </el-select>
-            
+
             <el-select v-model="varConfidence" placeholder="置信水平" @change="calculateVaR">
               <el-option label="95%" :value="0.95" />
               <el-option label="99%" :value="0.99" />
               <el-option label="99.9%" :value="0.999" />
             </el-select>
-            
+
             <el-select v-model="varHorizon" placeholder="时间范围" @change="calculateVaR">
               <el-option label="1天" :value="1" />
               <el-option label="1周 (5天)" :value="5" />
               <el-option label="1个月 (21天)" :value="21" />
             </el-select>
-            
+
             <el-button type="primary" size="small" @click="calculateVaR">计算</el-button>
           </div>
-          
+
           <div v-if="varResult" class="var-result">
             <div class="metrics-grid">
               <div class="metric-card">
@@ -117,7 +114,7 @@
                   在{{ varConfidence * 100 }}%的置信水平下，{{ varHorizon }}天内的最大潜在损失
                 </div>
               </div>
-              
+
               <div class="metric-card">
                 <div class="metric-title">风险价值百分比</div>
                 <div class="metric-value negative">{{ formatPercent(varResult.varPercent) }}</div>
@@ -125,7 +122,7 @@
                   相对于投资组合总价值的百分比
                 </div>
               </div>
-              
+
               <div class="metric-card">
                 <div class="metric-title">条件风险价值 (CVaR)</div>
                 <div class="metric-value negative">{{ formatCurrency(varResult.cvar) }}</div>
@@ -133,7 +130,7 @@
                   超过VaR的平均损失
                 </div>
               </div>
-              
+
               <div class="metric-card">
                 <div class="metric-title">条件风险价值百分比</div>
                 <div class="metric-value negative">{{ formatPercent(varResult.cvarPercent) }}</div>
@@ -142,10 +139,10 @@
                 </div>
               </div>
             </div>
-            
+
             <div ref="varChartContainer" class="chart-container"></div>
           </div>
-          
+
           <div v-else class="no-data">
             <p>请选择参数并计算风险价值</p>
           </div>
@@ -153,7 +150,9 @@
       </el-tab-pane>
     </el-tabs>
   </div>
-</template><script setup lang="ts">
+</template>
+
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts/core'
 import { BarChart, PieChart, LineChart } from 'echarts/charts'
@@ -264,7 +263,7 @@ watch(activeTab, (newTab) => {
 // 初始化
 onMounted(() => {
   fetchRiskMetrics()
-  
+
   window.addEventListener('resize', handleResize)
 })
 
@@ -273,15 +272,15 @@ onUnmounted(() => {
   if (contributionChart.value) {
     contributionChart.value.dispose()
   }
-  
+
   if (stressChart.value) {
     stressChart.value.dispose()
   }
-  
+
   if (varChart.value) {
     varChart.value.dispose()
   }
-  
+
   window.removeEventListener('resize', handleResize)
 })
 
@@ -290,11 +289,11 @@ function handleResize() {
   if (contributionChart.value) {
     contributionChart.value.resize()
   }
-  
+
   if (stressChart.value) {
     stressChart.value.resize()
   }
-  
+
   if (varChart.value) {
     varChart.value.resize()
   }
@@ -303,18 +302,18 @@ function handleResize() {
 // 获取风险指标
 async function fetchRiskMetrics() {
   if (!props.portfolioId) return
-  
+
   loading.value = true
-  
+
   try {
     // 获取投资组合持仓
     await portfolioStore.fetchHoldings(props.portfolioId)
-    
+
     // 使用增强的投资组合分析服务获取风险指标
     const analytics = await portfolioAnalyticsService.analyzePortfolio(
       portfolioStore.positionSummaries
     )
-    
+
     riskMetrics.value = [
       {
         title: '波动率',
@@ -392,26 +391,26 @@ async function fetchRiskMetrics() {
 // 获取风险贡献
 async function fetchRiskContribution() {
   if (!props.portfolioId || !contributionChartContainer.value) return
-  
+
   loading.value = true
-  
+
   try {
     // 获取投资组合持仓
     await portfolioStore.fetchHoldings(props.portfolioId)
-    
+
     // 使用增强的投资组合分析服务获取风险贡献
     const analytics = await portfolioAnalyticsService.analyzePortfolio(
       portfolioStore.positionSummaries
     )
-    
+
     // 初始化图表
     if (!contributionChart.value) {
       contributionChart.value = echarts.init(contributionChartContainer.value)
     }
-    
+
     // 准备图表数据
     const riskData = analytics.riskContribution.slice(0, 10) // 取前10个持仓
-    
+
     // 设置图表选项
     const option = {
       title: {
@@ -454,7 +453,7 @@ async function fetchRiskContribution() {
         }
       ]
     }
-    
+
     // 渲染图表
     contributionChart.value.setOption(option)
   } catch (error) {
@@ -467,26 +466,26 @@ async function fetchRiskContribution() {
 // 运行压力测试
 async function runStressTest() {
   if (!props.portfolioId || !selectedScenario.value) return
-  
+
   loading.value = true
-  
+
   try {
     // 获取投资组合持仓
     await portfolioStore.fetchHoldings(props.portfolioId)
-    
+
     // 使用增强的投资组合性能服务运行压力测试
     const scenario = stressScenarios.find(s => s.id === selectedScenario.value)
-    
+
     if (!scenario) return
-    
+
     // 在实际实现中，这将调用API
     // 这里使用模拟数据
     const totalValue = portfolioStore.positionSummaries.reduce(
       (sum, pos) => sum + pos.currentValue, 0
     )
-    
+
     let changePercent = 0
-    
+
     switch (selectedScenario.value) {
       case 'market_crash':
         changePercent = -0.3
@@ -504,24 +503,24 @@ async function runStressTest() {
         changePercent = -0.08
         break
     }
-    
+
     const newValue = totalValue * (1 + changePercent)
     const change = newValue - totalValue
-    
+
     // 计算每个持仓的影响
     const positionImpacts = portfolioStore.positionSummaries.map(pos => {
       // 根据行业和特性调整影响
       let posChangePercent = changePercent
-      
+
       if (selectedScenario.value === 'tech_bubble' && pos.sector === 'Technology') {
         posChangePercent = -0.4
       } else if (selectedScenario.value === 'interest_rate_hike' && pos.sector === 'Financials') {
         posChangePercent = 0.02
       }
-      
+
       const posNewValue = pos.currentValue * (1 + posChangePercent)
       const posChange = posNewValue - pos.currentValue
-      
+
       return {
         symbol: pos.symbol,
         name: pos.name,
@@ -531,7 +530,7 @@ async function runStressTest() {
         changePercent: posChangePercent
       }
     })
-    
+
     // 设置结果
     stressTestResult.value = {
       currentValue: totalValue,
@@ -540,7 +539,7 @@ async function runStressTest() {
       changePercent,
       positionImpacts
     }
-    
+
     // 渲染图表
     renderStressChart()
   } catch (error) {
@@ -553,17 +552,17 @@ async function runStressTest() {
 // 渲染压力测试图表
 function renderStressChart() {
   if (!stressChartContainer.value || !stressTestResult.value) return
-  
+
   // 初始化图表
   if (!stressChart.value) {
     stressChart.value = echarts.init(stressChartContainer.value)
   }
-  
+
   // 准备图表数据
   const data = stressTestResult.value.positionImpacts
     .sort((a, b) => a.changePercent - b.changePercent)
     .slice(0, 10) // 取变化最大的10个持仓
-  
+
   // 设置图表选项
   const option = {
     title: {
@@ -575,7 +574,7 @@ function renderStressChart() {
       axisPointer: {
         type: 'shadow'
       },
-      formatter: function(params: any) {
+      formatter: function (params: any) {
         const item = params[0]
         return `${item.name}<br/>变化: ${(item.value * 100).toFixed(2)}%`
       }
@@ -606,7 +605,7 @@ function renderStressChart() {
         type: 'bar',
         data: data.map(item => item.changePercent * 100),
         itemStyle: {
-          color: function(params: any) {
+          color: function (params: any) {
             return params.value >= 0 ? '#91cc75' : '#ee6666'
           }
         },
@@ -618,7 +617,7 @@ function renderStressChart() {
       }
     ]
   }
-  
+
   // 渲染图表
   stressChart.value.setOption(option)
 }
@@ -626,13 +625,13 @@ function renderStressChart() {
 // 计算VaR
 async function calculateVaR() {
   if (!props.portfolioId) return
-  
+
   loading.value = true
-  
+
   try {
     // 获取投资组合持仓
     await portfolioStore.fetchHoldings(props.portfolioId)
-    
+
     // 使用投资组合分析服务计算VaR
     const varResult = await portfolioAnalyticsService.calculatePortfolioVaR(
       portfolioStore.positionSummaries,
@@ -640,10 +639,10 @@ async function calculateVaR() {
       varConfidence.value,
       varHorizon.value
     )
-    
+
     // 设置结果
     varResult.value = varResult
-    
+
     // 渲染图表
     renderVarChart()
   } catch (error) {
@@ -656,17 +655,17 @@ async function calculateVaR() {
 // 渲染VaR图表
 function renderVarChart() {
   if (!varChartContainer.value || !varResult.value) return
-  
+
   // 初始化图表
   if (!varChart.value) {
     varChart.value = echarts.init(varChartContainer.value)
   }
-  
+
   // 生成模拟的收益分布数据
   const returns: number[] = []
   const mean = 0.0005 // 日均收益率
   const stdDev = 0.01 // 日波动率
-  
+
   for (let i = 0; i < 1000; i++) {
     // 使用Box-Muller变换生成正态分布随机数
     const u1 = Math.random()
@@ -674,23 +673,23 @@ function renderVarChart() {
     const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
     returns.push(mean + stdDev * z0)
   }
-  
+
   // 计算直方图数据
   const bins = 50
   const min = Math.min(...returns)
   const max = Math.max(...returns)
   const binWidth = (max - min) / bins
   const histogram: number[] = Array(bins).fill(0)
-  
+
   for (const r of returns) {
     const binIndex = Math.min(Math.floor((r - min) / binWidth), bins - 1)
     histogram[binIndex]++
   }
-  
+
   // 计算VaR位置
   const varIndex = Math.floor(bins * (1 - varConfidence.value))
   const varX = min + varIndex * binWidth
-  
+
   // 设置图表选项
   const option = {
     title: {
@@ -699,7 +698,7 @@ function renderVarChart() {
     },
     tooltip: {
       trigger: 'item',
-      formatter: function(params: any) {
+      formatter: function (params: any) {
         const x = params.data[0]
         const y = params.data[1]
         return `收益率: ${(x * 100).toFixed(2)}%<br/>频率: ${y}`
@@ -726,7 +725,7 @@ function renderVarChart() {
           return [x * 100, count]
         }),
         itemStyle: {
-          color: function(params: any) {
+          color: function (params: any) {
             return params.data[0] < varX * 100 ? '#ee6666' : '#91cc75'
           }
         }
@@ -752,7 +751,7 @@ function renderVarChart() {
       }
     ]
   }
-  
+
   // 渲染图表
   varChart.value.setOption(option)
 }
@@ -781,7 +780,7 @@ function getValueClass(metric: { value: number, format: string, isGood?: boolean
       return metric.value > 0 ? 'negative' : 'positive'
     }
   }
-  
+
   return ''
 }
 
@@ -798,3 +797,61 @@ function formatCurrency(value: number): string {
 function formatPercent(value: number): string {
   return `${(value * 100).toFixed(2)}%`
 }
+</script>
+
+<style scoped>
+.portfolio-risk-analysis {
+  padding: 20px;
+}
+
+.risk-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.metric-title {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--el-text-color-primary);
+}
+
+.metric-change {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.metric-change.positive {
+  color: var(--el-color-success);
+}
+
+.metric-change.negative {
+  color: var(--el-color-danger);
+}
+
+.chart-container {
+  height: 400px;
+  margin-bottom: 24px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--el-text-color-secondary);
+}
+</style>

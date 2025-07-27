@@ -1,17 +1,9 @@
 <template>
   <div class="doji-pattern-example">
     <div class="chart-container" ref="chartContainer"></div>
-    <doji-pattern-detection
-      v-if="chartInstance"
-      :chart="chartInstance"
-      :klines="klineData"
-      :stock-id="stockId"
-      :stock-name="stockName"
-      :timeframe="timeframe"
-      @pattern-selected="handlePatternSelected"
-      @analyze-pattern="handleAnalyzePattern"
-      @add-to-watchlist="handleAddToWatchlist"
-    ></doji-pattern-detection>
+    <doji-pattern-detection v-if="chartInstance" :chart="chartInstance" :klines="klineData" :stock-id="stockId"
+      :stock-name="stockName" :timeframe="timeframe" @pattern-selected="handlePatternSelected"
+      @analyze-pattern="handleAnalyzePattern" @add-to-watchlist="handleAddToWatchlist"></doji-pattern-detection>
   </div>
 </template>
 

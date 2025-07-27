@@ -363,7 +363,6 @@
         "egg-cors": "^2.2.4",
         "egg-jwt": "^3.1.7",
         "egg-mysql": "^3.4.0",
-        "egg-rate-limiter": "^2.0.0",
         "egg-redis": "^2.4.0",
         "egg-scripts": "^2.17.0",
         "egg-security": "^3.0.0",
@@ -541,8 +540,16 @@
         "port": 6379,
         "host": "127.0.0.1",
         "password": "<String len: 0>",
-        "db": 0
-      }
+        "db": 0,
+        "connectTimeout": 5000,
+        "lazyConnect": true,
+        "retryDelayOnFailover": 100,
+        "enableReadyCheck": false,
+        "maxRetriesPerRequest": 3,
+        "retryDelayOnClusterDown": 300,
+        "enableOfflineQueue": false
+      },
+      "agent": false
     },
     "cache": {
       "enabled": true,
@@ -952,7 +959,7 @@
       "optionalDependencies": [],
       "env": [],
       "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-redis",
+      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-redis",
       "version": "2.6.1"
     }
   },
@@ -976,7 +983,6 @@
         "egg-cors": "^2.2.4",
         "egg-jwt": "^3.1.7",
         "egg-mysql": "^3.4.0",
-        "egg-rate-limiter": "^2.0.0",
         "egg-redis": "^2.4.0",
         "egg-scripts": "^2.17.0",
         "egg-security": "^3.0.0",

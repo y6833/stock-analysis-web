@@ -7,7 +7,7 @@ import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
 import type { DojiPatternType } from './alertService'
 
-const API_URL = '/api'
+const API_URL = 'http://localhost:7001/api'
 
 // 十字星提醒条件
 export type DojiAlertCondition = 'pattern_appears' | 'pattern_with_volume' | 'pattern_near_support' | 'pattern_near_resistance'

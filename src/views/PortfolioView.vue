@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useStockStore } from '@/stores/stockStore'
-import { usePortfolioStore } from '@/stores/portfolioStore'
+import { useStockStore } from '@/stores/refactored/stockStore'
+import { usePortfolioStore } from '@/stores/portfolio/portfolioStore'
 import type { Position } from '@/types/portfolio'
 import { stockService } from '@/services/stockService'
-import * as portfolioService from '@/services/portfolioService'
+import { portfolioService } from '@/services/portfolioService'
 import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
 
 // 仓位数据
@@ -768,13 +768,7 @@ onMounted(async () => {
         </div>
         <div class="form-group">
           <label>买入价格</label>
-          <input
-            v-model.number="newPosition.buyPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-          />
+          <input v-model.number="newPosition.buyPrice" type="number" min="0" step="0.01" class="form-control" />
         </div>
       </div>
 
@@ -785,13 +779,7 @@ onMounted(async () => {
         </div>
         <div class="form-group">
           <label>最新价格</label>
-          <input
-            v-model.number="newPosition.lastPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-          />
+          <input v-model.number="newPosition.lastPrice" type="number" min="0" step="0.01" class="form-control" />
         </div>
       </div>
 
@@ -824,22 +812,11 @@ onMounted(async () => {
       <div class="form-row">
         <div class="form-group">
           <label>持仓数量</label>
-          <input
-            v-model.number="editingPosition.quantity"
-            type="number"
-            min="1"
-            class="form-control"
-          />
+          <input v-model.number="editingPosition.quantity" type="number" min="1" class="form-control" />
         </div>
         <div class="form-group">
           <label>买入价格</label>
-          <input
-            v-model.number="editingPosition.buyPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-          />
+          <input v-model.number="editingPosition.buyPrice" type="number" min="0" step="0.01" class="form-control" />
         </div>
       </div>
 
@@ -850,13 +827,7 @@ onMounted(async () => {
         </div>
         <div class="form-group">
           <label>最新价格</label>
-          <input
-            v-model.number="editingPosition.lastPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-          />
+          <input v-model.number="editingPosition.lastPrice" type="number" min="0" step="0.01" class="form-control" />
         </div>
       </div>
 
@@ -889,22 +860,11 @@ onMounted(async () => {
       <div class="form-row">
         <div class="form-group">
           <label>加仓数量</label>
-          <input
-            v-model.number="addToPosition.quantity"
-            type="number"
-            min="1"
-            class="form-control"
-          />
+          <input v-model.number="addToPosition.quantity" type="number" min="1" class="form-control" />
         </div>
         <div class="form-group">
           <label>买入价格</label>
-          <input
-            v-model.number="addToPosition.price"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-          />
+          <input v-model.number="addToPosition.price" type="number" min="0" step="0.01" class="form-control" />
         </div>
       </div>
 
@@ -944,22 +904,11 @@ onMounted(async () => {
       <div class="form-row">
         <div class="form-group">
           <label>减仓数量</label>
-          <input
-            v-model.number="reducePosition.quantity"
-            type="number"
-            min="1"
-            class="form-control"
-          />
+          <input v-model.number="reducePosition.quantity" type="number" min="1" class="form-control" />
         </div>
         <div class="form-group">
           <label>卖出价格</label>
-          <input
-            v-model.number="reducePosition.price"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-          />
+          <input v-model.number="reducePosition.price" type="number" min="0" step="0.01" class="form-control" />
         </div>
       </div>
 
@@ -1015,12 +964,10 @@ onMounted(async () => {
               <td>{{ formatDate(position.buyDate) }}</td>
               <td>{{ Number(position.lastPrice).toFixed(2) }}</td>
               <td>{{ (position.quantity * Number(position.lastPrice)).toFixed(2) }}</td>
-              <td
-                :class="{
-                  profit: Number(position.lastPrice) > Number(position.buyPrice),
-                  loss: Number(position.lastPrice) < Number(position.buyPrice),
-                }"
-              >
+              <td :class="{
+                profit: Number(position.lastPrice) > Number(position.buyPrice),
+                loss: Number(position.lastPrice) < Number(position.buyPrice),
+              }">
                 {{
                   (
                     (Number(position.lastPrice) - Number(position.buyPrice)) *
@@ -1028,12 +975,10 @@ onMounted(async () => {
                   ).toFixed(2)
                 }}
               </td>
-              <td
-                :class="{
-                  profit: Number(position.lastPrice) > Number(position.buyPrice),
-                  loss: Number(position.lastPrice) < Number(position.buyPrice),
-                }"
-              >
+              <td :class="{
+                profit: Number(position.lastPrice) > Number(position.buyPrice),
+                loss: Number(position.lastPrice) < Number(position.buyPrice),
+              }">
                 {{
                   (
                     ((Number(position.lastPrice) - Number(position.buyPrice)) /
@@ -1047,12 +992,8 @@ onMounted(async () => {
                   <button class="btn-icon add" @click="showAddToPosition(index)" title="加仓">
                     <span>+</span>
                   </button>
-                  <button
-                    class="btn-icon reduce"
-                    @click="showReducePosition(index)"
-                    title="减仓"
-                    :disabled="position.quantity === 0"
-                  >
+                  <button class="btn-icon reduce" @click="showReducePosition(index)" title="减仓"
+                    :disabled="position.quantity === 0">
                     <span>-</span>
                   </button>
                   <button class="btn-icon edit" @click="editPosition(index)" title="编辑">
@@ -1083,12 +1024,10 @@ onMounted(async () => {
                     </thead>
                     <tbody>
                       <tr v-for="record in tradeRecords" :key="record.id">
-                        <td
-                          :class="{
-                            'buy-type': record.tradeType === 'buy',
-                            'sell-type': record.tradeType === 'sell',
-                          }"
-                        >
+                        <td :class="{
+                          'buy-type': record.tradeType === 'buy',
+                          'sell-type': record.tradeType === 'sell',
+                        }">
                           {{ formatTradeType(record.tradeType) }}
                         </td>
                         <td>{{ record.quantity }}</td>

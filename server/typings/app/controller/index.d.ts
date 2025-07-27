@@ -35,6 +35,7 @@ import ExportHome = require('../../../app/controller/home');
 import ExportJuhe = require('../../../app/controller/juhe');
 import ExportLimitlist = require('../../../app/controller/limitlist');
 import ExportLogs = require('../../../app/controller/logs');
+import ExportMarket = require('../../../app/controller/market');
 import ExportMembership = require('../../../app/controller/membership');
 import ExportMoneyflow = require('../../../app/controller/moneyflow');
 import ExportMonitoring = require('../../../app/controller/monitoring');
@@ -97,6 +98,7 @@ declare module 'egg' {
     juhe: ExportJuhe;
     limitlist: ExportLimitlist;
     logs: ExportLogs;
+    market: ExportMarket;
     membership: ExportMembership;
     moneyflow: ExportMoneyflow;
     monitoring: ExportMonitoring;

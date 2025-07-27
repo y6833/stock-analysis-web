@@ -24,17 +24,9 @@
         </div>
         <div class="card-body">
           <div class="action-buttons">
-            <CacheRefreshButton
-              :dataSource="currentDataSource"
-              @refresh-success="handleRefreshSuccess"
-            />
+            <CacheRefreshButton :dataSource="currentDataSource" @refresh-success="handleRefreshSuccess" />
             <CachePrewarmButton :count="20" @prewarm-success="handlePrewarmSuccess" />
-            <button
-              class="action-btn clear"
-              :class="{ disabled: isLoading }"
-              :disabled="isLoading"
-              @click="clearCache"
-            >
+            <button class="action-btn clear" :class="{ disabled: isLoading }" :disabled="isLoading" @click="clearCache">
               <span class="btn-icon">🗑️</span>
               <span class="btn-text">清除缓存</span>
             </button>
@@ -146,7 +138,7 @@
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">总缓存键数</span>
-                  <span class="detail-value">{{ cacheStatus.cacheKeys.length }}</span>
+                  <span class="detail-value">{{ cacheStatus.cacheKeys?.length || 0 }}</span>
                 </div>
               </div>
             </div>
@@ -154,11 +146,11 @@
             <div class="detail-section">
               <h4>缓存键列表</h4>
               <div class="cache-keys">
-                <div v-if="cacheStatus.cacheKeys.length === 0" class="empty-state">
+                <div v-if="!cacheStatus.cacheKeys || cacheStatus.cacheKeys.length === 0" class="empty-state">
                   没有缓存数据
                 </div>
                 <div v-else class="keys-container">
-                  <div v-for="(key, index) in cacheStatus.cacheKeys" :key="index" class="key-item">
+                  <div v-for="(key, index) in (cacheStatus.cacheKeys || [])" :key="index" class="key-item">
                     {{ key }}
                   </div>
                 </div>

@@ -7,27 +7,20 @@
           实时监控中心
         </h1>
         <div class="connection-status">
-          <span
-            class="status-dot"
-            :class="{
-              connected: realtimeService.isConnected.value,
-              connecting: realtimeService.isConnecting.value,
-              disconnected:
-                !realtimeService.isConnected.value && !realtimeService.isConnecting.value,
-            }"
-          ></span>
+          <span class="status-dot" :class="{
+            connected: realtimeService.isConnected.value,
+            connecting: realtimeService.isConnecting.value,
+            disconnected:
+              !realtimeService.isConnected.value && !realtimeService.isConnecting.value,
+          }"></span>
           <span class="status-text">
             {{ getConnectionStatusText() }}
           </span>
         </div>
       </div>
       <div class="header-right">
-        <el-button
-          v-if="!realtimeService.isConnected.value"
-          type="primary"
-          @click="realtimeService.reconnect()"
-          :loading="realtimeService.isConnecting.value"
-        >
+        <el-button v-if="!realtimeService.isConnected.value" type="primary" @click="realtimeService.reconnect()"
+          :loading="realtimeService.isConnecting.value">
           重新连接
         </el-button>
         <el-button @click="realtimeService.clearAlerts()"> 清除警报 </el-button>
@@ -78,13 +71,8 @@
         <div class="section-header">
           <h3>实时行情</h3>
           <div class="quote-controls">
-            <el-input
-              v-model="searchSymbol"
-              placeholder="输入股票代码"
-              size="small"
-              style="width: 150px"
-              @keyup.enter="addSymbolToMonitor"
-            >
+            <el-input v-model="searchSymbol" placeholder="输入股票代码" size="small" style="width: 150px"
+              @keyup.enter="addSymbolToMonitor">
               <template #append>
                 <el-button @click="addSymbolToMonitor">添加</el-button>
               </template>
@@ -92,12 +80,8 @@
           </div>
         </div>
         <div class="quotes-grid">
-          <div
-            v-for="(quote, symbol) in realtimeData"
-            :key="symbol"
-            class="quote-card"
-            :class="getQuoteCardClass(quote)"
-          >
+          <div v-for="(quote, symbol) in realtimeData" :key="symbol" class="quote-card"
+            :class="getQuoteCardClass(quote)">
             <div class="quote-header">
               <div class="symbol">{{ symbol }}</div>
               <div class="timestamp">{{ formatTime(quote.timestamp) }}</div>
@@ -144,12 +128,7 @@
           </div>
         </div>
         <div class="alerts-list">
-          <div
-            v-for="alert in marketAlerts"
-            :key="alert.id"
-            class="alert-item"
-            :class="[alert.type, alert.level]"
-          >
+          <div v-for="alert in marketAlerts" :key="alert.id" class="alert-item" :class="[alert.type, alert.level]">
             <div class="alert-icon">{{ getAlertIcon(alert.type) }}</div>
             <div class="alert-content">
               <div class="alert-title">{{ alert.title }}</div>
@@ -177,7 +156,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { realtimeService } from '@/services/realtimeService'
+import { mockRealtimeService as realtimeService } from '@/services/mockRealtimeService'
 
 // 响应式数据
 const searchSymbol = ref('')
@@ -605,10 +584,12 @@ onMounted(() => {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }

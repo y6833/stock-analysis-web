@@ -63,22 +63,22 @@ export class FutuApiClient {
     try {
       // 在浏览器环境中，我们无法直接使用富途的Node.js SDK
       // 这里提供一个基础的连接测试实现
-      
+
       console.log('正在测试富途OpenD连接...')
       console.log(`连接地址: ${this.config.host}:${this.config.port}`)
-      
+
       // 模拟连接测试
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       // 在实际环境中，这里应该尝试建立WebSocket连接到OpenD
       // 由于浏览器的CORS限制，可能需要通过代理服务器
-      
+
       console.log('⚠️  注意：当前为模拟连接测试')
       console.log('💡 实际使用需要：')
       console.log('   1. 启动OpenD程序')
       console.log('   2. 配置CORS或使用代理服务器')
       console.log('   3. 实现WebSocket连接逻辑')
-      
+
       return false // 返回false表示需要真实的OpenD连接
     } catch (error) {
       console.error('连接测试失败:', error)
@@ -97,7 +97,7 @@ export class FutuApiClient {
 
       // 在实际实现中，这里应该调用富途API
       // 由于浏览器环境限制，这里返回模拟数据
-      
+
       const mockQuotes: FutuBasicQuote[] = securities.map(security => ({
         security,
         isSuspended: false,
@@ -129,16 +129,16 @@ export class FutuApiClient {
     try {
       // 模拟搜索结果
       const mockResults: FutuSecurity[] = []
-      
+
       // 根据查询内容返回相关股票
       if (query.includes('腾讯') || query.includes('00700')) {
         mockResults.push({ market: FutuMarket.HK, code: '00700' })
       }
-      
+
       if (query.includes('苹果') || query.includes('AAPL')) {
         mockResults.push({ market: FutuMarket.US, code: 'AAPL' })
       }
-      
+
       if (query.includes('特斯拉') || query.includes('TSLA')) {
         mockResults.push({ market: FutuMarket.US, code: 'TSLA' })
       }
@@ -203,16 +203,16 @@ export class FutuApiClient {
   async connect(): Promise<boolean> {
     try {
       console.log('尝试连接到OpenD...')
-      
+
       // 在实际实现中，这里应该建立WebSocket连接
       // 并处理认证逻辑
-      
+
       // 模拟连接过程
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
       console.log('⚠️  模拟连接成功（实际需要真实的OpenD连接）')
       this.isConnected = true
-      
+
       return true
     } catch (error) {
       console.error('连接OpenD失败:', error)

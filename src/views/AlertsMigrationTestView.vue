@@ -153,9 +153,8 @@ const createLocalAlerts = () => {
       name: stock.name,
       condition,
       value,
-      message: `${stock.name}${
-        condition === 'above' ? '上涨' : condition === 'below' ? '下跌' : '变动'
-      }提醒`,
+      message: `${stock.name}${condition === 'above' ? '上涨' : condition === 'below' ? '下跌' : '变动'
+        }提醒`,
       active: Math.random() > 0.3, // 70%概率为激活状态
       createdAt: new Date().toISOString(),
     })

@@ -84,70 +84,70 @@ export class DataSourceManager {
 
   /**
    * 初始化数据源配置
-   * 注意：当前只启用 Tushare 数据源，其他数据源已暂时禁用
+   * 启用多个数据源作为备选，提高数据获取的可靠性
    */
   private initializeConfigs() {
     const defaultConfigs: DataSourceConfig[] = [
       {
         type: 'tushare',
         priority: 1,
-        enabled: true, // 只有 Tushare 启用
+        enabled: true, // 主要数据源
         maxRetries: 3,
         timeout: 30000, // Tushare 需要更长的超时时间
         healthCheckInterval: 60000,
       },
       {
-        type: 'zhitu',
+        type: 'sina',
         priority: 2,
-        enabled: false, // 已禁用
+        enabled: true, // 启用新浪财经作为备选
+        maxRetries: 3,
+        timeout: 10000,
+        healthCheckInterval: 60000,
+      },
+      {
+        type: 'eastmoney',
+        priority: 3,
+        enabled: true, // 启用东方财富作为备选
+        maxRetries: 2,
+        timeout: 8000,
+        healthCheckInterval: 30000,
+      },
+      {
+        type: 'zhitu',
+        priority: 4,
+        enabled: true, // 启用智图数据作为备选
         maxRetries: 3,
         timeout: 10000,
         healthCheckInterval: 60000, // 1分钟
       },
       {
         type: 'yahoo_finance',
-        priority: 3,
-        enabled: false, // 已禁用
+        priority: 5,
+        enabled: true, // 启用Yahoo Finance作为备选
         maxRetries: 3,
         timeout: 12000,
         healthCheckInterval: 60000,
       },
       {
-        type: 'eastmoney',
-        priority: 4,
-        enabled: false, // 已禁用
-        maxRetries: 2,
-        timeout: 8000,
-        healthCheckInterval: 30000,
-      },
-      {
         type: 'akshare',
-        priority: 5,
-        enabled: false, // 已禁用
+        priority: 6,
+        enabled: true, // 启用AkShare作为备选
         maxRetries: 3,
         timeout: 15000,
         healthCheckInterval: 60000,
       },
       {
         type: 'google_finance',
-        priority: 6,
-        enabled: false, // 已禁用
+        priority: 7,
+        enabled: false, // 暂时禁用，需要API配置
         maxRetries: 2,
         timeout: 10000,
         healthCheckInterval: 45000,
       },
       {
-        type: 'sina',
-        priority: 7,
-        enabled: false, // 已禁用
-        maxRetries: 2,
-        timeout: 8000,
-        healthCheckInterval: 30000, // 30秒
-      },
-      {
         type: 'juhe',
         priority: 8,
-        enabled: false, // 已禁用
+        enabled: false, // 暂时禁用，需要API配置
         maxRetries: 2,
         timeout: 8000,
         healthCheckInterval: 30000,
@@ -155,7 +155,7 @@ export class DataSourceManager {
       {
         type: 'alphavantage',
         priority: 9,
-        enabled: false, // 已禁用
+        enabled: false, // 暂时禁用，需要API配置
         maxRetries: 3,
         timeout: 15000,
         healthCheckInterval: 60000, // 1分钟
@@ -163,7 +163,7 @@ export class DataSourceManager {
       {
         type: 'alltick',
         priority: 10,
-        enabled: false, // 已禁用
+        enabled: false, // 暂时禁用，需要API配置
         maxRetries: 3,
         timeout: 15000,
         healthCheckInterval: 60000, // 1分钟

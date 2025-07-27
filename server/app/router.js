@@ -155,6 +155,21 @@ module.exports = (app) => {
   // 环境信息路由
   router.get('/api/env/info', controller.env.info)
 
+  // 监控相关路由
+  router.get('/api/monitoring/metrics', controller.monitoring.getMetrics)
+  router.get('/api/monitoring/system', controller.monitoring.getSystemMetrics)
+  router.get('/api/monitoring/errors', controller.monitoring.getErrors)
+  router.get('/api/monitoring/logs', controller.monitoring.getLogs)
+  router.get('/api/monitoring/logs/download', controller.monitoring.downloadLogs)
+  router.post('/api/monitoring/track-error', controller.monitoring.trackError)
+  router.post('/api/monitoring/track-metric', controller.monitoring.trackMetric)
+
+  // 市场数据相关路由
+  router.post('/api/market/indices', controller.market.getMarketIndices)
+  router.post('/api/market/sectors', controller.market.getIndustrySectors)
+  router.post('/api/market/breadth', controller.market.getMarketBreadth)
+  router.get('/api/market/overview', controller.market.getMarketOverview)
+
   // 新浪财经API代理路由
   router.get('/api/sina/test', controller.sina.test)
   router.get('/api/sina/quote', controller.sina.quote)

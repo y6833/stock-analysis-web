@@ -46,18 +46,11 @@ export class SinaDataSource implements DataSourceInterface {
           return stocks
         }
       } catch (proxyError) {
-        console.warn('通过后端代理获取股票列表失败，使用预定义列表:', proxyError)
+        console.warn('通过后端代理获取股票列表失败:', proxyError)
       }
 
-      // 如果后端代理未实现或返回格式不正确，返回空数组而不是硬编码数据
-      console.warn('Sina数据源：后端代理未实现或返回格式不正确，返回空结果');
-      return [];
-
-      // 更新缓存
-      this.stockListCache = mainStocks
-      this.stockListCacheTime = Date.now()
-
-      return mainStocks
+      // 如果后端代理未实现或返回格式不正确，抛出错误
+      throw new Error('新浪财经数据源获取股票列表失败，API不可用')
     } catch (error) {
       console.error('新浪财经获取股票列表失败:', error)
       throw error
@@ -109,32 +102,11 @@ export class SinaDataSource implements DataSourceInterface {
           }
         }
       } catch (proxyError) {
-        console.warn(`通过后端代理获取股票${symbol}历史数据失败，使用模拟数据:`, proxyError)
+        console.warn(`通过后端代理获取股票${symbol}历史数据失败:`, proxyError)
       }
 
-      // 如果后端代理未实现或返回格式不正确，使用模拟数据
-      const today = new Date()
-      const dates: string[] = []
-      const prices: number[] = []
-      const volumes: number[] = []
-
-      // 获取实时行情作为基准价格
-      const quote = await this.getStockQuote(symbol)
-      let basePrice = quote.price
-
-      // 不生成模拟数据，抛出错误
+      // 如果后端代理未实现或返回格式不正确，抛出错误
       throw new Error(`新浪财经数据源获取股票${symbol}历史数据失败，API不可用`)
-
-      return {
-        symbol,
-        dates,
-        prices,
-        volumes,
-        high: Math.max(...prices),
-        low: Math.min(...prices),
-        open: prices[0],
-        close: prices[prices.length - 1],
-      }
     } catch (error) {
       console.error(`新浪财经获取股票${symbol}数据失败:`, error)
       throw error
@@ -165,7 +137,7 @@ export class SinaDataSource implements DataSourceInterface {
           }))
         }
       } catch (proxyError) {
-        console.warn('通过后端代理搜索股票失败，使用本地过滤:', proxyError)
+        console.warn('通过后端代理搜索股票失败:', proxyError)
       }
 
       // 如果后端代理未实现或返回格式不正确，使用本地过滤
@@ -307,67 +279,11 @@ export class SinaDataSource implements DataSourceInterface {
           return news
         }
       } catch (proxyError) {
-        console.warn('通过后端代理获取财经新闻失败，使用模拟数据:', proxyError)
+        console.warn('通过后端代理获取财经新闻失败:', proxyError)
       }
 
-      // 如果后端代理未实现或返回格式不正确，使用模拟数据
-      const mockNews: FinancialNews[] = [
-        {
-          title: '央行宣布降准0.5个百分点，释放长期资金约1万亿元',
-          time: '10分钟前',
-          source: '新浪财经',
-          url: `${this.SINA_FINANCE_URL}/news/`,
-          important: true,
-        },
-        {
-          title: '科技板块全线上涨，半导体行业领涨',
-          time: '30分钟前',
-          source: '新浪财经',
-          url: `${this.SINA_FINANCE_URL}/news/`,
-          important: false,
-        },
-        {
-          title: '多家券商上调A股目标位，看好下半年行情',
-          time: '1小时前',
-          source: '新浪财经',
-          url: `${this.SINA_FINANCE_URL}/news/`,
-          important: false,
-        },
-        {
-          title: '外资连续三日净流入，北向资金今日净买入超50亿',
-          time: '2小时前',
-          source: '新浪财经',
-          url: `${this.SINA_FINANCE_URL}/news/`,
-          important: false,
-        },
-        {
-          title: '新能源汽车销量创新高，相关概念股受关注',
-          time: '3小时前',
-          source: '新浪财经',
-          url: `${this.SINA_FINANCE_URL}/news/`,
-          important: false,
-        },
-        {
-          title: '国常会：进一步扩大内需，促进消费持续恢复',
-          time: '4小时前',
-          source: '新浪财经',
-          url: `${this.SINA_FINANCE_URL}/news/`,
-          important: true,
-        },
-        {
-          title: '两部门：加大对先进制造业支持力度，优化融资环境',
-          time: '5小时前',
-          source: '新浪财经',
-          url: `${this.SINA_FINANCE_URL}/news/`,
-          important: false,
-        },
-      ]
-
-      // 随机打乱新闻顺序
-      const shuffledNews = [...mockNews].sort(() => Math.random() - 0.5)
-
-      // 返回指定数量的新闻
-      return shuffledNews.slice(0, count)
+      // 如果后端代理未实现或返回格式不正确，抛出错误
+      throw new Error('新浪财经数据源获取财经新闻失败，API不可用')
     } catch (error) {
       console.error('新浪财经获取财经新闻失败:', error)
       throw error

@@ -83,25 +83,19 @@ const generateMockData = () => {
       stockCount: Math.floor(Math.random() * 50) + 10, // 10-60只股票
       topStocks: [
         {
-          symbol: `${Math.floor(Math.random() * 600000 + 1)
-            .toString()
-            .padStart(6, '0')}.SH`,
+          symbol: '000001.SH',
           name: `${industry}龙头A`,
-          flow: (Math.random() * 5).toFixed(2),
+          flow: '5.23',
         },
         {
-          symbol: `${Math.floor(Math.random() * 600000 + 1)
-            .toString()
-            .padStart(6, '0')}.SH`,
+          symbol: '000002.SH',
           name: `${industry}龙头B`,
-          flow: (Math.random() * 3).toFixed(2),
+          flow: '3.45',
         },
         {
-          symbol: `${Math.floor(Math.random() * 600000 + 1)
-            .toString()
-            .padStart(6, '0')}.SH`,
+          symbol: '000003.SH',
           name: `${industry}龙头C`,
-          flow: (Math.random() * 2).toFixed(2),
+          flow: '2.67',
         },
       ],
     })
@@ -159,7 +153,7 @@ const initHeatmapChart = () => {
     industries.slice(0, 10).forEach((industry) => {
       days.forEach((day) => {
         // 随机生成涨跌幅
-        const value = Math.random() * 10 - 5 // -5% 到 +5%
+        const value = Math.random() * 10 - 5
         data.push({
           value: [day, industry, parseFloat(value.toFixed(2))],
         })
@@ -697,16 +691,10 @@ onUnmounted(() => {
       <div class="time-range-selector">
         <span>时间范围:</span>
         <div class="range-buttons">
-          <button
-            v-for="range in timeRanges"
-            :key="range.id"
-            class="btn-small"
-            :class="{
-              'btn-primary': selectedTimeRange === range.id,
-              'btn-outline': selectedTimeRange !== range.id,
-            }"
-            @click="changeTimeRange(range.id)"
-          >
+          <button v-for="range in timeRanges" :key="range.id" class="btn-small" :class="{
+            'btn-primary': selectedTimeRange === range.id,
+            'btn-outline': selectedTimeRange !== range.id,
+          }" @click="changeTimeRange(range.id)">
             {{ range.name }}
           </button>
         </div>
@@ -759,12 +747,10 @@ onUnmounted(() => {
                   {{ industry.industry }}
                 </a>
               </td>
-              <td
-                :class="{
-                  positive: parseFloat(industry.flow) > 0,
-                  negative: parseFloat(industry.flow) < 0,
-                }"
-              >
+              <td :class="{
+                positive: parseFloat(industry.flow) > 0,
+                negative: parseFloat(industry.flow) < 0,
+              }">
                 {{ industry.flowText }}
               </td>
               <td :class="{ positive: industry.isPositive, negative: !industry.isPositive }">
@@ -776,21 +762,16 @@ onUnmounted(() => {
                   <a href="#" @click.prevent="goToStockAnalysis(stock.symbol)">
                     {{ stock.name }}
                   </a>
-                  <span
-                    :class="{
-                      positive: parseFloat(stock.flow) > 0,
-                      negative: parseFloat(stock.flow) < 0,
-                    }"
-                  >
+                  <span :class="{
+                    positive: parseFloat(stock.flow) > 0,
+                    negative: parseFloat(stock.flow) < 0,
+                  }">
                     {{ parseFloat(stock.flow) > 0 ? '+' : '' }}{{ stock.flow }}亿
                   </span>
                 </div>
               </td>
               <td>
-                <button
-                  class="btn-small btn-primary"
-                  @click="goToIndustryAnalysis(industry.industry)"
-                >
+                <button class="btn-small btn-primary" @click="goToIndustryAnalysis(industry.industry)">
                   分析
                 </button>
               </td>
@@ -866,6 +847,7 @@ onUnmounted(() => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -934,8 +916,6 @@ th {
   background-color: var(--bg-secondary);
   color: var(--text-secondary);
   font-weight: 600;
-  position: sticky;
-  top: 0;
 }
 
 tr:hover {

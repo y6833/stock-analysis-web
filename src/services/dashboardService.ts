@@ -3,306 +3,334 @@
  * 提供仪表盘相关的功能，包括布局管理、关注列表和市场概览
  */
 
-import { v4 as uuidv4 } from 'uuid'
-import { marketDataService } from '@/services/marketDataService'
 import type {
   DashboardSettings,
   DashboardLayout,
-  WidgetConfig,
   Watchlist,
-  WatchlistItem,
-  WatchlistAlert,
+  WidgetConfig,
+  WidgetType,
+  WidgetPosition,
   MarketOverview,
   MarketIndex,
-  IndustrySector,
+  IndustrySector
 } from '@/types/dashboard'
 
-// 本地存储键
-const DASHBOARD_SETTINGS_KEY = 'dashboard_settings'
-
 /**
- * 获取仪表盘设置
- * @returns 仪表盘设置
+ * 获取仪表板设置
  */
 export async function getDashboardSettings(): Promise<DashboardSettings> {
   try {
-    // 从localStorage获取基本设置
-    const settingsJson = localStorage.getItem(DASHBOARD_SETTINGS_KEY)
-    let settings: DashboardSettings
-
-    if (settingsJson) {
-      settings = JSON.parse(settingsJson)
-    } else {
-      settings = createDefaultDashboardSettings()
+    // 从本地存储获取设置
+    const settings = localStorage.getItem('dashboard_settings')
+    if (settings) {
+      return JSON.parse(settings)
     }
 
-    try {
-      // 从后端API获取真实的关注列表数据
-      const { getUserWatchlists } = await import('@/services/watchlistService')
-      const watchlists = await getUserWatchlists()
-
-      if (watchlists && watchlists.length > 0) {
-        // 转换后端API返回的关注列表格式为前端格式
-        const convertedWatchlists: Watchlist[] = await Promise.all(
-          watchlists.map(async (watchlist) => {
-            // 获取该关注列表中的股票
-            const { getWatchlistItems } = await import('@/services/watchlistService')
-            const items = await getWatchlistItems(watchlist.id)
-
-            // 转换为前端格式的WatchlistItem
-            const convertedItems: WatchlistItem[] = await Promise.all(
-              (items || []).map(async (item) => {
-                // 获取股票最新行情
-                const { stockService } = await import('@/services/stockService')
-                let price = 0
-                let change = 0
-                let changePercent = 0
-                let volume = 0
-                let turnover = 0
-
-                try {
-                  // 使用带有缓存的方式获取股票行情，不强制刷新
-                  const quote = await stockService.getStockQuote(item.stockCode, false)
-                  if (quote) {
-                    price = quote.price || 0
-                    const prevPrice = quote.pre_close || price
-                    change = price - prevPrice
-                    changePercent = prevPrice ? (change / prevPrice) * 100 : 0
-                    volume = quote.vol || 0
-                    turnover = quote.amount || 0
-                  }
-                } catch (error) {
-                  console.error(`获取股票 ${item.stockCode} 行情失败:`, error)
-                  // 使用默认值，不使用模拟数据
-                  price = 0
-                  change = 0
-                  changePercent = 0
-                  volume = 0
-                  turnover = 0
-                }
-
-                return {
-                  symbol: item.stockCode,
-                  name: item.stockName,
-                  price,
-                  change,
-                  changePercent,
-                  volume,
-                  turnover,
-                  notes: item.notes,
-                  addedAt: item.createdAt,
-                  tags: [],
-                }
-              })
-            )
-
-            return {
-              id: watchlist.id.toString(),
-              name: watchlist.name,
-              items: convertedItems,
-              sortBy: 'addedAt',
-              sortDirection: 'desc',
-              columns: ['symbol', 'name', 'price', 'change', 'changePercent'],
-            }
-          })
-        )
-
-        // 更新设置中的关注列表
-        if (convertedWatchlists.length > 0) {
-          settings.watchlists = convertedWatchlists
-          settings.activeWatchlistId = convertedWatchlists[0].id
-
-          // 保存更新后的设置到localStorage
-          saveDashboardSettings(settings)
-
-          console.log('已从数据库加载关注列表数据', convertedWatchlists)
-        }
-      }
-    } catch (apiError) {
-      console.error('从API获取关注列表失败，使用本地数据:', apiError)
-      // 如果API调用失败，继续使用localStorage中的数据
-    }
-
-    return settings
+    // 如果没有保存的设置，返回默认设置
+    return createDefaultDashboardSettings()
   } catch (error) {
-    console.error('获取仪表盘设置失败:', error)
+    console.error('获取仪表板设置失败:', error)
     return createDefaultDashboardSettings()
   }
 }
 
 /**
- * 保存仪表盘设置
- * @param settings 仪表盘设置
+ * 保存仪表板设置
  */
 export function saveDashboardSettings(settings: DashboardSettings): void {
   try {
-    localStorage.setItem(DASHBOARD_SETTINGS_KEY, JSON.stringify(settings))
+    localStorage.setItem('dashboard_settings', JSON.stringify(settings))
   } catch (error) {
-    console.error('保存仪表盘设置失败:', error)
+    console.error('保存仪表板设置失败:', error)
   }
 }
 
 /**
- * 创建默认仪表盘设置
- * @returns 默认仪表盘设置
+ * 创建默认仪表板设置
  */
 export function createDefaultDashboardSettings(): DashboardSettings {
-  const defaultLayoutId = uuidv4()
-  const defaultWatchlistId = uuidv4()
-
   return {
-    layouts: [createDefaultLayout(defaultLayoutId)],
-    activeLayoutId: defaultLayoutId,
-    watchlists: [createDefaultWatchlist(defaultWatchlistId)],
-    activeWatchlistId: defaultWatchlistId,
     theme: 'light',
-    refreshInterval: 60,
+    layout: 'default',
+    refreshInterval: 30,
+    showNotifications: true,
+    autoSave: true,
+    layouts: [
+      createDefaultLayout('default')
+    ],
+    watchlists: [
+      createDefaultWatchlist('default')
+    ],
+    widgets: []
   }
 }
 
 /**
  * 创建默认布局
- * @param id 布局ID
- * @returns 默认布局
  */
 export function createDefaultLayout(id: string): DashboardLayout {
   return {
     id,
     name: '默认布局',
+    description: '系统默认的仪表板布局',
     isDefault: true,
     widgets: [
       {
-        id: uuidv4(),
-        type: 'watchlist',
-        title: '关注列表',
-        size: { w: 6, h: 4, minW: 3, minH: 2 },
-        position: { x: 0, y: 0 },
-        settings: {},
-      },
-      {
-        id: uuidv4(),
-        type: 'market_overview',
+        id: 'market-overview',
+        type: 'market-overview',
         title: '市场概览',
-        size: { w: 6, h: 4, minW: 3, minH: 2 },
-        position: { x: 6, y: 0 },
-        settings: {},
+        position: { x: 0, y: 0, w: 12, h: 4 },
+        settings: {}
       },
       {
-        id: uuidv4(),
-        type: 'index_chart',
-        title: '指数图表',
-        size: { w: 6, h: 4, minW: 3, minH: 2 },
-        position: { x: 0, y: 4 },
-        settings: {
-          symbol: '000001.SH',
-        },
+        id: 'watchlist',
+        type: 'watchlist',
+        title: '自选股',
+        position: { x: 0, y: 4, w: 6, h: 6 },
+        settings: { watchlistId: 'default' }
       },
       {
-        id: uuidv4(),
+        id: 'news',
         type: 'news',
-        title: '最新资讯',
-        size: { w: 6, h: 4, minW: 3, minH: 2 },
-        position: { x: 6, y: 4 },
-        settings: {},
-      },
-    ],
-    gridSettings: {
-      cols: 12,
-      rowHeight: 60,
-      gap: 10,
-    },
+        title: '财经新闻',
+        position: { x: 6, y: 4, w: 6, h: 6 },
+        settings: {}
+      }
+    ]
   }
 }
 
 /**
- * 创建默认关注列表
- * @param id 关注列表ID
- * @returns 默认关注列表
+ * 创建默认自选股列表
  */
 export function createDefaultWatchlist(id: string): Watchlist {
   return {
     id,
-    name: '默认关注列表',
-    items: [
-      {
-        symbol: '600000.SH',
-        name: '浦发银行',
-        price: 10.25,
-        change: 0.15,
-        changePercent: 1.48,
-        volume: 12345678,
-        turnover: 126547890,
-        addedAt: new Date().toISOString(),
-      },
-      {
-        symbol: '000001.SZ',
-        name: '平安银行',
-        price: 15.76,
-        change: -0.24,
-        changePercent: -1.5,
-        volume: 23456789,
-        turnover: 369854712,
-        addedAt: new Date().toISOString(),
-      },
-      {
-        symbol: '601318.SH',
-        name: '中国平安',
-        price: 48.32,
-        change: 0.87,
-        changePercent: 1.83,
-        volume: 34567890,
-        turnover: 1669854123,
-        addedAt: new Date().toISOString(),
-      },
+    name: '默认自选股',
+    description: '系统默认的自选股列表',
+    stocks: [
+      { symbol: '000001.SZ', name: '平安银行' },
+      { symbol: '000002.SZ', name: '万科A' },
+      { symbol: '600000.SH', name: '浦发银行' },
+      { symbol: '600036.SH', name: '招商银行' },
+      { symbol: '600519.SH', name: '贵州茅台' },
+      { symbol: '000858.SZ', name: '五粮液' }
     ],
-    sortBy: 'changePercent',
-    sortDirection: 'desc',
-    columns: ['symbol', 'name', 'price', 'change', 'changePercent'],
+    alerts: []
   }
 }
 
 /**
- * 创建新的布局
- * @param name 布局名称
- * @returns 新布局
+ * 获取默认布局
+ */
+export function getDefaultLayout(): DashboardLayout {
+  return createDefaultLayout('default')
+}
+
+/**
+ * 保存布局
+ */
+export async function saveLayout(layout: DashboardLayout): Promise<void> {
+  try {
+    const settings = await getDashboardSettings()
+    const existingIndex = settings.layouts.findIndex(l => l.id === layout.id)
+
+    if (existingIndex >= 0) {
+      settings.layouts[existingIndex] = layout
+    } else {
+      settings.layouts.push(layout)
+    }
+
+    saveDashboardSettings(settings)
+  } catch (error) {
+    console.error('保存布局失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 获取布局
+ */
+export async function getLayout(layoutId: string): Promise<DashboardLayout | null> {
+  try {
+    const settings = await getDashboardSettings()
+    return settings.layouts.find(l => l.id === layoutId) || null
+  } catch (error) {
+    console.error('获取布局失败:', error)
+    return null
+  }
+}
+
+/**
+ * 重置布局
+ */
+export async function resetLayout(layoutId: string): Promise<void> {
+  try {
+    const settings = await getDashboardSettings()
+    const layoutIndex = settings.layouts.findIndex(l => l.id === layoutId)
+
+    if (layoutIndex >= 0) {
+      settings.layouts[layoutIndex] = createDefaultLayout(layoutId)
+      saveDashboardSettings(settings)
+    }
+  } catch (error) {
+    console.error('重置布局失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 添加小部件
+ */
+export async function addWidget(layoutId: string, widget: WidgetConfig): Promise<void> {
+  try {
+    const settings = await getDashboardSettings()
+    const layout = settings.layouts.find(l => l.id === layoutId)
+
+    if (!layout) {
+      throw new Error(`布局不存在: ${layoutId}`)
+    }
+
+    layout.widgets.push(widget)
+    saveDashboardSettings(settings)
+  } catch (error) {
+    console.error('添加小部件失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 移除小部件
+ */
+export async function removeWidget(layoutId: string, widgetId: string): Promise<void> {
+  try {
+    const settings = await getDashboardSettings()
+    const layout = settings.layouts.find(l => l.id === layoutId)
+
+    if (!layout) {
+      throw new Error(`布局不存在: ${layoutId}`)
+    }
+
+    layout.widgets = layout.widgets.filter(w => w.id !== widgetId)
+    saveDashboardSettings(settings)
+  } catch (error) {
+    console.error('移除小部件失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 更新小部件
+ */
+export async function updateWidget(layoutId: string, widget: WidgetConfig): Promise<void> {
+  try {
+    const settings = await getDashboardSettings()
+    const layout = settings.layouts.find(l => l.id === layoutId)
+
+    if (!layout) {
+      throw new Error(`布局不存在: ${layoutId}`)
+    }
+
+    const widgetIndex = layout.widgets.findIndex(w => w.id === widget.id)
+    if (widgetIndex >= 0) {
+      layout.widgets[widgetIndex] = widget
+      saveDashboardSettings(settings)
+    }
+  } catch (error) {
+    console.error('更新小部件失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 获取关注列表
+ */
+export async function getWatchlists(): Promise<Watchlist[]> {
+  try {
+    const settings = await getDashboardSettings()
+    return settings.watchlists
+  } catch (error) {
+    console.error('获取关注列表失败:', error)
+    return []
+  }
+}
+
+/**
+ * 创建关注列表
+ */
+export async function createWatchlist(name: string): Promise<Watchlist> {
+  try {
+    const settings = await getDashboardSettings()
+    const newWatchlist = createNewWatchlist(name)
+    settings.watchlists.push(newWatchlist)
+    saveDashboardSettings(settings)
+    return newWatchlist
+  } catch (error) {
+    console.error('创建关注列表失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 更新关注列表
+ */
+export async function updateWatchlist(watchlist: Watchlist): Promise<void> {
+  try {
+    const settings = await getDashboardSettings()
+    const index = settings.watchlists.findIndex(w => w.id === watchlist.id)
+
+    if (index >= 0) {
+      settings.watchlists[index] = watchlist
+      saveDashboardSettings(settings)
+    }
+  } catch (error) {
+    console.error('更新关注列表失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 删除关注列表
+ */
+export async function deleteWatchlist(watchlistId: string): Promise<void> {
+  try {
+    const settings = await getDashboardSettings()
+    settings.watchlists = settings.watchlists.filter(w => w.id !== watchlistId)
+    saveDashboardSettings(settings)
+  } catch (error) {
+    console.error('删除关注列表失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 创建新布局
  */
 export function createNewLayout(name: string): DashboardLayout {
   return {
-    id: uuidv4(),
+    id: `layout_${Date.now()}`,
     name,
+    description: `用户创建的布局: ${name}`,
     isDefault: false,
-    widgets: [],
-    gridSettings: {
-      cols: 12,
-      rowHeight: 60,
-      gap: 10,
-    },
+    widgets: []
   }
 }
 
 /**
- * 创建新的关注列表
- * @param name 关注列表名称
- * @returns 新关注列表
+ * 创建新自选股列表
  */
 export function createNewWatchlist(name: string): Watchlist {
   return {
-    id: uuidv4(),
+    id: `watchlist_${Date.now()}`,
     name,
-    items: [],
-    sortBy: 'addedAt',
-    sortDirection: 'desc',
-    columns: ['symbol', 'name', 'price', 'change', 'changePercent'],
+    description: `用户创建的自选股列表: ${name}`,
+    stocks: [],
+    alerts: []
   }
 }
 
 /**
- * 创建新的小部件
- * @param type 小部件类型
- * @param title 小部件标题
- * @param position 小部件位置
- * @param settings 小部件设置
- * @returns 新小部件
+ * 创建新小部件
  */
 export function createNewWidget(
   type: WidgetType,
@@ -310,189 +338,79 @@ export function createNewWidget(
   position: WidgetPosition,
   settings: any = {}
 ): WidgetConfig {
-  // 根据类型设置默认尺寸
-  let size: WidgetSize
-
-  switch (type) {
-    case 'watchlist':
-    case 'market_overview':
-      size = { w: 6, h: 4, minW: 3, minH: 2 }
-      break
-    case 'index_chart':
-    case 'stock_chart':
-      size = { w: 6, h: 4, minW: 4, minH: 3 }
-      break
-    case 'news':
-      size = { w: 6, h: 4, minW: 3, minH: 2 }
-      break
-    case 'calendar':
-      size = { w: 4, h: 4, minW: 3, minH: 3 }
-      break
-    case 'performance':
-      size = { w: 4, h: 3, minW: 2, minH: 2 }
-      break
-    case 'heatmap':
-    case 'sector_rotation':
-      size = { w: 6, h: 5, minW: 4, minH: 3 }
-      break
-    case 'custom_chart':
-      size = { w: 6, h: 4, minW: 3, minH: 2 }
-      break
-    default:
-      size = { w: 4, h: 3, minW: 2, minH: 2 }
-  }
-
   return {
-    id: uuidv4(),
+    id: `widget_${Date.now()}`,
     type,
     title,
-    size,
     position,
-    settings,
+    settings
   }
 }
 
 /**
- * 添加股票到关注列表
- * @param watchlistId 关注列表ID
- * @param stock 股票信息
+ * 添加股票到自选股列表
  */
 export async function addStockToWatchlist(
   watchlistId: string,
   stock: { symbol: string; name: string }
 ): Promise<boolean> {
   try {
-    // 从字符串ID转换为数字ID
-    const numericWatchlistId = parseInt(watchlistId)
+    const settings = await getDashboardSettings()
+    const watchlist = settings.watchlists.find(w => w.id === watchlistId)
 
-    if (isNaN(numericWatchlistId)) {
-      console.error('无效的关注列表ID:', watchlistId)
-      return false
+    if (!watchlist) {
+      throw new Error(`自选股列表不存在: ${watchlistId}`)
     }
 
-    // 从股票代码中提取实际的代码（去掉可能的后缀）
-    const stockCode = stock.symbol
+    // 检查股票是否已存在
+    const existingStock = watchlist.stocks.find(s => s.symbol === stock.symbol)
+    if (existingStock) {
+      return false // 股票已存在
+    }
 
-    // 调用后端API添加股票到关注列表
-    const { addStockToWatchlist: apiAddStock } = await import('@/services/watchlistService')
-    await apiAddStock(numericWatchlistId, {
-      stockCode,
-      stockName: stock.name,
-    })
-
-    // 刷新仪表盘设置以获取最新数据
-    await getDashboardSettings()
-
+    // 添加股票
+    watchlist.stocks.push(stock)
+    saveDashboardSettings(settings)
     return true
   } catch (error) {
-    console.error('添加股票到关注列表失败:', error)
-
-    // 如果API调用失败，尝试使用本地存储作为备份
-    try {
-      const settings = await getDashboardSettings()
-      const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
-
-      if (watchlist) {
-        // 检查是否已存在
-        const exists = watchlist.items.some((item) => item.symbol === stock.symbol)
-
-        if (!exists) {
-          // 创建新的关注项
-          const newItem: WatchlistItem = {
-            symbol: stock.symbol,
-            name: stock.name,
-            price: 0,
-            change: 0,
-            changePercent: 0,
-            volume: 0,
-            turnover: 0,
-            addedAt: new Date().toISOString(),
-          }
-
-          watchlist.items.push(newItem)
-          saveDashboardSettings(settings)
-          return true
-        }
-      }
-    } catch (backupError) {
-      console.error('本地备份添加股票失败:', backupError)
-    }
-
+    console.error('添加股票到自选股列表失败:', error)
     return false
   }
 }
 
 /**
- * 从关注列表中移除股票
- * @param watchlistId 关注列表ID
- * @param symbol 股票代码
+ * 从自选股列表移除股票
  */
 export async function removeStockFromWatchlist(
   watchlistId: string,
   symbol: string
 ): Promise<boolean> {
   try {
-    // 从字符串ID转换为数字ID
-    const numericWatchlistId = parseInt(watchlistId)
+    const settings = await getDashboardSettings()
+    const watchlist = settings.watchlists.find(w => w.id === watchlistId)
 
-    if (isNaN(numericWatchlistId)) {
-      console.error('无效的关注列表ID:', watchlistId)
-      return false
+    if (!watchlist) {
+      throw new Error(`自选股列表不存在: ${watchlistId}`)
     }
 
-    // 获取关注列表中的股票
-    const { getWatchlistItems, removeStockFromWatchlist: apiRemoveStock } = await import(
-      '@/services/watchlistService'
-    )
-    const items = await getWatchlistItems(numericWatchlistId)
+    // 移除股票
+    const initialLength = watchlist.stocks.length
+    watchlist.stocks = watchlist.stocks.filter(s => s.symbol !== symbol)
 
-    // 查找要删除的股票项
-    const itemToRemove = items.find((item) => item.stockCode === symbol)
-
-    if (itemToRemove) {
-      // 调用后端API从关注列表中删除股票
-      await apiRemoveStock(numericWatchlistId, itemToRemove.id)
-
-      // 刷新仪表盘设置以获取最新数据
-      await getDashboardSettings()
-
-      return true
-    } else {
-      console.warn(`未找到要删除的股票: ${symbol}`)
-      return false
+    if (watchlist.stocks.length === initialLength) {
+      return false // 股票不存在
     }
+
+    saveDashboardSettings(settings)
+    return true
   } catch (error) {
-    console.error('从关注列表中移除股票失败:', error)
-
-    // 如果API调用失败，尝试使用本地存储作为备份
-    try {
-      const settings = await getDashboardSettings()
-      const watchlist = settings.watchlists.find((w) => w.id === watchlistId)
-
-      if (watchlist) {
-        // 移除股票
-        const originalLength = watchlist.items.length
-        watchlist.items = watchlist.items.filter((item) => item.symbol !== symbol)
-
-        if (originalLength !== watchlist.items.length) {
-          saveDashboardSettings(settings)
-          return true
-        }
-      }
-    } catch (backupError) {
-      console.error('本地备份移除股票失败:', backupError)
-    }
-
+    console.error('从自选股列表移除股票失败:', error)
     return false
   }
 }
 
 /**
- * 添加提醒到关注列表项
- * @param watchlistId 关注列表ID
- * @param symbol 股票代码
- * @param stockName 股票名称
- * @param alert 提醒信息
+ * 添加警报到自选股项目
  */
 export async function addAlertToWatchlistItem(
   watchlistId: string,
@@ -505,526 +423,208 @@ export async function addAlertToWatchlistItem(
   }
 ): Promise<void> {
   try {
-    // 导入alertService
-    const { alertService } = await import('@/services/alertService')
+    const settings = await getDashboardSettings()
+    const watchlist = settings.watchlists.find(w => w.id === watchlistId)
 
-    // 创建提醒请求
-    const alertRequest = {
-      watchlistId,
-      symbol,
-      stockName,
-      condition: alert.condition as any,
-      value: alert.value,
-      message: alert.message,
+    if (!watchlist) {
+      throw new Error(`自选股列表不存在: ${watchlistId}`)
     }
 
-    // 调用API创建提醒
-    await alertService.addWatchlistAlert(alertRequest)
+    const newAlert = {
+      id: Date.now(),
+      symbol,
+      stockName,
+      condition: alert.condition,
+      value: alert.value,
+      message: alert.message || '',
+      active: true,
+      createdAt: new Date().toISOString()
+    }
+
+    watchlist.alerts.push(newAlert)
+    saveDashboardSettings(settings)
   } catch (error) {
-    console.error('添加关注列表提醒失败:', error)
+    console.error('添加警报失败:', error)
     throw error
   }
 }
 
 /**
- * 移除关注列表项的提醒
- * @param watchlistId 关注列表ID
- * @param alertId 提醒ID
+ * 从自选股项目移除警报
  */
 export async function removeAlertFromWatchlistItem(
   watchlistId: string,
   alertId: number
 ): Promise<void> {
   try {
-    // 导入alertService
-    const { alertService } = await import('@/services/alertService')
+    const settings = await getDashboardSettings()
+    const watchlist = settings.watchlists.find(w => w.id === watchlistId)
 
-    // 调用API删除提醒
-    await alertService.removeWatchlistAlert(watchlistId, alertId)
+    if (!watchlist) {
+      throw new Error(`自选股列表不存在: ${watchlistId}`)
+    }
+
+    watchlist.alerts = watchlist.alerts.filter(a => a.id !== alertId)
+    saveDashboardSettings(settings)
   } catch (error) {
-    console.error('删除关注列表提醒失败:', error)
+    console.error('移除警报失败:', error)
     throw error
   }
 }
 
 /**
- * 获取关注列表项的提醒
- * @param watchlistId 关注列表ID
- * @returns 提醒列表
+ * 获取自选股警报
  */
 export async function getWatchlistAlerts(watchlistId: string): Promise<any[]> {
   try {
-    // 导入alertService
-    const { alertService } = await import('@/services/alertService')
+    const settings = await getDashboardSettings()
+    const watchlist = settings.watchlists.find(w => w.id === watchlistId)
 
-    // 调用API获取提醒
-    return await alertService.getWatchlistAlerts(watchlistId)
+    if (!watchlist) {
+      return []
+    }
+
+    return watchlist.alerts
   } catch (error) {
-    console.error('获取关注列表提醒失败:', error)
+    console.error('获取自选股警报失败:', error)
     return []
   }
 }
 
 /**
  * 获取市场概览数据
- * @param forceRefresh 是否强制刷新（从外部数据源获取）
- * @returns 市场概览数据
  */
 export async function getMarketOverview(forceRefresh = true): Promise<MarketOverview> {
   try {
-    // 缓存键
-    const CACHE_KEY = 'market_overview_data'
-    const CACHE_EXPIRY = 5 * 60 * 1000 // 5分钟缓存
+    const [indices, sectors, breadth] = await Promise.all([
+      fetchMarketIndices(forceRefresh),
+      fetchIndustrySectors(forceRefresh),
+      fetchMarketBreadth(forceRefresh)
+    ])
 
-    // 如果不强制刷新，尝试从缓存获取
-    if (!forceRefresh) {
-      try {
-        const cachedData = localStorage.getItem(CACHE_KEY)
-        if (cachedData) {
-          const { data, timestamp } = JSON.parse(cachedData)
-          const now = new Date().getTime()
-
-          // 检查缓存是否过期
-          if (now - timestamp < CACHE_EXPIRY) {
-            console.log('使用缓存的市场概览数据')
-
-            // 显示数据来源提示
-            if (window.$message) {
-              const cacheTime = new Date(timestamp)
-              const timeDiff = Math.round((now - timestamp) / 1000 / 60) // 分钟
-              window.$message.info(`数据来自本地缓存，最后更新于${timeDiff}分钟前`)
-            }
-
-            // 添加数据来源信息
-            return {
-              ...data,
-              dataSource: {
-                type: 'cache',
-                name: '本地缓存',
-                message: `数据来自本地缓存，最后更新于${new Date(timestamp).toLocaleTimeString()}`,
-                timestamp: timestamp,
-              },
-            }
-          }
-        }
-      } catch (cacheError) {
-        console.warn('读取缓存数据失败:', cacheError)
-      }
-    }
-
-    // 如果强制刷新或缓存不可用，从外部数据源获取数据
-    if (forceRefresh) {
-      console.log('从外部数据源获取市场概览数据')
-
-      // 显示数据来源提示
-      if (window.$message) {
-        window.$message.info('正在从外部数据源获取最新数据...')
-      }
-    } else {
-      console.log('缓存过期或不可用，从外部数据源获取市场概览数据')
-
-      // 显示数据来源提示
-      if (window.$message) {
-        window.$message.info('缓存已过期，正在从外部数据源获取最新数据...')
-      }
-    }
-
-    // 使用API获取真实市场数据
-    const indices = await fetchMarketIndices(forceRefresh)
-    const sectors = await fetchIndustrySectors(forceRefresh)
-    const breadth = await fetchMarketBreadth(forceRefresh)
-
-    const marketOverview = {
+    return {
       indices,
       sectors,
       breadth,
-      timestamp: new Date().toISOString(),
-      dataSource: {
-        type: 'api',
-        name: '外部数据源',
-        message: `数据来自外部数据源，获取时间：${new Date().toLocaleTimeString()}`,
-        timestamp: new Date().getTime(),
-      },
+      lastUpdated: new Date().toISOString()
     }
-
-    // 缓存数据
-    try {
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({
-          data: marketOverview,
-          timestamp: new Date().getTime(),
-        })
-      )
-    } catch (cacheError) {
-      console.warn('缓存市场概览数据失败:', cacheError)
-    }
-
-    return marketOverview
   } catch (error) {
-    console.error('获取市场概览数据失败:', error)
-    // 不使用模拟数据，直接抛出错误
-    throw new Error('无法获取市场概览数据，请检查数据源配置或网络连接')
+    console.error('获取市场概览失败:', error)
+    throw new Error(`获取市场概览失败: ${error instanceof Error ? error.message : '未知错误'}`)
   }
 }
 
 /**
- * 从API获取市场指数数据
- * @param forceRefresh 是否强制刷新（从外部数据源获取）
- * @returns 市场指数数据
+ * 获取市场指数数据
  */
 async function fetchMarketIndices(forceRefresh = true): Promise<MarketIndex[]> {
   try {
-    // 获取主要指数列表
-    const indexCodes = [
-      '000001.SH',
-      '399001.SZ',
-      '399006.SZ',
-      '000016.SH',
-      '000300.SH',
-      '000905.SH',
-    ]
-    const indices: MarketIndex[] = []
+    // 调用后端API获取真实市场指数数据
+    const response = await fetch('/api/market/indices', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ forceRefresh })
+    })
 
-    // 获取每个指数的数据
-    for (const code of indexCodes) {
-      try {
-        // 获取指数基本信息
-        const indexInfo = await marketDataService.getIndexInfo(code)
-
-        // 获取指数最新行情
-        const indexQuote = await marketDataService.getIndexQuote(code)
-
-        if (indexInfo && indexQuote) {
-          indices.push({
-            symbol: code,
-            name: indexInfo.name,
-            price: indexQuote.close,
-            change: indexQuote.change,
-            changePercent: indexQuote.pct_chg,
-            volume: indexQuote.vol,
-            turnover: indexQuote.amount,
-            components: indexInfo.components || 0,
-          })
-        }
-      } catch (error) {
-        console.error(`获取指数 ${code} 数据失败:`, error)
-      }
+    if (!response.ok) {
+      throw new Error(`获取市场指数数据失败: ${response.status} ${response.statusText}`)
     }
 
-    // 如果没有获取到任何指数数据，使用模拟数据
-    if (indices.length === 0) {
-      return generateMockIndices()
-    }
-
-    return indices
+    const data = await response.json()
+    return data.indices || []
   } catch (error) {
     console.error('获取市场指数数据失败:', error)
-    return generateMockIndices()
+    throw new Error(`获取市场指数数据失败: ${error instanceof Error ? error.message : '未知错误'}`)
   }
 }
 
 /**
- * 从API获取行业板块数据
- * @param forceRefresh 是否强制刷新（从外部数据源获取）
- * @returns 行业板块数据
+ * 获取行业板块数据
  */
 async function fetchIndustrySectors(forceRefresh = true): Promise<IndustrySector[]> {
   try {
-    // 获取行业板块列表
-    const sectorList = await marketDataService.getSectorList()
-    const sectors: IndustrySector[] = []
+    // 调用后端API获取真实行业板块数据
+    const response = await fetch('/api/market/sectors', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ forceRefresh })
+    })
 
-    // 获取每个行业板块的数据
-    for (const sector of sectorList.slice(0, 5)) {
-      // 只获取前5个行业
-      try {
-        // 获取行业板块行情
-        const sectorQuote = await marketDataService.getSectorQuote(sector.code)
-
-        // 获取行业内领涨股票
-        const leadingStocks = await marketDataService.getSectorLeadingStocks(sector.code, 'up', 2)
-
-        // 获取行业内领跌股票
-        const laggingStocks = await marketDataService.getSectorLeadingStocks(sector.code, 'down', 2)
-
-        if (sectorQuote) {
-          sectors.push({
-            id: sector.code,
-            name: sector.name,
-            change: sectorQuote.change,
-            changePercent: sectorQuote.pct_chg,
-            volume: sectorQuote.vol,
-            turnover: sectorQuote.amount,
-            leadingStocks,
-            laggingStocks,
-          })
-        }
-      } catch (error) {
-        console.error(`获取行业板块 ${sector.name} 数据失败:`, error)
-      }
+    if (!response.ok) {
+      throw new Error(`获取行业板块数据失败: ${response.status} ${response.statusText}`)
     }
 
-    // 如果没有获取到任何行业板块数据，抛出错误
-    if (sectors.length === 0) {
-      throw new Error('无法获取行业板块数据，请检查数据源配置或网络连接')
-    }
-
-    return sectors
+    const data = await response.json()
+    return data.sectors || []
   } catch (error) {
     console.error('获取行业板块数据失败:', error)
-    return generateMockSectors()
+    throw new Error(`获取行业板块数据失败: ${error instanceof Error ? error.message : '未知错误'}`)
   }
 }
 
 /**
- * 从API获取市场宽度数据
- * @param forceRefresh 是否强制刷新（从外部数据源获取）
- * @returns 市场宽度数据
+ * 获取市场宽度数据
  */
 async function fetchMarketBreadth(forceRefresh = true): Promise<MarketOverview['breadth']> {
   try {
-    // 获取市场宽度数据
-    const breadthData = await marketDataService.getMarketBreadth()
+    // 调用后端API获取真实市场宽度数据
+    const response = await fetch('/api/market/breadth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ forceRefresh })
+    })
 
-    if (breadthData) {
-      return {
-        advancing: breadthData.up_count,
-        declining: breadthData.down_count,
-        unchanged: breadthData.unchanged_count,
-        newHighs: breadthData.new_high,
-        newLows: breadthData.new_low,
-        advancingVolume: breadthData.up_vol,
-        decliningVolume: breadthData.down_vol,
-      }
+    if (!response.ok) {
+      throw new Error(`获取市场宽度数据失败: ${response.status} ${response.statusText}`)
     }
 
-    // 如果没有获取到市场宽度数据，使用模拟数据
-    return generateMockBreadth()
+    const data = await response.json()
+    return {
+      advancing: data.advancing || 0,
+      declining: data.declining || 0,
+      unchanged: data.unchanged || 0,
+      newHighs: data.new_high || 0,
+      newLows: data.new_low || 0,
+      advancingVolume: data.up_vol || 0,
+      decliningVolume: data.down_vol || 0,
+    }
   } catch (error) {
     console.error('获取市场宽度数据失败:', error)
-    return generateMockBreadth()
+    throw new Error(`获取市场宽度数据失败: ${error instanceof Error ? error.message : '未知错误'}`)
   }
 }
 
 /**
- * 生成模拟的市场指数数据
- * @returns 模拟的市场指数数据
+ * 获取市场宽度数据（导出函数）
  */
-function generateMockIndices(): MarketIndex[] {
-  return [
-    {
-      symbol: '000001.SH',
-      name: '上证指数',
-      price: 3000 + Math.random() * 200,
-      change: Math.random() * 40 - 20,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 100000000000),
-      turnover: Math.round(Math.random() * 500000000000),
-      components: 1800,
-    },
-    {
-      symbol: '399001.SZ',
-      name: '深证成指',
-      price: 10000 + Math.random() * 1000,
-      change: Math.random() * 100 - 50,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 80000000000),
-      turnover: Math.round(Math.random() * 400000000000),
-      components: 500,
-    },
-    {
-      symbol: '399006.SZ',
-      name: '创业板指',
-      price: 2000 + Math.random() * 200,
-      change: Math.random() * 40 - 20,
-      changePercent: Math.random() * 3 - 1.5,
-      volume: Math.round(Math.random() * 50000000000),
-      turnover: Math.round(Math.random() * 300000000000),
-      components: 100,
-    },
-    {
-      symbol: '000016.SH',
-      name: '上证50',
-      price: 3000 + Math.random() * 200,
-      change: Math.random() * 40 - 20,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 30000000000),
-      turnover: Math.round(Math.random() * 200000000000),
-      components: 50,
-    },
-    {
-      symbol: '000300.SH',
-      name: '沪深300',
-      price: 4000 + Math.random() * 300,
-      change: Math.random() * 60 - 30,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 60000000000),
-      turnover: Math.round(Math.random() * 350000000000),
-      components: 300,
-    },
-    {
-      symbol: '000905.SH',
-      name: '中证500',
-      price: 6000 + Math.random() * 400,
-      change: Math.random() * 80 - 40,
-      changePercent: Math.random() * 2 - 1,
-      volume: Math.round(Math.random() * 40000000000),
-      turnover: Math.round(Math.random() * 250000000000),
-      components: 500,
-    },
-  ]
+export async function getMarketBreadth(forceRefresh = true): Promise<MarketOverview['breadth']> {
+  return await fetchMarketBreadth(forceRefresh)
 }
 
-/**
- * 生成模拟的行业板块数据
- * @returns 模拟的行业板块数据
- */
-function generateMockSectors(): IndustrySector[] {
-  return [
-    {
-      id: 'finance',
-      name: '金融',
-      change: Math.random() * 2 - 1,
-      changePercent: Math.random() * 3 - 1.5,
-      volume: Math.round(Math.random() * 20000000000),
-      turnover: Math.round(Math.random() * 100000000000),
-      leadingStocks: [
-        {
-          symbol: '601318.SH',
-          name: '中国平安',
-          changePercent: Math.random() * 5,
-        },
-        {
-          symbol: '600036.SH',
-          name: '招商银行',
-          changePercent: Math.random() * 4,
-        },
-      ],
-      laggingStocks: [
-        {
-          symbol: '601398.SH',
-          name: '工商银行',
-          changePercent: Math.random() * -3,
-        },
-        {
-          symbol: '601288.SH',
-          name: '农业银行',
-          changePercent: Math.random() * -2,
-        },
-      ],
-    },
-    {
-      id: 'technology',
-      name: '科技',
-      change: Math.random() * 3 - 1,
-      changePercent: Math.random() * 4 - 1,
-      volume: Math.round(Math.random() * 15000000000),
-      turnover: Math.round(Math.random() * 80000000000),
-      leadingStocks: [
-        {
-          symbol: '000725.SZ',
-          name: '京东方A',
-          changePercent: Math.random() * 6,
-        },
-        {
-          symbol: '002415.SZ',
-          name: '海康威视',
-          changePercent: Math.random() * 5,
-        },
-      ],
-      laggingStocks: [
-        {
-          symbol: '600100.SH',
-          name: '同方股份',
-          changePercent: Math.random() * -4,
-        },
-        {
-          symbol: '000066.SZ',
-          name: '中国长城',
-          changePercent: Math.random() * -3,
-        },
-      ],
-    },
-    {
-      id: 'consumer',
-      name: '消费',
-      change: Math.random() * 2.5 - 1,
-      changePercent: Math.random() * 3.5 - 1.5,
-      volume: Math.round(Math.random() * 12000000000),
-      turnover: Math.round(Math.random() * 70000000000),
-      leadingStocks: [
-        {
-          symbol: '600519.SH',
-          name: '贵州茅台',
-          changePercent: Math.random() * 4,
-        },
-        {
-          symbol: '000858.SZ',
-          name: '五粮液',
-          changePercent: Math.random() * 3.5,
-        },
-      ],
-      laggingStocks: [
-        {
-          symbol: '600887.SH',
-          name: '伊利股份',
-          changePercent: Math.random() * -2.5,
-        },
-        {
-          symbol: '000568.SZ',
-          name: '泸州老窖',
-          changePercent: Math.random() * -2,
-        },
-      ],
-    },
-  ]
-}
-
-/**
- * 生成模拟的市场宽度数据
- * @returns 模拟的市场宽度数据
- */
-function generateMockBreadth(): MarketOverview['breadth'] {
-  const totalStocks = 4000
-  const advancing = Math.round(Math.random() * totalStocks * 0.6)
-  const declining = Math.round(Math.random() * totalStocks * 0.4)
-  const unchanged = totalStocks - advancing - declining
-
-  const totalVolume = Math.round(Math.random() * 500000000000)
-  const advancingVolume = Math.round(
-    totalVolume * (advancing / totalStocks) * (1 + Math.random() * 0.3)
-  )
-  const decliningVolume = totalVolume - advancingVolume
-
-  return {
-    advancing,
-    declining,
-    unchanged,
-    newHighs: Math.round(Math.random() * 100),
-    newLows: Math.round(Math.random() * 50),
-    advancingVolume,
-    decliningVolume,
-  }
-}
-
-// 模拟数据生成函数已移除
-
-// 导出服务
+// 创建服务实例
 export const dashboardService = {
   getDashboardSettings,
   saveDashboardSettings,
   createDefaultDashboardSettings,
-  createDefaultLayout,
-  createDefaultWatchlist,
-  createNewLayout,
-  createNewWatchlist,
-  createNewWidget,
+  getDefaultLayout,
+  saveLayout,
+  getLayout,
+  resetLayout,
+  addWidget,
+  removeWidget,
+  updateWidget,
+  getWatchlists,
+  createWatchlist,
+  updateWatchlist,
+  deleteWatchlist,
   addStockToWatchlist,
   removeStockFromWatchlist,
-  addAlertToWatchlistItem,
-  removeAlertFromWatchlistItem,
   getMarketOverview,
+  getMarketBreadth
 }
-
-export default dashboardService

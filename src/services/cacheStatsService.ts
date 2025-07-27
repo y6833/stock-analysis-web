@@ -7,7 +7,7 @@ import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
 
 // API基础URL
-const API_URL = '/api'
+const API_URL = 'http://localhost:7001/api'
 
 // 缓存统计信息接口
 export interface CacheStats {
@@ -188,13 +188,33 @@ class CacheStatsService {
       const currentDataSource =
         dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
 
-      const url = `${API_URL}/cache-stats?dataSource=${currentDataSource}`
+      // 使用公开的API端点，不需要认证
+      const url = `${API_URL}/public/cache-stats?dataSource=${currentDataSource}`
 
-      const response = await axios.get(url, getAuthHeaders())
+      const response = await axios.get(url)
       return response.data
     } catch (error: any) {
       console.error('获取缓存统计信息失败:', error)
-      throw new Error(error.response?.data?.message || '获取缓存统计信息失败')
+      // 返回默认的缓存统计信息，避免阻塞页面加载
+      return {
+        success: false,
+        hits: 0,
+        misses: 0,
+        requests: 0,
+        apiCalls: 0,
+        errors: 1,
+        hitRate: '0%',
+        lastReset: new Date().toISOString(),
+        dataSource: currentDataSource,
+        sourceStats: {
+          hits: 0,
+          misses: 0,
+          requests: 0,
+          apiCalls: 0,
+          errors: 1,
+          hitRate: '0%'
+        }
+      }
     }
   }
 
@@ -203,9 +223,21 @@ class CacheStatsService {
    */
   async getComprehensiveStats(): Promise<CacheStatistics> {
     try {
-      // 获取服务器端统计
-      const serverStatsResponse = await axios.get(`${API_URL}/cache/stats`, getAuthHeaders())
-      const serverStats = serverStatsResponse.data
+      // 获取服务器端统计 - 使用公开API端点
+      let serverStats = {}
+      try {
+        const serverStatsResponse = await axios.get(`${API_URL}/public/cache-stats`)
+        serverStats = serverStatsResponse.data
+      } catch (error) {
+        console.warn('获取服务器缓存统计失败，使用默认值:', error)
+        serverStats = {
+          enabled: false,
+          hitRate: 0,
+          totalOperations: 0,
+          hits: 0,
+          misses: 0
+        }
+      }
 
       // 获取客户端统计
       const clientStats = this.getClientStats()

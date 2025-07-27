@@ -43,12 +43,8 @@
           <div class="form-group">
             <label>股票代码:</label>
             <el-select v-model="selectedStock" placeholder="选择股票" @change="loadStockData">
-              <el-option
-                v-for="stock in stockList"
-                :key="stock.symbol"
-                :label="`${stock.name} (${stock.symbol})`"
-                :value="stock.symbol"
-              />
+              <el-option v-for="stock in stockList" :key="stock.symbol" :label="`${stock.name} (${stock.symbol})`"
+                :value="stock.symbol" />
             </el-select>
           </div>
           <div class="form-group">
@@ -98,13 +94,9 @@
             <div class="stat-label">总信号数</div>
           </div>
         </div>
-        
+
         <div class="signals-list">
-          <div
-            v-for="signal in recentSignals"
-            :key="signal.id"
-            :class="['signal-item', signal.type]"
-          >
+          <div v-for="signal in recentSignals" :key="signal.id" :class="['signal-item', signal.type]">
             <div class="signal-icon">
               {{ signal.type === 'buy' ? '🐢' : '🔻' }}
             </div>
@@ -114,12 +106,8 @@
             </div>
             <div class="signal-price">¥{{ signal.price.toFixed(2) }}</div>
             <div class="signal-strength">
-              <el-progress
-                :percentage="signal.strength"
-                :color="signal.type === 'buy' ? '#67c23a' : '#f56c6c'"
-                :show-text="false"
-                size="small"
-              />
+              <el-progress :percentage="signal.strength" :color="signal.type === 'buy' ? '#67c23a' : '#f56c6c'"
+                :show-text="false" size="small" />
               <span class="strength-text">{{ signal.strength }}%</span>
             </div>
           </div>
@@ -235,11 +223,11 @@ const initChart = () => {
 const loadStockData = async () => {
   try {
     showToast('正在加载股票数据...', 'info')
-    
+
     // 这里应该调用真实的API获取股票数据
     // 暂时使用模拟数据
     await updateAnalysis()
-    
+
     showToast('股票数据加载完成', 'success')
   } catch (error) {
     console.error('加载股票数据失败:', error)
@@ -264,16 +252,16 @@ const updateAnalysis = async () => {
     const result = await response.json()
     if (result.success && result.data.donchianChannel) {
       const donchian = result.data.donchianChannel
-      
+
       // 更新统计数据
       if (donchian.upband.length > 0) {
         upperBand.value = donchian.upband[donchian.upband.length - 1]
         lowerBand.value = donchian.dnband[donchian.dnband.length - 1]
       }
-      
+
       // 更新信号列表
       recentSignals.value = donchian.signals || []
-      
+
       // 更新图表
       updateChart(result.data)
     } else {
@@ -291,7 +279,7 @@ const generateMockData = () => {
   currentPrice.value = 12.50
   upperBand.value = 13.20
   lowerBand.value = 11.80
-  
+
   recentSignals.value = [
     {
       id: 1,
@@ -310,7 +298,7 @@ const generateMockData = () => {
       reason: `价格跌破${turtlePeriod.value}周期低点 ¥11.80`
     }
   ]
-  
+
   updateChart()
 }
 

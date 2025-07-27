@@ -6,98 +6,80 @@
         <Suspense>
           <template #default>
             <div class="notifications-container">
-          <!-- 筛选栏 -->
-          <div class="filter-bar">
-            <div class="filter-item">
-              <span class="filter-label">状态:</span>
-              <el-select v-model="filters.isRead" placeholder="全部" clearable>
-                <el-option label="全部" :value="null" />
-                <el-option label="未读" :value="false" />
-                <el-option label="已读" :value="true" />
-              </el-select>
-            </div>
-            <div class="filter-item">
-              <span class="filter-label">类型:</span>
-              <el-select v-model="filters.type" placeholder="全部" clearable>
-                <el-option label="全部" :value="null" />
-                <el-option label="充值相关" value="recharge" />
-                <el-option label="系统通知" value="system" />
-              </el-select>
-            </div>
-            <div class="filter-actions">
-              <el-button type="primary" @click="fetchNotifications">
-                <el-icon><Search /></el-icon>
-                筛选
-              </el-button>
-              <el-button @click="resetFilters">
-                <el-icon><Refresh /></el-icon>
-                重置
-              </el-button>
-            </div>
-          </div>
+              <!-- 筛选栏 -->
+              <div class="filter-bar">
+                <div class="filter-item">
+                  <span class="filter-label">状态:</span>
+                  <el-select v-model="filters.isRead" placeholder="全部" clearable>
+                    <el-option label="全部" :value="null" />
+                    <el-option label="未读" :value="false" />
+                    <el-option label="已读" :value="true" />
+                  </el-select>
+                </div>
+                <div class="filter-item">
+                  <span class="filter-label">类型:</span>
+                  <el-select v-model="filters.type" placeholder="全部" clearable>
+                    <el-option label="全部" :value="null" />
+                    <el-option label="充值相关" value="recharge" />
+                    <el-option label="系统通知" value="system" />
+                  </el-select>
+                </div>
+                <div class="filter-actions">
+                  <el-button type="primary" @click="fetchNotifications">
+                    <el-icon>
+                      <Search />
+                    </el-icon>
+                    筛选
+                  </el-button>
+                  <el-button @click="resetFilters">
+                    <el-icon>
+                      <Refresh />
+                    </el-icon>
+                    重置
+                  </el-button>
+                </div>
+              </div>
 
-          <!-- 通知列表 -->
-          <div class="notification-list">
-            <el-table
-              v-loading="isLoading"
-              :data="notifications"
-              border
-              stripe
-              style="width: 100%"
-            >
-              <el-table-column label="状态" width="80">
-                <template #default="scope">
-                  <el-tag
-                    :type="scope.row.isRead ? 'info' : 'warning'"
-                    size="small"
-                  >
-                    {{ scope.row.isRead ? '已读' : '未读' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="标题" prop="title" min-width="150" />
-              <el-table-column label="内容" prop="content" min-width="250" show-overflow-tooltip />
-              <el-table-column label="时间" width="180">
-                <template #default="scope">
-                  {{ formatDate(scope.row.createdAt) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="150" fixed="right">
-                <template #default="scope">
-                  <div class="action-buttons">
-                    <el-button
-                      v-if="!scope.row.isRead"
-                      type="primary"
-                      size="small"
-                      @click="handleMarkAsRead(scope.row)"
-                    >
-                      标为已读
-                    </el-button>
-                    <el-button
-                      type="danger"
-                      size="small"
-                      @click="handleDelete(scope.row)"
-                    >
-                      删除
-                    </el-button>
-                  </div>
-                </template>
-              </el-table-column>
-            </el-table>
+              <!-- 通知列表 -->
+              <div class="notification-list">
+                <el-table v-loading="isLoading" :data="notifications" border stripe style="width: 100%">
+                  <el-table-column label="状态" width="80">
+                    <template #default="scope">
+                      <el-tag :type="scope.row.isRead ? 'info' : 'warning'" size="small">
+                        {{ scope.row.isRead ? '已读' : '未读' }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="标题" prop="title" min-width="150" />
+                  <el-table-column label="内容" prop="content" min-width="250" show-overflow-tooltip />
+                  <el-table-column label="时间" width="180">
+                    <template #default="scope">
+                      {{ formatDate(scope.row.createdAt) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="150" fixed="right">
+                    <template #default="scope">
+                      <div class="action-buttons">
+                        <el-button v-if="!scope.row.isRead" type="primary" size="small"
+                          @click="handleMarkAsRead(scope.row)">
+                          标为已读
+                        </el-button>
+                        <el-button type="danger" size="small" @click="handleDelete(scope.row)">
+                          删除
+                        </el-button>
+                      </div>
+                    </template>
+                  </el-table-column>
+                </el-table>
 
-            <!-- 分页 -->
-            <div class="pagination-container">
-              <el-pagination
-                v-model:current-page="pagination.page"
-                v-model:page-size="pagination.pageSize"
-                :page-sizes="[10, 20, 50, 100]"
-                layout="total, sizes, prev, pager, next, jumper"
-                :total="pagination.total"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-              />
+                <!-- 分页 -->
+                <div class="pagination-container">
+                  <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.pageSize"
+                    :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper"
+                    :total="pagination.total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
+                </div>
+              </div>
             </div>
-          </div>
           </template>
           <template #fallback>
             <div class="loading-container">

@@ -1,6 +1,66 @@
 /**
  * 格式化工具函数
+ * 提供安全的数值格式化功能，处理 undefined、null 和 NaN 值
  */
+
+/**
+ * 安全格式化价格
+ * @param price 价格数值
+ * @param decimals 小数位数，默认2位
+ * @returns 格式化后的价格字符串
+ */
+export function formatPriceSafe(price: number | undefined | null, decimals: number = 2): string {
+  if (price === undefined || price === null || isNaN(price)) {
+    return '--'
+  }
+  return price.toFixed(decimals)
+}
+
+/**
+ * 安全格式化变化值
+ * @param change 变化数值
+ * @param decimals 小数位数，默认2位
+ * @returns 格式化后的变化值字符串（带正负号）
+ */
+export function formatChangeSafe(change: number | undefined | null, decimals: number = 2): string {
+  if (change === undefined || change === null || isNaN(change)) {
+    return '--'
+  }
+  const sign = change >= 0 ? '+' : ''
+  return `${sign}${change.toFixed(decimals)}`
+}
+
+/**
+ * 安全格式化百分比
+ * @param percent 百分比数值
+ * @param decimals 小数位数，默认2位
+ * @returns 格式化后的百分比字符串（带正负号和%符号）
+ */
+export function formatPercentSafe(percent: number | undefined | null, decimals: number = 2): string {
+  if (percent === undefined || percent === null || isNaN(percent)) {
+    return '--'
+  }
+  const sign = percent >= 0 ? '+' : ''
+  return `${sign}${percent.toFixed(decimals)}%`
+}
+
+/**
+ * 获取安全的变化样式类
+ * @param changeValue 变化值
+ * @param prefix 类名前缀，默认为 'change'
+ * @returns 样式类对象
+ */
+export function getChangeClassSafe(changeValue: number | undefined | null, prefix: string = 'change') {
+  if (changeValue === undefined || changeValue === null || isNaN(changeValue)) {
+    return { [`${prefix}-neutral`]: true }
+  }
+
+  return {
+    [`${prefix}-up`]: changeValue > 0,
+    [`${prefix}-down`]: changeValue < 0,
+    [`${prefix}-neutral`]: changeValue === 0
+  }
+}
 
 /**
  * 格式化日期
@@ -12,24 +72,24 @@ export function formatDate(date: Date, format: string = 'yyyy-MM-dd'): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
-  
+
   if (format === 'yyyy-MM-dd') {
     return `${year}-${month}-${day}`
   }
-  
+
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
-  
+
   if (format === 'yyyy-MM-dd HH:mm') {
     return `${year}-${month}-${day} ${hours}:${minutes}`
   }
-  
+
   const seconds = String(date.getSeconds()).padStart(2, '0')
-  
+
   if (format === 'yyyy-MM-dd HH:mm:ss') {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
-  
+
   return `${year}-${month}-${day}`
 }
 
@@ -40,13 +100,13 @@ export function formatDate(date: Date, format: string = 'yyyy-MM-dd'): string {
  * @returns 格式化后的数字字符串
  */
 export function formatNumber(num: number, options: Intl.NumberFormatOptions = {}): string {
-  const defaultOptions: Intl.NumberFormatOptions = { 
+  const defaultOptions: Intl.NumberFormatOptions = {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }
-  
+
   const mergedOptions = { ...defaultOptions, ...options }
-  
+
   return new Intl.NumberFormat('zh-CN', mergedOptions).format(num)
 }
 
@@ -57,14 +117,14 @@ export function formatNumber(num: number, options: Intl.NumberFormatOptions = {}
  * @returns 格式化后的百分比字符串
  */
 export function formatPercent(num: number, options: Intl.NumberFormatOptions = {}): string {
-  const defaultOptions: Intl.NumberFormatOptions = { 
+  const defaultOptions: Intl.NumberFormatOptions = {
     style: 'percent',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }
-  
+
   const mergedOptions = { ...defaultOptions, ...options }
-  
+
   return new Intl.NumberFormat('zh-CN', mergedOptions).format(num)
 }
 
@@ -76,15 +136,15 @@ export function formatPercent(num: number, options: Intl.NumberFormatOptions = {
  * @returns 格式化后的货币字符串
  */
 export function formatCurrency(num: number, currency: string = 'CNY', options: Intl.NumberFormatOptions = {}): string {
-  const defaultOptions: Intl.NumberFormatOptions = { 
+  const defaultOptions: Intl.NumberFormatOptions = {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }
-  
+
   const mergedOptions = { ...defaultOptions, ...options }
-  
+
   return new Intl.NumberFormat('zh-CN', mergedOptions).format(num)
 }
 
@@ -96,13 +156,13 @@ export function formatCurrency(num: number, currency: string = 'CNY', options: I
  */
 export function formatFileSize(bytes: number, decimals: number = 2): string {
   if (bytes === 0) return '0 Bytes'
-  
+
   const k = 1024
   const dm = decimals < 0 ? 0 : decimals
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-  
+
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
@@ -115,21 +175,21 @@ export function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const secs = Math.floor(seconds % 60)
-  
+
   const parts = []
-  
+
   if (hours > 0) {
     parts.push(`${hours}小时`)
   }
-  
+
   if (minutes > 0) {
     parts.push(`${minutes}分钟`)
   }
-  
+
   if (secs > 0 || parts.length === 0) {
     parts.push(`${secs}秒`)
   }
-  
+
   return parts.join(' ')
 }
 
@@ -140,7 +200,7 @@ export function formatDuration(seconds: number): string {
  */
 export function formatPhoneNumber(phone: string): string {
   if (!phone || phone.length !== 11) return phone
-  
+
   return `${phone.substring(0, 3)}-${phone.substring(3, 7)}-${phone.substring(7)}`
 }
 
@@ -151,12 +211,12 @@ export function formatPhoneNumber(phone: string): string {
  */
 export function formatIdCard(idCard: string): string {
   if (!idCard) return idCard
-  
+
   // 隐藏中间部分
   if (idCard.length === 18) {
     return `${idCard.substring(0, 6)}********${idCard.substring(14)}`
   }
-  
+
   return idCard
 }
 
@@ -167,7 +227,7 @@ export function formatIdCard(idCard: string): string {
  */
 export function formatBankCard(cardNumber: string): string {
   if (!cardNumber) return cardNumber
-  
+
   // 每4位添加一个空格
   return cardNumber.replace(/\s/g, '').replace(/(\d{4})(?=\d)/g, '$1 ')
 }
@@ -179,10 +239,10 @@ export function formatBankCard(cardNumber: string): string {
  */
 export function formatStockCode(code: string): string {
   if (!code) return code
-  
+
   // 如果已经包含市场后缀，则直接返回
   if (code.includes('.')) return code
-  
+
   // 根据股票代码规则添加市场后缀
   if (code.startsWith('6')) {
     return `${code}.SH` // 上海证券交易所
@@ -191,6 +251,6 @@ export function formatStockCode(code: string): string {
   } else if (code.startsWith('4') || code.startsWith('8')) {
     return `${code}.BJ` // 北京证券交易所
   }
-  
+
   return code
 }

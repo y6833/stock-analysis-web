@@ -94,7 +94,7 @@ class StockController extends Controller {
   // 获取股票实时行情
   async getQuote() {
     const { ctx, service } = this
-    const stockCode = ctx.params.code
+    const stockCode = ctx.params.symbol // 路由参数是symbol，不是code
 
     // 获取数据源参数
     const dataSource = ctx.query.source || ctx.headers['x-data-source'] || 'tushare'
@@ -253,7 +253,7 @@ class StockController extends Controller {
   // 获取股票历史数据（使用缓存优化）
   async getHistory() {
     const { ctx, service } = this
-    const stockCode = ctx.params.code
+    const stockCode = ctx.params.symbol // 路由参数是symbol，不是code
     const { start_date, end_date, cache_priority } = ctx.query
 
     try {

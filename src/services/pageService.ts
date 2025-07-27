@@ -66,6 +66,13 @@ export const pageService = {
       return response.data.data
     } catch (error: any) {
       console.error('获取所有页面失败:', error)
+
+      // 如果是数据库表不存在的错误，返回空数组
+      if (error.response?.data?.message?.includes("doesn't exist")) {
+        console.warn('数据库表不存在，返回空页面列表')
+        return []
+      }
+
       const { showToast } = useToast()
       showToast(`获取页面列表失败: ${error.response?.data?.message || error.message}`, 'error')
       return []

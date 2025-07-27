@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="256" cy="256" r="256" fill="#4CAF50"/>
+
+  <!-- 内部圆形边框 -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+
+  <!-- 股票图表线条 -->
+  <path d="M120 300L180 240L240 280L300 200L360 240L420 180"
+        stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- 数据点 -->
+  <circle cx="180" cy="240" r="8" fill="white"/>
+  <circle cx="240" cy="280" r="8" fill="white"/>
+  <circle cx="300" cy="200" r="8" fill="white"/>
+  <circle cx="360" cy="240" r="8" fill="white"/>
+
+  <!-- 上升箭头 -->
+  <path d="M380 160L420 180L400 200" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- 文字 -->
+  <text x="256" y="380" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">股市</text>
+
+  <!-- 装饰性元素 -->
+  <circle cx="100" cy="100" r="4" fill="rgba(255,255,255,0.6)"/>
+  <circle cx="400" cy="120" r="4" fill="rgba(255,255,255,0.6)"/>
+  <circle cx="80" cy="400" r="4" fill="rgba(255,255,255,0.6)"/>
+  <circle cx="420" cy="380" r="4" fill="rgba(255,255,255,0.6)"/>
+</svg>
