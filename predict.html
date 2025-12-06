@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+  <meta charset="UTF-8">
+  <title>股票预测 - Kronos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    input,
+    button {
+      padding: 8px;
+      font-size: 16px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #f5f5f5;
+    }
+
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Kronos 股票预测</h2>
+    <label for="symbol">股票代码：</label>
+    <input type="text" id="symbol" placeholder="如 600977" />
+    <button onclick="predictStock()">预测</button>
+    <div id="error" class="error"></div>
+    <div id="result"></div>
+  </div>
+  <script>
+    function predictStock() {
+      const symbol = document.getElementById('symbol').value.trim();
+      document.getElementById('error').textContent = '';
+      document.getElementById('result').innerHTML = '';
+      if (!symbol) {
+        document.getElementById('error').textContent = '请输入股票代码';
+        return;
+      }
+      fetch(`/api/predict?symbol=${symbol}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            document.getElementById('error').textContent = data.error;
+            return;
+          }
+          renderResult(data.prediction || data);
+        })
+        .catch(err => {
+          document.getElementById('error').textContent = '请求失败：' + err;
+        });
+    }
+    function renderResult(data) {
+      if (!data || Object.keys(data).length === 0) {
+        document.getElementById('result').innerHTML = '<p>无预测结果</p>';
+        return;
+      }
+      // 转换为表格
+      const keys = Object.keys(data);
+      const rows = [];
+      const len = data[keys[0]].length || Object.values(data[keys[0]]).length;
+      for (let i = 0; i < len; i++) {
+        const row = keys.map(k => Array.isArray(data[k]) ? data[k][i] : Object.values(data[k])[i]);
+        rows.push(row);
+      }
+      let html = '<table><tr>' + keys.map(k => `<th>${k}</th>`).join('') + '</tr>';
+      rows.forEach(r => {
+        html += '<tr>' + r.map(v => `<td>${v}</td>`).join('') + '</tr>';
+      });
+      html += '</table>';
+      document.getElementById('result').innerHTML = html;
+    }
+  </script>
+</body>
+
+</html>

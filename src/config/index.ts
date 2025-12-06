@@ -4,6 +4,7 @@
  */
 
 import { CONSTANTS } from '@/constants'
+import type { DeepSeekConfig } from './deepseekConfig'
 
 /**
  * 环境变量接口
@@ -92,6 +93,16 @@ interface PerformanceConfig {
 }
 
 /**
+ * AI配置接口
+ */
+interface AIConfig {
+  deepseek: DeepSeekConfig
+  enableAIRecommendations: boolean
+  enableAIAnalysis: boolean
+  enableRealTimeInsights: boolean
+}
+
+/**
  * 应用配置接口
  */
 interface AppConfig {
@@ -116,6 +127,7 @@ interface Config {
   ui: UIConfig
   security: SecurityConfig
   performance: PerformanceConfig
+  ai: AIConfig
 }
 
 /**
@@ -255,6 +267,30 @@ const performanceConfig: PerformanceConfig = {
 }
 
 /**
+ * AI配置
+ */
+const aiConfig: AIConfig = {
+  deepseek: {
+    apiKey: getEnvVar('VITE_DEEPSEEK_API_KEY', 'sk-2cc72ce7b3ee4c17ba490fab258b9efb'),
+    baseUrl: getEnvVar('VITE_DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1'),
+    model: getEnvVar('VITE_DEEPSEEK_MODEL', 'deepseek-chat'),
+    maxTokens: getNumberEnvVar('VITE_DEEPSEEK_MAX_TOKENS', 4000),
+    temperature: parseFloat(getEnvVar('VITE_DEEPSEEK_TEMPERATURE', '0.7')),
+    topP: parseFloat(getEnvVar('VITE_DEEPSEEK_TOP_P', '0.9')),
+    rateLimit: getNumberEnvVar('VITE_DEEPSEEK_RATE_LIMIT', 60),
+    dailyLimit: getNumberEnvVar('VITE_DEEPSEEK_DAILY_LIMIT', 1000),
+    retryCount: getNumberEnvVar('VITE_DEEPSEEK_RETRY_COUNT', 3),
+    timeout: getNumberEnvVar('VITE_DEEPSEEK_TIMEOUT', 30000),
+    debug: getBooleanEnvVar('VITE_DEEPSEEK_DEBUG', envConfig.NODE_ENV === 'development'),
+    enableCache: getBooleanEnvVar('VITE_DEEPSEEK_ENABLE_CACHE', true),
+    cacheTimeout: getNumberEnvVar('VITE_DEEPSEEK_CACHE_TIMEOUT', 300000)
+  },
+  enableAIRecommendations: getBooleanEnvVar('VITE_ENABLE_AI_RECOMMENDATIONS', true),
+  enableAIAnalysis: getBooleanEnvVar('VITE_ENABLE_AI_ANALYSIS', true),
+  enableRealTimeInsights: getBooleanEnvVar('VITE_ENABLE_REALTIME_INSIGHTS', true)
+}
+
+/**
  * 完整配置对象
  */
 export const config: Config = {
@@ -265,7 +301,8 @@ export const config: Config = {
   cache: cacheConfig,
   ui: uiConfig,
   security: securityConfig,
-  performance: performanceConfig
+  performance: performanceConfig,
+  ai: aiConfig
 }
 
 /**

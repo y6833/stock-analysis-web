@@ -115,6 +115,21 @@ const routes = [
     },
   },
 
+  // ===== KRONOS PREDICT ROUTE =====
+  {
+    path: '/predict',
+    name: 'predict',
+    component: lazyLoadView(
+      () => import('../views/PredictView.vue'),
+      {
+        loadingComponent: LoadingComponent,
+        errorComponent: ErrorComponent,
+        preload: true
+      }
+    ),
+    meta: { requiresAuth: false, title: '股票预测' },
+  },
+
 
   // ===== STOCK ANALYSIS ROUTES =====
   {
@@ -591,6 +606,18 @@ const routes = [
           name: 'tushare-integration-test',
           component: () => import('../views/TushareTestPage.vue'),
           meta: { requiresAuth: false, title: 'Tushare集成测试' },
+        },
+        {
+          path: 'deepseek-test',
+          name: 'deepseek-test',
+          component: () => import('../views/DeepSeekTestView.vue'),
+          meta: { requiresAuth: false, title: 'DeepSeek API测试' },
+        },
+        {
+          path: 'deepseek-service-demo',
+          name: 'deepseek-service-demo',
+          component: () => import('../views/DeepSeekServiceDemoView.vue'),
+          meta: { requiresAuth: false, title: 'DeepSeek 服务演示' },
         },
       ],
     },

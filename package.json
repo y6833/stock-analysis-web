@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "serve": "vite --host",
+  "serve": "vite --host",
+  "serve-predict": "python server/predict_api.py",
     "dev": "cd server && npm run dev",
     "build": "vite build",
     "preview": "vite preview",

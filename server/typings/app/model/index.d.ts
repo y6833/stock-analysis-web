@@ -3,11 +3,14 @@
 /* eslint-disable */
 
 import 'egg';
+import ExportAiAnalysisCache = require('../../../app/model/ai_analysis_cache');
+import ExportAiRecommendationHistory = require('../../../app/model/ai_recommendation_history');
 import ExportAlertHistory = require('../../../app/model/alert_history');
 import ExportApiRequestLog = require('../../../app/model/apiRequestLog');
 import ExportCoinRechargeRequest = require('../../../app/model/coinRechargeRequest');
 import ExportCoinTransaction = require('../../../app/model/coinTransaction');
 import ExportDashboardWidget = require('../../../app/model/dashboard_widget');
+import ExportDeepseekApiUsage = require('../../../app/model/deepseek_api_usage');
 import ExportDojiPattern = require('../../../app/model/doji_pattern');
 import ExportDojiPatternAlert = require('../../../app/model/doji_pattern_alert');
 import ExportDojiPatternAlertHistory = require('../../../app/model/doji_pattern_alert_history');
@@ -47,6 +50,7 @@ import ExportSystemLog = require('../../../app/model/system_log');
 import ExportSystemPage = require('../../../app/model/system_page');
 import ExportTradeRecord = require('../../../app/model/trade_record');
 import ExportUser = require('../../../app/model/user');
+import ExportUserAiPreferences = require('../../../app/model/user_ai_preferences');
 import ExportUserAlert = require('../../../app/model/user_alert');
 import ExportUserBrowsingHistory = require('../../../app/model/user_browsing_history');
 import ExportUserDashboard = require('../../../app/model/user_dashboard');
@@ -62,11 +66,14 @@ import ExportWatchlistItem = require('../../../app/model/watchlist_item');
 
 declare module 'egg' {
   interface IModel {
+    AiAnalysisCache: ReturnType<typeof ExportAiAnalysisCache>;
+    AiRecommendationHistory: ReturnType<typeof ExportAiRecommendationHistory>;
     AlertHistory: ReturnType<typeof ExportAlertHistory>;
     ApiRequestLog: ReturnType<typeof ExportApiRequestLog>;
     CoinRechargeRequest: ReturnType<typeof ExportCoinRechargeRequest>;
     CoinTransaction: ReturnType<typeof ExportCoinTransaction>;
     DashboardWidget: ReturnType<typeof ExportDashboardWidget>;
+    DeepseekApiUsage: ReturnType<typeof ExportDeepseekApiUsage>;
     DojiPattern: ReturnType<typeof ExportDojiPattern>;
     DojiPatternAlert: ReturnType<typeof ExportDojiPatternAlert>;
     DojiPatternAlertHistory: ReturnType<typeof ExportDojiPatternAlertHistory>;
@@ -106,6 +113,7 @@ declare module 'egg' {
     SystemPage: ReturnType<typeof ExportSystemPage>;
     TradeRecord: ReturnType<typeof ExportTradeRecord>;
     User: ReturnType<typeof ExportUser>;
+    UserAiPreferences: ReturnType<typeof ExportUserAiPreferences>;
     UserAlert: ReturnType<typeof ExportUserAlert>;
     UserBrowsingHistory: ReturnType<typeof ExportUserBrowsingHistory>;
     UserDashboard: ReturnType<typeof ExportUserDashboard>;

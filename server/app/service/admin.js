@@ -8,129 +8,110 @@ const Service = require('egg').Service;
  */
 class AdminService extends Service {
   /**
-   * 获取所有用户列表
-   * @param {Object} options - 查询选项
-   * @param {number} options.page - 页码
-   * @param {number} options.pageSize - 每页数量
-   * @param {string} options.sortBy - 排序字段
-   * @param {string} options.sortOrder - 排序方向
-   * @return {Object} 用户列表和总数
+   * 获取所有用户列表（分页+筛选+会员信息合并，容错）
+   * @param {Object} params - { page, pageSize, sortBy, sortOrder, search, role, status, membership }
+   * @return {Object} { users, total, pagination }
    */
-  async getAllUsers(options = {}) {
+  async getAllUsers(params = {}) {
     const { ctx } = this;
-    const { page = 1, pageSize = 20, sortBy = 'id', sortOrder = 'asc', search = '', role = '', status = '', membership = '' } = options;
-
-    // 计算偏移量
-    const offset = (page - 1) * pageSize;
-
-    // 构建查询条件
-    const where = {};
-
-    // 添加搜索条件
-    if (search) {
-      where[ctx.app.Sequelize.Op.or] = [
-        { username: { [ctx.app.Sequelize.Op.like]: `%${search}%` } },
-        { email: { [ctx.app.Sequelize.Op.like]: `%${search}%` } },
-        { nickname: { [ctx.app.Sequelize.Op.like]: `%${search}%` } },
-      ];
-    }
-
-    // 添加角色筛选
-    if (role) {
-      where.role = role;
-    }
-
-    // 添加状态筛选
-    if (status) {
-      where.status = status;
-    }
-
-    const query = {
-      where,
-      offset,
-      limit: pageSize,
-      order: [[sortBy, sortOrder.toUpperCase()]],
-      include: [
-        {
-          model: ctx.model.UserPreference,
-          as: '_userPreference', // 使用正确的别名
-          attributes: ['theme', 'language', 'defaultDashboardLayout'],
-        },
-      ],
-      attributes: {
-        exclude: ['password'], // 排除密码字段
-      },
-    };
-
-    // 查询用户列表和总数
-    const { count, rows } = await ctx.model.User.findAndCountAll(query);
-
-    // 获取所有用户的会员信息
-    const userIds = rows.map(user => user.id);
-    const userMemberships = await ctx.model.UserMembership.findAll({
-      where: { userId: userIds },
-    });
-
-    // 创建用户ID到会员信息的映射
-    const membershipMap = {};
-    const now = new Date();
-
-    userMemberships.forEach(membership => {
-      // 检查各级别会员是否有效
-      const basicActive = membership.basicMembershipExpires && new Date(membership.basicMembershipExpires) > now;
-      const premiumActive = membership.premiumMembershipExpires && new Date(membership.premiumMembershipExpires) > now;
-      const enterpriseActive = membership.enterpriseMembershipExpires && new Date(membership.enterpriseMembershipExpires) > now;
-
-      // 确定有效的会员级别
-      let effectiveLevel = 'free';
-      let expiresAt = null;
-
-      if (enterpriseActive) {
-        effectiveLevel = 'enterprise';
-        expiresAt = membership.enterpriseMembershipExpires;
-      } else if (premiumActive) {
-        effectiveLevel = 'premium';
-        expiresAt = membership.premiumMembershipExpires;
-      } else if (basicActive) {
-        effectiveLevel = 'basic';
-        expiresAt = membership.basicMembershipExpires;
+    const {
+      page = 1,
+      pageSize = 20,
+      sortBy = 'id',
+      sortOrder = 'asc',
+      search = '',
+      role = '',
+      status = '',
+      membership = ''
+    } = params;
+    try {
+      // 构建查询条件
+      const where = {};
+      if (role) where.role = role;
+      if (status) where.status = status;
+      if (search) {
+        where.username = { [ctx.app.Sequelize.Op.like]: `%${search}%` };
       }
-
-      membershipMap[membership.userId] = {
-        level: effectiveLevel,
-        expiresAt,
-        coins: membership.coins,
-        basicMembershipExpires: membership.basicMembershipExpires,
-        premiumMembershipExpires: membership.premiumMembershipExpires,
-        enterpriseMembershipExpires: membership.enterpriseMembershipExpires,
+      // 查询用户
+      const { count, rows } = await ctx.model.User.findAndCountAll({
+        where,
+        order: [[sortBy, sortOrder]],
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+        attributes: { exclude: ['password'] },
+      });
+      // 查询所有会员信息
+      const memberships = await ctx.model.UserMembership.findAll();
+      // 构建会员映射
+      const membershipMap = {};
+      for (const membership of memberships) {
+        let effectiveLevel = 'free';
+        let expiresAt = null;
+        const now = new Date();
+        const basicActive = membership.basicMembershipExpires && new Date(membership.basicMembershipExpires) > now;
+        const premiumActive = membership.premiumMembershipExpires && new Date(membership.premiumMembershipExpires) > now;
+        const enterpriseActive = membership.enterpriseMembershipExpires && new Date(membership.enterpriseMembershipExpires) > now;
+        if (enterpriseActive) {
+          effectiveLevel = 'enterprise';
+          expiresAt = membership.enterpriseMembershipExpires;
+        } else if (premiumActive) {
+          effectiveLevel = 'premium';
+          expiresAt = membership.premiumMembershipExpires;
+        } else if (basicActive) {
+          effectiveLevel = 'basic';
+          expiresAt = membership.basicMembershipExpires;
+        }
+        membershipMap[membership.userId] = {
+          level: effectiveLevel,
+          expiresAt,
+          coins: membership.coins,
+          basicMembershipExpires: membership.basicMembershipExpires,
+          premiumMembershipExpires: membership.premiumMembershipExpires,
+          enterpriseMembershipExpires: membership.enterpriseMembershipExpires,
+        };
+      }
+      // 合并会员信息到用户
+      const usersWithMembership = rows.map(user => {
+        const userData = user.toJSON();
+        userData.membership = membershipMap[user.id]?.level || 'free';
+        userData.membershipExpires = membershipMap[user.id]?.expiresAt || null;
+        userData.coins = membershipMap[user.id]?.coins || 0;
+        userData.membershipInfo = membershipMap[user.id] || {
+          level: 'free', expiresAt: null, coins: 0
+        };
+        return userData;
+      });
+      // 会员筛选
+      let filteredUsers = usersWithMembership;
+      if (membership) {
+        filteredUsers = usersWithMembership.filter(user => user.membership === membership);
+      }
+      return {
+        users: filteredUsers,
+        total: filteredUsers.length === usersWithMembership.length ? count : filteredUsers.length,
+        pagination: {
+          total: filteredUsers.length === usersWithMembership.length ? count : filteredUsers.length,
+          page: parseInt(page),
+          pageSize: parseInt(pageSize),
+          totalPages: Math.ceil((filteredUsers.length === usersWithMembership.length ? count : filteredUsers.length) / parseInt(pageSize)),
+        },
       };
-    });
-
-    // 将会员信息添加到用户数据中
-    const usersWithMembership = rows.map(user => {
-      const userData = user.toJSON();
-      userData.membership = membershipMap[user.id]?.level || 'free';
-      userData.membershipExpires = membershipMap[user.id]?.expiresAt || null;
-      userData.coins = membershipMap[user.id]?.coins || 0;
-      userData.membershipInfo = membershipMap[user.id] || {
-        level: 'free',
-        expiresAt: null,
-        coins: 0,
+    } catch (error) {
+      ctx.logger.error('获取用户列表失败:', error);
+      return {
+        users: [],
+        total: 0,
+        pagination: {
+          total: 0,
+          page: parseInt(page),
+          pageSize: parseInt(pageSize),
+          totalPages: 0,
+        },
+        error: error.message,
       };
-      return userData;
-    });
-
-    // 如果有会员级别筛选，过滤结果
-    let filteredUsers = usersWithMembership;
-    if (membership) {
-      filteredUsers = usersWithMembership.filter(user => user.membership === membership);
     }
-
-    return {
-      users: filteredUsers,
-      total: filteredUsers.length === usersWithMembership.length ? count : filteredUsers.length,
-    };
   }
+  // ...已修复的 getAllUsers 方法结束...
 
   /**
    * 获取用户详情

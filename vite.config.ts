@@ -320,11 +320,13 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        '/api': {
-          target: env.VITE_API_URL || 'http://localhost:7001',
+        '/api/predict': {
+          target: 'http://localhost:5001',
           changeOrigin: true,
-          // 不再重写路径，保留 /api 前缀
-          // rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+        '/api': {
+          target: 'http://localhost:7001',
+          changeOrigin: true,
         },
         // AllTick API 代理
         '/alltick-api': {

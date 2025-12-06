@@ -121,6 +121,13 @@
               <span class="item-description">市场热力图</span>
             </div>
           </RouterLink>
+            <RouterLink to="/predict" class="dropdown-item" role="menuitem">
+              <span class="nav-icon">🔮</span>
+              <div class="item-content">
+                <span class="nav-text">股票预测</span>
+                <span class="item-description">Kronos智能预测</span>
+              </div>
+            </RouterLink>
         </div>
 
         <div class="dropdown-section" v-if="canAccessBasicFeatures">
