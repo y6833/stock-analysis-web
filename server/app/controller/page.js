@@ -37,6 +37,21 @@ class PageController extends Controller {
       };
     } catch (error) {
       ctx.logger.error('获取所有页面失败:', error);
+      
+      // 如果表不存在，返回空数组而不是错误
+      if (error.name === 'SequelizeDatabaseError' && 
+          error.message && 
+          error.message.includes("doesn't exist")) {
+        ctx.logger.warn('系统页面表不存在，返回空数组');
+        ctx.status = 200;
+        ctx.body = {
+          success: true,
+          data: [],
+          message: '系统页面表尚未初始化'
+        };
+        return;
+      }
+      
       ctx.status = 500;
       ctx.body = {
         success: false,

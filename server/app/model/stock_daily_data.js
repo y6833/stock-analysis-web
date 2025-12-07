@@ -218,11 +218,19 @@ module.exports = (app) => {
 
   // 定义模型关联
   StockDailyData.associate = function () {
+    // 获取模型关联唯一前缀，确保别名唯一性
+    const prefix = this._associationPrefix || '';
+    
+    // 防止重复关联
+    if (StockDailyData.associations && Object.keys(StockDailyData.associations).length > 0) {
+      return;
+    }
+    
     // 与股票基础信息表关联
     StockDailyData.belongsTo(app.model.Stock, {
       foreignKey: 'ts_code',
       targetKey: 'tsCode',
-      as: 'stock_info',
+      as: `${prefix}_stockDailyDataStockInfo`,
     })
   }
 

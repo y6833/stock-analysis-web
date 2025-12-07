@@ -22,37 +22,32 @@
                 <div class="portfolio-summary">
                     <div class="summary-item">
                         <span class="label">总资产</span>
-                        <span class="value">¥123,456.78</span>
+                        <span class="value">¥{{ formatCurrency(portfolioSummary.totalValue) }}</span>
                     </div>
                     <div class="summary-item">
                         <span class="label">今日收益</span>
-                        <span class="value up">+¥1,234.56 (+1.02%)</span>
+                        <span class="value" :class="portfolioSummary.totalProfit >= 0 ? 'up' : 'down'">
+                            {{ formatProfit(portfolioSummary.totalProfit, portfolioSummary.totalProfitPercent) }}
+                        </span>
                     </div>
                     <div class="summary-item">
                         <span class="label">持仓数量</span>
-                        <span class="value">12只</span>
+                        <span class="value">{{ portfolioSummary.holdingCount }}只</span>
                     </div>
                 </div>
 
-                <div class="portfolio-distribution">
+                <div class="portfolio-distribution" v-if="holdingsDistribution.length > 0">
                     <h4>资产分布</h4>
                     <div class="distribution-list">
-                        <div class="distribution-item">
-                            <span class="stock-name">贵州茅台</span>
-                            <span class="percentage">25.6%</span>
-                            <span class="amount">¥31,234.56</span>
-                        </div>
-                        <div class="distribution-item">
-                            <span class="stock-name">腾讯控股</span>
-                            <span class="percentage">18.3%</span>
-                            <span class="amount">¥22,345.67</span>
-                        </div>
-                        <div class="distribution-item">
-                            <span class="stock-name">平安银行</span>
-                            <span class="percentage">15.2%</span>
-                            <span class="amount">¥18,765.43</span>
+                        <div v-for="(holding, index) in holdingsDistribution" :key="index" class="distribution-item">
+                            <span class="stock-name">{{ holding.name }}</span>
+                            <span class="percentage">{{ holding.percentage.toFixed(1) }}%</span>
+                            <span class="amount">¥{{ formatCurrency(holding.value) }}</span>
                         </div>
                     </div>
+                </div>
+                <div v-else class="empty-distribution">
+                    <el-empty description="暂无持仓数据" :image-size="80" />
                 </div>
             </div>
         </div>
@@ -60,6 +55,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref, onMounted, watch } from 'vue'
+import { portfolioService } from '@/services/portfolioService'
+import { stockService } from '@/services/stockService'
+
 interface Props {
     data?: any
     loading?: boolean
@@ -72,6 +71,136 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     refresh: []
 }>()
+
+// 持仓数据
+const holdings = ref<any[]>([])
+
+// 从props.data或API获取持仓数据
+const loadHoldings = async () => {
+  try {
+    if (props.data && props.data.holdings) {
+      holdings.value = props.data.holdings
+    } else {
+      // 如果没有传入数据，从API获取
+      const data = await portfolioService.getHoldings()
+      holdings.value = data || []
+      
+      // 为每个持仓获取最新价格
+      if (holdings.value.length > 0) {
+        const holdingsWithPrice = await Promise.allSettled(
+          holdings.value.map(async (holding: any) => {
+            try {
+              const quote = await stockService.getStockQuote(holding.stockCode || holding.symbol)
+              return {
+                ...holding,
+                currentPrice: quote?.price || holding.currentPrice || holding.price || 0
+              }
+            } catch (error) {
+              console.warn(`获取股票 ${holding.stockCode || holding.symbol} 价格失败:`, error)
+              return holding
+            }
+          })
+        )
+        
+        holdings.value = holdingsWithPrice
+          .filter((result) => result.status === 'fulfilled')
+          .map((result: any) => result.value)
+      }
+    }
+  } catch (error) {
+    console.error('加载持仓数据失败:', error)
+    holdings.value = []
+  }
+}
+
+// 计算投资组合汇总
+const portfolioSummary = computed(() => {
+  if (!holdings.value || holdings.value.length === 0) {
+    return {
+      totalValue: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      totalProfitPercent: 0,
+      holdingCount: 0
+    }
+  }
+
+  const totalCost = holdings.value.reduce((sum, h) => {
+    const cost = (h.averageCost || h.cost || 0) * (h.quantity || 0)
+    return sum + cost
+  }, 0)
+
+  const totalValue = holdings.value.reduce((sum, h) => {
+    const value = (h.currentPrice || h.price || 0) * (h.quantity || 0)
+    return sum + value
+  }, 0)
+
+  const totalProfit = totalValue - totalCost
+  const totalProfitPercent = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0
+
+  return {
+    totalValue,
+    totalCost,
+    totalProfit,
+    totalProfitPercent,
+    holdingCount: holdings.value.length
+  }
+})
+
+// 计算资产分布（按持仓价值排序）
+const holdingsDistribution = computed(() => {
+  if (!holdings.value || holdings.value.length === 0) {
+    return []
+  }
+
+  const totalValue = portfolioSummary.value.totalValue
+  if (totalValue === 0) return []
+
+  return holdings.value
+    .map((h: any) => {
+      const value = (h.currentPrice || h.price || 0) * (h.quantity || 0)
+      const percentage = totalValue > 0 ? (value / totalValue) * 100 : 0
+      return {
+        name: h.stockName || h.name || h.stockCode || h.symbol,
+        value,
+        percentage
+      }
+    })
+    .filter((h: any) => h.value > 0)
+    .sort((a: any, b: any) => b.value - a.value)
+    .slice(0, 10) // 只显示前10个
+})
+
+// 格式化货币
+const formatCurrency = (value: number) => {
+  if (!value || isNaN(value)) return '0.00'
+  return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+// 格式化盈亏
+const formatProfit = (profit: number, percent: number) => {
+  if (profit === undefined || profit === null || isNaN(profit)) {
+    return '¥0.00 (0.00%)'
+  }
+  const sign = profit >= 0 ? '+' : ''
+  const profitStr = `${sign}¥${formatCurrency(profit)}`
+  const percentStr = percent !== undefined && !isNaN(percent) 
+    ? ` (${sign}${percent.toFixed(2)}%)` 
+    : ''
+  return `${profitStr}${percentStr}`
+}
+
+// 监听props.data变化
+onMounted(() => {
+  loadHoldings()
+})
+
+// 监听data prop变化
+watch(() => props.data, () => {
+  if (props.data) {
+    loadHoldings()
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -198,5 +327,17 @@ const emit = defineEmits<{
 .amount {
     font-size: 14px;
     color: var(--el-text-color-regular);
+}
+
+.value.down {
+    color: var(--el-color-danger);
+}
+
+.empty-distribution {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
 </style>

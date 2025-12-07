@@ -19,7 +19,7 @@ export interface TushareConfig {
 const DEFAULT_CONFIG: TushareConfig = {
   token: '',
   baseUrl: 'http://api.tushare.pro',
-  proxyUrl: '/api/tushare',
+  proxyUrl: 'http://localhost:7001/api/tushare', // 使用完整的后端URL
   rateLimit: 200, // 每分钟请求限制
   dailyLimit: 500, // 每日请求限制
   retryCount: 3,

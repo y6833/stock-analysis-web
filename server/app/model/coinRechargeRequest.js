@@ -77,6 +77,9 @@ module.exports = app => {
       allowNull: false,
       field: 'updated_at',
     },
+  }, {
+    tableName: 'coin_recharge_requests', // 指定实际表名（复数形式）
+    freezeTableName: false, // 允许Sequelize使用指定的表名
   });
 
   // 使用 associate 方法建立关联关系

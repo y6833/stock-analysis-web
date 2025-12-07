@@ -12,8 +12,19 @@ class TechnicalIndicatorsController extends Controller {
    */
   async calculateIndicators() {
     const { ctx, service } = this
-    const { symbol } = ctx.params // 路由参数是symbol，不是stockCode
-    const stockCode = symbol // 为了保持后续代码兼容性
+    // 路由参数可能是 symbol 或 code
+    const symbol = ctx.params.symbol || ctx.params.code
+    let stockCode = symbol // 为了保持后续代码兼容性
+
+    // 验证股票代码
+    if (!stockCode) {
+      ctx.status = 400
+      ctx.body = {
+        success: false,
+        message: '股票代码不能为空',
+      }
+      return
+    }
 
     // 支持GET和POST请求，从query或body获取参数
     const isGetRequest = ctx.method === 'GET'
@@ -21,20 +32,21 @@ class TechnicalIndicatorsController extends Controller {
     const { klineData, enabledSignals, period = '1d', turtleParams } = params || {}
 
     try {
-      // 参数验证
-      if (!stockCode) {
-        ctx.status = 400
-        ctx.body = {
-          success: false,
-          message: '股票代码不能为空',
-        }
-        return
-      }
-
       // 获取K线数据（如果没有提供）
       let finalKlineData = klineData
       if (!finalKlineData || !finalKlineData.close) {
-        finalKlineData = await service.stock.getKlineData(stockCode, period, 200)
+        try {
+          finalKlineData = await service.stock.getKlineData(stockCode, period, 200)
+        } catch (klineError) {
+          ctx.logger.warn(`获取股票 ${stockCode} K线数据失败: ${klineError.message}`)
+          // 如果获取K线数据失败，返回友好的错误信息
+          ctx.status = 404
+          ctx.body = {
+            success: false,
+            message: `股票 ${stockCode} 暂无数据或数据不足`,
+          }
+          return
+        }
       }
 
       // 检查K线数据是否有效

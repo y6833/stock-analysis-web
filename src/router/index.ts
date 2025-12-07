@@ -631,6 +631,7 @@ const routes = [
   { path: '/settings', redirect: '/user/settings' },
   { path: '/notifications', redirect: '/user/notifications' },
   { path: '/recharge-records', redirect: '/user/recharge-records' },
+  { path: '/realtime-monitor', redirect: '/stock/realtime-monitor' },
 
   // ===== 404 ROUTE =====
   {

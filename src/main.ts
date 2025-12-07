@@ -1,3 +1,9 @@
+// 禁用 workbox 开发环境日志
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  window.__WB_DISABLE_DEV_LOGS = true
+}
+
 // 核心样式 - 关键渲染路径
 import './assets/main.css'
 import './assets/styles/variables.css'
@@ -82,9 +88,9 @@ app.use(createResourceOptimizerPlugin({
         'https://quote.alltick.io',
         'https://api.tushare.pro'
     ],
-    // 启用路由预加载
-    enableRoutePreloading: true,
-    routePreloadDistance: 2
+    // 暂时禁用路由预加载，避免在依赖过期时导致错误
+    enableRoutePreloading: false,
+    routePreloadDistance: 0
 }), { router })
 
 // 获取股票数据服务实例

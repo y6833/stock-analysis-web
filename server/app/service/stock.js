@@ -183,6 +183,24 @@ class StockService extends Service {
       try {
         ctx.logger.info(`开始获取股票 ${stockCode} 行情...`)
 
+        // 验证股票代码格式
+        if (!stockCode) {
+          throw new Error('股票代码不能为空')
+        }
+        
+        // 格式化股票代码为Tushare格式（如果需要）
+        let formattedCode = stockCode
+        if (!stockCode.includes('.')) {
+          // 如果没有市场后缀，根据代码前缀添加
+          if (stockCode.startsWith('6')) {
+            formattedCode = `${stockCode}.SH`
+          } else if (stockCode.startsWith('0') || stockCode.startsWith('3')) {
+            formattedCode = `${stockCode}.SZ`
+          } else if (stockCode.startsWith('4') || stockCode.startsWith('8')) {
+            formattedCode = `${stockCode}.BJ`
+          }
+        }
+
         // 使用Tushare API获取实时行情
         // 首先尝试使用 daily_basic 接口获取最新交易日数据
         const tushareToken =
@@ -191,13 +209,13 @@ class StockService extends Service {
           api_name: 'daily_basic',
           token: tushareToken,
           params: {
-            ts_code: stockCode,
+            ts_code: formattedCode,
             trade_date: this.getDateString(0), // 今天
           },
         })
 
         // 输出调试信息
-        ctx.logger.info(`股票 ${stockCode} Tushare API响应: ${JSON.stringify(response.data)}`)
+        ctx.logger.info(`股票 ${formattedCode || stockCode} (原始: ${stockCode}) Tushare API响应: ${JSON.stringify(response.data)}`)
 
         // 检查API权限错误
         if (
@@ -221,7 +239,7 @@ class StockService extends Service {
               api_name: 'daily',
               token: app.config.tushare.token,
               params: {
-                ts_code: stockCode,
+                ts_code: formattedCode,
                 start_date: this.getDateString(-10), // 10天前
                 end_date: this.getDateString(0), // 今天
                 limit: 1, // 只获取最新的一条记录
@@ -239,14 +257,14 @@ class StockService extends Service {
               throw new Error(`Tushare API权限不足: ${fallbackResponse.data.msg}`)
             }
 
-            return this.processStockData(fallbackResponse, stockCode, 'daily')
+            return this.processStockData(fallbackResponse, formattedCode, 'daily')
           } catch (fallbackErr) {
-            ctx.logger.error(`获取股票 ${stockCode} fallback数据失败: ${fallbackErr.message}`)
-            throw new Error(`获取股票 ${stockCode} 数据失败: ${fallbackErr.message}`)
+            ctx.logger.error(`获取股票 ${formattedCode} fallback数据失败: ${fallbackErr.message}`)
+            throw new Error(`获取股票 ${formattedCode} 数据失败: ${fallbackErr.message}`)
           }
         }
 
-        return this.processStockData(response, stockCode, 'daily_basic')
+        return this.processStockData(response, formattedCode, 'daily_basic')
       } catch (err) {
         ctx.logger.error(`获取股票 ${stockCode} 行情失败:`, err)
 
@@ -287,15 +305,27 @@ class StockService extends Service {
       response.data.data.items.length > 0
     ) {
       const latestData = response.data.data.items[0]
-      const stockNameResult = await this.getStockName(stockCode)
-      const stockName = stockNameResult && stockNameResult.name ? stockNameResult.name : stockCode
+      
+      // 安全获取股票名称，如果失败则使用股票代码
+      let stockName = stockCode
+      try {
+        const stockNameResult = await this.getStockName(stockCode)
+        stockName = stockNameResult && stockNameResult.name ? stockNameResult.name : stockCode
+      } catch (nameError) {
+        ctx.logger.warn(`获取股票 ${stockCode} 名称失败，使用代码作为名称: ${nameError.message}`)
+        stockName = stockCode
+      }
 
       let quote
 
+      // 提取原始股票代码（去掉市场后缀，用于返回给前端）
+      const originalCode = stockCode.includes('.') ? stockCode.split('.')[0] : stockCode
+      
       if (apiType === 'daily_basic') {
         // daily_basic 接口返回的数据结构
         quote = {
-          code: stockCode,
+          code: originalCode,
+          symbol: stockCode, // 保留完整格式用于后续查询
           name: stockName,
           price: latestData[2], // 收盘价
           open: null, // daily_basic 不包含开盘价
@@ -314,7 +344,8 @@ class StockService extends Service {
       } else {
         // daily 接口返回的数据结构
         quote = {
-          code: stockCode,
+          code: originalCode,
+          symbol: stockCode, // 保留完整格式用于后续查询
           name: stockName,
           price: latestData[5], // 收盘价
           open: latestData[2], // 开盘价
@@ -332,9 +363,28 @@ class StockService extends Service {
       return quote
     }
 
-    // 如果没有获取到数据，抛出错误
-    ctx.logger.error(`股票 ${stockCode} 未获取到数据`)
-    throw new Error(`股票 ${stockCode} 未获取到数据`)
+    // 如果没有获取到数据，检查是否是API返回了空数据（可能是股票停牌、退市等）
+    const hasResponse = response && response.data
+    const hasData = hasResponse && response.data.data
+    const hasItems = hasData && response.data.data.items
+    
+    if (hasResponse && response.data.code !== undefined) {
+      // API返回了响应，但数据为空
+      const errorMsg = response.data.msg || '未知错误'
+      ctx.logger.warn(`股票 ${stockCode} 未获取到数据: ${errorMsg} (code: ${response.data.code})`)
+      
+      // 如果是权限问题，抛出错误
+      if (response.data.code === -2001 || errorMsg.includes('积分') || errorMsg.includes('权限')) {
+        throw new Error(`Tushare API权限不足: ${errorMsg}`)
+      }
+      
+      // 其他情况（可能是股票停牌、退市等），抛出警告级别的错误
+      throw new Error(`股票 ${stockCode} 未获取到数据: ${errorMsg}`)
+    }
+    
+    // 完全没有响应数据
+    ctx.logger.warn(`股票 ${stockCode} API响应数据格式异常`)
+    throw new Error(`股票 ${stockCode} 未获取到数据: API响应格式异常`)
   }
 
   // 已删除 getDefaultStockQuote 方法 - 禁止使用模拟数据
@@ -342,6 +392,18 @@ class StockService extends Service {
   // 获取股票历史数据（优先从缓存读取）
   async getStockHistoryData(stockCode, startDate = null, endDate = null, cachePriority = 3) {
     const { ctx } = this
+
+    // 验证股票代码
+    if (!stockCode) {
+      ctx.logger.error('getStockHistoryData: 股票代码为空')
+      return {
+        success: false,
+        data: [],
+        data_source: 'error',
+        data_source_message: '股票代码不能为空',
+        count: 0,
+      }
+    }
 
     try {
       ctx.logger.info(
@@ -701,16 +763,18 @@ class StockService extends Service {
       ) {
         const stockName = response.data.data.items[0][2] // 股票名称
         return {
-          name: stockName,
+          name: stockName || stockCode,
           data_source: 'external_api',
           data_source_message: '数据来自Tushare API (stock_basic)',
         }
       }
 
+      // 如果没有获取到名称，返回股票代码作为名称
+      ctx.logger.warn(`股票 ${stockCode} 未获取到名称，使用代码作为名称`)
       return {
         name: stockCode,
-        data_source: 'external_api',
-        data_source_message: '数据来自Tushare API (stock_basic)，但未获取到数据',
+        data_source: 'fallback',
+        data_source_message: '未获取到股票名称，使用代码',
       }
     }).catch((err) => {
       ctx.logger.error('获取股票名称失败:', err)

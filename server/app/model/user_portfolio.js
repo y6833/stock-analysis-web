@@ -55,8 +55,11 @@ module.exports = app => {
     // 风险监控配置
     this.hasMany(app.model.RiskMonitoringConfig, { foreignKey: 'portfolioId' });
 
-    // VaR计算记录
-    this.hasMany(app.model.VarCalculation, { foreignKey: 'portfolioId' });
+    // VaR计算记录 - 使用唯一别名避免冲突
+    this.hasMany(app.model.VarCalculation, { 
+      foreignKey: 'portfolioId',
+      as: `${prefix}_userPortfolioHasManyVarCalculations`
+    });
 
     // 投资组合收益率记录
     this.hasMany(app.model.PortfolioReturn, { foreignKey: 'portfolioId' });

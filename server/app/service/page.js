@@ -46,8 +46,19 @@ class PageService extends Service {
     }
 
     // 查询页面
-    const pages = await ctx.model.SystemPage.findAll(queryOptions);
-    return pages;
+    try {
+      const pages = await ctx.model.SystemPage.findAll(queryOptions);
+      return pages;
+    } catch (error) {
+      // 如果表不存在，返回空数组
+      if (error.name === 'SequelizeDatabaseError' && 
+          error.message && 
+          error.message.includes("doesn't exist")) {
+        ctx.logger.warn('系统页面表不存在，返回空数组');
+        return [];
+      }
+      throw error;
+    }
   }
 
   /**
@@ -393,12 +404,28 @@ class PageService extends Service {
    */
   async initSystemPages() {
     const { ctx } = this;
+    
+    try {
+      // 检查表是否存在
+      await ctx.model.SystemPage.findOne({ limit: 1 });
+    } catch (error) {
+      // 如果表不存在，抛出错误让调用方处理
+      if (error.name === 'SequelizeDatabaseError' && 
+          error.message && 
+          error.message.includes("doesn't exist")) {
+        ctx.logger.error('系统页面表不存在，请先创建表');
+        throw new Error('系统页面表不存在，请先运行数据库迁移');
+      }
+      throw error;
+    }
+    
     const transaction = await ctx.model.transaction();
 
     try {
       // 获取现有页面路径
       const existingPages = await ctx.model.SystemPage.findAll({
         attributes: ['path'],
+        transaction
       });
       const existingPaths = new Set(existingPages.map(p => p.path));
 

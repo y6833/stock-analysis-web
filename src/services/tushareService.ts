@@ -360,8 +360,14 @@ async function tushareRequestInternal(
         `Tushare API ${api_name} 请求错误 - 状态码: ${error.response.status}`,
         error.response.data
       )
-    } else if (error.request) {
-      // 请求已发送但没有收到响应
+    } else if (error.request || error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED') {
+      // 请求已发送但没有收到响应，或网络错误
+      logError(`Tushare API ${api_name} 网络错误:`, error.message || '无法连接到服务器')
+
+      // 如果是网络错误，抛出更友好的错误信息
+      if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED') {
+        throw new Error('后端服务器不可用，请确保后端服务正在运行')
+      }
       logError(`Tushare API ${api_name} 请求错误 - 无响应:`, error.request)
     } else {
       // 请求设置时发生错误
@@ -938,6 +944,31 @@ function cacheSectorList(data: any[]): void {
 
 // getMockStockList函数已移除
 
+/**
+ * 格式化股票代码为Tushare格式
+ * Tushare API需要格式：000010.SZ 或 600000.SH
+ * @param symbol 股票代码（如 000010 或 000010.SZ）
+ * @returns 格式化后的股票代码（如 000010.SZ）
+ */
+function formatSymbolForTushare(symbol: string): string {
+  // 如果已经包含.SH或.SZ后缀，直接返回
+  if (symbol.includes('.')) {
+    return symbol
+  }
+
+  // 根据股票代码规则添加后缀
+  if (symbol.startsWith('6')) {
+    return `${symbol}.SH` // 上海
+  } else if (symbol.startsWith('0') || symbol.startsWith('3')) {
+    return `${symbol}.SZ` // 深圳
+  } else if (symbol.startsWith('4') || symbol.startsWith('8')) {
+    return `${symbol}.BJ` // 北交所
+  }
+
+  // 默认返回原始代码（可能已经是正确格式）
+  return symbol
+}
+
 // Tushare 服务
 export const tushareService = {
   // API调用控制
@@ -1008,11 +1039,13 @@ export const tushareService = {
         return date.toISOString().split('T')[0].replace(/-/g, '')
       }
 
-      log(`请求股票数据: ${symbol}, 时间范围: ${formatDate(startDate)} 至 ${formatDate(endDate)}`)
+      // 格式化股票代码为Tushare格式
+      const formattedSymbol = formatSymbolForTushare(symbol)
+      log(`请求股票数据: ${symbol} (格式化: ${formattedSymbol}), 时间范围: ${formatDate(startDate)} 至 ${formatDate(endDate)}`)
 
       // 使用新的简化 API 获取股票历史数据
       const stockData = await getStockHistory(
-        symbol,
+        formattedSymbol, // 使用格式化后的代码
         formatDate(startDate),
         formatDate(endDate),
         days
@@ -1060,12 +1093,16 @@ export const tushareService = {
       // 获取当前数据源类型
       const currentDataSource = localStorage.getItem('preferredDataSource') || 'tushare'
 
+      // 格式化股票代码为Tushare格式（需要.SH或.SZ后缀）
+      const formattedSymbol = formatSymbolForTushare(symbol)
+      log(`格式化股票代码: ${symbol} -> ${formattedSymbol}`)
+
       try {
         // 获取最近交易日数据
         const data = await tushareRequest(
           'daily',
           {
-            ts_code: symbol,
+            ts_code: formattedSymbol, // 使用格式化后的代码
             start_date: formatDate(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)), // 7天前
             end_date: formatDate(today),
           },
@@ -1145,8 +1182,11 @@ export const tushareService = {
       // 先获取所有股票
       const allStocks = await this.getStocks()
 
-      // 查找匹配的股票
-      const stock = allStocks.find((s) => s.symbol === symbol)
+      // 格式化股票代码（因为股票列表中的symbol可能是000010.SZ格式）
+      const formattedSymbol = formatSymbolForTushare(symbol)
+
+      // 查找匹配的股票（支持原始格式和格式化后的格式）
+      const stock = allStocks.find((s) => s.symbol === symbol || s.symbol === formattedSymbol)
       return stock || null
     } catch (error) {
       console.error(`获取股票 ${symbol} 信息失败:`, error)

@@ -496,21 +496,59 @@ export async function getWatchlistAlerts(watchlistId: string): Promise<any[]> {
  */
 export async function getMarketOverview(forceRefresh = true): Promise<MarketOverview> {
   try {
-    const [indices, sectors, breadth] = await Promise.all([
+    // 使用 Promise.allSettled 确保即使某个请求失败，其他数据仍能返回
+    const results = await Promise.allSettled([
       fetchMarketIndices(forceRefresh),
       fetchIndustrySectors(forceRefresh),
       fetchMarketBreadth(forceRefresh)
     ])
 
+    const indices = results[0].status === 'fulfilled' ? results[0].value : []
+    const sectors = results[1].status === 'fulfilled' ? results[1].value : []
+    const breadth = results[2].status === 'fulfilled' ? results[2].value : null
+
+    // 如果 breadth 为 null 或数据无效，提供默认值
+    const validBreadth = breadth || {
+      advancing: 0,
+      declining: 0,
+      unchanged: 0,
+      newHighs: 0,
+      newLows: 0,
+      advancingVolume: 0,
+      decliningVolume: 0
+    }
+
+    // 记录失败的请求
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const names = ['市场指数', '行业板块', '市场宽度']
+        console.warn(`获取${names[index]}数据失败:`, result.reason)
+      }
+    })
+
     return {
       indices,
       sectors,
-      breadth,
+      breadth: validBreadth,
       lastUpdated: new Date().toISOString()
     }
   } catch (error) {
     console.error('获取市场概览失败:', error)
-    throw new Error(`获取市场概览失败: ${error instanceof Error ? error.message : '未知错误'}`)
+    // 返回空数据而不是抛出错误，避免页面崩溃
+    return {
+      indices: [],
+      sectors: [],
+      breadth: {
+        advancing: 0,
+        declining: 0,
+        unchanged: 0,
+        newHighs: 0,
+        newLows: 0,
+        advancingVolume: 0,
+        decliningVolume: 0
+      },
+      lastUpdated: new Date().toISOString()
+    }
   }
 }
 
@@ -569,7 +607,7 @@ async function fetchIndustrySectors(forceRefresh = true): Promise<IndustrySector
 /**
  * 获取市场宽度数据
  */
-async function fetchMarketBreadth(forceRefresh = true): Promise<MarketOverview['breadth']> {
+async function fetchMarketBreadth(forceRefresh = true): Promise<MarketOverview['breadth'] | null> {
   try {
     // 调用后端API获取真实市场宽度数据
     const response = await fetch('/api/market/breadth', {
@@ -581,22 +619,38 @@ async function fetchMarketBreadth(forceRefresh = true): Promise<MarketOverview['
     })
 
     if (!response.ok) {
-      throw new Error(`获取市场宽度数据失败: ${response.status} ${response.statusText}`)
+      console.warn(`获取市场宽度数据失败: ${response.status} ${response.statusText}`)
+      return null
     }
 
     const data = await response.json()
+    
+    // 验证数据有效性
+    // 后端可能返回不同的字段名，需要兼容处理
+    // 后端返回: upCount, downCount, flatCount (从 getMockMarketBreadth 可以看出)
+    // 前端期望: advancing, declining, unchanged
+    const hasData = data && (
+      data.advancing !== undefined || data.upCount !== undefined || 
+      data.declining !== undefined || data.downCount !== undefined
+    )
+    
+    if (!hasData) {
+      console.warn('市场宽度数据无效或为空')
+      return null
+    }
+
     return {
-      advancing: data.advancing || 0,
-      declining: data.declining || 0,
-      unchanged: data.unchanged || 0,
-      newHighs: data.new_high || 0,
-      newLows: data.new_low || 0,
-      advancingVolume: data.up_vol || 0,
-      decliningVolume: data.down_vol || 0,
+      advancing: data.advancing ?? data.upCount ?? data.up_count ?? 0,
+      declining: data.declining ?? data.downCount ?? data.down_count ?? 0,
+      unchanged: data.unchanged ?? data.flatCount ?? data.flat_count ?? 0,
+      newHighs: data.newHighs ?? data.new_high ?? data.newHighCount ?? data.new_high_count ?? 0,
+      newLows: data.newLows ?? data.new_low ?? data.newLowCount ?? data.new_low_count ?? 0,
+      advancingVolume: data.advancingVolume ?? data.up_vol ?? data.upVol ?? data.upVolume ?? 0,
+      decliningVolume: data.decliningVolume ?? data.down_vol ?? data.downVol ?? data.downVolume ?? 0,
     }
   } catch (error) {
     console.error('获取市场宽度数据失败:', error)
-    throw new Error(`获取市场宽度数据失败: ${error instanceof Error ? error.message : '未知错误'}`)
+    return null
   }
 }
 

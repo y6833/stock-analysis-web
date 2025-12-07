@@ -29,6 +29,7 @@ module.exports = (app) => {
   router.get('/api/v1/stocks/:symbol', controller.stock.getStockDetail)
   router.get('/api/v1/stocks/:symbol/quote', controller.stock.getQuote)
   router.get('/api/v1/stocks/:symbol/history', controller.stock.getHistory)
+  router.get('/api/v1/stocks/:symbol/indicators', controller.technicalIndicators.calculateIndicators)
   router.get(
     '/api/v1/stocks/:symbol/indicators',
     controller.technicalIndicators.calculateIndicators

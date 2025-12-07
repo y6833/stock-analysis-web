@@ -58,9 +58,11 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // 处理API请求 - 网络优先，失败时返回缓存
+  // 处理API请求 - 直接通过网络请求，不拦截
+  // 让API请求直接通过，避免Service Worker干扰
   if (event.request.url.includes('/api/')) {
-    event.respondWith(fetchWithNetworkFallbackToCache(event.request))
+    // 对于API请求，直接通过网络获取，不进行缓存处理
+    // 这样可以避免Service Worker导致的网络错误
     return
   }
 
@@ -108,7 +110,7 @@ self.addEventListener('fetch', (event) => {
           // 其他资源请求失败时，返回一个空响应
           return new Response('', {
             status: 408,
-            statusText: '请求超时 - 离线模式',
+            statusText: 'Request Timeout',
           })
         })
     })
@@ -143,7 +145,7 @@ function fetchWithNetworkFallbackToCache(request) {
         }
 
         // 如果缓存中没有，返回一个JSON格式的错误响应
-        if (request.headers.get('accept').includes('application/json')) {
+        if (request.headers.get('accept') && request.headers.get('accept').includes('application/json')) {
           return new Response(
             JSON.stringify({
               error: true,
@@ -151,7 +153,7 @@ function fetchWithNetworkFallbackToCache(request) {
             }),
             {
               status: 503,
-              statusText: '服务不可用 - 离线模式',
+              statusText: 'Service Unavailable',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -162,7 +164,7 @@ function fetchWithNetworkFallbackToCache(request) {
         // 其他类型的请求返回一个通用错误
         return new Response('离线模式：无法获取数据', {
           status: 503,
-          statusText: '服务不可用 - 离线模式',
+          statusText: 'Service Unavailable',
         })
       })
     })

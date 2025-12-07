@@ -43,7 +43,7 @@
             </div>
             <span class="feature-badge premium">高级</span>
           </RouterLink>
-          <RouterLink to="/realtime-monitor" class="dropdown-item" role="menuitem">
+          <RouterLink to="/stock/realtime-monitor" class="dropdown-item" role="menuitem">
             <span class="nav-icon">⚡</span>
             <div class="item-content">
               <span class="nav-text">实时监控</span>

@@ -9,6 +9,32 @@ class StockDailyCacheService {
   }
 
   /**
+   * 格式化股票代码为Tushare格式
+   */
+  formatSymbolForTushare(symbol) {
+    if (!symbol) {
+      return null
+    }
+    
+    // 如果已经包含市场后缀，直接返回
+    if (symbol.includes('.')) {
+      return symbol
+    }
+    
+    // 根据股票代码前缀添加市场后缀
+    if (symbol.startsWith('6')) {
+      return `${symbol}.SH`
+    } else if (symbol.startsWith('0') || symbol.startsWith('3')) {
+      return `${symbol}.SZ`
+    } else if (symbol.startsWith('4') || symbol.startsWith('8')) {
+      return `${symbol}.BJ`
+    }
+    
+    // 如果无法识别，返回原值
+    return symbol
+  }
+
+  /**
    * 获取股票日线数据（优先从缓存读取）
    * @param {string} tsCode 股票代码
    * @param {string} startDate 开始日期 YYYYMMDD
@@ -19,31 +45,46 @@ class StockDailyCacheService {
   async getDailyData(tsCode, startDate = null, endDate = null, cachePriority = 3) {
     const { ctx, app } = this
     
+    // 验证股票代码
+    if (!tsCode) {
+      ctx.logger.error('股票代码为空')
+      throw new Error('股票代码不能为空')
+    }
+    
+    // 格式化股票代码为Tushare格式
+    const formattedCode = this.formatSymbolForTushare(tsCode)
+    if (!formattedCode) {
+      ctx.logger.error(`无法格式化股票代码: ${tsCode}`)
+      throw new Error(`无效的股票代码: ${tsCode}`)
+    }
+    
+    ctx.logger.info(`获取股票 ${formattedCode} (原始: ${tsCode}) 历史数据，开始日期: ${startDate}, 结束日期: ${endDate}`)
+    
     try {
       // 1. 先从缓存表查询
-      const cachedData = await this.getCachedData(tsCode, startDate, endDate)
+      const cachedData = await this.getCachedData(formattedCode, startDate, endDate)
       
       // 2. 如果缓存数据完整，直接返回
       if (this.isCacheComplete(cachedData, startDate, endDate)) {
-        ctx.logger.info(`从缓存获取股票 ${tsCode} 日线数据，共 ${cachedData.length} 条`)
+        ctx.logger.info(`从缓存获取股票 ${formattedCode} 日线数据，共 ${cachedData.length} 条`)
         return this.formatCachedData(cachedData)
       }
       
       // 3. 缓存不完整，从API获取并更新缓存
-      ctx.logger.info(`缓存数据不完整，从API获取股票 ${tsCode} 日线数据`)
-      const apiData = await this.fetchFromAPI(tsCode, startDate, endDate)
+      ctx.logger.info(`缓存数据不完整，从API获取股票 ${formattedCode} 日线数据`)
+      const apiData = await this.fetchFromAPI(formattedCode, startDate, endDate)
       
       // 4. 更新缓存
       if (apiData && apiData.length > 0) {
-        await this.updateCache(tsCode, apiData, cachePriority)
+        await this.updateCache(formattedCode, apiData, cachePriority)
       }
       
       return apiData
     } catch (error) {
-      ctx.logger.error(`获取股票 ${tsCode} 日线数据失败:`, error)
+      ctx.logger.error(`获取股票 ${formattedCode} 日线数据失败:`, error)
       
       // 发生错误时，尝试返回缓存中的数据
-      const fallbackData = await this.getCachedData(tsCode, startDate, endDate)
+      const fallbackData = await this.getCachedData(formattedCode, startDate, endDate)
       if (fallbackData && fallbackData.length > 0) {
         ctx.logger.warn(`API调用失败，返回缓存数据，共 ${fallbackData.length} 条`)
         return this.formatCachedData(fallbackData)
@@ -57,7 +98,13 @@ class StockDailyCacheService {
    * 从缓存表获取数据
    */
   async getCachedData(tsCode, startDate, endDate) {
-    const { app } = this
+    const { app, ctx } = this
+    
+    // 验证股票代码
+    if (!tsCode) {
+      ctx.logger.error('getCachedData: 股票代码为空')
+      throw new Error('股票代码不能为空')
+    }
     
     const whereCondition = {
       ts_code: tsCode,

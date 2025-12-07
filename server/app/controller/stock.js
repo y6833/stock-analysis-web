@@ -94,7 +94,20 @@ class StockController extends Controller {
   // 获取股票实时行情
   async getQuote() {
     const { ctx, service } = this
-    const stockCode = ctx.params.symbol // 路由参数是symbol，不是code
+    // 路由参数可能是 code 或 symbol，都尝试获取
+    const stockCode = ctx.params.code || ctx.params.symbol
+
+    // 验证股票代码
+    if (!stockCode) {
+      ctx.status = 400
+      ctx.body = {
+        success: false,
+        message: '股票代码不能为空',
+        error: '请提供有效的股票代码'
+      }
+      ctx.logger.error('获取股票行情失败: 股票代码为空')
+      return
+    }
 
     // 获取数据源参数
     const dataSource = ctx.query.source || ctx.headers['x-data-source'] || 'tushare'
@@ -253,8 +266,23 @@ class StockController extends Controller {
   // 获取股票历史数据（使用缓存优化）
   async getHistory() {
     const { ctx, service } = this
-    const stockCode = ctx.params.symbol // 路由参数是symbol，不是code
+    // 路由参数可能是 code 或 symbol，都尝试获取
+    const stockCode = ctx.params.code || ctx.params.symbol
     const { start_date, end_date, cache_priority } = ctx.query
+
+    // 验证股票代码
+    if (!stockCode) {
+      ctx.status = 400
+      ctx.body = {
+        success: false,
+        message: '股票代码不能为空',
+        error: '请提供有效的股票代码',
+        data: [],
+        count: 0
+      }
+      ctx.logger.error('获取股票历史数据失败: 股票代码为空')
+      return
+    }
 
     try {
       // 使用新的缓存优化方法

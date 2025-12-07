@@ -281,17 +281,46 @@ function handleSpecificError(appError: AppError): void {
 export function setupGlobalErrorHandlers(): void {
   // 处理未捕获的Promise错误
   window.addEventListener('unhandledrejection', (event) => {
+    const error = event.reason;
+    const errorMessage = error?.message || String(error);
+    
+    // 忽略 Vite 依赖预构建相关的错误（这些错误会在刷新后自动解决）
+    if (
+      errorMessage.includes('Failed to fetch dynamically imported module') ||
+      errorMessage.includes('Outdated Optimize Dep') ||
+      errorMessage.includes('504') ||
+      errorMessage.includes('ERR_ABORTED')
+    ) {
+      // 这些是 Vite 开发环境的正常现象，不需要处理
+      event.preventDefault();
+      return;
+    }
+    
     const appError = createAppError(
       ErrorType.UNKNOWN,
       '未处理的Promise错误',
       ErrorSeverity.ERROR,
-      event.reason
+      error
     );
     handleError(appError);
   });
 
   // 处理全局JavaScript错误
   window.addEventListener('error', (event) => {
+    const errorMessage = event.message || '';
+    
+    // 忽略 Vite 依赖预构建相关的错误（这些错误会在刷新后自动解决）
+    if (
+      errorMessage.includes('Failed to fetch dynamically imported module') ||
+      errorMessage.includes('Outdated Optimize Dep') ||
+      errorMessage.includes('504') ||
+      errorMessage.includes('ERR_ABORTED') ||
+      (event.filename && event.filename.includes('/node_modules/.vite/deps/'))
+    ) {
+      // 这些是 Vite 开发环境的正常现象，不需要处理
+      return;
+    }
+    
     const appError = createAppError(
       ErrorType.UNKNOWN,
       `JavaScript错误: ${event.message}`,

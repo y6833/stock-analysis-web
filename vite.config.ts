@@ -77,6 +77,20 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2,ttf,eot}'],
+          // 忽略源代码文件，避免在开发环境中产生大量警告
+          globIgnores: [
+            '**/src/**', 
+            '**/node_modules/**', 
+            '**/*.ts', 
+            '**/*.tsx', 
+            '**/*.vue?*',
+            '**/*.vue',
+            '**/dev-dist/**',
+            '**/.vite/**'
+          ],
+          // 禁用导航预加载，避免不必要的警告
+          navigateFallback: undefined,
+          navigateFallbackDenylist: [/^\/src\//, /^\/api\//],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com/,
@@ -180,7 +194,11 @@ export default defineConfig(({ mode }) => {
         },
         devOptions: {
           enabled: true,
-          type: 'module'
+          type: 'module',
+          // 在开发环境中禁用预缓存日志，减少控制台警告
+          disableDevLogs: true,
+          // 在开发环境中禁用导航预加载，避免不必要的警告
+          navigateFallback: undefined
         }
       }),
       // 添加旧浏览器兼容支持
@@ -239,6 +257,34 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
+    },
+    // 优化依赖预构建配置
+    optimizeDeps: {
+      // 强制重新构建依赖
+      force: false,
+      // 包含需要预构建的依赖
+      include: [
+        'vue',
+        'vue-router',
+        'pinia',
+        'axios',
+        'element-plus',
+        '@element-plus/icons-vue',
+        'echarts'
+      ],
+      // 排除不需要预构建的依赖
+      exclude: [],
+      // 处理依赖过期的情况
+      esbuildOptions: {
+        target: 'esnext'
+      }
+    },
+    // 开发服务器配置
+    server: {
+      // 当依赖过期时，自动重新构建
+      hmr: {
+        overlay: true
+      }
     },
     build: {
       // 启用源码映射以便于调试，生产环境禁用

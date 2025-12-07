@@ -38,7 +38,7 @@
           @click="$emit('stock-click', stock)">
           <div class="stock-rank">{{ index + 1 }}</div>
           <div class="stock-info">
-            <div class="stock-name">{{ stock.name }}</div>
+            <div class="stock-name">{{ stock.name || stock.symbol || '未知' }}</div>
             <div class="stock-code">{{ stock.symbol }}</div>
           </div>
           <div class="stock-price">

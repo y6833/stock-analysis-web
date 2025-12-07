@@ -267,8 +267,13 @@ class StockService extends BaseDataService {
           } else {
             throw new Error('后端API返回数据格式错误')
           }
-        } catch (error) {
-          console.error('[StockService] 从数据库获取股票列表失败:', error)
+        } catch (error: any) {
+          // 如果是网络错误（后端不可用），直接尝试使用外部数据源
+          if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.code === 'ECONNABORTED') {
+            console.warn('[StockService] 后端服务器不可用，直接使用外部数据源')
+          } else {
+            console.error('[StockService] 从数据库获取股票列表失败:', error)
+          }
 
           // 如果后端API失败，尝试使用外部数据源作为备用
           console.log('[StockService] 数据库获取失败，尝试使用外部数据源作为备用...')
@@ -630,10 +635,44 @@ class StockService extends BaseDataService {
       })
 
       if (response.data) {
+        const rawData = response.data
+        
+        // 检测是否是假数据（模拟数据或示例数据）
+        const isFakeData = 
+          rawData.data_source === 'sample' ||
+          rawData.data_source === 'mock' ||
+          rawData.data_source === 'mock_data' ||
+          rawData.source_type === 'sample' ||
+          rawData.data_source_message?.includes('示例数据') ||
+          rawData.data_source_message?.includes('模拟数据') ||
+          rawData.data_source_message?.includes('sample') ||
+          rawData.data_source_message?.includes('mock')
+        
+        if (isFakeData) {
+          console.warn(`❌ 检测到股票${symbol}返回的是假数据，拒绝使用:`, {
+            data_source: rawData.data_source,
+            message: rawData.data_source_message,
+            price: rawData.price,
+            name: rawData.name
+          })
+          throw new Error(`后端返回的是模拟数据，不是真实数据`)
+        }
+        
+        // 额外验证：检查数据是否看起来像假数据
+        // 如果价格是常见的假数据值（如17.17），需要额外验证
+        const suspiciousPrice = rawData.price === 17.17 || 
+                                rawData.price === 10.00 || 
+                                rawData.price === 100.00
+        const suspiciousChange = rawData.change === 2.20 || 
+                                 rawData.pct_chg === 14.71
+        
+        if (suspiciousPrice && suspiciousChange && !rawData.data_source) {
+          console.warn(`⚠️ 股票${symbol}的数据看起来可疑（价格${rawData.price}，涨跌${rawData.change}），但未标记数据源，继续使用但记录警告`)
+        }
+
         console.log(`使用 ${currentSource} 数据源获取股票${symbol}行情成功`)
 
         // 确保数据完整性，补充缺失的字段
-        const rawData = response.data
         const processedData = {
           symbol: symbol,
           name: rawData.name || `股票${symbol}`,
@@ -666,14 +705,13 @@ class StockService extends BaseDataService {
     } catch (error) {
       console.error(`获取股票${symbol}行情失败:`, error)
 
-      // 直接返回示例数据，避免复杂的数据源切换逻辑
-      console.warn(`后端API调用失败，直接返回股票${symbol}的示例数据`)
-      showToast(
-        `无法获取${symbol}的实时行情，显示示例数据`,
-        'warning'
-      )
-
-      return this.generateSampleQuote(symbol)
+      // 不再返回假数据，直接抛出错误
+      // 让调用方决定如何处理（显示错误状态或重试）
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      console.warn(`无法获取股票${symbol}的真实行情数据:`, errorMessage)
+      
+      // 抛出错误，不返回假数据
+      throw new Error(`无法获取股票${symbol}的真实行情数据: ${errorMessage}`)
     }
   }
 

@@ -1,23 +1,54 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { stockService } from '@/services/stockService'
-import type { Stock } from '@/types/stock'
+import type { Stock, StockQuote } from '@/types/stock'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import DataSourceInfo from '@/components/common/DataSourceInfo.vue'
 import { useToast } from '@/composables/useToast'
 import eventBus from '@/utils/eventBus'
+import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'
+import { dataSourceStateManager } from '@/services/dataSourceStateManager'
 
 const router = useRouter()
 const { showToast } = useToast()
 const popularStocks = ref<Stock[]>([])
+const stockQuotes = ref<Map<string, StockQuote>>(new Map())
 const isLoading = ref(true)
+const isQuoteLoading = ref(false)
+const activeCategory = ref('dashboard')
 
 // 数据来源信息
 const dataSource = ref('未知')
 const dataSourceMessage = ref('数据来源未知')
 const isRealTime = ref(false)
 const isCache = ref(false)
+
+// 格式化价格
+const formatPrice = (price: number | undefined) => {
+  if (!price) return '--'
+  return price.toFixed(2)
+}
+
+// 格式化涨跌幅
+const formatChange = (change: number | undefined) => {
+  if (change === undefined || change === null) return '--'
+  const sign = change >= 0 ? '+' : ''
+  return `${sign}${change.toFixed(2)}`
+}
+
+// 格式化涨跌幅百分比
+const formatChangePercent = (percent: number | undefined) => {
+  if (percent === undefined || percent === null) return '--'
+  const sign = percent >= 0 ? '+' : ''
+  return `${sign}${percent.toFixed(2)}%`
+}
+
+// 获取涨跌颜色类
+const getChangeClass = (change: number | undefined) => {
+  if (change === undefined || change === null) return ''
+  return change >= 0 ? 'positive' : 'negative'
+}
 
 // 获取热门股票和数据源信息
 const fetchStocksAndUpdateInfo = async () => {
@@ -27,15 +58,26 @@ const fetchStocksAndUpdateInfo = async () => {
     // 获取所有股票并取前10个作为热门股票
     const result = await stockService.getStocks()
 
-    // 保存股票数据
-    popularStocks.value = result.slice(0, 10)
+    // 检查返回结果
+    if (!result || !Array.isArray(result)) {
+      console.warn('获取股票列表返回格式异常:', result)
+      popularStocks.value = []
+      return
+    }
 
-    // 保存数据来源信息
-    if (result.data_source) {
-      dataSource.value = result.data_source
-      dataSourceMessage.value = result.data_source_message || `数据来自${result.data_source}`
-      isRealTime.value = result.is_real_time || false
-      isCache.value = result.is_cache || false
+    // 保存股票数据（取前10个作为热门股票）
+    const stocks = Array.isArray(result) ? result : []
+    popularStocks.value = stocks.slice(0, 10)
+
+    console.log(`成功获取 ${stocks.length} 只股票，显示前 ${popularStocks.value.length} 只热门股票`)
+
+    // 保存数据来源信息（从返回结果的扩展属性中获取）
+    const resultWithMeta = result as any
+    if (resultWithMeta.data_source) {
+      dataSource.value = resultWithMeta.data_source
+      dataSourceMessage.value = resultWithMeta.data_source_message || `数据来自${resultWithMeta.data_source}`
+      isRealTime.value = resultWithMeta.is_real_time || false
+      isCache.value = resultWithMeta.is_cache || false
 
       // 显示数据来源提示
       const sourceType = isRealTime.value ? '实时' : '缓存'
@@ -43,12 +85,96 @@ const fetchStocksAndUpdateInfo = async () => {
       showToast(dataSourceMessage.value, toastType)
 
       console.log(`数据来源: ${dataSource.value}, ${sourceType}数据`)
+    } else {
+      // 如果没有数据源信息，使用默认值
+      dataSource.value = '未知'
+      dataSourceMessage.value = '数据来源未知'
+      isRealTime.value = false
+      isCache.value = false
     }
-  } catch (error) {
+
+    // 获取股票行情数据
+    if (popularStocks.value.length > 0) {
+      await fetchStockQuotes()
+    }
+  } catch (error: any) {
     console.error('获取热门股票失败:', error)
+    popularStocks.value = []
+
+    // 显示错误提示
+    const errorMessage = error?.message || '获取股票数据失败'
+    showToast(errorMessage, 'error')
   } finally {
     isLoading.value = false
   }
+}
+
+// 获取股票行情数据
+const fetchStockQuotes = async () => {
+  if (popularStocks.value.length === 0) {
+    console.log('没有股票数据，跳过行情获取')
+    return
+  }
+
+  isQuoteLoading.value = true
+  try {
+    const currentDataSourceType = dataSourceStateManager.getCurrentDataSource()
+    const currentDataSource = DataSourceFactory.createDataSource(currentDataSourceType)
+
+    console.log(`开始获取 ${popularStocks.value.length} 只股票的行情数据，数据源: ${currentDataSourceType}`)
+
+    // 并发获取所有股票的行情数据，限制并发数量避免过载
+    const BATCH_SIZE = 5 // 每批处理5只股票
+    const batches: Stock[][] = []
+
+    for (let i = 0; i < popularStocks.value.length; i += BATCH_SIZE) {
+      batches.push(popularStocks.value.slice(i, i + BATCH_SIZE))
+    }
+
+    // 逐批处理，避免并发过多
+    for (const batch of batches) {
+      const quotePromises = batch.map(async (stock) => {
+        try {
+          // 获取股票代码（确保格式正确）
+          const symbol = stock.symbol || ''
+          if (!symbol) {
+            console.warn('股票代码为空，跳过:', stock)
+            return null
+          }
+
+          const quote = await currentDataSource.getStockQuote(symbol)
+          return { symbol, quote }
+        } catch (error: any) {
+          console.warn(`获取股票 ${stock.symbol} 行情失败:`, error?.message || error)
+          return null
+        }
+      })
+
+      const results = await Promise.allSettled(quotePromises)
+
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value) {
+          stockQuotes.value.set(result.value.symbol, result.value.quote)
+        }
+      })
+
+      // 批次间延迟，避免API限制
+      if (batches.indexOf(batch) < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 200))
+      }
+    }
+
+    console.log(`成功获取 ${stockQuotes.value.size} 只股票的行情数据`)
+  } catch (error: any) {
+    console.error('批量获取股票行情失败:', error?.message || error)
+  } finally {
+    isQuoteLoading.value = false
+  }
+}
+
+// 获取股票行情
+const getStockQuote = (symbol: string): StockQuote | null => {
+  return stockQuotes.value.get(symbol) || null
 }
 
 // 组件挂载时获取数据
@@ -76,6 +202,177 @@ const goToStockAnalysis = (symbol: string) => {
     query: { symbol },
   })
 }
+
+// 功能分类数据
+const featureCategories = ref([
+  {
+    id: 'dashboard',
+    name: '数据仪表盘',
+    icon: '📊',
+    features: [
+      {
+        id: 'dashboard-basic',
+        title: '基础仪表盘',
+        description: '核心市场数据概览，快速了解市场动态',
+        icon: '📊',
+        path: '/dashboard',
+        badge: '免费',
+        badgeType: 'free',
+        type: 'free'
+      },
+      {
+        id: 'dashboard-advanced',
+        title: '高级仪表盘',
+        description: '专业级投资仪表盘，集成实时数据和智能分析',
+        icon: '🚀',
+        path: '/advanced-dashboard',
+        badge: '高级',
+        badgeType: 'premium',
+        type: 'premium'
+      },
+      {
+        id: 'realtime-monitor',
+        title: '实时监控',
+        description: 'WebSocket实时数据推送，市场异动即时提醒',
+        icon: '⚡',
+        path: '/stock/realtime-monitor',
+        badge: '高级',
+        badgeType: 'premium',
+        type: 'premium'
+      }
+    ]
+  },
+  {
+    id: 'analysis',
+    name: '分析工具',
+    icon: '📈',
+    features: [
+      {
+        id: 'stock-analysis',
+        title: '股票分析',
+        description: '详细的技术指标分析和价格走势图表',
+        icon: '📈',
+        path: '/stock',
+        badge: '免费',
+        badgeType: 'free',
+        type: 'free'
+      },
+      {
+        id: 'market-heatmap',
+        title: '大盘云图',
+        description: '直观展示市场整体情况和行业板块趋势',
+        icon: '🌎',
+        path: '/market/heatmap',
+        badge: '免费',
+        badgeType: 'free',
+        type: 'free'
+      },
+      {
+        id: 'position-management',
+        title: '仓位管理',
+        description: '投资组合跟踪，收益风险监控和资产配置',
+        icon: '💼',
+        path: '/position-management',
+        badge: '基础',
+        badgeType: 'basic',
+        type: 'basic'
+      },
+      {
+        id: 'turtle-trading',
+        title: '海龟交易法',
+        description: '经典的趋势跟踪交易策略系统',
+        icon: '🐢',
+        path: '/strategies/turtle-trading',
+        badge: '基础',
+        badgeType: 'basic',
+        type: 'basic'
+      }
+    ]
+  },
+  {
+    id: 'intelligent',
+    name: '智能工具',
+    icon: '🤖',
+    features: [
+      {
+        id: 'ai-recommendation',
+        title: 'AI智能推荐',
+        description: '基于机器学习算法的个性化股票推荐系统',
+        icon: '🤖',
+        path: '/strategies/smart-recommendation',
+        badge: '基础',
+        badgeType: 'basic',
+        type: 'basic'
+      },
+      {
+        id: 'doji-screener',
+        title: '十字星选股',
+        description: '专业的十字星形态识别与筛选工具',
+        icon: '✨',
+        path: '/doji-pattern/screener',
+        badge: '基础',
+        badgeType: 'basic',
+        type: 'basic'
+      },
+      {
+        id: 'smart-alerts',
+        title: '智能提醒',
+        description: '价格突破和技术指标信号的智能提醒',
+        icon: '🔔',
+        path: '/alerts',
+        badge: '基础',
+        badgeType: 'basic',
+        type: 'basic'
+      },
+      {
+        id: 'doji-alerts',
+        title: '十字星提醒',
+        description: '十字星形态出现时的专业提醒服务',
+        icon: '⚡',
+        path: '/doji-pattern/alerts',
+        badge: '基础',
+        badgeType: 'basic',
+        type: 'basic'
+      },
+      {
+        id: 'backtest',
+        title: '策略回测',
+        description: '历史数据验证投资策略，量化分析表现',
+        icon: '🔄',
+        path: '/backtest',
+        badge: '高级',
+        badgeType: 'premium',
+        type: 'premium'
+      },
+      {
+        id: 'risk-monitoring',
+        title: '风险管理',
+        description: '全方位的风险监控与控制系统',
+        icon: '🛡️',
+        path: '/risk/monitoring',
+        badge: '高级',
+        badgeType: 'premium',
+        type: 'premium'
+      },
+      {
+        id: 'simulation',
+        title: '模拟交易',
+        description: '虚拟交易环境，无风险练习投资策略',
+        icon: '🎮',
+        path: '/risk/simulation',
+        badge: '高级',
+        badgeType: 'premium',
+        type: 'premium'
+      }
+    ]
+  }
+])
+
+// 当前显示的功能列表
+const currentFeatures = computed(() => {
+  const category = featureCategories.value.find(cat => cat.id === activeCategory.value)
+  return category ? category.features : []
+})
 </script>
 
 <template>
@@ -260,192 +557,43 @@ const goToStockAnalysis = (symbol: string) => {
       </div>
     </section>
 
-    <!-- 核心功能展示 -->
-    <section class="features">
+    <!-- 核心功能展示 - 全新布局 -->
+    <section class="features-modern">
       <div class="container">
         <div class="section-header">
           <h2 class="section-title">核心功能</h2>
           <p class="section-description">专业的投资分析工具，助力您的投资决策</p>
         </div>
 
-        <div class="feature-categories">
-          <!-- 仪表盘类 -->
-          <div class="feature-category">
-            <div class="category-header">
-              <div class="category-icon">📊</div>
-              <h3 class="category-title">数据仪表盘</h3>
-            </div>
-            <div class="category-cards">
-              <div class="feature-card" @click="router.push('/dashboard')">
-                <div class="card-header">
-                  <div class="icon">📊</div>
-                  <h4>基础仪表盘</h4>
-                </div>
-                <p>核心市场数据概览，快速了解市场动态</p>
-                <div class="card-footer">
-                  <span class="access-level free">免费</span>
+        <!-- 功能分类标签 -->
+        <div class="feature-tabs">
+          <button v-for="(category, index) in featureCategories" :key="category.id"
+            :class="['tab-button', { active: activeCategory === category.id }]" @click="activeCategory = category.id">
+            <span class="tab-icon">{{ category.icon }}</span>
+            <span class="tab-text">{{ category.name }}</span>
+            <span class="tab-count">{{ category.features.length }}</span>
+          </button>
+        </div>
+
+        <!-- 功能卡片网格 -->
+        <div class="features-grid">
+          <div v-for="feature in currentFeatures" :key="feature.id" :class="['feature-card-modern', feature.type]"
+            @click="router.push(feature.path)">
+            <div class="feature-card-bg"></div>
+            <div class="feature-card-content">
+              <div class="feature-icon-wrapper">
+                <div class="feature-icon">{{ feature.icon }}</div>
+                <div class="feature-badge-modern" :class="feature.badgeType">
+                  {{ feature.badge }}
                 </div>
               </div>
-
-              <div class="feature-card premium-card" @click="router.push('/advanced-dashboard')">
-                <div class="card-header">
-                  <div class="icon">🚀</div>
-                  <h4>高级仪表盘</h4>
-                </div>
-                <p>专业级投资仪表盘，集成实时数据和智能分析</p>
-                <div class="card-footer">
-                  <span class="feature-badge premium">高级</span>
-                </div>
+              <div class="feature-info">
+                <h3 class="feature-title">{{ feature.title }}</h3>
+                <p class="feature-description">{{ feature.description }}</p>
               </div>
-
-              <div class="feature-card premium-card" @click="router.push('/stock/realtime-monitor')">
-                <div class="card-header">
-                  <div class="icon">⚡</div>
-                  <h4>实时监控</h4>
-                </div>
-                <p>WebSocket实时数据推送，市场异动即时提醒</p>
-                <div class="card-footer">
-                  <span class="feature-badge premium">高级</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 分析工具类 -->
-          <div class="feature-category">
-            <div class="category-header">
-              <div class="category-icon">📈</div>
-              <h3 class="category-title">分析工具</h3>
-            </div>
-            <div class="category-cards">
-              <div class="feature-card" @click="router.push('/stock')">
-                <div class="card-header">
-                  <div class="icon">📈</div>
-                  <h4>股票分析</h4>
-                </div>
-                <p>详细的技术指标分析和价格走势图表</p>
-                <div class="card-footer">
-                  <span class="access-level free">免费</span>
-                </div>
-              </div>
-
-              <div class="feature-card" @click="router.push('/market/heatmap')">
-                <div class="card-header">
-                  <div class="icon">🌎</div>
-                  <h4>大盘云图</h4>
-                </div>
-                <p>直观展示市场整体情况和行业板块趋势</p>
-                <div class="card-footer">
-                  <span class="access-level free">免费</span>
-                </div>
-              </div>
-
-              <div class="feature-card basic-card" @click="router.push('/position-management')">
-                <div class="card-header">
-                  <div class="icon">💼</div>
-                  <h4>仓位管理</h4>
-                </div>
-                <p>投资组合跟踪，收益风险监控和资产配置</p>
-                <div class="card-footer">
-                  <span class="feature-badge basic">基础</span>
-                </div>
-              </div>
-
-              <div class="feature-card basic-card" @click="router.push('/strategies/turtle-trading')">
-                <div class="card-header">
-                  <div class="icon">🐢</div>
-                  <h4>海龟交易法</h4>
-                </div>
-                <p>经典的趋势跟踪交易策略系统</p>
-                <div class="card-footer">
-                  <span class="feature-badge basic">基础</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 智能工具类 -->
-          <div class="feature-category">
-            <div class="category-header">
-              <div class="category-icon">🤖</div>
-              <h3 class="category-title">智能工具</h3>
-            </div>
-            <div class="category-cards">
-              <div class="feature-card basic-card" @click="router.push('/strategies/smart-recommendation')">
-                <div class="card-header">
-                  <div class="icon">🤖</div>
-                  <h4>AI智能推荐</h4>
-                </div>
-                <p>基于机器学习算法的个性化股票推荐系统，智能分析市场趋势</p>
-                <div class="card-footer">
-                  <span class="access-level free">基础</span>
-                </div>
-              </div>
-
-              <div class="feature-card basic-card" @click="router.push('/doji-pattern/screener')">
-                <div class="card-header">
-                  <div class="icon">✨</div>
-                  <h4>十字星选股</h4>
-                </div>
-                <p>专业的十字星形态识别与筛选工具，发现潜在的反转机会</p>
-                <div class="card-footer">
-                  <span class="access-level free">基础</span>
-                </div>
-              </div>
-
-              <div class="feature-card basic-card" @click="router.push('/alerts')">
-                <div class="card-header">
-                  <div class="icon">🔔</div>
-                  <h4>智能提醒</h4>
-                </div>
-                <p>价格突破和技术指标信号的智能提醒</p>
-                <div class="card-footer">
-                  <span class="access-level free">基础</span>
-                </div>
-              </div>
-
-              <div class="feature-card basic-card" @click="router.push('/doji-pattern/alerts')">
-                <div class="card-header">
-                  <div class="icon">⚡</div>
-                  <h4>十字星提醒</h4>
-                </div>
-                <p>十字星形态出现时的专业提醒服务，不错过关键信号</p>
-                <div class="card-footer">
-                  <span class="access-level free">基础</span>
-                </div>
-              </div>
-
-              <div class="feature-card premium-card" @click="router.push('/backtest')">
-                <div class="card-header">
-                  <div class="icon">🔄</div>
-                  <h4>策略回测</h4>
-                </div>
-                <p>历史数据验证投资策略，量化分析表现</p>
-                <div class="card-footer">
-                  <span class="feature-badge premium">高级</span>
-                </div>
-              </div>
-
-              <div class="feature-card premium-card" @click="router.push('/risk/monitoring')">
-                <div class="card-header">
-                  <div class="icon">🛡️</div>
-                  <h4>风险管理</h4>
-                </div>
-                <p>全方位的风险监控与控制系统，保护投资安全</p>
-                <div class="card-footer">
-                  <span class="feature-badge premium">高级</span>
-                </div>
-              </div>
-
-              <div class="feature-card premium-card" @click="router.push('/risk/simulation')">
-                <div class="card-header">
-                  <div class="icon">🎮</div>
-                  <h4>模拟交易</h4>
-                </div>
-                <p>虚拟交易环境，无风险练习投资策略</p>
-                <div class="card-footer">
-                  <span class="feature-badge premium">高级</span>
-                </div>
+              <div class="feature-action">
+                <span class="action-text">立即使用</span>
+                <span class="action-arrow">→</span>
               </div>
             </div>
           </div>
@@ -453,29 +601,66 @@ const goToStockAnalysis = (symbol: string) => {
       </div>
     </section>
 
+    <!-- 热门股票区域 -->
     <section class="popular-stocks">
-      <h2>热门股票</h2>
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">热门股票</h2>
+          <p class="section-description">实时行情数据，把握市场动态</p>
+        </div>
 
-      <!-- 数据来源信息 -->
-      <DataSourceInfo v-if="!isLoading && dataSource !== '未知'" :dataSource="dataSource"
-        :dataSourceMessage="dataSourceMessage" :isRealTime="isRealTime" :isCache="isCache"
-        class="data-source-info-container" />
+        <!-- 数据来源信息 -->
+        <DataSourceInfo v-if="!isLoading && dataSource !== '未知'" :dataSource="dataSource"
+          :dataSourceMessage="dataSourceMessage" :isRealTime="isRealTime" :isCache="isCache"
+          class="data-source-info-container" />
 
-      <div v-if="isLoading" class="loading">
-        <div class="loading-spinner"></div>
-        <p>正在加载热门股票...</p>
-      </div>
-      <div v-else class="stock-cards">
-        <div v-for="stock in popularStocks" :key="stock.symbol" class="stock-card"
-          @click="goToStockAnalysis(stock.symbol)">
-          <div class="stock-info">
-            <h3>{{ stock.name }}</h3>
-            <p class="stock-symbol">{{ stock.symbol }}</p>
-            <p class="stock-market">{{ stock.market }}</p>
-          </div>
-          <div class="view-btn">
-            <span>查看分析</span>
-            <span class="arrow">→</span>
+        <div v-if="isLoading" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>正在加载热门股票...</p>
+        </div>
+        <div v-else-if="popularStocks.length === 0" class="empty-state">
+          <div class="empty-icon">📊</div>
+          <p class="empty-text">暂无热门股票数据</p>
+          <button class="empty-button" @click="fetchStocksAndUpdateInfo">重新加载</button>
+        </div>
+        <div v-else class="stock-grid">
+          <div v-for="stock in popularStocks" :key="stock.symbol" class="stock-card-modern"
+            @click="goToStockAnalysis(stock.symbol)">
+            <div class="stock-header">
+              <div class="stock-title-group">
+                <h3 class="stock-name">{{ stock.name }}</h3>
+                <span class="stock-symbol">{{ stock.symbol }}</span>
+              </div>
+              <div class="stock-market-badge">{{ stock.market || 'A股' }}</div>
+            </div>
+
+            <div class="stock-price-section">
+              <template v-if="getStockQuote(stock.symbol)">
+                <div class="price-main" :class="getChangeClass(getStockQuote(stock.symbol)?.change)">
+                  ¥{{ formatPrice(getStockQuote(stock.symbol)?.price) }}
+                </div>
+                <div class="price-change" :class="getChangeClass(getStockQuote(stock.symbol)?.change)">
+                  <span class="change-value">{{ formatChange(getStockQuote(stock.symbol)?.change) }}</span>
+                  <span class="change-percent">{{ formatChangePercent((getStockQuote(stock.symbol) as
+                    any)?.changePercent || (getStockQuote(stock.symbol) as any)?.pct_chg) }}</span>
+                </div>
+              </template>
+              <template v-else>
+                <div class="price-main no-data">--</div>
+                <div class="price-change no-data">暂无数据</div>
+              </template>
+            </div>
+
+            <div class="stock-footer">
+              <div class="stock-industry" v-if="stock.industry">
+                <span class="industry-icon">🏢</span>
+                <span>{{ stock.industry }}</span>
+              </div>
+              <div class="view-action">
+                <span>查看详情</span>
+                <span class="arrow-icon">→</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -994,96 +1179,400 @@ const goToStockAnalysis = (symbol: string) => {
   transform: translateX(4px);
 }
 
-/* 功能区域 */
-.features {
-  margin: var(--spacing-xl) 0;
-  padding: var(--spacing-xl) 0;
+/* 现代化功能区域 */
+.features-modern {
+  padding: var(--spacing-20) 0;
+  background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
   position: relative;
 }
 
-.features h2 {
-  text-align: center;
-  font-size: var(--font-size-xl);
-  margin-bottom: var(--spacing-xl);
-  color: var(--primary-color);
-  position: relative;
-  display: inline-block;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.features h2::after {
+.features-modern::before {
   content: '';
   position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 50px;
-  height: 3px;
-  background-color: var(--accent-color);
-  border-radius: 3px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
 }
 
-.feature-cards {
+/* 功能分类标签 */
+.feature-tabs {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-12);
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-6);
+  background: var(--bg-primary);
+  border: 2px solid var(--border-light);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-accent);
+  transition: left var(--transition-normal);
+  z-index: 0;
+}
+
+.tab-button:hover {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.tab-button.active {
+  border-color: var(--accent-color);
+  background: var(--gradient-accent);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-lg);
+}
+
+.tab-button.active::before {
+  left: 0;
+}
+
+.tab-icon {
+  font-size: var(--font-size-lg);
+  z-index: 1;
+  position: relative;
+}
+
+.tab-text {
+  z-index: 1;
+  position: relative;
+}
+
+.tab-count {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  z-index: 1;
+  position: relative;
+}
+
+.tab-button.active .tab-count {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 功能卡片网格 */
+.features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-8);
+}
+
+/* 现代化功能卡片 */
+.feature-card-modern {
+  position: relative;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-2xl);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  overflow: hidden;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-card-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  z-index: 0;
+}
+
+.feature-card-modern.free .feature-card-bg {
+  background: linear-gradient(135deg, rgba(72, 187, 120, 0.05) 0%, transparent 100%);
+}
+
+.feature-card-modern.basic .feature-card-bg {
+  background: linear-gradient(135deg, rgba(66, 153, 225, 0.05) 0%, transparent 100%);
+}
+
+.feature-card-modern.premium .feature-card-bg {
+  background: linear-gradient(135deg, rgba(214, 158, 46, 0.05) 0%, transparent 100%);
+}
+
+.feature-card-modern:hover .feature-card-bg {
+  opacity: 1;
+}
+
+.feature-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-accent);
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+  z-index: 1;
+}
+
+.feature-card-modern.free::before {
+  background: linear-gradient(90deg, #48bb78, #38a169);
+}
+
+.feature-card-modern.basic::before {
+  background: linear-gradient(90deg, #4299e1, #3182ce);
+}
+
+.feature-card-modern.premium::before {
+  background: linear-gradient(90deg, #d69e2e, #b7791f);
+}
+
+.feature-card-modern:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-2xl);
+  border-color: var(--accent-color);
+}
+
+.feature-card-modern:hover::before {
+  transform: scaleX(1);
+}
+
+.feature-card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.feature-icon-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-4);
+}
+
+.feature-icon {
+  font-size: var(--font-size-4xl);
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-accent);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.feature-card-modern.free .feature-icon {
+  background: linear-gradient(135deg, #48bb78, #38a169);
+}
+
+.feature-card-modern.basic .feature-icon {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+}
+
+.feature-card-modern.premium .feature-icon {
+  background: linear-gradient(135deg, #d69e2e, #b7791f);
+}
+
+.feature-badge-modern {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.feature-badge-modern.free {
+  background: linear-gradient(135deg, #48bb78, #38a169);
+  color: white;
+}
+
+.feature-badge-modern.basic {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+}
+
+.feature-badge-modern.premium {
+  background: linear-gradient(135deg, #d69e2e, #b7791f);
+  color: white;
+}
+
+.feature-info {
+  flex: 1;
+  margin-bottom: var(--spacing-4);
+}
+
+.feature-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-2);
+  line-height: 1.3;
+}
+
+.feature-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.feature-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--border-light);
+  color: var(--accent-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.action-arrow {
+  font-size: var(--font-size-lg);
+  transition: transform var(--transition-fast);
+}
+
+.feature-card-modern:hover .action-arrow {
+  transform: translateX(4px);
 }
 
 .feature-card {
-  background-color: var(--bg-primary);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-lg);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-6);
   box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
   border: 1px solid var(--border-light);
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-accent);
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
 }
 
 .feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--accent-light);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--accent-color);
+}
+
+.feature-card:hover::before {
+  transform: scaleX(1);
+}
+
+.feature-card.premium-card {
+  border-color: var(--warning-color);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(214, 158, 46, 0.05) 100%);
+}
+
+.feature-card.basic-card {
+  border-color: var(--success-color);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(72, 187, 120, 0.05) 100%);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
 }
 
 .feature-card .icon {
-  font-size: 2.5rem;
-  margin-bottom: var(--spacing-md);
-  color: var(--accent-color);
-  display: inline-block;
-  background-color: rgba(66, 185, 131, 0.1);
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-2xl);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-accent);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
 
-.feature-card h3 {
+.feature-card h4 {
   font-size: var(--font-size-lg);
-  margin-bottom: var(--spacing-sm);
-  color: var(--primary-color);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  flex: 1;
 }
 
 .feature-card p {
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
+  flex: 1;
+  font-size: var(--font-size-sm);
 }
 
-.feature-badge {
-  position: absolute;
-  top: var(--spacing-sm);
-  right: var(--spacing-sm);
-  padding: 4px 8px;
-  border-radius: var(--border-radius-sm);
+.card-footer {
+  margin-top: auto;
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.feature-badge,
+.access-level {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--border-radius-full);
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
-.feature-badge.basic {
+.feature-badge.basic,
+.access-level.free {
   background: var(--gradient-success);
   color: var(--text-inverse);
 }
@@ -1095,86 +1584,289 @@ const goToStockAnalysis = (symbol: string) => {
 
 /* 热门股票区域 */
 .popular-stocks {
-  margin: var(--spacing-xl) 0;
-  padding: var(--spacing-xl) 0;
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-20) 0;
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   position: relative;
+  overflow: hidden;
+}
+
+.popular-stocks::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
 }
 
 /* 数据来源信息容器 */
 .data-source-info-container {
   max-width: 600px;
-  margin: 0 auto var(--spacing-md);
+  margin: 0 auto var(--spacing-8);
 }
 
-.popular-stocks h2 {
-  text-align: center;
-  font-size: var(--font-size-xl);
-  margin-bottom: var(--spacing-xl);
-  color: var(--primary-color);
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-16) 0;
+  gap: var(--spacing-4);
 }
 
-.stock-cards {
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-light);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-16) 0;
+  gap: var(--spacing-4);
+}
+
+.empty-icon {
+  font-size: var(--font-size-4xl);
+  opacity: 0.5;
+  margin-bottom: var(--spacing-2);
+}
+
+.empty-text {
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  margin: 0;
+}
+
+.empty-button {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-6);
+  background: var(--gradient-accent);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.empty-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* 股票网格 */
+.stock-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-8);
 }
 
-.stock-card {
-  background-color: var(--bg-primary);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
-  box-shadow: var(--shadow-sm);
+/* 现代化股票卡片 */
+.stock-card-modern {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
   cursor: pointer;
   border: 1px solid var(--border-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.stock-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-accent);
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.stock-card-modern:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--accent-color);
+}
+
+.stock-card-modern:hover::before {
+  transform: scaleX(1);
+}
+
+/* 股票头部 */
+.stock-header {
   display: flex;
-  flex-direction: column;
   justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-4);
 }
 
-.stock-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--accent-light);
+.stock-title-group {
+  flex: 1;
 }
 
-.stock-info h3 {
-  font-size: var(--font-size-md);
-  margin-bottom: var(--spacing-xs);
-  color: var(--primary-color);
+.stock-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+  line-height: 1.3;
 }
 
 .stock-symbol {
-  color: var(--text-secondary);
   font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-xs);
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.5px;
 }
 
-.stock-market {
+.stock-market-badge {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  margin-bottom: var(--spacing-md);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
-.view-btn {
+/* 价格区域 */
+.stock-price-section {
+  margin: var(--spacing-6) 0;
+  padding: var(--spacing-4) 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.price-main {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-2);
+  font-family: var(--font-family-number);
+  line-height: 1.2;
+}
+
+.price-main.positive {
+  color: #f56565;
+}
+
+.price-main.negative {
+  color: #48bb78;
+}
+
+.price-main.no-data {
+  color: var(--text-muted);
+  font-size: var(--font-size-xl);
+}
+
+.price-change {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.price-change.positive {
+  color: #f56565;
+}
+
+.price-change.negative {
+  color: #48bb78;
+}
+
+.price-change.no-data {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.change-value {
+  font-family: var(--font-family-number);
+}
+
+.change-percent {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.price-change.positive .change-percent {
+  background: rgba(245, 101, 101, 0.1);
+}
+
+.price-change.negative .change-percent {
+  background: rgba(72, 187, 120, 0.1);
+}
+
+/* 股票底部 */
+.stock-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--border-light);
+  margin-top: var(--spacing-4);
+}
+
+.stock-industry {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.industry-icon {
+  font-size: var(--font-size-base);
+}
+
+.view-action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
   color: var(--accent-color);
   font-size: var(--font-size-sm);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
 }
 
-.arrow {
+.stock-card-modern:hover .view-action {
+  gap: var(--spacing-3);
+}
+
+.arrow-icon {
   transition: transform var(--transition-fast);
+  font-size: var(--font-size-lg);
 }
 
-.stock-card:hover .arrow {
-  transform: translateX(3px);
+.stock-card-modern:hover .arrow-icon {
+  transform: translateX(4px);
 }
 
 /* 响应式设计 */
@@ -1275,17 +1967,67 @@ const goToStockAnalysis = (symbol: string) => {
   }
 
   .feature-categories {
-    gap: var(--spacing-8);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-12);
+  }
+
+  .feature-category {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
   }
 
   .category-header {
-    flex-direction: column;
-    text-align: center;
-    gap: var(--spacing-2);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 2px solid var(--border-light);
+  }
+
+  .category-icon {
+    font-size: var(--font-size-2xl);
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-accent);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .category-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+  }
+
+  .category-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-6);
   }
 
   .floating-cards {
     display: none;
+  }
+
+  .stock-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-4);
+  }
+
+  .stock-card-modern {
+    padding: var(--spacing-4);
+  }
+
+  .price-main {
+    font-size: var(--font-size-xl);
   }
 }
 

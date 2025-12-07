@@ -28,9 +28,9 @@
         </div>
 
         <!-- 空状态 -->
-        <div v-if="recentSignals.length === 0" class="empty-signals">
-          <p>🔍 暂无信号数据</p>
-          <p>正在分析技术指标...</p>
+        <div v-if="recentSignals.length === 0 && allSignals.length === 0" class="empty-signals">
+          <p>📊 暂无技术指标数据</p>
+          <p class="empty-hint">该股票暂无技术指标数据，请稍后重试或选择其他股票</p>
         </div>
       </div>
     </div>
@@ -387,8 +387,20 @@ const loadRealSignals = async () => {
 
 const calculateTechnicalSignals = async () => {
   try {
+    // 格式化股票代码（确保有市场后缀）
+    let formattedCode = props.stockCode
+    if (formattedCode && !formattedCode.includes('.')) {
+      if (formattedCode.startsWith('6')) {
+        formattedCode = `${formattedCode}.SH`
+      } else if (formattedCode.startsWith('0') || formattedCode.startsWith('3')) {
+        formattedCode = `${formattedCode}.SZ`
+      } else if (formattedCode.startsWith('4') || formattedCode.startsWith('8')) {
+        formattedCode = `${formattedCode}.BJ`
+      }
+    }
+    
     // 使用正确的后端API端点
-    const response = await fetch(`http://localhost:7001/api/v1/stocks/${props.stockCode}/indicators`, {
+    const response = await fetch(`/api/v1/stocks/${formattedCode || props.stockCode}/indicators`, {
       method: 'GET',  // 后端API是GET请求
       headers: {
         'Content-Type': 'application/json',
@@ -443,78 +455,40 @@ const calculateTechnicalSignals = async () => {
       )
     } else {
       console.warn('API 返回失败:', result.message)
-      // 显示友好的错误信息
+      // 显示友好的错误信息，但不显示模拟数据
       if (result.message?.includes('暂无数据') || result.message?.includes('数据不足')) {
-        showToast(`股票 ${props.stockCode} 暂无技术指标数据，显示模拟数据供参考`, 'info')
+        showToast(`股票 ${props.stockCode} 暂无技术指标数据`, 'info')
       } else {
-        showToast('获取技术指标失败，显示模拟数据', 'warning')
+        showToast('获取技术指标失败', 'warning')
       }
-      // 如果 API 失败，生成一些模拟信号用于演示
-      generateMockSignals()
+      // 清空数据，显示空状态
+      clearAllData()
     }
   } catch (error) {
     console.error('计算技术指标失败:', error)
-    showToast('网络连接失败，显示模拟技术指标数据', 'warning')
-    // 生成模拟信号
-    generateMockSignals()
+    showToast('获取技术指标失败，请稍后重试', 'error')
+    // 清空数据，显示空状态
+    clearAllData()
   }
 }
 
-// 生成模拟信号数据
-const generateMockSignals = () => {
-  console.log('生成模拟技术指标数据')
-
-  // 模拟移动平均线数据
-  const mockMA = {
-    ma5: Array.from({ length: 20 }, (_, i) => 6.5 + Math.random() * 1),
-    ma10: Array.from({ length: 20 }, (_, i) => 6.6 + Math.random() * 0.8),
-    ma30: Array.from({ length: 20 }, (_, i) => 6.7 + Math.random() * 0.6),
-    ma60: Array.from({ length: 20 }, (_, i) => 6.8 + Math.random() * 0.4)
+// 清空所有数据，显示空状态
+const clearAllData = () => {
+  console.log('清空技术指标数据，显示空状态')
+  
+  // 清空所有响应式数据
+  movingAverages.value = {}
+  allSignals.value = []
+  buySignals.value = []
+  sellSignals.value = []
+  turtleSignals.value = []
+  recentSignals.value = []
+  
+  // 清空图表
+  if (chart.value) {
+    chart.value.dispose()
+    chart.value = null
   }
-
-  // 模拟技术信号
-  const mockSignals = [
-    {
-      index: 15,
-      signal: '海龟买入',
-      type: 'buy',
-      price: 7.25,
-      strength: 75,
-      confidence: 85,
-      reason: '价格突破20周期高点',
-      riskManagement: {
-        positionSize: { shares: 2000, positionValue: 14500 },
-        stopLoss: { stopPrice: 6.95, riskPercent: 4.1 },
-        riskReward: { risk: 4.1, target: 8.2 }
-      }
-    },
-    {
-      index: 18,
-      signal: 'MA金叉',
-      type: 'buy',
-      price: 7.31,
-      strength: 60,
-      confidence: 70,
-      reason: 'MA5上穿MA10',
-      riskManagement: {
-        positionSize: { shares: 1500, positionValue: 10965 },
-        stopLoss: { stopPrice: 7.05, riskPercent: 3.6 },
-        riskReward: { risk: 3.6, target: 7.2 }
-      }
-    }
-  ]
-
-  // 更新响应式数据
-  movingAverages.value = mockMA
-  allSignals.value = mockSignals
-  buySignals.value = mockSignals.filter(s => s.type === 'buy')
-  sellSignals.value = mockSignals.filter(s => s.type === 'sell')
-  turtleSignals.value = mockSignals.filter(s => s.signal?.includes('海龟'))
-
-  // 更新图表
-  updateChart({ movingAverages: mockMA })
-
-  showToast('已加载模拟技术指标数据', 'info')
 }
 
 const updateChart = (data) => {
@@ -802,12 +776,26 @@ watch(
 
 .empty-signals {
   text-align: center;
-  padding: 40px 20px;
+  padding: 60px 20px;
   color: #999;
 }
 
 .empty-signals p {
   margin: 8px 0;
+  font-size: 14px;
+}
+
+.empty-signals p:first-child {
+  font-size: 18px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.empty-hint {
+  font-size: 13px !important;
+  color: #999 !important;
+  line-height: 1.6;
 }
 
 .signal-item {

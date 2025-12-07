@@ -92,14 +92,35 @@ class RiskService {
         try {
           console.log('[RiskService] 获取风险概览数据...')
           
-          const response = await axios.get(`${this.baseURL}/overview`, {
+          // 使用后端实际存在的API
+          const response = await axios.get(`${this.baseURL}/dashboard`, {
             params: { portfolioId }
           })
 
           if (response.data && response.data.success) {
-            return {
-              ...response.data.data,
-              lastUpdated: new Date()
+            const dashboardData = response.data.data
+            
+            // 转换后端数据格式为前端需要的格式
+            // 后端返回的是dashboard格式，需要转换为RiskData格式
+            if (dashboardData.summary) {
+              const avgVar = dashboardData.summary.avgVarPercentage || 0
+              return {
+                overallScore: Math.min(100, avgVar * 10), // 将VaR百分比转换为0-100的分数
+                overallLevel: avgVar > 5 ? 'high' : 
+                              avgVar > 3 ? 'medium' : 'low',
+                scoreTrend: 'stable' as const,
+                var: avgVar,
+                varChange: 0,
+                volatility: 0, // 需要从其他API获取
+                volatilityChange: 0,
+                concentration: 0, // 需要从其他API获取
+                concentrationChange: 0,
+                beta: 0, // 需要从其他API获取
+                betaChange: 0,
+                lastUpdated: new Date()
+              }
+            } else {
+              throw new Error('风险仪表盘数据格式不正确')
             }
           } else {
             throw new Error(response.data?.message || '获取风险数据失败')
@@ -107,21 +128,8 @@ class RiskService {
         } catch (error) {
           console.error('[RiskService] 获取风险概览失败:', error)
           
-          // 返回模拟数据作为备用
-          return {
-            overallScore: 75 + Math.random() * 20,
-            overallLevel: 'medium' as const,
-            scoreTrend: 'stable' as const,
-            var: 8.5 + Math.random() * 2,
-            varChange: (Math.random() - 0.5) * 0.5,
-            volatility: 18.3 + Math.random() * 5,
-            volatilityChange: (Math.random() - 0.5) * 2,
-            concentration: 35.2 + Math.random() * 10,
-            concentrationChange: (Math.random() - 0.5) * 5,
-            beta: 1.15 + Math.random() * 0.3,
-            betaChange: (Math.random() - 0.5) * 0.1,
-            lastUpdated: new Date()
-          }
+          // 不再返回假数据，抛出错误让调用方处理
+          throw new Error(`获取风险概览失败: ${error instanceof Error ? error.message : '未知错误'}`)
         }
       },
       {
@@ -159,34 +167,8 @@ class RiskService {
         } catch (error) {
           console.error('[RiskService] 获取风险预警失败:', error)
           
-          // 返回模拟数据
-          return [
-            {
-              id: '1',
-              type: 'volatility',
-              level: 'warning',
-              title: '波动率预警',
-              message: '投资组合波动率超过预设阈值15%',
-              timestamp: new Date(),
-              isRead: false,
-              actions: [
-                { label: '查看详情', action: 'view_details', type: 'primary' },
-                { label: '调整仓位', action: 'adjust_position', type: 'warning' }
-              ]
-            },
-            {
-              id: '2',
-              type: 'concentration',
-              level: 'danger',
-              title: '集中度风险',
-              message: '单一股票占比过高，建议分散投资',
-              timestamp: new Date(Date.now() - 3600000),
-              isRead: false,
-              actions: [
-                { label: '立即处理', action: 'handle_now', type: 'danger' }
-              ]
-            }
-          ] as RiskAlert[]
+          // 不再返回假数据，返回空数组
+          return []
         }
       },
       {
@@ -209,9 +191,9 @@ class RiskService {
         try {
           console.log('[RiskService] 获取风险建议...')
           
-          const response = await axios.get(`${this.baseURL}/recommendations`, {
-            params: { portfolioId }
-          })
+          // 后端没有专门的recommendations API，使用dashboard API获取数据
+          // 或者返回空数组，让前端显示空状态
+          throw new Error('风险建议API暂不可用')
 
           if (response.data && response.data.success) {
             return response.data.data
@@ -221,29 +203,8 @@ class RiskService {
         } catch (error) {
           console.error('[RiskService] 获取风险建议失败:', error)
           
-          // 返回模拟数据
-          return [
-            {
-              id: '1',
-              type: 'diversify',
-              priority: 'high',
-              title: '降低集中度风险',
-              content: '建议减少单一股票持仓比例，增加投资组合多样性',
-              impact: '高',
-              effort: '中',
-              expectedBenefit: '降低15%的集中度风险'
-            },
-            {
-              id: '2',
-              type: 'stop_loss',
-              priority: 'medium',
-              title: '调整止损策略',
-              content: '当前市场波动较大，建议收紧止损幅度至8%',
-              impact: '中',
-              effort: '低',
-              expectedBenefit: '减少潜在损失10%'
-            }
-          ] as RiskRecommendation[]
+          // 不再返回假数据，返回空数组
+          return []
         }
       },
       {

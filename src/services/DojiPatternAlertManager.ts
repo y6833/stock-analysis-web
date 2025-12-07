@@ -62,11 +62,18 @@ export class DojiPatternAlertManager {
      */
     async loadActiveAlerts(): Promise<void> {
         try {
-            const alerts = await dojiPatternAlertService.getDojiPatternAlerts()
+            const response = await dojiPatternAlertService.getDojiPatternAlerts()
 
-            // 确保 alerts 是数组
-            if (!Array.isArray(alerts)) {
-                console.warn('获取的提醒数据不是数组格式:', alerts)
+            // 处理API响应格式：可能是 {success: true, data: []} 或直接是数组
+            let alerts: DojiPatternAlert[] = []
+            if (Array.isArray(response)) {
+                alerts = response
+            } else if (response && typeof response === 'object' && 'data' in response && Array.isArray(response.data)) {
+                alerts = response.data
+            } else if (response && typeof response === 'object' && 'success' in response && 'data' in response && Array.isArray(response.data)) {
+                alerts = response.data
+            } else {
+                console.warn('获取的提醒数据格式不正确:', response)
                 this.activeAlerts = []
                 return
             }

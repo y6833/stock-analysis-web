@@ -248,17 +248,9 @@ class RiskMonitoringController extends Controller {
     const { id } = ctx.params;
     
     try {
+      // 不使用include避免关联冲突，改为单独查询
       const calculation = await ctx.model.VarCalculation.findOne({
-        where: { id, userId: user.id },
-        include: [{
-          model: ctx.model.RiskMonitoringConfig,
-          as: 'config',
-          attributes: ['configName', 'varMethod', 'varConfidenceLevel', 'lookbackPeriod']
-        }, {
-          model: ctx.model.UserPortfolio,
-          as: 'portfolio',
-          attributes: ['id', 'name']
-        }]
+        where: { id, userId: user.id }
       });
 
       if (!calculation) {
@@ -268,6 +260,22 @@ class RiskMonitoringController extends Controller {
         };
         return;
       }
+
+      // 单独查询关联数据
+      const [portfolio, config] = await Promise.all([
+        calculation.portfolioId ? ctx.model.UserPortfolio.findOne({
+          where: { id: calculation.portfolioId, userId: user.id },
+          attributes: ['id', 'name']
+        }) : null,
+        calculation.configId ? ctx.model.RiskMonitoringConfig.findOne({
+          where: { id: calculation.configId, userId: user.id },
+          attributes: ['configName', 'varMethod', 'varConfidenceLevel', 'lookbackPeriod']
+        }) : null
+      ]);
+
+      // 手动添加关联数据
+      calculation.portfolio = portfolio;
+      calculation.config = config;
 
       ctx.body = {
         success: true,
@@ -357,29 +365,43 @@ class RiskMonitoringController extends Controller {
         where: { userId: user.id }
       });
 
-      // 获取最新的VaR计算结果
+      // 获取最新的VaR计算结果（不使用include避免关联冲突）
       const latestVarCalculations = await ctx.model.VarCalculation.findAll({
         where: { userId: user.id },
         order: [['calculationDate', 'DESC']],
-        limit: portfolios.length,
-        include: [{
-          model: ctx.model.UserPortfolio,
-          as: 'portfolio',
-          attributes: ['id', 'name']
-        }]
+        limit: portfolios.length || 10
       });
+
+      // 获取所有相关的投资组合ID
+      const portfolioIds = [...new Set(latestVarCalculations.map(calc => calc.portfolioId).filter(Boolean))];
+      
+      // 单独查询投资组合信息
+      const portfolioMap = new Map();
+      if (portfolioIds.length > 0) {
+        const portfoliosData = await ctx.model.UserPortfolio.findAll({
+          where: { 
+            id: portfolioIds,
+            userId: user.id
+          },
+          attributes: ['id', 'name']
+        });
+        
+        portfoliosData.forEach(portfolio => {
+          portfolioMap.set(portfolio.id, portfolio);
+        });
+      }
 
       // 统计数据
       const totalPortfolioValue = latestVarCalculations.reduce(
-        (sum, calc) => sum + parseFloat(calc.portfolioValue), 0
+        (sum, calc) => sum + parseFloat(calc.portfolioValue || 0), 0
       );
       
       const totalVaR = latestVarCalculations.reduce(
-        (sum, calc) => sum + parseFloat(calc.varAbsolute), 0
+        (sum, calc) => sum + parseFloat(calc.varAbsolute || 0), 0
       );
 
       const avgVarPercentage = latestVarCalculations.length > 0 ?
-        latestVarCalculations.reduce((sum, calc) => sum + parseFloat(calc.varPercentage), 0) / latestVarCalculations.length : 0;
+        latestVarCalculations.reduce((sum, calc) => sum + parseFloat(calc.varPercentage || 0), 0) / latestVarCalculations.length : 0;
 
       ctx.body = {
         success: true,
@@ -391,16 +413,19 @@ class RiskMonitoringController extends Controller {
             avgVarPercentage,
             lastCalculationDate: latestVarCalculations[0]?.calculationDate
           },
-          portfolioVars: latestVarCalculations.map(calc => ({
-            portfolioId: calc.portfolioId,
-            portfolioName: calc.portfolio?.name,
-            portfolioValue: calc.portfolioValue,
-            varAbsolute: calc.varAbsolute,
-            varPercentage: calc.varPercentage,
-            expectedShortfall: calc.expectedShortfall,
-            calculationDate: calc.calculationDate,
-            method: calc.calculationMethod
-          }))
+          portfolioVars: latestVarCalculations.map(calc => {
+            const portfolio = portfolioMap.get(calc.portfolioId);
+            return {
+              portfolioId: calc.portfolioId,
+              portfolioName: portfolio?.name || '未知组合',
+              portfolioValue: calc.portfolioValue,
+              varAbsolute: calc.varAbsolute,
+              varPercentage: calc.varPercentage,
+              expectedShortfall: calc.expectedShortfall,
+              calculationDate: calc.calculationDate,
+              method: calc.calculationMethod
+            };
+          })
         }
       };
 

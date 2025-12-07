@@ -183,11 +183,11 @@ class CacheStatsService {
    * @param dataSource 数据源名称
    */
   async getStats(dataSource?: string): Promise<CacheStats> {
-    try {
-      // 如果没有提供数据源，使用当前数据源
+    // 如果没有提供数据源，使用当前数据源（在 try 块外定义，以便在 catch 中使用）
       const currentDataSource =
         dataSource || localStorage.getItem('preferredDataSource') || 'tushare'
 
+    try {
       // 使用公开的API端点，不需要认证
       const url = `${API_URL}/public/cache-stats?dataSource=${currentDataSource}`
 

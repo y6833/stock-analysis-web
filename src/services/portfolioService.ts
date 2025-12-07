@@ -258,20 +258,57 @@ export async function getPortfolioPerformance(
  * @returns 投资组合摘要数据
  */
 export async function getPortfolioSummary(): Promise<any> {
-  console.log('[PortfolioService] 获取投资组合摘要...')
+  console.log('[PortfolioService] 从API获取投资组合摘要...')
 
-  // 直接返回示例数据，避免调用可能失败的API
-  console.warn('[PortfolioService] 投资组合API暂不可用，返回示例数据')
+  try {
+    const portfolios = await getUserPortfolios()
+    if (!portfolios || portfolios.length === 0) {
+      return {
+        totalValue: 0,
+        totalCost: 0,
+        totalProfit: 0,
+        totalProfitPercent: 0,
+        portfolioCount: 0,
+        holdingCount: 0
+      }
+    }
+
+    // 获取所有持仓并计算汇总
+    const holdings = await getHoldings()
+    
+    const totalCost = holdings.reduce((sum, h) => {
+      const cost = (h.averageCost || h.cost || 0) * (h.quantity || 0)
+      return sum + cost
+    }, 0)
+
+    const totalValue = holdings.reduce((sum, h) => {
+      const value = (h.currentPrice || h.price || 0) * (h.quantity || 0)
+      return sum + value
+    }, 0)
+
+    const totalProfit = totalValue - totalCost
+    const totalProfitPercent = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0
+
+    console.log(`[PortfolioService] 投资组合汇总: 总价值=${totalValue}, 总成本=${totalCost}, 盈亏=${totalProfit}`)
 
   return {
-    totalValue: 125000,
-    totalCost: 100000,
-    totalProfit: 25000,
-    profitRate: 25.0,
-    portfolioCount: 1,
-    holdingCount: 3,
-    lastUpdated: new Date().toISOString(),
-    note: '投资组合API暂不可用，显示示例数据'
+      totalValue,
+      totalCost,
+      totalProfit,
+      totalProfitPercent,
+      portfolioCount: portfolios.length,
+      holdingCount: holdings.length
+    }
+  } catch (error: any) {
+    console.error('[PortfolioService] 获取投资组合汇总失败:', error)
+    return {
+      totalValue: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      totalProfitPercent: 0,
+      portfolioCount: 0,
+      holdingCount: 0
+    }
   }
 }
 
@@ -280,49 +317,37 @@ export async function getPortfolioSummary(): Promise<any> {
  * @returns 所有持仓列表
  */
 export async function getHoldings(): Promise<Holding[]> {
-  console.log('[PortfolioService] 获取所有持仓...')
+  console.log('[PortfolioService] 从API获取所有持仓...')
 
-  // 直接返回示例持仓数据，避免调用可能失败的API
-  console.warn('[PortfolioService] 持仓API暂不可用，返回示例数据')
-
-  return [
-    {
-      id: 1,
-      portfolioId: 1,
-      stockCode: '000001.SZ',
-      stockName: '平安银行',
-      quantity: 1000,
-      averageCost: 12.30,
-      currentPrice: 12.45,
-      notes: '长期持有',
-      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 2,
-      portfolioId: 1,
-      stockCode: '000002.SZ',
-      stockName: '万科A',
-      quantity: 500,
-      averageCost: 18.20,
-      currentPrice: 18.25,
-      notes: '价值投资',
-      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 3,
-      portfolioId: 1,
-      stockCode: '600036.SH',
-      stockName: '招商银行',
-      quantity: 800,
-      averageCost: 35.50,
-      currentPrice: 36.20,
-      notes: '银行股配置',
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date().toISOString()
+  try {
+    // 先获取用户的所有投资组合
+    const portfolios = await getUserPortfolios()
+    
+    if (!portfolios || portfolios.length === 0) {
+      console.log('[PortfolioService] 用户没有投资组合，返回空数组')
+      return []
     }
-  ]
+
+    // 获取所有投资组合的持仓
+    const allHoldings: Holding[] = []
+    for (const portfolio of portfolios) {
+      try {
+        const holdings = await getPortfolioHoldings(portfolio.id)
+        if (holdings && holdings.length > 0) {
+          allHoldings.push(...holdings)
+        }
+      } catch (error) {
+        console.warn(`[PortfolioService] 获取投资组合 ${portfolio.id} 的持仓失败:`, error)
+      }
+    }
+
+    console.log(`[PortfolioService] 成功获取 ${allHoldings.length} 条持仓数据`)
+    return allHoldings
+  } catch (error: any) {
+    console.error('[PortfolioService] 获取持仓失败:', error)
+    // 如果API调用失败，返回空数组而不是假数据
+    return []
+  }
 }
 
 /**
@@ -330,64 +355,44 @@ export async function getHoldings(): Promise<Holding[]> {
  * @returns 所有交易记录列表
  */
 export async function getTransactions(): Promise<TradeRecord[]> {
-  console.log('[PortfolioService] 获取所有交易记录...')
+  console.log('[PortfolioService] 从API获取所有交易记录...')
 
-  // 直接返回示例交易记录，避免调用可能失败的API
-  console.warn('[PortfolioService] 交易记录API暂不可用，返回示例数据')
-
-  const now = new Date()
-  const transactions = [
-    {
-      id: 1,
-      userId: 1,
-      portfolioId: 1,
-      stockCode: '000001.SZ',
-      stockName: '平安银行',
-      tradeType: 'buy' as const,
-      quantity: 1000,
-      price: 12.30,
-      totalAmount: 12300,
-      tradeDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      notes: '建仓买入',
-      createdAt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 2,
-      userId: 1,
-      portfolioId: 1,
-      stockCode: '000002.SZ',
-      stockName: '万科A',
-      tradeType: 'buy' as const,
-      quantity: 500,
-      price: 18.20,
-      totalAmount: 9100,
-      tradeDate: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      notes: '价值投资买入',
-      createdAt: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 3,
-      userId: 1,
-      portfolioId: 1,
-      stockCode: '600036.SH',
-      stockName: '招商银行',
-      tradeType: 'buy' as const,
-      quantity: 800,
-      price: 35.50,
-      totalAmount: 28400,
-      tradeDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      notes: '银行股配置',
-      createdAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  try {
+    // 先获取用户的所有投资组合
+    const portfolios = await getUserPortfolios()
+    
+    if (!portfolios || portfolios.length === 0) {
+      console.log('[PortfolioService] 用户没有投资组合，返回空数组')
+      return []
     }
-  ]
+
+    // 获取所有投资组合的交易记录
+    const allTransactions: TradeRecord[] = []
+    for (const portfolio of portfolios) {
+      try {
+        const transactions = await getTradeRecords(portfolio.id)
+        if (transactions && transactions.length > 0) {
+          allTransactions.push(...transactions)
+        }
+      } catch (error) {
+        console.warn(`[PortfolioService] 获取投资组合 ${portfolio.id} 的交易记录失败:`, error)
+    }
+    }
 
   // 按交易日期降序排序
-  return transactions.sort((a, b) =>
-    new Date(b.tradeDate).getTime() - new Date(a.tradeDate).getTime()
-  )
+    const sortedTransactions = allTransactions.sort((a, b) => {
+      const dateA = new Date(a.tradeDate || a.createdAt || 0).getTime()
+      const dateB = new Date(b.tradeDate || b.createdAt || 0).getTime()
+      return dateB - dateA
+    })
+
+    console.log(`[PortfolioService] 成功获取 ${sortedTransactions.length} 条交易记录`)
+    return sortedTransactions
+  } catch (error: any) {
+    console.error('[PortfolioService] 获取交易记录失败:', error)
+    // 如果API调用失败，返回空数组而不是假数据
+    return []
+  }
 }
 
 // 创建服务对象，包含所有方法

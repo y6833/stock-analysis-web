@@ -86,7 +86,21 @@ class DataSyncEnhancedTask extends Subscription {
             successCount++;
 
           } catch (error) {
-            ctx.logger.warn(`同步股票 ${stock.symbol} 行情失败:`, error);
+            // 根据错误类型决定日志级别
+            const errorMessage = error.message || String(error);
+            
+            // 如果是权限问题，记录为错误
+            if (errorMessage.includes('权限') || errorMessage.includes('积分')) {
+              ctx.logger.error(`同步股票 ${stock.symbol} 行情失败 (权限问题):`, errorMessage);
+            } 
+            // 如果是数据不存在（可能是停牌、退市等），记录为警告
+            else if (errorMessage.includes('未获取到数据')) {
+              ctx.logger.debug(`同步股票 ${stock.symbol} 行情跳过 (数据不可用):`, errorMessage);
+            }
+            // 其他错误记录为警告
+            else {
+              ctx.logger.warn(`同步股票 ${stock.symbol} 行情失败:`, errorMessage);
+            }
             errorCount++;
           }
         });

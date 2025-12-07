@@ -31,6 +31,10 @@ class CacheStatsController extends Controller {
 
       // 如果指定了数据源，返回该数据源的统计
       if (dataSource) {
+        // 确保 dataSourceStats 存在
+        if (!global.cacheStats.dataSourceStats) {
+          global.cacheStats.dataSourceStats = {};
+        }
         const sourceStats = global.cacheStats.dataSourceStats[dataSource] || {
           hits: 0,
           misses: 0,
@@ -48,7 +52,27 @@ class CacheStatsController extends Controller {
         };
       } else {
         // 返回全局统计
-        const stats = service.cacheStats.getStats(null);
+        // 检查服务是否存在，如果不存在则返回默认值
+        let stats;
+        if (service.cacheStats && typeof service.cacheStats.getStats === 'function') {
+          stats = service.cacheStats.getStats(null);
+        } else {
+          // 如果服务不存在，返回基于全局缓存的统计
+          const hitRate = global.cacheStats.requests > 0
+            ? (global.cacheStats.hits / global.cacheStats.requests * 100).toFixed(2)
+            : '0.00';
+          stats = {
+            hits: global.cacheStats.hits,
+            misses: global.cacheStats.misses,
+            requests: global.cacheStats.requests,
+            apiCalls: global.cacheStats.apiCalls,
+            errors: global.cacheStats.errors,
+            hitRate: `${hitRate}%`,
+            lastReset: global.cacheStats.lastReset,
+            dataSourceStats: global.cacheStats.dataSourceStats || {},
+            apiStats: global.cacheStats.apiStats || {}
+          };
+        }
         ctx.body = {
           success: true,
           ...stats,

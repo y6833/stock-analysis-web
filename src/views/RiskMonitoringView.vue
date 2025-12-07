@@ -395,8 +395,21 @@ const state = reactive<RiskState>({
   refreshInterval: 10000 // 10秒，风险监控需要更频繁的更新
 })
 
-// 数据状态 - 使用真实的中国股市风险数据
-const riskData = ref<any>(realisticRiskData)
+// 数据状态 - 初始为空，等待真实数据加载
+const riskData = ref<any>({
+  overallScore: 0,
+  overallLevel: 'low',
+  scoreTrend: 'stable',
+  var: 0,
+  varChange: 0,
+  volatility: 0,
+  volatilityChange: 0,
+  concentration: 0,
+  concentrationChange: 0,
+  beta: 0,
+  betaChange: 0,
+  scoreChange: 0
+})
 
 const riskTrendData = ref<any[]>([])
 const portfolioRiskData = ref<any[]>([])
@@ -406,7 +419,7 @@ const marketRiskData = ref<any[]>([])
 const riskTrendChart = ref<HTMLElement>()
 const portfolioRiskChart = ref<HTMLElement>()
 const marketRiskChart = ref<HTMLElement>()
-const riskAlerts = ref<any[]>(realisticMarketAlerts)
+const riskAlerts = ref<any[]>([])
 
 // 移除重复的 riskRecommendations 声明，使用下面的增强版本
 
@@ -488,8 +501,8 @@ const riskMetrics = computed<any[]>(() => [
   }
 ])
 
-// 使用真实的风险建议数据
-const riskRecommendations = computed(() => realisticRiskRecommendations)
+// 风险建议数据 - 初始为空，等待真实数据加载
+const riskRecommendations = ref<any[]>([])
 
 const unreadAlertsCount = computed(() =>
   riskAlerts.value.filter(alert => !alert.isRead).length
@@ -795,30 +808,27 @@ function applyRecommendation(recommendation: any) {
   // 可以添加实际的应用逻辑
 }
 
-// 数据加载函数
+// 数据加载函数 - 使用真实API
 const loadRiskData = async (forceRefresh = false) => {
-  const result = await withRetry(
-    async () => {
-      // 模拟API调用
-      return {
-        overallScore: 75 + Math.random() * 20,
-        overallLevel: 'medium',
-        scoreTrend: 'stable',
-        var: 8.5 + Math.random() * 2,
-        varChange: (Math.random() - 0.5) * 0.5,
-        volatility: 18.3 + Math.random() * 5,
-        volatilityChange: (Math.random() - 0.5) * 2,
-        concentration: 35.2 + Math.random() * 10,
-        concentrationChange: (Math.random() - 0.5) * 5,
-        beta: 1.15 + Math.random() * 0.3,
-        betaChange: (Math.random() - 0.5) * 0.1
+  try {
+    console.log('[RiskMonitoring] 开始加载风险数据...')
+    
+    // 使用真实的 riskService API
+    const result = await riskService.getRiskOverview()
+    
+    if (result) {
+      riskData.value = {
+        ...result,
+        scoreChange: result.scoreChange || 0
       }
-    },
-    '加载风险数据失败'
-  )
-
-  if (result) {
-    riskData.value = result
+      console.log('[RiskMonitoring] ✅ 成功加载风险数据:', result)
+    } else {
+      console.warn('[RiskMonitoring] 风险数据为空')
+    }
+  } catch (error) {
+    console.error('[RiskMonitoring] 加载风险数据失败:', error)
+    // 不设置假数据，保持空状态
+    handleError(error, '加载风险数据失败')
   }
 }
 
@@ -895,6 +905,48 @@ const loadRiskTableData = async () => {
   console.log('加载风险表格数据')
 }
 
+// 加载风险预警数据
+const loadRiskAlertsData = async () => {
+  try {
+    console.log('[RiskMonitoring] 开始加载风险预警数据...')
+    
+    // 使用真实的 riskService API
+    const alerts = await riskService.getRiskAlerts()
+    
+    if (alerts && alerts.length > 0) {
+      riskAlerts.value = alerts
+      console.log('[RiskMonitoring] 成功加载风险预警数据:', alerts.length, '条')
+    } else {
+      riskAlerts.value = []
+      console.log('[RiskMonitoring] 暂无风险预警')
+    }
+  } catch (error) {
+    console.error('[RiskMonitoring] 加载风险预警失败:', error)
+    riskAlerts.value = []
+  }
+}
+
+// 加载风险建议数据
+const loadRiskRecommendationsData = async () => {
+  try {
+    console.log('[RiskMonitoring] 开始加载风险建议数据...')
+    
+    // 使用真实的 riskService API
+    const recommendations = await riskService.getRiskRecommendations()
+    
+    if (recommendations && recommendations.length > 0) {
+      riskRecommendations.value = recommendations
+      console.log('[RiskMonitoring] 成功加载风险建议数据:', recommendations.length, '条')
+    } else {
+      riskRecommendations.value = []
+      console.log('[RiskMonitoring] 暂无风险建议')
+    }
+  } catch (error) {
+    console.error('[RiskMonitoring] 加载风险建议失败:', error)
+    riskRecommendations.value = []
+  }
+}
+
 // 初始化数据加载
 const initializeRiskMonitoring = async () => {
   try {
@@ -902,6 +954,8 @@ const initializeRiskMonitoring = async () => {
 
     await Promise.allSettled([
       loadRiskData(),
+      loadRiskAlertsData(),
+      loadRiskRecommendationsData(),
       loadRiskTrendData(),
       loadPortfolioRiskData(),
       loadMarketRiskData(),
@@ -925,6 +979,8 @@ const handleRefresh = async () => {
 
     await Promise.allSettled([
       loadRiskData(true),
+      loadRiskAlertsData(),
+      loadRiskRecommendationsData(),
       loadRiskTrendData(),
       loadPortfolioRiskData(),
       loadMarketRiskData(),

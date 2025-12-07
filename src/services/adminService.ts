@@ -60,6 +60,16 @@ export interface SystemStatsResponse {
       portfolios: number
       alerts: number
     }
+    rechargeStats?: {
+      totalRequests: number
+      pending: number
+      completed: number
+      rejected: number
+      totalAmount: number
+    }
+    coinStats?: {
+      totalCoins: number
+    }
     recentUsers: any[]
     recentLogins: any[]
   }
@@ -167,9 +177,12 @@ export const adminService = {
     } catch (error: any) {
       console.error('获取系统统计信息失败:', error)
 
-      // 如果是数据库表不存在的错误，返回默认数据
-      if (error.response?.data?.message?.includes("doesn't exist")) {
-        console.warn('数据库表不存在，返回默认统计数据')
+      // 如果是网络错误、数据库表不存在或其他错误，返回默认数据
+      const isNetworkError = error.code === 'ERR_NETWORK' || error.message === 'Network Error'
+      const isTableError = error.response?.data?.message?.includes("doesn't exist")
+      
+      if (isNetworkError || isTableError) {
+        console.warn('网络错误或数据库表不存在，返回默认统计数据')
         return {
           success: true,
           data: {
@@ -189,6 +202,16 @@ export const adminService = {
               watchlists: 0,
               portfolios: 0,
               alerts: 0
+            },
+            rechargeStats: {
+              totalRequests: 0,
+              pending: 0,
+              completed: 0,
+              rejected: 0,
+              totalAmount: 0
+            },
+            coinStats: {
+              totalCoins: 0
             },
             recentUsers: [],
             recentLogins: []

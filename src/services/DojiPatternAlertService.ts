@@ -75,11 +75,30 @@ export const dojiPatternAlertService = {
      */
     async getDojiPatternAlerts(): Promise<DojiPatternAlert[]> {
         try {
-            const response = await axios.get(`${API_URL}/doji-alerts`, getAuthHeaders())
-            return response.data
-        } catch (error) {
+            const response = await axios.get(`${API_URL}/doji-alerts`, {
+                ...getAuthHeaders(),
+                timeout: 5000 // 5秒超时
+            })
+            // 处理API响应格式：可能是 {success: true, data: []} 或直接是数组
+            if (Array.isArray(response.data)) {
+                return response.data
+            } else if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
+                return response.data.data
+            } else if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data && Array.isArray(response.data.data)) {
+                return response.data.data
+            }
+            // 如果格式不正确，返回空数组
+            console.warn('API返回格式不正确，返回空数组:', response.data)
+            return []
+        } catch (error: any) {
+            // 如果是网络错误（后端不可用），静默处理，返回空数组
+            if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.code === 'ECONNABORTED') {
+                console.warn('后端服务器不可用，返回空提醒列表')
+                return []
+            }
             console.error('获取十字星形态提醒列表失败:', error)
-            throw error
+            // 返回空数组而不是抛出错误，避免阻塞应用
+            return []
         }
     },
 

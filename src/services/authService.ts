@@ -183,14 +183,22 @@ class AuthService {
 
       // 验证令牌有效性
       const response = await axios.get(`${API_URL}/auth/validate-token`, {
-        headers: this.getAuthHeader()
+        headers: this.getAuthHeader(),
+        timeout: 5000 // 5秒超时
       })
 
       return response.status === 200
-    } catch (error) {
+    } catch (error: any) {
+      // 如果是网络错误（后端不可用），不清除认证数据，只是返回false
+      if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED') {
+        console.warn('后端服务器不可用，跳过令牌验证')
+        return false // 返回false但不清除认证数据，允许离线使用
+      }
       console.error('令牌验证失败:', error)
-      // 验证失败，清除认证数据
+      // 其他错误才清除认证数据
+      if (error.response?.status === 401 || error.response?.status === 403) {
       this.clearAuthData()
+      }
       return false
     }
   }

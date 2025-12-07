@@ -3,25 +3,49 @@
     <!-- Dashboard Header -->
     <div class="dashboard-header">
       <div class="header-left">
-        <h1 class="dashboard-title">
-          <el-icon class="title-icon">
-            <Grid />
-          </el-icon>
-          市场仪表盘
-        </h1>
+        <div class="title-section">
+          <h1 class="dashboard-title">
+            <el-icon class="title-icon">
+              <Grid />
+            </el-icon>
+            <span class="title-text">市场仪表盘</span>
+            <el-tag v-if="state.isRefreshing" type="info" size="small" effect="plain" class="refreshing-tag">
+              <el-icon class="is-loading">
+                <Loading />
+              </el-icon>
+              刷新中...
+            </el-tag>
+          </h1>
+          <p class="dashboard-subtitle">实时市场数据与智能分析</p>
+        </div>
+
+        <!-- 数据源信息 -->
+        <DataSourceInfo v-if="dataSourceInfo.dataSource !== '未知'" :dataSource="dataSourceInfo.dataSource"
+          :dataSourceMessage="dataSourceInfo.dataSourceMessage" :isRealTime="dataSourceInfo.isRealTime"
+          :isCache="dataSourceInfo.isCache" class="header-data-source" />
+
         <div class="dashboard-stats">
-          <span class="stat-item">
-            <span class="stat-label">关注列表:</span>
-            <span class="stat-value">{{ dashboardStats.totalWatchlists }}</span>
-          </span>
-          <span class="stat-item">
-            <span class="stat-label">关注股票:</span>
-            <span class="stat-value">{{ dashboardStats.totalStocks }}</span>
-          </span>
-          <span class="stat-item">
-            <span class="stat-label">市场状态:</span>
-            <span class="stat-value" :class="marketStatusClass">{{ dashboardStats.marketStatus }}</span>
-          </span>
+          <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ dashboardStats.totalWatchlists }}</div>
+              <div class="stat-label">关注列表</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ dashboardStats.totalStocks }}</div>
+              <div class="stat-label">关注股票</div>
+            </div>
+          </div>
+          <div class="stat-card" :class="marketStatusClass">
+            <div class="stat-icon">{{ dashboardStats.marketStatus === '开市' ? '🟢' : '🔴' }}</div>
+            <div class="stat-content">
+              <div class="stat-value" :class="marketStatusClass">{{ dashboardStats.marketStatus }}</div>
+              <div class="stat-label">市场状态</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -29,27 +53,39 @@
         <div class="header-actions">
           <!-- 刷新按钮 -->
           <el-button type="primary" :icon="Refresh" :loading="state.isRefreshing" @click="handleRefresh"
-            class="action-btn">
-            刷新数据
+            class="action-btn refresh-btn">
+            <span v-if="!state.isRefreshing">刷新数据</span>
+            <span v-else>刷新中...</span>
           </el-button>
 
           <!-- 布局切换 -->
           <el-button-group class="layout-toggle">
-            <el-button :type="state.layoutMode === 'grid' ? 'primary' : 'default'" :icon="Grid"
-              @click="state.layoutMode = 'grid'" />
-            <el-button :type="state.layoutMode === 'list' ? 'primary' : 'default'" :icon="List"
-              @click="state.layoutMode = 'list'" />
+            <el-tooltip content="网格布局" placement="bottom">
+              <el-button :type="state.layoutMode === 'grid' ? 'primary' : 'default'" :icon="Grid"
+                @click="state.layoutMode = 'grid'" />
+            </el-tooltip>
+            <el-tooltip content="列表布局" placement="bottom">
+              <el-button :type="state.layoutMode === 'list' ? 'primary' : 'default'" :icon="List"
+                @click="state.layoutMode = 'list'" />
+            </el-tooltip>
           </el-button-group>
 
           <!-- 全屏按钮 -->
-          <el-button :icon="FullScreen" @click="toggleFullscreen" class="action-btn" />
+          <el-tooltip :content="state.isFullscreen ? '退出全屏' : '全屏显示'" placement="bottom">
+            <el-button :icon="FullScreen" @click="toggleFullscreen" class="action-btn" />
+          </el-tooltip>
 
           <!-- 设置按钮 -->
-          <el-button :icon="Setting" @click="state.showSettings = true" class="action-btn" />
+          <el-tooltip content="仪表盘设置" placement="bottom">
+            <el-button :icon="Setting" @click="state.showSettings = true" class="action-btn" />
+          </el-tooltip>
         </div>
 
         <!-- 最后更新时间 -->
         <div class="last-update" v-if="state.lastUpdateTime">
+          <el-icon class="update-icon">
+            <Clock />
+          </el-icon>
           <span class="update-label">最后更新:</span>
           <span class="update-time">{{ dashboardStats.lastUpdate }}</span>
         </div>
@@ -144,7 +180,7 @@
 import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
-import { Refresh, Setting, FullScreen, Grid, List, Loading } from '@element-plus/icons-vue'
+import { Refresh, Setting, FullScreen, Grid, List, Loading, Clock } from '@element-plus/icons-vue'
 
 // 服务导入
 import { stockService } from '@/services/stockService'
@@ -163,6 +199,7 @@ import ModernQuickActions from '@/components/dashboard/ModernQuickActions.vue'
 import ModernNewsWidget from '@/components/dashboard/ModernNewsWidget.vue'
 import ModernPopularStocks from '@/components/dashboard/ModernPopularStocks.vue'
 import ModernTradingSignals from '@/components/dashboard/ModernTradingSignals.vue'
+import DataSourceInfo from '@/components/common/DataSourceInfo.vue'
 
 // 工具导入
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -207,6 +244,14 @@ const activeWatchlistId = ref<number | null>(null)
 const popularStocks = ref<Stock[]>([])
 const newsItems = ref<any[]>([])
 const tradingSignals = ref<any[]>([])
+
+// 数据源信息
+const dataSourceInfo = ref({
+  dataSource: '未知',
+  dataSourceMessage: '数据来源未知',
+  isRealTime: false,
+  isCache: false
+})
 
 // 定时器
 let refreshTimer: number | null = null
@@ -305,6 +350,17 @@ const loadMarketData = async (forceRefresh: boolean = false) => {
       console.log('[Dashboard] 开始加载市场数据...')
       const data = await dashboardService.getMarketOverview(true)
       console.log('[Dashboard] 市场数据加载成功')
+
+      // 更新数据源信息
+      if (data && (data as any).data_source) {
+        dataSourceInfo.value = {
+          dataSource: (data as any).data_source || '未知',
+          dataSourceMessage: (data as any).data_source_message || '数据来源未知',
+          isRealTime: (data as any).is_real_time || false,
+          isCache: (data as any).is_cache || false
+        }
+      }
+
       return data
     },
     '加载市场数据失败'
@@ -334,7 +390,7 @@ const loadPopularStocks = async (type: string = 'hot', forceRefresh: boolean = f
   const result = await withRetry(
     async () => {
       console.log(`[Dashboard] 开始加载${type}股票...`)
-      let data = []
+      let data: Stock[] = []
 
       switch (type) {
         case 'hot':
@@ -350,7 +406,26 @@ const loadPopularStocks = async (type: string = 'hot', forceRefresh: boolean = f
           data = await stockService.getHotStocks()
       }
 
-      console.log(`[Dashboard] ${type}股票加载成功`)
+      // 如果数据中没有名称，尝试从股票列表中查找
+      if (data.length > 0) {
+        const allStocks = await stockService.getStocks().catch(() => [])
+        const stockMap = new Map(allStocks.map(s => [s.symbol, s]))
+
+        data = data.map(stock => {
+          // 如果股票没有名称，从股票列表中查找
+          if (!stock.name || stock.name === '未知' || stock.name === '') {
+            const stockInfo = stockMap.get(stock.symbol)
+            if (stockInfo && stockInfo.name) {
+              return { ...stock, name: stockInfo.name }
+            }
+            // 如果还是找不到，使用股票代码作为名称
+            return { ...stock, name: stock.symbol }
+          }
+          return stock
+        })
+      }
+
+      console.log(`[Dashboard] ${type}股票加载成功，共 ${data.length} 只`)
       return data.slice(0, 10)
     },
     `加载${type}股票失败`
@@ -420,10 +495,10 @@ const loadTradingSignals = async () => {
       const data = await response.json()
       if (data.success && data.data && data.data.length > 0) {
         // 转换后端数据格式为前端组件期望的格式
-        const convertedSignals = []
-        data.data.forEach(stockResult => {
+        const convertedSignals: any[] = []
+        data.data.forEach((stockResult: any) => {
           if (stockResult && stockResult.signals) {
-            stockResult.signals.forEach((signal, index) => {
+            stockResult.signals.forEach((signal: any, index: number) => {
               convertedSignals.push({
                 id: `${stockResult.stockCode}_${index}_${Date.now()}`,
                 stockName: stockResult.stockName || stockResult.stockCode,
@@ -558,11 +633,11 @@ const handleWatchlistChange = (watchlistId: number) => {
   activeWatchlistId.value = watchlistId
 }
 
-const handleStockClick = (stock: Stock) => {
+const handleStockClick = (stock: Stock | { symbol: string; name?: string }) => {
   router.push(`/stock?symbol=${stock.symbol}`)
 }
 
-const handleAddToWatchlist = async (stock: Stock) => {
+const handleAddToWatchlist = async (stock: Stock | { symbol: string; name: string }) => {
   if (!activeWatchlist.value) {
     ElMessage.warning('请先选择一个关注列表')
     return
@@ -643,89 +718,231 @@ onUnmounted(() => {
   min-height: 100vh;
   background: var(--el-bg-color-page);
   padding: var(--spacing-lg);
+  position: relative;
+}
+
+/* 添加背景装饰 */
+.modern-dashboard::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(var(--el-color-primary-rgb), 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(var(--el-color-success-rgb), 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.modern-dashboard>* {
+  position: relative;
+  z-index: 1;
 }
 
 /* Dashboard Header */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg);
-  background: var(--el-bg-color);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--el-border-color-light);
+  padding: var(--spacing-xl);
+  background: linear-gradient(135deg, var(--el-bg-color) 0%, rgba(var(--el-color-primary-rgb), 0.05) 100%);
+  border-radius: var(--border-radius-xl);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--el-border-color-lighter);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-success), var(--el-color-warning));
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 .header-left {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .dashboard-title {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   margin: 0;
-  font-size: var(--font-size-xl);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
   font-weight: var(--font-weight-bold);
   color: var(--el-text-color-primary);
 }
 
 .title-icon {
-  color: var(--color-primary);
+  color: var(--el-color-primary);
+  font-size: 1.5em;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.title-text {
+  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-success));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.refreshing-tag {
+  margin-left: var(--spacing-xs);
+}
+
+.dashboard-subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--el-text-color-regular);
+  font-weight: var(--font-weight-normal);
+}
+
+.header-data-source {
+  max-width: fit-content;
 }
 
 .dashboard-stats {
   display: flex;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
-.stat-item {
+.stat-card {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-sm);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--el-bg-color-page);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--el-border-color-lighter);
+  transition: all 0.3s ease;
+  min-width: 120px;
 }
 
-.stat-label {
-  color: var(--el-text-color-regular);
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--el-color-primary-light-7);
+}
+
+.stat-card.status-open {
+  border-color: var(--el-color-success-light-7);
+  background: rgba(var(--el-color-success-rgb), 0.05);
+}
+
+.stat-card.status-closed {
+  border-color: var(--el-color-danger-light-7);
+  background: rgba(var(--el-color-danger-rgb), 0.05);
+}
+
+.stat-icon {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .stat-value {
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
   color: var(--el-text-color-primary);
+  line-height: 1.2;
 }
 
-.stat-value.status-open {
-  color: var(--color-success);
+.stat-card.status-open .stat-value {
+  color: var(--el-color-success);
 }
 
-.stat-value.status-closed {
-  color: var(--color-danger);
+.stat-card.status-closed .stat-value {
+  color: var(--el-color-danger);
+}
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--el-text-color-regular);
+  font-weight: var(--font-weight-normal);
 }
 
 .header-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
+  min-width: fit-content;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  flex-wrap: wrap;
 }
 
 .action-btn {
   border-radius: var(--border-radius-md);
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.refresh-btn {
+  font-weight: var(--font-weight-medium);
 }
 
 .layout-toggle {
   border-radius: var(--border-radius-md);
+  overflow: hidden;
 }
 
 .last-update {
@@ -734,85 +951,163 @@ onUnmounted(() => {
   gap: var(--spacing-xs);
   font-size: var(--font-size-sm);
   color: var(--el-text-color-regular);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--el-bg-color-page);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.update-icon {
+  font-size: var(--font-size-base);
+  color: var(--el-color-primary);
+}
+
+.update-label {
+  color: var(--el-text-color-regular);
 }
 
 .update-time {
   font-weight: var(--font-weight-medium);
   color: var(--el-text-color-primary);
+  font-family: var(--font-family-mono);
 }
 
 /* Loading and Error States */
 .dashboard-loading {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-2xl);
   text-align: center;
+  background: var(--el-bg-color);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--el-border-color-light);
 }
 
 .loading-text {
   margin-top: var(--spacing-lg);
   font-size: var(--font-size-lg);
   color: var(--el-text-color-regular);
+  font-weight: var(--font-weight-medium);
 }
 
 .dashboard-error {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-2xl);
+  background: var(--el-bg-color);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--el-border-color-light);
 }
 
 /* Dashboard Content */
 .dashboard-content {
   display: grid;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
   transition: all 0.3s ease;
+  padding: var(--spacing-md) 0;
 }
 
 .dashboard-content.layout-grid {
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  grid-template-rows: auto;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(300px, auto);
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
 .dashboard-content.layout-list {
   grid-template-columns: 1fr;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 /* Widget Containers */
 .widget-container {
   background: var(--el-bg-color);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--el-border-color-light);
+  border-radius: var(--border-radius-xl);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--el-border-color-lighter);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.widget-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-success));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
 }
 
 .widget-container:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  border-color: var(--el-color-primary-light-7);
 }
 
-/* Grid Layout Specific */
+.widget-container:hover::before {
+  transform: scaleX(1);
+}
+
+/* Grid Layout Specific - 使用12列网格系统 */
 .layout-grid .market-overview {
-  grid-column: span 2;
+  grid-column: span 12;
+  grid-row: span 1;
 }
 
 .layout-grid .watchlist {
-  grid-column: span 1;
+  grid-column: span 6;
+  grid-row: span 1;
 }
 
 .layout-grid .quick-actions {
-  grid-column: span 1;
+  grid-column: span 6;
+  grid-row: span 1;
 }
 
 .layout-grid .popular-stocks {
-  grid-column: span 1;
+  grid-column: span 6;
+  grid-row: span 1;
 }
 
 .layout-grid .news {
-  grid-column: span 1;
+  grid-column: span 6;
+  grid-row: span 1;
 }
 
 .layout-grid .trading-signals {
-  grid-column: span 2;
+  grid-column: span 12;
+  grid-row: span 1;
+}
+
+/* 大屏幕优化布局 */
+@media (min-width: 1400px) {
+  .layout-grid .market-overview {
+    grid-column: span 8;
+  }
+
+  .layout-grid .watchlist {
+    grid-column: span 4;
+  }
+
+  .layout-grid .quick-actions {
+    grid-column: span 4;
+  }
+
+  .layout-grid .popular-stocks {
+    grid-column: span 4;
+  }
+
+  .layout-grid .news {
+    grid-column: span 4;
+  }
+
+  .layout-grid .trading-signals {
+    grid-column: span 8;
+  }
 }
 
 /* Settings Panel */
@@ -821,14 +1116,45 @@ onUnmounted(() => {
 }
 
 /* Responsive Design */
-@media (max-width: 1200px) {
+/* 响应式设计 */
+@media (max-width: 1400px) {
   .dashboard-content.layout-grid {
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(12, 1fr);
+  }
+
+  .layout-grid .market-overview {
+    grid-column: span 12;
+  }
+
+  .layout-grid .watchlist,
+  .layout-grid .quick-actions,
+  .layout-grid .popular-stocks,
+  .layout-grid .news {
+    grid-column: span 6;
+  }
+
+  .layout-grid .trading-signals {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 1024px) {
+  .modern-dashboard {
+    padding: var(--spacing-lg);
+  }
+
+  .dashboard-content.layout-grid {
+    grid-template-columns: repeat(12, 1fr);
+    gap: var(--spacing-lg);
   }
 
   .layout-grid .market-overview,
+  .layout-grid .watchlist,
+  .layout-grid .quick-actions,
+  .layout-grid .popular-stocks,
+  .layout-grid .news,
   .layout-grid .trading-signals {
-    grid-column: span 1;
+    grid-column: span 12;
   }
 }
 
@@ -841,21 +1167,34 @@ onUnmounted(() => {
     flex-direction: column;
     gap: var(--spacing-md);
     align-items: stretch;
+    padding: var(--spacing-lg);
   }
 
   .header-left,
   .header-right {
-    align-items: center;
+    align-items: stretch;
+    width: 100%;
   }
 
   .dashboard-stats {
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .stat-card {
+    flex: 1;
+    min-width: calc(50% - var(--spacing-sm));
   }
 
   .header-actions {
     justify-content: center;
     flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .dashboard-content {
+    gap: var(--spacing-md);
   }
 
   .dashboard-content.layout-grid {
@@ -863,7 +1202,25 @@ onUnmounted(() => {
   }
 
   .widget-container {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .modern-dashboard {
+    padding: var(--spacing-sm);
+  }
+
+  .dashboard-header {
+    padding: var(--spacing-md);
+  }
+
+  .stat-card {
+    min-width: 100%;
+  }
+
+  .dashboard-content {
+    gap: var(--spacing-sm);
   }
 }
 

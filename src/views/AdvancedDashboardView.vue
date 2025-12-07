@@ -4,23 +4,53 @@
     <div class="dashboard-header">
       <div class="header-content">
         <div class="header-left">
+          <div class="title-section">
           <h1 class="page-title">
-            <el-icon>
+              <el-icon class="title-icon">
               <TrendCharts />
             </el-icon>
-            高级仪表盘
+              <span class="title-text">高级仪表盘</span>
+              <el-tag v-if="state.isRefreshing" type="info" size="small" effect="plain" class="refreshing-tag">
+                <el-icon class="is-loading"><Loading /></el-icon>
+                刷新中...
+              </el-tag>
           </h1>
           <p class="page-subtitle">实时市场分析与投资组合管理</p>
+          </div>
+          
+          <!-- 数据源信息 -->
+          <DataSourceInfo 
+            v-if="dataSourceInfo.dataSource !== '未知'"
+            :dataSource="dataSourceInfo.dataSource"
+            :dataSourceMessage="dataSourceInfo.dataSourceMessage"
+            :isRealTime="dataSourceInfo.isRealTime"
+            :isCache="dataSourceInfo.isCache"
+            class="header-data-source"
+          />
+
+          <!-- 最后更新时间 -->
+          <div class="last-update" v-if="state.lastUpdateTime">
+            <el-icon class="update-icon"><Clock /></el-icon>
+            <span class="update-label">最后更新:</span>
+            <span class="update-time">{{ formatUpdateTime(state.lastUpdateTime) }}</span>
+          </div>
         </div>
         <div class="header-actions">
           <el-button-group>
+            <el-tooltip content="刷新数据" placement="bottom">
             <el-button :icon="Refresh" @click="handleRefresh" :loading="state.isRefreshing" type="primary">
-              刷新数据
+                <span v-if="!state.isRefreshing">刷新数据</span>
+                <span v-else>刷新中...</span>
             </el-button>
+            </el-tooltip>
+            <el-tooltip content="仪表盘设置" placement="bottom">
             <el-button :icon="Setting" @click="showSettings = true">
               设置
             </el-button>
+            </el-tooltip>
+            <el-tooltip :content="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'" placement="bottom">
             <el-button :icon="isDarkMode ? Sunny : Moon" @click="toggleTheme" circle />
+            </el-tooltip>
           </el-button-group>
         </div>
       </div>
@@ -50,7 +80,7 @@
 
           <!-- 投资组合分析 -->
           <div class="chart-container portfolio-analysis">
-            <PortfolioAnalysisChart :data="portfolioData" :loading="state.isRefreshing" @refresh="loadPortfolioData" />
+            <PortfolioAnalysisChart :data="{ holdings: holdingsData }" :loading="state.isRefreshing" @refresh="loadPortfolioData" />
           </div>
 
           <!-- 技术指标分析 -->
@@ -99,7 +129,9 @@ import {
   Refresh,
   Setting,
   Moon,
-  Sunny
+  Sunny,
+  Loading,
+  Clock
 } from '@element-plus/icons-vue'
 
 // 组件导入
@@ -113,6 +145,7 @@ import TransactionsTable from '@/components/dashboard/advanced/TransactionsTable
 import MarketHotspotsTable from '@/components/dashboard/advanced/MarketHotspotsTable.vue'
 import DashboardSettings from '@/components/dashboard/DashboardSettings.vue'
 import ErrorBoundary from '@/components/common/ErrorBoundary.vue'
+import DataSourceInfo from '@/components/common/DataSourceInfo.vue'
 
 // 服务和工具导入
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -121,7 +154,6 @@ import { useWebSocket } from '@/composables/useWebSocket'
 import { stockService } from '@/services/stockService'
 import { portfolioService } from '@/services/portfolioService'
 import { marketDataService } from '@/services/marketDataService'
-import { mockHoldings, mockTransactions, calculatePortfolioSummary, getRecentTransactions } from '@/data/mockPortfolioData'
 
 // 类型定义
 interface DashboardState {
@@ -166,6 +198,14 @@ const holdingsData = ref<any[]>([])
 const transactionsData = ref<any[]>([])
 const hotspotsData = ref<any[]>([])
 
+// 数据源信息
+const dataSourceInfo = ref({
+  dataSource: '未知',
+  dataSourceMessage: '数据来源未知',
+  isRealTime: false,
+  isCache: false
+})
+
 // UI状态
 const activeTab = ref('holdings')
 const showSettings = ref(false)
@@ -177,8 +217,39 @@ const dashboardSettings = ref({
   theme: 'auto'
 })
 
-// 计算属性
-const portfolioSummary = computed(() => calculatePortfolioSummary(holdingsData.value))
+// 计算属性 - 从真实持仓数据计算
+const portfolioSummary = computed(() => {
+  if (!holdingsData.value || holdingsData.value.length === 0) {
+    return {
+      totalValue: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      totalProfitPercent: 0,
+      holdingCount: 0
+    }
+  }
+
+  const totalCost = holdingsData.value.reduce((sum, h) => {
+    const cost = (h.averageCost || h.cost || 0) * (h.quantity || 0)
+    return sum + cost
+  }, 0)
+
+  const totalValue = holdingsData.value.reduce((sum, h) => {
+    const value = (h.currentPrice || h.price || 0) * (h.quantity || 0)
+    return sum + value
+  }, 0)
+
+  const totalProfit = totalValue - totalCost
+  const totalProfitPercent = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0
+
+  return {
+    totalValue,
+    totalCost,
+    totalProfit,
+    totalProfitPercent,
+    holdingCount: holdingsData.value.length
+  }
+})
 
 const keyMetrics = computed<KeyMetric[]>(() => [
   {
@@ -195,7 +266,7 @@ const keyMetrics = computed<KeyMetric[]>(() => [
     id: 'daily-pnl',
     title: '总盈亏',
     value: portfolioSummary.value.totalProfit,
-    change: portfolioSummary.value.totalProfit * 0.1, // Mock daily change
+    change: 0, // 日盈亏需要从API获取
     changePercent: portfolioSummary.value.totalProfitPercent,
     icon: 'trend',
     color: portfolioSummary.value.totalProfit >= 0 ? 'success' : 'danger',
@@ -233,6 +304,15 @@ function getRiskColor(riskLevel: string): string {
   }
 }
 
+// 格式化更新时间
+function formatUpdateTime(date: Date): string {
+  return date.toLocaleTimeString('zh-CN', { 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit' 
+  })
+}
+
 // 数据加载函数
 const loadMarketData = async (forceRefresh = false) => {
   const cacheKey = 'advanced-market-data'
@@ -244,6 +324,17 @@ const loadMarketData = async (forceRefresh = false) => {
   const result = await withRetry(
     async () => {
       const data = await marketDataService.getAdvancedMarketData()
+      
+      // 更新数据源信息
+      if (data && (data as any).data_source) {
+        dataSourceInfo.value = {
+          dataSource: (data as any).data_source || '未知',
+          dataSourceMessage: (data as any).data_source_message || '数据来源未知',
+          isRealTime: (data as any).is_real_time || false,
+          isCache: (data as any).is_cache || false
+        }
+      }
+      
       return data
     },
     '加载市场数据失败'
@@ -297,24 +388,73 @@ const loadRealtimeQuotes = async (forceRefresh = false) => {
 }
 
 const loadHoldingsData = async (forceRefresh = false) => {
-  try {
-    // Use mock data for demonstration
-    // In production, this would call: await portfolioService.getHoldings()
-    await new Promise(resolve => setTimeout(resolve, 500)) // Simulate API delay
-    holdingsData.value = mockHoldings
+  const result = await withRetry(
+    async () => {
+      console.log('[AdvancedDashboard] 开始加载持仓数据...')
+      const data = await portfolioService.getHoldings()
+      console.log('[AdvancedDashboard] 持仓数据加载成功，共', data.length, '条')
+      
+      // 如果返回的是空数组或示例数据，尝试获取实时价格
+      if (data && data.length > 0) {
+        // 为每个持仓获取最新价格
+        const holdingsWithPrice = await Promise.allSettled(
+          data.map(async (holding: any) => {
+            try {
+              const quote = await stockService.getStockQuote(holding.stockCode || holding.symbol)
+              return {
+                ...holding,
+                currentPrice: quote?.price || holding.currentPrice || holding.price || 0,
+                change: quote?.change || 0,
+                changePercent: quote?.pct_chg || quote?.changePercent || 0
+              }
   } catch (error) {
-    handleError(error, '加载持仓数据失败')
+              console.warn(`获取股票 ${holding.stockCode || holding.symbol} 价格失败:`, error)
+              return holding
+            }
+          })
+        )
+        
+        holdingsData.value = holdingsWithPrice
+          .filter((result) => result.status === 'fulfilled')
+          .map((result: any) => result.value)
+      } else {
+        holdingsData.value = []
+      }
+      
+      return data
+    },
+    '加载持仓数据失败'
+  )
+
+  if (!result || result.length === 0) {
+    holdingsData.value = []
   }
 }
 
 const loadTransactionsData = async (forceRefresh = false) => {
-  try {
-    // Use mock data for demonstration
-    // In production, this would call: await portfolioService.getTransactions()
-    await new Promise(resolve => setTimeout(resolve, 500)) // Simulate API delay
-    transactionsData.value = getRecentTransactions(mockTransactions, 20)
-  } catch (error) {
-    handleError(error, '加载交易记录失败')
+  const result = await withRetry(
+    async () => {
+      console.log('[AdvancedDashboard] 开始加载交易记录...')
+      const data = await portfolioService.getTransactions()
+      console.log('[AdvancedDashboard] 交易记录加载成功，共', data.length, '条')
+      
+      // 按交易日期降序排序，只显示最近20条
+      const sortedData = data
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.tradeDate || a.createdAt || 0).getTime()
+          const dateB = new Date(b.tradeDate || b.createdAt || 0).getTime()
+          return dateB - dateA
+        })
+        .slice(0, 20)
+      
+      transactionsData.value = sortedData
+      return sortedData
+    },
+    '加载交易记录失败'
+  )
+
+  if (!result || result.length === 0) {
+    transactionsData.value = []
   }
 }
 
@@ -454,44 +594,83 @@ const stopAutoRefresh = () => {
   }
 }
 
-// WebSocket 连接和实时数据 (可选)
+// 实时数据更新定时器
+let realtimeDataInterval: NodeJS.Timeout | null = null
+
+// 实时数据更新 - 使用真实数据源
 const setupRealtimeData = () => {
-  // 由于没有后端服务器，直接使用模拟数据
-  console.log('使用模拟实时数据模式')
-  setupMockRealtimeData()
-
-  // 如果需要真实WebSocket连接，可以取消注释以下代码
-  /*
-  try {
-    connect()
-    subscribe('quotes', (data: any) => {
-      realtimeQuotes.value = data
-    })
-    subscribe('portfolio', (data: any) => {
-      portfolioData.value = { ...portfolioData.value, ...data }
-    })
+  console.log('[AdvancedDashboard] 启动实时数据更新')
+  
+  // 从持仓数据中获取股票代码，然后获取实时行情
+  const updateRealtimeQuotes = async () => {
+    try {
+      if (holdingsData.value && holdingsData.value.length > 0) {
+        const symbols = holdingsData.value.map((h: any) => h.stockCode || h.symbol).filter(Boolean)
+        
+        if (symbols.length > 0) {
+          const quotes = await Promise.allSettled(
+            symbols.map(async (symbol: string) => {
+              try {
+                const quote = await stockService.getStockQuote(symbol)
+                return {
+                  symbol,
+                  price: quote?.price || 0,
+                  change: quote?.change || 0,
+                  changePercent: quote?.pct_chg || quote?.changePercent || 0,
+                  name: quote?.name || ''
+                }
+              } catch (error) {
+                console.warn(`获取股票 ${symbol} 实时行情失败:`, error)
+                return null
+              }
+            })
+          )
+          
+          realtimeQuotes.value = quotes
+            .filter((result) => result.status === 'fulfilled' && result.value)
+            .map((result: any) => result.value)
+        }
+      } else if (realtimeQuotes.value.length === 0) {
+        // 如果没有持仓，尝试获取热门股票的实时行情
+        try {
+          const hotStocks = await stockService.getHotStocks(10)
+          const quotes = await Promise.allSettled(
+            hotStocks.map(async (stock) => {
+              try {
+                const quote = await stockService.getStockQuote(stock.symbol)
+                return {
+                  symbol: stock.symbol,
+                  price: quote?.price || 0,
+                  change: quote?.change || 0,
+                  changePercent: quote?.pct_chg || quote?.changePercent || 0,
+                  name: stock.name || quote?.name || ''
+                }
+              } catch (error) {
+                return null
+              }
+            })
+          )
+          
+          realtimeQuotes.value = quotes
+            .filter((result) => result.status === 'fulfilled' && result.value)
+            .map((result: any) => result.value)
   } catch (error) {
-    console.warn('WebSocket连接失败，使用模拟数据模式:', error)
-    setupMockRealtimeData()
+          console.warn('获取热门股票实时行情失败:', error)
+        }
+      }
+    } catch (error) {
+      console.error('更新实时行情失败:', error)
+    }
   }
-  */
-}
 
-// 模拟实时数据更新
-const setupMockRealtimeData = () => {
-  console.log('启动模拟实时数据更新')
-  // 每5秒更新一次模拟数据
-  setInterval(() => {
-    // 模拟实时行情更新 - 修复类型问题
-    const mockQuotes = mockHoldings.map(holding => ({
-      symbol: holding.symbol,
-      price: holding.currentPrice * (1 + (Math.random() - 0.5) * 0.02),
-      change: (Math.random() - 0.5) * 2,
-      changePercent: (Math.random() - 0.5) * 4
-    }))
+  // 立即更新一次
+  updateRealtimeQuotes()
 
-    realtimeQuotes.value = mockQuotes
-  }, 5000)
+  // 每30秒更新一次实时行情
+  if (realtimeDataInterval) {
+    clearInterval(realtimeDataInterval)
+  }
+  realtimeDataInterval = setInterval(updateRealtimeQuotes, 30000)
 }
 
 // 生命周期钩子
@@ -504,6 +683,12 @@ onMounted(async () => {
 onUnmounted(() => {
   stopAutoRefresh()
   disconnect()
+  
+  // 清理实时数据更新定时器
+  if (realtimeDataInterval) {
+    clearInterval(realtimeDataInterval)
+    realtimeDataInterval = null
+  }
 })
 
 // 监听设置变化
@@ -536,105 +721,372 @@ watch(
 }
 
 .dashboard-header {
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-light);
-  padding: var(--el-spacing-lg);
+  background: linear-gradient(135deg, var(--el-bg-color) 0%, rgba(var(--el-color-primary-rgb), 0.05) 100%);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  padding: var(--spacing-xl);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-success), var(--el-color-warning));
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   max-width: 1400px;
   margin: 0 auto;
+  gap: var(--spacing-lg);
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .page-title {
   display: flex;
   align-items: center;
-  gap: var(--el-spacing-sm);
+  gap: var(--spacing-md);
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: var(--font-weight-bold);
   color: var(--el-text-color-primary);
 }
 
+.title-icon {
+  color: var(--el-color-primary);
+  font-size: 1.5em;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.title-text {
+  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-success));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.refreshing-tag {
+  margin-left: var(--spacing-xs);
+}
+
 .page-subtitle {
-  margin: var(--el-spacing-xs) 0 0 0;
-  color: var(--el-text-color-secondary);
-  font-size: 0.875rem;
+  margin: 0;
+  color: var(--el-text-color-regular);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+}
+
+.header-data-source {
+  max-width: fit-content;
+}
+
+.last-update {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--el-text-color-regular);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--el-bg-color-page);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--el-border-color-lighter);
+  max-width: fit-content;
+}
+
+.update-icon {
+  font-size: var(--font-size-base);
+  color: var(--el-color-primary);
+}
+
+.update-label {
+  color: var(--el-text-color-regular);
+}
+
+.update-time {
+  font-weight: var(--font-weight-medium);
+  color: var(--el-text-color-primary);
+  font-family: var(--font-family-mono);
 }
 
 .global-loading {
-  padding: var(--el-spacing-xl);
+  padding: var(--spacing-2xl);
   text-align: center;
+  background: var(--el-bg-color);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--el-border-color-light);
+  margin: var(--spacing-lg);
 }
 
 .loading-text {
-  margin-top: var(--el-spacing-lg);
+  margin-top: var(--spacing-lg);
   color: var(--el-text-color-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
 }
 
 .dashboard-content {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: var(--el-spacing-lg);
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
 }
 
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--el-spacing-lg);
-  margin-bottom: var(--el-spacing-xl);
+  gap: var(--spacing-lg);
+  margin-bottom: 0;
+}
+
+/* 大屏幕优化指标卡片布局 */
+@media (min-width: 1400px) {
+  .metrics-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .charts-section {
-  margin-bottom: var(--el-spacing-xl);
+  margin-bottom: 0;
 }
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--el-spacing-lg);
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--spacing-lg);
+  grid-auto-rows: minmax(400px, auto);
+}
+
+/* 图表布局优化 */
+.charts-grid .market-overview {
+  grid-column: span 8;
+  grid-row: span 1;
+}
+
+.charts-grid .portfolio-analysis {
+  grid-column: span 4;
+  grid-row: span 1;
+}
+
+.charts-grid .technical-analysis {
+  grid-column: span 6;
+  grid-row: span 1;
+}
+
+.charts-grid .realtime-quotes {
+  grid-column: span 6;
+  grid-row: span 1;
+}
+
+/* 大屏幕图表布局 */
+@media (min-width: 1400px) {
+  .charts-grid .market-overview {
+    grid-column: span 8;
+  }
+
+  .charts-grid .portfolio-analysis {
+    grid-column: span 4;
+  }
+
+  .charts-grid .technical-analysis {
+    grid-column: span 6;
+  }
+
+  .charts-grid .realtime-quotes {
+    grid-column: span 6;
+  }
 }
 
 .chart-container {
   background: var(--el-bg-color);
-  border-radius: var(--el-border-radius-base);
-  border: 1px solid var(--el-border-color-light);
+  border-radius: var(--border-radius-xl);
+  border: 1px solid var(--el-border-color-lighter);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.chart-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-success));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
 }
 
 .chart-container:hover {
-  box-shadow: var(--el-box-shadow-light);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  border-color: var(--el-color-primary-light-7);
+}
+
+.chart-container:hover::before {
+  transform: scaleX(1);
 }
 
 .tables-section {
   background: var(--el-bg-color);
-  border-radius: var(--el-border-radius-base);
-  border: 1px solid var(--el-border-color-light);
+  border-radius: var(--border-radius-xl);
+  border: 1px solid var(--el-border-color-lighter);
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.tables-section:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* 响应式设计 */
-@media (max-width: 768px) {
+@media (max-width: 1400px) {
+  .charts-grid {
+    grid-template-columns: repeat(12, 1fr);
+  }
+
+  .charts-grid .market-overview,
+  .charts-grid .portfolio-analysis,
+  .charts-grid .technical-analysis,
+  .charts-grid .realtime-quotes {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-content {
+    padding: var(--spacing-lg);
+    gap: var(--spacing-lg);
+  }
+
   .header-content {
     flex-direction: column;
-    gap: var(--el-spacing-md);
+    align-items: stretch;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .metrics-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
   }
 
   .charts-grid {
     grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .charts-grid .market-overview,
+  .charts-grid .portfolio-analysis,
+  .charts-grid .technical-analysis,
+  .charts-grid .realtime-quotes {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: var(--spacing-lg);
   }
 
   .dashboard-content {
-    padding: var(--el-spacing-md);
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .header-left {
+    width: 100%;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .last-update {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header {
+    padding: var(--spacing-md);
+  }
+
+  .dashboard-content {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+
+  .metrics-grid,
+  .charts-grid {
+    gap: var(--spacing-sm);
   }
 }
 
