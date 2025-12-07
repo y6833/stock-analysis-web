@@ -212,7 +212,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import * as echarts from 'echarts'
@@ -612,25 +612,54 @@ const updateChart = (data) => {
 
   try {
     if (chart.value && !chart.value.isDisposed()) {
-      // 验证series数据
+      // 验证series数据，确保每个series都有必需的属性
       const validatedSeries = series.filter(s => {
-        if (!s || typeof s !== 'object') return false
-        if (!s.type || !s.name) return false
-        if (!Array.isArray(s.data)) s.data = []
+        if (!s || typeof s !== 'object') {
+          console.warn('[TechnicalSignals] 无效的series对象:', s)
+          return false
+        }
+        if (!s.type || typeof s.type !== 'string') {
+          console.warn('[TechnicalSignals] series缺少type属性:', s)
+          return false
+        }
+        if (!s.name || typeof s.name !== 'string') {
+          console.warn('[TechnicalSignals] series缺少name属性:', s)
+          return false
+        }
+        if (!Array.isArray(s.data)) {
+          s.data = []
+        }
         return true
       }).map(s => ({
         ...s,
+        id: s.id || `${s.name}-${s.type}-${Date.now()}`,
         animation: false, // 禁用动画
+        animationDuration: 0,
         data: s.data || []
       }))
 
-      // 更新option中的series
+      // 确保至少有一个有效的series
+      if (validatedSeries.length === 0) {
+        console.warn('[TechnicalSignals] 没有有效的series数据')
+        return
+      }
+
+      // 更新option中的series，确保所有必需属性都存在
       const safeOption = {
         ...option,
         series: validatedSeries,
         animation: false,
-        animationDuration: 0
-      }
+        animationDuration: 0,
+        // 确保xAxis和yAxis存在
+        xAxis: option.xAxis || {
+          type: 'category',
+          data: data.dates || []
+        },
+        yAxis: option.yAxis || {
+          type: 'value',
+          scale: true
+        }
+      } as any
 
       console.log('[TechnicalSignals] 设置技术指标图表配置:', {
         seriesCount: validatedSeries.length,
@@ -640,17 +669,29 @@ const updateChart = (data) => {
 
       // 安全地清空和设置图表
       try {
-        chart.value.clear()
+        // 在设置新option之前，先尝试清空图表状态
+        try {
+          chart.value.clear()
+        } catch (clearError) {
+          console.warn('[TechnicalSignals] 清空图表失败，继续设置:', clearError)
+        }
+        
         chart.value.setOption(safeOption, true)
         console.log('[TechnicalSignals] 技术指标图表渲染成功')
       } catch (setOptionError) {
         console.error('[TechnicalSignals] setOption失败，重新创建图表:', setOptionError)
-        chart.value.dispose()
+        try {
+          if (chart.value) {
+            chart.value.dispose()
+          }
+        } catch (disposeError) {
+          console.warn('[TechnicalSignals] dispose失败:', disposeError)
+        }
         if (chartContainer.value) {
           chart.value = echarts.init(chartContainer.value)
+          chart.value.setOption(safeOption, true)
+          console.log('[TechnicalSignals] 技术指标图表重新创建成功')
         }
-        chart.value.setOption(safeOption, true)
-        console.log('[TechnicalSignals] 技术指标图表重新创建成功')
       }
     } else {
       console.error('[TechnicalSignals] 图表实例无效或已销毁，重新创建')

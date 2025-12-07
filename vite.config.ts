@@ -260,8 +260,8 @@ export default defineConfig(({ mode }) => {
     },
     // 优化依赖预构建配置
     optimizeDeps: {
-      // 强制重新构建依赖
-      force: false,
+      // 强制重新构建依赖（每次启动时都重新构建）
+      force: true,
       // 包含需要预构建的依赖
       include: [
         'vue',
@@ -276,7 +276,11 @@ export default defineConfig(({ mode }) => {
       exclude: [],
       // 处理依赖过期的情况
       esbuildOptions: {
-        target: 'esnext'
+        target: 'esnext',
+        // 确保所有依赖都被正确处理
+        supported: {
+          'top-level-await': true
+        }
       }
     },
     // 开发服务器配置
@@ -284,6 +288,10 @@ export default defineConfig(({ mode }) => {
       // 当依赖过期时，自动重新构建
       hmr: {
         overlay: true
+      },
+      // 强制预构建依赖
+      fs: {
+        strict: false
       }
     },
     build: {
@@ -366,10 +374,8 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        '/api/predict': {
-          target: 'http://localhost:5001',
-          changeOrigin: true,
-        },
+        // 注意：/api/predict 应该由后端 Node.js 处理，然后后端再代理到 Python API
+        // 所以这里不需要单独配置 /api/predict
         '/api': {
           target: 'http://localhost:7001',
           changeOrigin: true,

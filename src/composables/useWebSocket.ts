@@ -63,6 +63,14 @@ export function useWebSocket(userConfig?: WebSocketConfig) {
       return
     }
 
+    // 检查后端是否支持WebSocket（暂时禁用，避免连接错误）
+    // TODO: 当后端实现WebSocket支持后，移除此检查
+    if (import.meta.env.DEV) {
+      console.warn('[WebSocket] WebSocket功能暂时禁用，后端尚未实现WebSocket支持')
+      status.value = 'disconnected'
+      return
+    }
+
     try {
       status.value = 'connecting'
       console.log('[WebSocket] 正在连接...', config.url)

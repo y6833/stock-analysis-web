@@ -293,6 +293,13 @@ npm run ci:lint
 npm run format
 ```
 
+### Kronos 股票预测
+
+```bash
+cd server
+python predict_api.py
+```
+
 ### 测试
 
 ```bash

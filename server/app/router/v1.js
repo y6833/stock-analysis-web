@@ -30,10 +30,6 @@ module.exports = (app) => {
   router.get('/api/v1/stocks/:symbol/quote', controller.stock.getQuote)
   router.get('/api/v1/stocks/:symbol/history', controller.stock.getHistory)
   router.get('/api/v1/stocks/:symbol/indicators', controller.technicalIndicators.calculateIndicators)
-  router.get(
-    '/api/v1/stocks/:symbol/indicators',
-    controller.technicalIndicators.calculateIndicators
-  )
   router.post('/api/v1/stocks/quotes/batch', controller.stock.getBatchQuotes)
 
   // 行业数据

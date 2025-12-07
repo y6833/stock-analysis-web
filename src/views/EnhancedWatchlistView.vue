@@ -105,8 +105,8 @@ const activeWatchlistId = computed(() => watchlistStore.activeWatchlistId)
 // 方法
 function viewStock(symbol: string) {
   router.push({
-    name: 'StockAnalysis',
-    params: { symbol },
+    path: '/stock',
+    query: { symbol },
   })
 }
 

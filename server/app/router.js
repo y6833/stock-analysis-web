@@ -46,6 +46,9 @@ module.exports = (app) => {
   router.post('/api/health/create-test-user', controller.health.createTestUser)
   router.post('/api/health/reset-test-passwords', controller.health.resetTestPasswords)
 
+  // 股票预测路由（代理到 Python Flask API）
+  router.get('/api/predict', controller.predict.getPrediction)
+
   // 认证相关路由
   router.post('/api/auth/register', controller.user.register)
   router.post('/api/auth/login', controller.user.login)

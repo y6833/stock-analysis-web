@@ -1044,36 +1044,81 @@ const initKlineChart = (rawData: any) => {
         `
       }
     },
-    grid: {
-      left: '10%',
-      right: '10%',
-      bottom: '15%'
-    },
-    xAxis: {
-      type: 'category',
-      data: data.map(item => item.date),
-      scale: true,
-      boundaryGap: false,
-      axisLine: { onZero: false },
-      splitLine: { show: false },
-      min: 'dataMin',
-      max: 'dataMax'
-    },
-    yAxis: {
-      scale: true,
-      splitArea: {
-        show: true
+    grid: [
+      {
+        left: '10%',
+        right: '10%',
+        bottom: '60%'
+      },
+      {
+        left: '10%',
+        right: '10%',
+        top: '65%',
+        bottom: '15%'
       }
-    },
+    ],
+    xAxis: [
+      {
+        type: 'category',
+        data: data.map(item => item.date || item.trade_date || item.date),
+        scale: true,
+        boundaryGap: false,
+        axisLine: { onZero: false },
+        splitLine: { show: false },
+        min: 'dataMin',
+        max: 'dataMax'
+      },
+      {
+        type: 'category',
+        gridIndex: 1,
+        data: data.map(item => item.date || item.trade_date || item.date),
+        scale: true,
+        boundaryGap: false,
+        axisLine: { onZero: false },
+        splitLine: { show: false },
+        min: 'dataMin',
+        max: 'dataMax'
+      }
+    ],
+    yAxis: [
+      {
+        scale: true,
+        splitArea: {
+          show: true
+        }
+      },
+      {
+        scale: true,
+        gridIndex: 1,
+        splitArea: {
+          show: false
+        }
+      }
+    ],
+    grid: [
+      {
+        left: '10%',
+        right: '10%',
+        bottom: '60%'
+      },
+      {
+        left: '10%',
+        right: '10%',
+        top: '65%',
+        bottom: '15%'
+      }
+    ],
     dataZoom: [
       {
         type: 'inside',
+        xAxisIndex: [0, 1],
         start: 50,
         end: 100
       },
       {
         show: true,
         type: 'slider',
+        xAxisIndex: [0, 1],
         top: '90%',
         start: 50,
         end: 100
@@ -1083,20 +1128,41 @@ const initKlineChart = (rawData: any) => {
       {
         name: 'K线',
         type: 'candlestick',
-        data: data.map(item => [item.open, item.close, item.low, item.high]),
+        xAxisIndex: 0,
+        yAxisIndex: 0,
+        data: data.map(item => [
+          item.open || item.o || 0,
+          item.close || item.c || 0,
+          item.low || item.l || 0,
+          item.high || item.h || 0
+        ]),
         itemStyle: {
           color: '#ef232a',
           color0: '#14b143',
           borderColor: '#ef232a',
           borderColor0: '#14b143'
-        }
+        },
+        animation: false
       },
       {
         name: '成交量',
         type: 'bar',
         xAxisIndex: 1,
         yAxisIndex: 1,
-        data: data.map(item => item.volume)
+        data: data.map(item => item.volume || item.vol || 0),
+        itemStyle: {
+          color: function(params: any) {
+            const index = params.dataIndex
+            if (index < data.length) {
+              const item = data[index]
+              const open = item.open || item.o || 0
+              const close = item.close || item.c || 0
+              return close >= open ? '#ef232a' : '#14b143'
+            }
+            return '#999'
+          }
+        },
+        animation: false
       }
     ]
   }

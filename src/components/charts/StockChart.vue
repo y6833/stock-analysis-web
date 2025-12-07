@@ -803,10 +803,10 @@ const renderCandlestickChart = (data: StockData) => {
     yAxis: {
       type: 'value',
       scale: true,
-      min: function (value) {
+      min: function (value: any) {
         return Math.floor(value.min * 0.98)
       },
-      max: function (value) {
+      max: function (value: any) {
         return Math.ceil(value.max * 1.02)
       },
       splitLine: {
@@ -817,7 +817,7 @@ const renderCandlestickChart = (data: StockData) => {
         },
       },
       axisLabel: {
-        formatter: function (value) {
+        formatter: function (value: any) {
           return value.toFixed(2)
         }
       }
@@ -834,6 +834,7 @@ const renderCandlestickChart = (data: StockData) => {
         bottom: 30,
         start: 50,
         end: 100,
+        filterMode: 'filter',
       },
     ],
     series: validSeries,
@@ -897,15 +898,49 @@ const renderCandlestickChart = (data: StockData) => {
 
       // 使用notMerge=true确保完全替换，并添加错误处理
       try {
-        chart.value.setOption(option, true)
-        console.log('[StockChart] K线图渲染成功')
+        // 在设置新option之前，先清空所有可能的状态
+        if (chart.value) {
+          // 禁用所有动画和交互，避免在reset时出错
+          const safeOption: any = {
+            ...option,
+            animation: false,
+            animationDuration: 0,
+          }
+          // 确保所有series都有必需的属性
+          safeOption.series = safeOption.series.map((s: any) => ({
+            ...s,
+            animation: false,
+            animationDuration: 0,
+          }))
+
+          chart.value.setOption(safeOption, true)
+          console.log('[StockChart] K线图渲染成功')
+        }
       } catch (setOptionError) {
         console.error('[StockChart] setOption失败，尝试重新创建图表:', setOptionError)
         // 重新创建图表实例
-        chart.value.dispose()
-        chart.value = echarts.init(chartContainer.value!)
-        chart.value.setOption(option, true)
-        console.log('[StockChart] 图表重新创建并渲染成功')
+        if (chart.value) {
+          try {
+            chart.value.dispose()
+          } catch (disposeError) {
+            console.warn('[StockChart] dispose失败:', disposeError)
+          }
+        }
+        if (chartContainer.value) {
+          chart.value = echarts.init(chartContainer.value)
+          const safeOption = {
+            ...option,
+            animation: false,
+            animationDuration: 0,
+          }
+          safeOption.series = safeOption.series.map((s: any) => ({
+            ...s,
+            animation: false,
+            animationDuration: 0,
+          }))
+          chart.value.setOption(safeOption, true)
+          console.log('[StockChart] 图表重新创建并渲染成功')
+        }
       }
     } else {
       console.error('[StockChart] 图表实例无效或已销毁，重新创建')
@@ -978,6 +1013,7 @@ const renderLineChart = (data: StockData) => {
         type: 'inside',
         start: 50,
         end: 100,
+        filterMode: 'filter',
       },
       {
         show: true,
@@ -985,13 +1021,15 @@ const renderLineChart = (data: StockData) => {
         bottom: 10,
         start: 50,
         end: 100,
+        filterMode: 'filter',
       },
     ],
     series: [
       {
         name: '价格',
         type: 'line',
-        data: data.prices,
+        id: 'price-line',
+        data: data.prices || [],
         smooth: true,
         symbol: 'none',
         lineStyle: {
@@ -1010,6 +1048,7 @@ const renderLineChart = (data: StockData) => {
             },
           ]),
         },
+        animation: false,
       },
     ],
   }
@@ -1022,7 +1061,19 @@ const renderLineChart = (data: StockData) => {
         hasValidData: data.prices && data.prices.length > 0
       })
 
-      chart.value.setOption(option, true)
+      // 确保option结构完整，添加必要的属性
+      const safeOption = {
+        ...option,
+        animation: false,
+        animationDuration: 0,
+        series: option.series.map((s: any) => ({
+          ...s,
+          animation: false,
+          animationDuration: 0,
+        })),
+      }
+
+      chart.value.setOption(safeOption, true)
       console.log('[StockChart] 分时图渲染成功')
     } else {
       console.error('[StockChart] 图表实例无效或已销毁')

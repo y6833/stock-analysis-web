@@ -385,30 +385,6 @@
   {
     "name": null,
     "methods": [
-      "HEAD",
-      "GET"
-    ],
-    "paramNames": [
-      {
-        "name": "symbol",
-        "prefix": "/",
-        "delimiter": "/",
-        "optional": false,
-        "repeat": false,
-        "partial": false,
-        "asterisk": false,
-        "pattern": "[^\\/]+?"
-      }
-    ],
-    "path": "/api/v1/stocks/:symbol/indicators",
-    "regexp": "/^\\/api\\/v1\\/stocks\\/((?:[^\\/]+?))\\/indicators(?:\\/(?=$))?$/",
-    "stack": [
-      "wrappedController"
-    ]
-  },
-  {
-    "name": null,
-    "methods": [
       "POST"
     ],
     "paramNames": [],
@@ -2404,6 +2380,19 @@
     "paramNames": [],
     "path": "/api/health/reset-test-passwords",
     "regexp": "/^\\/api\\/health\\/reset-test-passwords(?:\\/(?=$))?$/",
+    "stack": [
+      "wrappedController"
+    ]
+  },
+  {
+    "name": null,
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "paramNames": [],
+    "path": "/api/predict",
+    "regexp": "/^\\/api\\/predict(?:\\/(?=$))?$/",
     "stack": [
       "wrappedController"
     ]

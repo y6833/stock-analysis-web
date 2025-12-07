@@ -26,6 +26,17 @@ class TechnicalIndicatorsController extends Controller {
       return
     }
 
+    // 格式化股票代码（确保有市场后缀）
+    if (stockCode && !stockCode.includes('.')) {
+      if (stockCode.startsWith('6')) {
+        stockCode = `${stockCode}.SH`
+      } else if (stockCode.startsWith('0') || stockCode.startsWith('3')) {
+        stockCode = `${stockCode}.SZ`
+      } else if (stockCode.startsWith('4') || stockCode.startsWith('8')) {
+        stockCode = `${stockCode}.BJ`
+      }
+    }
+
     // 支持GET和POST请求，从query或body获取参数
     const isGetRequest = ctx.method === 'GET'
     const params = isGetRequest ? ctx.query : ctx.request.body

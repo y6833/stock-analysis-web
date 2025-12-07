@@ -46,6 +46,7 @@ import ExportPageGroup = require('../../../app/controller/page_group');
 import ExportPageStats = require('../../../app/controller/page_stats');
 import ExportPermissionTemplate = require('../../../app/controller/permission_template');
 import ExportPortfolio = require('../../../app/controller/portfolio');
+import ExportPredict = require('../../../app/controller/predict');
 import ExportRiskAlert = require('../../../app/controller/riskAlert');
 import ExportRiskMonitoring = require('../../../app/controller/riskMonitoring');
 import ExportSecurity = require('../../../app/controller/security');
@@ -109,6 +110,7 @@ declare module 'egg' {
     pageStats: ExportPageStats;
     permissionTemplate: ExportPermissionTemplate;
     portfolio: ExportPortfolio;
+    predict: ExportPredict;
     riskAlert: ExportRiskAlert;
     riskMonitoring: ExportRiskMonitoring;
     security: ExportSecurity;

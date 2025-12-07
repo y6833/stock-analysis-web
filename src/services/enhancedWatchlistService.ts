@@ -423,17 +423,179 @@ export class EnhancedWatchlistService {
         }
 
         try {
+            // 规范化 symbol（移除市场后缀以便匹配）
+            const normalizeSymbol = (s: string) => {
+                if (!s) return ''
+                // 移除 .SZ, .SH, .BJ 等后缀，并转换为字符串
+                return String(s).replace(/\.(SZ|SH|BJ)$/i, '').trim().toUpperCase()
+            }
+            const normalizedTargetSymbol = normalizeSymbol(symbol)
+            
             // 先获取项目ID
             const response = await axios.get(
                 `${API_URL}/watchlists/${watchlistId}/stocks`,
                 getAuthHeaders()
             )
 
-            const items = response.data
-            const itemToRemove = items.find((item: any) => item.stockCode === symbol)
+            const items = Array.isArray(response.data) ? response.data : []
+            
+            if (items.length === 0) {
+                console.warn('关注列表为空')
+                throw new Error('关注列表为空')
+            }
+            
+            // 尝试多种字段名匹配：stockCode, symbol, code
+            // 同时支持带后缀和不带后缀的匹配
+            let itemToRemove: any = null
+            
+            for (const item of items) {
+                if (!item) continue
+                
+                // 处理 Sequelize 模型对象（尝试 toJSON）
+                let itemData: any = item
+                if (typeof item.toJSON === 'function') {
+                    try {
+                        itemData = item.toJSON()
+                    } catch (e) {
+                        // 如果 toJSON 失败，继续使用原始对象
+                        itemData = item
+                    }
+                }
+                
+                // 获取所有可能的字段值（处理 Sequelize 模型对象和普通对象）
+                // 尝试多种可能的字段名
+                const itemStockCode = String(
+                    itemData.stockCode || 
+                    itemData.stock_code || 
+                    item.stockCode || 
+                    item.stock_code || 
+                    itemData.stockCode || 
+                    ''
+                ).trim()
+                const itemSymbol = String(
+                    itemData.symbol || 
+                    item.symbol || 
+                    ''
+                ).trim()
+                const itemCode = String(
+                    itemData.code || 
+                    item.code || 
+                    ''
+                ).trim()
+                
+                // 规范化后的值（统一转大写以便比较）
+                const normalizedStockCode = normalizeSymbol(itemStockCode)
+                const normalizedItemSymbol = normalizeSymbol(itemSymbol)
+                const normalizedCode = normalizeSymbol(itemCode)
+                
+                // 精确匹配（原始值，不区分大小写）
+                const exactMatch = (
+                    itemStockCode.toUpperCase() === symbol.toUpperCase() || 
+                    itemSymbol.toUpperCase() === symbol.toUpperCase() || 
+                    itemCode.toUpperCase() === symbol.toUpperCase() ||
+                    (itemData.stock_code && String(itemData.stock_code).toUpperCase() === symbol.toUpperCase()) ||
+                    (item.stock_code && String(item.stock_code).toUpperCase() === symbol.toUpperCase())
+                )
+                
+                // 规范化匹配（移除后缀后比较，不区分大小写）
+                const normalizedMatch = (
+                    normalizedStockCode === normalizedTargetSymbol ||
+                    normalizedItemSymbol === normalizedTargetSymbol ||
+                    normalizedCode === normalizedTargetSymbol
+                )
+                
+                if (exactMatch || normalizedMatch) {
+                    itemToRemove = item
+                    break
+                }
+            }
 
             if (!itemToRemove) {
-                throw new Error('股票不在关注列表中')
+                // 输出完整的 items 信息以便调试 - 显示所有字段
+                console.log('=== 开始调试股票匹配问题 ===')
+                console.log('目标 symbol:', symbol)
+                console.log('规范化后的 symbol:', normalizedTargetSymbol)
+                console.log('items 数组:', items)
+                
+                const debugInfo = items.map((i: any, index: number) => {
+                    // 显示所有可能的字段
+                    const allFields: any = {}
+                    try {
+                        // 尝试多种方式获取字段
+                        if (i && typeof i === 'object') {
+                            // 直接属性
+                            Object.keys(i).forEach(key => {
+                                allFields[key] = i[key]
+                            })
+                            // 如果是 Sequelize 模型，尝试 toJSON
+                            if (typeof i.toJSON === 'function') {
+                                try {
+                                    const json = i.toJSON()
+                                    Object.keys(json).forEach(key => {
+                                        allFields[`json_${key}`] = json[key]
+                                    })
+                                } catch (e) {
+                                    allFields._toJSONError = String(e)
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        allFields._error = String(e)
+                    }
+                    
+                    const normalized = {
+                        stockCode: normalizeSymbol(i?.stockCode || i?.json_stockCode || ''),
+                        symbol: normalizeSymbol(i?.symbol || i?.json_symbol || ''),
+                        code: normalizeSymbol(i?.code || i?.json_code || ''),
+                        stock_code: normalizeSymbol(i?.stock_code || i?.json_stock_code || '')
+                    }
+                    return { 
+                        id: i?.id || i?.json_id, 
+                        allFields, // 显示所有字段
+                        raw: {
+                            stockCode: i?.stockCode || i?.json_stockCode,
+                            symbol: i?.symbol || i?.json_symbol,
+                            code: i?.code || i?.json_code,
+                            stock_code: i?.stock_code || i?.json_stock_code
+                        },
+                        normalized
+                    }
+                })
+                
+                console.error('未找到要移除的股票:', { 
+                    symbol, 
+                    normalizedTargetSymbol,
+                    itemsCount: items.length,
+                    items: debugInfo
+                })
+                
+                // 最后尝试：检查 JSON 数据
+                for (const item of items) {
+                    if (typeof item?.toJSON === 'function') {
+                        try {
+                            const json = item.toJSON()
+                            const jsonStockCode = String(json.stockCode || json.stock_code || '').trim()
+                            const jsonNormalized = normalizeSymbol(jsonStockCode)
+                            if (jsonNormalized === normalizedTargetSymbol || jsonStockCode.toUpperCase() === symbol.toUpperCase()) {
+                                console.log('在 JSON 数据中找到匹配！')
+                                itemToRemove = item
+                                break
+                            }
+                        } catch (e) {
+                            // 忽略错误
+                        }
+                    }
+                }
+                
+                if (!itemToRemove) {
+                    throw new Error('股票不在关注列表中')
+                }
+            }
+
+            // 确保 itemToRemove 有 id
+            if (!itemToRemove.id) {
+                console.error('找到的股票项没有 id:', itemToRemove)
+                throw new Error('股票项数据无效')
             }
 
             await axios.delete(
@@ -500,8 +662,36 @@ export class EnhancedWatchlistService {
             )
 
             const items = response.data
-            const symbolsSet = new Set(symbols)
-            const itemsToRemove = items.filter((item: any) => symbolsSet.has(item.stockCode))
+            // 规范化 symbol（移除市场后缀以便匹配）
+            const normalizeSymbol = (s: string) => {
+                if (!s) return ''
+                // 移除 .SZ, .SH, .BJ 等后缀
+                return s.replace(/\.(SZ|SH|BJ)$/i, '')
+            }
+            
+            // 创建规范化后的 symbols 集合
+            const normalizedSymbolsSet = new Set(symbols.map(s => normalizeSymbol(s)))
+            const rawSymbolsSet = new Set(symbols)
+            
+            // 尝试多种字段名匹配：stockCode, symbol, code
+            // 同时支持带后缀和不带后缀的匹配
+            const itemsToRemove = items.filter((item: any) => {
+                const itemStockCode = item.stockCode || ''
+                const itemSymbol = item.symbol || ''
+                const itemCode = item.code || ''
+                const itemStockCodeRaw = item.stock_code || ''
+                
+                return (
+                    rawSymbolsSet.has(itemStockCode) || 
+                    rawSymbolsSet.has(itemSymbol) || 
+                    rawSymbolsSet.has(itemCode) ||
+                    rawSymbolsSet.has(itemStockCodeRaw) ||
+                    normalizedSymbolsSet.has(normalizeSymbol(itemStockCode)) ||
+                    normalizedSymbolsSet.has(normalizeSymbol(itemSymbol)) ||
+                    normalizedSymbolsSet.has(normalizeSymbol(itemCode)) ||
+                    normalizedSymbolsSet.has(normalizeSymbol(itemStockCodeRaw))
+                )
+            })
 
             // 并行删除所有项目
             await Promise.all(
@@ -575,9 +765,21 @@ export class EnhancedWatchlistService {
             )
 
             const items = response.data
-            const itemToUpdate = items.find((item: any) => item.stockCode === symbol)
+            // 尝试多种字段名匹配：stockCode, symbol, code
+            const itemToUpdate = items.find((item: any) => 
+                item.stockCode === symbol || 
+                item.symbol === symbol || 
+                item.code === symbol ||
+                item.stock_code === symbol
+            )
 
             if (!itemToUpdate) {
+                console.warn('未找到要更新的股票:', { symbol, items: items.map((i: any) => ({ 
+                    id: i.id, 
+                    stockCode: i.stockCode, 
+                    symbol: i.symbol, 
+                    code: i.code 
+                })) })
                 throw new Error('股票不在关注列表中')
             }
 
