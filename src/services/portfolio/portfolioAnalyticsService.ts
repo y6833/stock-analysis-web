@@ -3,7 +3,7 @@
  * 提供高级分析功能和更准确的性能计算
  */
 
-import { Position, PositionSummary, PortfolioMetrics } from '@/types/portfolio'
+import type { Position, PositionSummary, PortfolioMetrics } from '@/types/portfolio'
 import { enhancedPortfolioPerformanceService } from './enhancedPortfolioPerformanceService'
 
 /**

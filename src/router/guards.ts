@@ -80,6 +80,7 @@ export async function routeGuard(
 
     // 1. Handle unauthenticated access to protected routes
     if (requiresAuth && !isLoggedIn) {
+        console.log('[Route Guard] Redirecting to login (requires auth)')
         return next({
             name: 'login',
             query: { redirect: to.fullPath },
@@ -88,10 +89,12 @@ export async function routeGuard(
 
     // 2. Redirect authenticated users away from auth pages
     if (isLoggedIn && hideForAuth) {
+        console.log('[Route Guard] Redirecting to dashboard (already authenticated)')
         return next({ name: 'dashboard' })
     }
 
     // 3. All basic checks passed, continue to permission guard
+    console.log('[Route Guard] Basic checks passed, continuing to permission guard')
     return next()
 }
 
@@ -176,17 +179,66 @@ export function afterNavigationGuard(to: RouteLocationNormalized) {
  */
 export function navigationErrorHandler(error: any) {
     console.error('Navigation error:', error)
+    console.error('Error details:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+        cause: error?.cause
+    })
 
     // Handle specific error types
-    if (error.name === 'NavigationDuplicated') {
+    if (error?.name === 'NavigationDuplicated') {
         // Ignore duplicate navigation errors
+        console.log('[Navigation] Duplicate navigation ignored')
         return
     }
 
-    // Show user-friendly error message
+    // Handle chunk load errors (component loading failures)
+    if (error?.message?.includes('Failed to fetch dynamically imported module') || 
+        error?.message?.includes('Loading chunk') ||
+        error?.name === 'ChunkLoadError') {
+        console.error('[Navigation] Chunk load error detected, attempting to reload page')
+        ElMessage({
+            message: '页面资源加载失败，正在刷新页面...',
+            type: 'warning',
+            duration: 3000,
+        })
+        // Reload the page after a short delay
+        setTimeout(() => {
+            window.location.reload()
+        }, 1000)
+        return
+    }
+
+    // Handle module not found errors
+    if (error?.message?.includes('does not provide an export') ||
+        error?.message?.includes('Cannot find module')) {
+        console.error('[Navigation] Module import error:', error.message)
+        ElMessage({
+            message: '页面组件加载失败，请检查控制台错误信息',
+            type: 'error',
+            duration: 5000,
+        })
+        return
+    }
+
+    // Handle network errors
+    if (error?.message?.includes('NetworkError') || 
+        error?.message?.includes('Failed to fetch')) {
+        console.error('[Navigation] Network error detected')
+        ElMessage({
+            message: '网络连接失败，请检查网络后重试',
+            type: 'error',
+            duration: 5000,
+        })
+        return
+    }
+
+    // Show generic error message for other errors
     ElMessage({
-        message: '页面导航失败，请刷新页面重试',
+        message: `页面导航失败: ${error?.message || '未知错误'}，请刷新页面重试`,
         type: 'error',
         duration: 5000,
+        showClose: true,
     })
 }

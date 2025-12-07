@@ -5,14 +5,14 @@
 
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
-import {
+import type {
     PortfolioPerformance,
     PortfolioRiskMetrics,
     PortfolioAnalysis,
     BacktestParams,
     BacktestResult
 } from './portfolioPerformanceService'
-import { Position, PositionSummary, PortfolioMetrics, OptimizationResult, PortfolioAllocation } from '@/types/portfolio'
+import type { Position, PositionSummary, PortfolioMetrics, OptimizationResult, PortfolioAllocation } from '@/types/portfolio'
 
 // API基础URL
 const API_URL = 'http://localhost:7001/api'

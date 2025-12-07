@@ -63,12 +63,14 @@ export async function permissionGuard(
 
   // 如果路由不需要认证，直接放行
   if (!requiresAuth) {
+    console.log('[Permission Guard] Route does not require auth, allowing access')
     return next()
   }
 
   // 检查用户是否已登录
   const isLoggedIn = authService.isLoggedIn()
   if (!isLoggedIn) {
+    console.log('[Permission Guard] User not logged in, redirecting to login')
     return next({
       name: 'login',
       query: { redirect: to.fullPath },
@@ -160,20 +162,34 @@ export async function permissionGuard(
   if (requiredMembershipLevel || membershipLevel) {
     const level = requiredMembershipLevel || membershipLevel
     if (level) {
-      const hasSubscriptionAccess = await permissionService.checkSubscriptionAccess(level)
-      if (!hasSubscriptionAccess) {
-        if (!hasShownPermissionMessage(`subscription:${to.path}`)) {
-          ElMessage({
-            message: '您的会员级别不足以访问此功能，请升级会员',
-            type: 'warning',
-            duration: 5000,
+      try {
+        const hasSubscriptionAccess = await permissionService.checkSubscriptionAccess(level)
+        if (!hasSubscriptionAccess) {
+          if (!hasShownPermissionMessage(`subscription:${to.path}`)) {
+            ElMessage({
+              message: '您的会员级别不足以访问此功能，请升级会员',
+              type: 'warning',
+              duration: 5000,
+            })
+            markPermissionMessageShown(`subscription:${to.path}`)
+          }
+          return next({
+            name: 'membership-features',
+            query: { redirect: to.fullPath },
           })
-          markPermissionMessageShown(`subscription:${to.path}`)
         }
-        return next({
-          name: 'membership-features',
-          query: { redirect: to.fullPath },
-        })
+      } catch (error) {
+        console.error('检查会员级别失败:', error)
+        // 如果检查失败，允许访问（开发环境）或重定向到会员页面
+        if (import.meta.env.DEV) {
+          console.warn('开发环境：跳过会员级别检查')
+          // 开发环境允许访问
+        } else {
+          return next({
+            name: 'membership-features',
+            query: { redirect: to.fullPath },
+          })
+        }
       }
     }
   }

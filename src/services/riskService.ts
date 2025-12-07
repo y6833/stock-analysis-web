@@ -104,7 +104,7 @@ class RiskService {
             // 后端返回的是dashboard格式，需要转换为RiskData格式
             if (dashboardData.summary) {
               const avgVar = dashboardData.summary.avgVarPercentage || 0
-              return {
+            return {
                 overallScore: Math.min(100, avgVar * 10), // 将VaR百分比转换为0-100的分数
                 overallLevel: avgVar > 5 ? 'high' : 
                               avgVar > 3 ? 'medium' : 'low',
@@ -117,7 +117,7 @@ class RiskService {
                 concentrationChange: 0,
                 beta: 0, // 需要从其他API获取
                 betaChange: 0,
-                lastUpdated: new Date()
+              lastUpdated: new Date()
               }
             } else {
               throw new Error('风险仪表盘数据格式不正确')

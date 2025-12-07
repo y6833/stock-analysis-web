@@ -5,7 +5,7 @@
 
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
-import { PositionSummary } from '@/types/portfolio'
+import type { PositionSummary } from '@/types/portfolio'
 import { portfolioAnalyticsService } from './portfolioAnalyticsService'
 
 // API基础URL

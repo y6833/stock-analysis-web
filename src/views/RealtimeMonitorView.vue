@@ -274,8 +274,8 @@ const addSymbolToMonitor = async () => {
     console.log(`股票 ${formattedSymbol} 已在监控列表中`)
     searchSymbol.value = ''
     return
-  }
-  
+}
+
   subscriptions.add(formattedSymbol)
   searchSymbol.value = ''
   
@@ -508,7 +508,7 @@ const formatTime = (timestamp: number | undefined | null): string => {
     return '--'
   }
   try {
-    return new Date(timestamp).toLocaleTimeString()
+  return new Date(timestamp).toLocaleTimeString()
   } catch (error) {
     return '--'
   }

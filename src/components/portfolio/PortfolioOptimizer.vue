@@ -193,7 +193,7 @@ import {
 import { CanvasRenderer } from 'echarts/renderers'
 import { usePortfolioStore } from '@/stores/portfolio/portfolioStore'
 import { enhancedPortfolioPerformanceService } from '@/services/portfolio/enhancedPortfolioPerformanceService'
-import { OptimizationResult } from '@/types/portfolio'
+import type { OptimizationResult } from '@/types/portfolio'
 
 // 注册必要的ECharts组件
 echarts.use([

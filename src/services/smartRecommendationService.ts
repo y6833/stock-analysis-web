@@ -234,7 +234,10 @@ export const smartRecommendationService = {
    * @param price 价格
    * @returns 格式化的价格字符串
    */
-  formatPrice(price: number): string {
+  formatPrice(price: number | null | undefined): string {
+    if (price === null || price === undefined || isNaN(price)) {
+      return '0.00'
+    }
     return price.toFixed(2)
   },
 
@@ -243,7 +246,10 @@ export const smartRecommendationService = {
    * @param value 数值
    * @returns 格式化的百分比字符串
    */
-  formatPercentage(value: number): string {
+  formatPercentage(value: number | null | undefined): string {
+    if (value === null || value === undefined || isNaN(value)) {
+      return '0.00%'
+    }
     return `${(value * 100).toFixed(2)}%`
   },
 

@@ -6,8 +6,8 @@
         <h3 class="stock-name">{{ stock.name }}</h3>
         <span class="stock-symbol">{{ stock.symbol }}</span>
       </div>
-      <div class="recommendation-badge" :style="{ backgroundColor: getRecommendationColor(stock.recommendation) }">
-        {{ formatRecommendationLevel(stock.recommendation).text }}
+      <div class="recommendation-badge" :style="{ backgroundColor: getRecommendationColor(stock.recommendation || stock.type || 'hold') }">
+        {{ formatRecommendationLevel(stock.recommendation || stock.type || 'hold').text }}
       </div>
     </div>
 
@@ -19,9 +19,9 @@
       </div>
       <div class="target-price">
         <span class="price-label">目标价格</span>
-        <span class="price-value target">¥{{ formatPrice(stock.targetPrice.target) }}</span>
-        <span class="upside" :class="{ positive: stock.targetPrice.upside > 0 }">
-          +{{ stock.targetPrice.upside }}%
+        <span class="price-value target">¥{{ formatPrice(stock.targetPrice?.target || stock.targetPrice) }}</span>
+        <span class="upside" :class="{ positive: (stock.targetPrice?.upside || 0) > 0 }">
+          +{{ stock.targetPrice?.upside || 0 }}%
         </span>
       </div>
     </div>
@@ -29,8 +29,8 @@
     <!-- 评分信息 -->
     <div class="scores-section">
       <div class="total-score">
-        <div class="score-circle" :style="{ borderColor: getScoreColor(stock.totalScore) }">
-          <span class="score-value">{{ stock.totalScore }}</span>
+        <div class="score-circle" :style="{ borderColor: getScoreColor(stock.totalScore || 0) }">
+          <span class="score-value">{{ stock.totalScore || 0 }}</span>
         </div>
         <span class="score-label">综合评分</span>
       </div>
@@ -38,23 +38,23 @@
         <div class="score-item">
           <span class="score-name">技术面</span>
           <div class="score-bar">
-            <div class="score-fill" :style="{ width: stock.technicalScore + '%', backgroundColor: getScoreColor(stock.technicalScore) }"></div>
+            <div class="score-fill" :style="{ width: (stock.technicalScore || 0) + '%', backgroundColor: getScoreColor(stock.technicalScore || 0) }"></div>
           </div>
-          <span class="score-num">{{ stock.technicalScore }}</span>
+          <span class="score-num">{{ stock.technicalScore || 0 }}</span>
         </div>
         <div class="score-item">
           <span class="score-name">量价面</span>
           <div class="score-bar">
-            <div class="score-fill" :style="{ width: stock.volumePriceScore + '%', backgroundColor: getScoreColor(stock.volumePriceScore) }"></div>
+            <div class="score-fill" :style="{ width: (stock.volumePriceScore || 0) + '%', backgroundColor: getScoreColor(stock.volumePriceScore || 0) }"></div>
           </div>
-          <span class="score-num">{{ stock.volumePriceScore }}</span>
+          <span class="score-num">{{ stock.volumePriceScore || 0 }}</span>
         </div>
         <div class="score-item">
           <span class="score-name">趋势面</span>
           <div class="score-bar">
-            <div class="score-fill" :style="{ width: stock.trendScore + '%', backgroundColor: getScoreColor(stock.trendScore) }"></div>
+            <div class="score-fill" :style="{ width: (stock.trendScore || 0) + '%', backgroundColor: getScoreColor(stock.trendScore || 0) }"></div>
           </div>
-          <span class="score-num">{{ stock.trendScore }}</span>
+          <span class="score-num">{{ stock.trendScore || 0 }}</span>
         </div>
       </div>
     </div>
@@ -63,9 +63,10 @@
     <div class="reasons-section">
       <h4>推荐理由</h4>
       <ul class="reasons-list">
-        <li v-for="(reason, index) in stock.reasons.slice(0, 3)" :key="index">
+        <li v-for="(reason, index) in (stock.reasons || []).slice(0, 3)" :key="index">
           {{ reason }}
         </li>
+        <li v-if="!stock.reasons || stock.reasons.length === 0">暂无推荐理由</li>
       </ul>
     </div>
 
@@ -74,17 +75,17 @@
       <div class="advice-row">
         <span class="advice-label">建议买入价</span>
         <span class="advice-value">
-          ¥{{ formatPrice(stock.tradingAdvice.buyPriceRange.min) }} - 
-          ¥{{ formatPrice(stock.tradingAdvice.buyPriceRange.max) }}
+          ¥{{ formatPrice(stock.tradingAdvice?.buyPriceRange?.min || stock.tradingAdvice?.buyPriceRange?.[0] || 0) }} - 
+          ¥{{ formatPrice(stock.tradingAdvice?.buyPriceRange?.max || stock.tradingAdvice?.buyPriceRange?.[1] || 0) }}
         </span>
       </div>
       <div class="advice-row">
         <span class="advice-label">止损价位</span>
-        <span class="advice-value stop-loss">¥{{ formatPrice(stock.tradingAdvice.stopLoss) }}</span>
+        <span class="advice-value stop-loss">¥{{ formatPrice(stock.tradingAdvice?.stopLoss || 0) }}</span>
       </div>
       <div class="advice-row">
         <span class="advice-label">持有周期</span>
-        <span class="advice-value">{{ stock.tradingAdvice.holdingPeriod }}</span>
+        <span class="advice-value">{{ stock.tradingAdvice?.holdingPeriod || '未指定' }}</span>
       </div>
     </div>
 
@@ -132,11 +133,12 @@ const getScoreColor = smartRecommendationService.getScoreColor
  * 获取卡片样式类
  */
 const getCardClass = (stock: StockRecommendation) => {
+  const totalScore = stock.totalScore || 0
   return {
-    'high-score': stock.totalScore >= 85,
-    'medium-score': stock.totalScore >= 70 && stock.totalScore < 85,
-    'low-score': stock.totalScore < 70,
-    'expired': smartRecommendationService.isRecommendationExpired(stock.validUntil)
+    'high-score': totalScore >= 85,
+    'medium-score': totalScore >= 70 && totalScore < 85,
+    'low-score': totalScore < 70,
+    'expired': stock.validUntil ? smartRecommendationService.isRecommendationExpired(stock.validUntil) : false
   }
 }
 
@@ -150,14 +152,20 @@ const getRecommendationColor = (recommendation: string) => {
 /**
  * 格式化时间
  */
-const formatTime = (timeStr: string) => {
-  const date = new Date(timeStr)
-  return date.toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+const formatTime = (timeStr: string | undefined) => {
+  if (!timeStr) return '未知'
+  try {
+    const date = new Date(timeStr)
+    if (isNaN(date.getTime())) return '未知'
+    return date.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (error) {
+    return '未知'
+  }
 }
 </script>
 

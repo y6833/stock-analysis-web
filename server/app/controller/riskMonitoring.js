@@ -384,7 +384,7 @@ class RiskMonitoringController extends Controller {
             userId: user.id
           },
           attributes: ['id', 'name']
-        });
+      });
         
         portfoliosData.forEach(portfolio => {
           portfolioMap.set(portfolio.id, portfolio);
@@ -416,14 +416,14 @@ class RiskMonitoringController extends Controller {
           portfolioVars: latestVarCalculations.map(calc => {
             const portfolio = portfolioMap.get(calc.portfolioId);
             return {
-              portfolioId: calc.portfolioId,
+            portfolioId: calc.portfolioId,
               portfolioName: portfolio?.name || '未知组合',
-              portfolioValue: calc.portfolioValue,
-              varAbsolute: calc.varAbsolute,
-              varPercentage: calc.varPercentage,
-              expectedShortfall: calc.expectedShortfall,
-              calculationDate: calc.calculationDate,
-              method: calc.calculationMethod
+            portfolioValue: calc.portfolioValue,
+            varAbsolute: calc.varAbsolute,
+            varPercentage: calc.varPercentage,
+            expectedShortfall: calc.expectedShortfall,
+            calculationDate: calc.calculationDate,
+            method: calc.calculationMethod
             };
           })
         }

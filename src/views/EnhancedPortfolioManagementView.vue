@@ -12,7 +12,7 @@
     </div>
 
     <div v-if="loading" class="loading-container">
-      <el-spinner size="large" />
+      <el-icon class="is-loading" :size="40"><Loading /></el-icon>
       <p>加载投资组合数据...</p>
     </div>
 
@@ -202,8 +202,27 @@
     <!-- 添加持仓对话框 -->
     <el-dialog v-model="positionDialogVisible" :title="isEditingPosition ? '编辑持仓' : '添加持仓'">
       <el-form :model="positionForm" label-width="100px">
-        <el-form-item label="股票代码">
-          <el-input v-model="positionForm.symbol" :disabled="isEditingPosition" />
+        <el-form-item label="股票代码" v-if="!isEditingPosition">
+          <el-autocomplete
+            v-model="stockSearchQuery"
+            :fetch-suggestions="searchStocks"
+            :trigger-on-focus="false"
+            placeholder="输入股票代码或名称搜索"
+            clearable
+            @select="handleStockSelect"
+            style="width: 100%"
+          >
+            <template #default="{ item }">
+              <div class="stock-search-item">
+                <span class="stock-code">{{ item.symbol }}</span>
+                <span class="stock-name">{{ item.name }}</span>
+                <span class="stock-market" v-if="item.market">{{ item.market }}</span>
+              </div>
+            </template>
+          </el-autocomplete>
+        </el-form-item>
+        <el-form-item label="股票代码" v-else>
+          <el-input v-model="positionForm.symbol" disabled />
         </el-form-item>
         <el-form-item label="股票名称">
           <el-input v-model="positionForm.name" :disabled="isEditingPosition" />
@@ -306,12 +325,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { ElIcon, ElSelect, ElOption, ElButton, ElTabs, ElTabPane, ElTable, ElTableColumn, ElDialog, ElInput, ElInputNumber, ElDatePicker, ElForm, ElFormItem, ElAutocomplete } from 'element-plus'
+import { Loading } from '@element-plus/icons-vue'
 import { usePortfolioStore } from '@/stores/portfolio/portfolioStore'
 import PortfolioPerformanceChart from '@/components/portfolio/PortfolioPerformanceChart.vue'
 import PortfolioRiskAnalysis from '@/components/portfolio/PortfolioRiskAnalysis.vue'
 import AdvancedPortfolioAnalytics from '@/components/portfolio/AdvancedPortfolioAnalytics.vue'
 import PortfolioOptimizer from '@/components/portfolio/PortfolioOptimizer.vue'
 import { portfolioAnalyticsService } from '@/services/portfolio/portfolioAnalyticsService'
+import { stockService } from '@/services/stockService'
+import type { Stock } from '@/types/stock'
 
 // 状态
 const loading = ref(false)
@@ -354,6 +377,11 @@ const transactionDialogVisible = ref(false)
 const portfolioDialogVisible = ref(false)
 const isEditingPosition = ref(false)
 const isEditingTransaction = ref(false)
+
+// 股票搜索相关
+const stockSearchQuery = ref('')
+const stockSearchResults = ref<Stock[]>([])
+const isSearchingStocks = ref(false)
 
 // 表单数据
 const positionForm = ref({
@@ -511,6 +539,34 @@ async function loadPortfolio() {
   }
 }
 
+// 搜索股票
+async function searchStocks(queryString: string, cb: (results: Stock[]) => void) {
+  if (!queryString || queryString.trim().length < 1) {
+    cb([])
+    return
+  }
+
+  try {
+    isSearchingStocks.value = true
+    const results = await stockService.searchStocks(queryString.trim())
+    // 限制结果数量
+    const limitedResults = results.slice(0, 10)
+    cb(limitedResults)
+  } catch (error) {
+    console.error('搜索股票失败:', error)
+    cb([])
+  } finally {
+    isSearchingStocks.value = false
+  }
+}
+
+// 处理股票选择
+function handleStockSelect(stock: Stock) {
+  positionForm.value.symbol = stock.symbol
+  positionForm.value.name = stock.name
+  stockSearchQuery.value = stock.symbol
+}
+
 // 添加持仓
 function addPosition() {
   isEditingPosition.value = false
@@ -523,6 +579,8 @@ function addPosition() {
     buyDate: new Date().toISOString().split('T')[0],
     notes: '',
   }
+  stockSearchQuery.value = ''
+  stockSearchResults.value = []
   positionDialogVisible.value = true
 }
 
@@ -927,5 +985,32 @@ function getChangeClass(value: number): string {
   .header-actions {
     flex-direction: column;
   }
+}
+
+/* 股票搜索样式 */
+.stock-search-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.stock-search-item .stock-code {
+  font-weight: 600;
+  color: var(--el-color-primary);
+  min-width: 80px;
+}
+
+.stock-search-item .stock-name {
+  flex: 1;
+  color: var(--el-text-color-primary);
+}
+
+.stock-search-item .stock-market {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  padding: 2px 8px;
+  background: var(--el-fill-color-light);
+  border-radius: 4px;
 }
 </style>

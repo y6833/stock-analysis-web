@@ -141,8 +141,41 @@ export async function deletePortfolio(id: number): Promise<void> {
  * @returns 持仓列表
  */
 export async function getPortfolioHoldings(id: number): Promise<Holding[]> {
-  const response = await axios.get(`${API_URL}/portfolios/${id}/holdings`, getAuthHeaders())
-  return response.data
+  try {
+    // 优先使用 v1 API
+    const response = await axios.get(`${API_URL}/v1/portfolios/${id}/holdings`, getAuthHeaders())
+    // 确保返回数组格式
+    if (Array.isArray(response.data)) {
+      return response.data
+    }
+    // 如果返回的是对象，尝试提取 data 字段
+    if (response.data?.data && Array.isArray(response.data.data)) {
+      return response.data.data
+    }
+    // 如果返回的是对象但没有 data 字段，返回空数组
+    return []
+  } catch (error: any) {
+    // 如果 v1 API 失败，回退到旧版 API
+    if (error.response?.status === 404) {
+      try {
+        const response = await axios.get(`${API_URL}/portfolios/${id}/holdings`, getAuthHeaders())
+        if (Array.isArray(response.data)) {
+          return response.data
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data
+        }
+        return []
+      } catch (fallbackError: any) {
+        // 如果两个 API 都失败，返回空数组而不是抛出错误
+        console.warn('获取持仓信息失败，返回空数组:', fallbackError.response?.status || fallbackError.message)
+        return []
+      }
+    }
+    // 对于其他错误，也返回空数组
+    console.warn('获取持仓信息失败，返回空数组:', error.response?.status || error.message)
+    return []
+  }
 }
 
 /**

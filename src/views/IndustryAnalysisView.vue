@@ -1,226 +1,395 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, nextTick, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const isLoading = ref(true)
-const industries = ref([])
-const selectedIndustry = ref('')
-const industryChart = ref(null)
-const chart = ref(null)
-const performanceChart = ref(null)
-const performanceChartInstance = ref(null)
+const industries = ref<any[]>([])
+const selectedIndustry = ref<any>(null)
+const industryChart = ref<HTMLElement | null>(null)
+const chart = ref<echarts.ECharts | null>(null)
+const performanceChart = ref<HTMLElement | null>(null)
+const performanceChartInstance = ref<echarts.ECharts | null>(null)
+const industryStocks = ref<any[]>([])
+const loadingStocks = ref(false)
+const searchKeyword = ref('')
 
-// 模拟行业数据
-const industryData = [
-  { name: '银行', code: 'bank', stocks: 42, avgPE: 5.8, avgPB: 0.7, monthReturn: 3.2, yearReturn: 12.5 },
-  { name: '证券', code: 'securities', stocks: 48, avgPE: 15.2, avgPB: 1.5, monthReturn: 5.1, yearReturn: 18.7 },
-  { name: '保险', code: 'insurance', stocks: 12, avgPE: 8.4, avgPB: 1.1, monthReturn: 2.8, yearReturn: 9.6 },
-  { name: '房地产', code: 'realestate', stocks: 138, avgPE: 7.2, avgPB: 0.9, monthReturn: -1.5, yearReturn: -8.3 },
-  { name: '医药生物', code: 'medicine', stocks: 325, avgPE: 32.5, avgPB: 4.2, monthReturn: 4.7, yearReturn: 22.1 },
-  { name: '电子', code: 'electronics', stocks: 412, avgPE: 28.7, avgPB: 3.8, monthReturn: 6.2, yearReturn: 31.5 },
-  { name: '计算机', code: 'computer', stocks: 278, avgPE: 35.2, avgPB: 4.5, monthReturn: 7.8, yearReturn: 28.9 },
-  { name: '通信', code: 'communication', stocks: 98, avgPE: 25.3, avgPB: 3.2, monthReturn: 3.5, yearReturn: 15.2 },
-  { name: '汽车', code: 'automobile', stocks: 175, avgPE: 18.6, avgPB: 2.1, monthReturn: 2.2, yearReturn: 10.8 },
-  { name: '食品饮料', code: 'food', stocks: 102, avgPE: 30.1, avgPB: 5.8, monthReturn: 1.8, yearReturn: 25.3 },
-  { name: '家用电器', code: 'appliance', stocks: 45, avgPE: 15.8, avgPB: 2.7, monthReturn: 0.5, yearReturn: 7.2 },
-  { name: '纺织服装', code: 'textile', stocks: 87, avgPE: 22.3, avgPB: 2.5, monthReturn: -0.8, yearReturn: 5.6 },
-]
-
-// 模拟行业内股票数据
-const getIndustryStocks = (industry) => {
-  // 生成该行业的模拟股票数据
-  const stocks = []
-  const count = Math.floor(Math.random() * 20) + 10 // 10-30只股票
-
-  for (let i = 0; i < count; i++) {
-    const price = Math.random() * 50 + 5
-    const change = (Math.random() * 10 - 5).toFixed(2)
-
-    stocks.push({
-      name: `${industry.name}股票${i + 1}`,
-      code: `${industry.code}${i + 1}`,
-      price: price.toFixed(2),
-      change: change,
-      pe: (Math.random() * 40 + 5).toFixed(1),
-      pb: (Math.random() * 5 + 0.5).toFixed(1),
-      marketCap: (price * (Math.random() * 10 + 1) * 100000000).toFixed(0),
-      volume: Math.floor(Math.random() * 1000000 + 100000)
+// 获取行业数据
+async function fetchIndustryData() {
+  try {
+    isLoading.value = true
+    
+    // 调用后端API获取行业板块数据
+    const response = await axios.post('/api/market/sectors', {
+      forceRefresh: true
     })
-  }
 
-  // 按涨跌幅排序
-  return stocks.sort((a, b) => parseFloat(b.change) - parseFloat(a.change))
+    if (response.data && response.data.success && response.data.data) {
+      const sectors = response.data.data
+      
+      // 转换数据格式以匹配前端需求
+      industries.value = sectors.map((sector: any) => ({
+        name: sector.name,
+        code: sector.code,
+        stocks: sector.stockCount || sector.upCount + sector.downCount + sector.flatCount || 0,
+        avgPE: sector.avgPE || 0,
+        avgPB: sector.avgPB || 0,
+        monthReturn: sector.monthReturn || sector.changePercent || 0,
+        yearReturn: sector.yearReturn || 0,
+        changePercent: sector.changePercent || 0,
+        volume: sector.volume || 0,
+        turnover: sector.turnover || 0,
+        upCount: sector.upCount || 0,
+        downCount: sector.downCount || 0,
+        flatCount: sector.flatCount || 0,
+        dataSource: response.data.data_source,
+        dataSourceMessage: response.data.data_source_message
+      }))
+
+      // 如果数据源是模拟数据，显示提示
+      if (response.data.data_source === 'mock') {
+        ElMessage.warning('当前显示的是模拟数据，真实数据获取失败')
+      } else {
+        ElMessage.success(`成功获取 ${industries.value.length} 个行业数据`)
+      }
+
+      // 默认选择第一个行业
+      if (industries.value.length > 0) {
+        selectedIndustry.value = industries.value[0]
+        await fetchIndustryStocks(selectedIndustry.value)
+        // 等待 DOM 更新完成后再初始化图表
+        await nextTick()
+        // 使用 setTimeout 确保容器已经渲染并有尺寸
+        setTimeout(() => {
+          initIndustryChart()
+          initPerformanceChart()
+        }, 100)
+      }
+    } else {
+      throw new Error('API返回数据格式错误')
+    }
+  } catch (error: any) {
+    console.error('获取行业数据失败:', error)
+    ElMessage.error(`获取行业数据失败: ${error.message || '未知错误'}`)
+    
+    // 如果API失败，使用默认的行业列表
+    industries.value = [
+      { name: '银行', code: 'BK0475', stocks: 0, avgPE: 0, avgPB: 0, monthReturn: 0, yearReturn: 0 },
+      { name: '房地产', code: 'BK0451', stocks: 0, avgPE: 0, avgPB: 0, monthReturn: 0, yearReturn: 0 },
+      { name: '证券', code: 'BK0473', stocks: 0, avgPE: 0, avgPB: 0, monthReturn: 0, yearReturn: 0 },
+      { name: '保险', code: 'BK0474', stocks: 0, avgPE: 0, avgPB: 0, monthReturn: 0, yearReturn: 0 },
+      { name: '医药生物', code: 'BK0459', stocks: 0, avgPE: 0, avgPB: 0, monthReturn: 0, yearReturn: 0 },
+      { name: '电子', code: 'BK0460', stocks: 0, avgPE: 0, avgPB: 0, monthReturn: 0, yearReturn: 0 },
+      { name: '计算机', code: 'BK0459', stocks: 0, avgPE: 0, avgPB: 0, monthReturn: 0, yearReturn: 0 },
+    ]
+  } finally {
+    isLoading.value = false
+  }
 }
 
-// 初始化页面
-onMounted(() => {
-  // 设置行业数据
-  industries.value = industryData
+// 获取行业内的股票列表
+async function fetchIndustryStocks(industry: any) {
+  if (!industry || !industry.code) return
+  
+  try {
+    loadingStocks.value = true
+    
+    // 调用后端API获取行业内的股票
+    // 注意：这里需要后端提供获取行业内股票的API
+    // 暂时使用股票搜索API，按行业筛选
+    const response = await axios.get('/api/v1/stocks/search', {
+      params: {
+        keyword: industry.name,
+        limit: 50
+      }
+    })
 
-  // 默认选择第一个行业
-  if (industryData.length > 0) {
-    selectedIndustry.value = industryData[0]
-    initIndustryChart()
-    initPerformanceChart()
+    if (response.data && response.data.data) {
+      industryStocks.value = response.data.data.map((stock: any) => ({
+        name: stock.name,
+        code: stock.symbol || stock.code,
+        price: stock.price || stock.current || 0,
+        change: stock.changePercent || stock.change || 0,
+        pe: stock.pe || 0,
+        pb: stock.pb || 0,
+        marketCap: stock.marketCap || stock.total_mv || 0,
+        volume: stock.volume || 0
+      }))
+    }
+  } catch (error: any) {
+    console.error('获取行业股票列表失败:', error)
+    industryStocks.value = []
+  } finally {
+    loadingStocks.value = false
   }
+}
 
-  isLoading.value = false
+// 过滤后的行业列表
+const filteredIndustries = computed(() => {
+  if (!searchKeyword.value) return industries.value
+  const keyword = searchKeyword.value.toLowerCase()
+  return industries.value.filter(industry => 
+    industry.name.toLowerCase().includes(keyword) ||
+    industry.code.toLowerCase().includes(keyword)
+  )
+})
+
+// 清理图表资源
+onBeforeUnmount(() => {
+  if (chart.value) {
+    chart.value.dispose()
+    chart.value = null
+  }
+  if (performanceChartInstance.value) {
+    performanceChartInstance.value.dispose()
+    performanceChartInstance.value = null
+  }
+})
+
+// 初始化页面
+onMounted(async () => {
+  await fetchIndustryData()
+  // 确保在数据加载完成后初始化图表
+  await nextTick()
+  setTimeout(() => {
+    if (industries.value.length > 0) {
+      initIndustryChart()
+      initPerformanceChart()
+    }
+  }, 300)
 })
 
 // 选择行业
-const selectIndustry = (industry) => {
+const selectIndustry = async (industry: any) => {
   selectedIndustry.value = industry
-  initIndustryChart()
-  initPerformanceChart()
+  await fetchIndustryStocks(industry)
+  // 图表数据不会因为选择行业而改变，所以不需要重新初始化
+  // 如果需要根据选择的行业更新图表，可以在这里添加逻辑
 }
 
 // 初始化行业分布图表
 const initIndustryChart = () => {
-  if (!industryChart.value) return
-
-  if (chart.value) {
-    chart.value.dispose()
+  if (!industryChart.value) {
+    console.warn('行业分布图表容器未找到')
+    return
   }
 
-  chart.value = echarts.init(industryChart.value)
+  // 检查容器是否有尺寸
+  const container = industryChart.value as HTMLElement
+  if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+    console.warn('行业分布图表容器尺寸为0，延迟初始化')
+    setTimeout(() => initIndustryChart(), 200)
+    return
+  }
 
   // 准备数据
-  const data = industryData.map(item => ({
-    name: item.name,
-    value: item.stocks
-  }))
+  const data = industries.value
+    .filter(item => (item.stocks || 0) > 0) // 过滤掉股票数为0的行业
+    .map(item => ({
+      name: item.name || '未知行业',
+      value: item.stocks || 1 // 确保值大于0
+    }))
 
-  const option = {
-    tooltip: {
-      trigger: 'item',
-      formatter: '{a} <br/>{b}: {c} ({d}%)'
-    },
-    legend: {
-      orient: 'vertical',
-      right: 10,
-      top: 'center',
-      data: data.map(item => item.name)
-    },
-    series: [
-      {
-        name: '行业分布',
-        type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
-        itemStyle: {
-          borderRadius: 10,
-          borderColor: '#fff',
-          borderWidth: 2
-        },
-        label: {
-          show: false,
-          position: 'center'
-        },
-        emphasis: {
-          label: {
-            show: true,
-            fontSize: '18',
-            fontWeight: 'bold'
-          }
-        },
-        labelLine: {
-          show: false
-        },
-        data: data
-      }
-    ]
+  // 如果数据为空，不创建图表
+  if (data.length === 0) {
+    console.warn('行业分布数据为空')
+    if (chart.value) {
+      chart.value.dispose()
+      chart.value = null
+    }
+    return
   }
 
-  chart.value.setOption(option)
+  try {
+    // 先销毁旧图表
+    if (chart.value) {
+      chart.value.dispose()
+      chart.value = null
+    }
 
-  // 响应窗口大小变化
-  window.addEventListener('resize', () => {
-    chart.value?.resize()
-  })
+    // 创建新图表实例
+    chart.value = echarts.init(industryChart.value)
+
+    const option: any = {
+      tooltip: {
+        trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
+      },
+      legend: {
+        orient: 'vertical',
+        right: 10,
+        top: 'center',
+        data: data.map(item => item.name)
+      },
+      series: [
+        {
+          name: '行业分布',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          center: ['50%', '50%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: {
+            show: false,
+            position: 'center'
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: '18',
+              fontWeight: 'bold'
+            }
+          },
+          labelLine: {
+            show: false
+          },
+          data: data
+        }
+      ]
+    }
+
+    // 使用 notMerge: false 确保完全替换配置
+    chart.value.setOption(option, { notMerge: true })
+
+    // 响应窗口大小变化
+    const resizeHandler = () => {
+      if (chart.value) {
+        chart.value.resize()
+      }
+    }
+    window.addEventListener('resize', resizeHandler)
+  } catch (error) {
+    console.error('初始化行业分布图表失败:', error)
+    if (chart.value) {
+      chart.value.dispose()
+      chart.value = null
+    }
+  }
 }
 
 // 初始化行业表现图表
 const initPerformanceChart = () => {
-  if (!performanceChart.value) return
-
-  if (performanceChartInstance.value) {
-    performanceChartInstance.value.dispose()
+  if (!performanceChart.value) {
+    console.warn('行业表现图表容器未找到')
+    return
   }
 
-  performanceChartInstance.value = echarts.init(performanceChart.value)
+  // 检查容器是否有尺寸
+  const container = performanceChart.value as HTMLElement
+  if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+    console.warn('行业表现图表容器尺寸为0，延迟初始化')
+    setTimeout(() => initPerformanceChart(), 200)
+    return
+  }
 
   // 准备数据
-  const industries = industryData.map(item => item.name)
-  const monthReturn = industryData.map(item => item.monthReturn)
-  const yearReturn = industryData.map(item => item.yearReturn)
+  const industryNames = industries.value.map(item => item.name || '未知行业')
+  const monthReturn = industries.value.map(item => item.monthReturn || 0)
+  const yearReturn = industries.value.map(item => item.yearReturn || 0)
 
-  const option = {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'shadow'
-      }
-    },
-    legend: {
-      data: ['月涨跌幅', '年涨跌幅']
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'value',
-      axisLabel: {
-        formatter: '{value}%'
-      }
-    },
-    yAxis: {
-      type: 'category',
-      data: industries,
-      inverse: true
-    },
-    series: [
-      {
-        name: '月涨跌幅',
-        type: 'bar',
-        data: monthReturn,
-        label: {
-          show: true,
-          formatter: '{c}%',
-          position: 'right'
-        },
-        itemStyle: {
-          color: function (params) {
-            return params.data >= 0 ? '#e74c3c' : '#2ecc71'
-          }
-        }
-      },
-      {
-        name: '年涨跌幅',
-        type: 'bar',
-        data: yearReturn,
-        label: {
-          show: true,
-          formatter: '{c}%',
-          position: 'right'
-        },
-        itemStyle: {
-          color: function (params) {
-            return params.data >= 0 ? '#e74c3c' : '#2ecc71'
-          }
-        }
-      }
-    ]
+  // 如果数据为空，不创建图表
+  if (industryNames.length === 0) {
+    console.warn('行业表现数据为空')
+    if (performanceChartInstance.value) {
+      performanceChartInstance.value.dispose()
+      performanceChartInstance.value = null
+    }
+    return
   }
 
-  performanceChartInstance.value.setOption(option)
+  try {
+    // 先销毁旧图表
+    if (performanceChartInstance.value) {
+      performanceChartInstance.value.dispose()
+      performanceChartInstance.value = null
+    }
 
-  // 响应窗口大小变化
-  window.addEventListener('resize', () => {
-    performanceChartInstance.value?.resize()
-  })
+    // 创建新图表实例
+    performanceChartInstance.value = echarts.init(performanceChart.value)
+
+    const option: any = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
+        }
+      },
+      legend: {
+        data: ['月涨跌幅', '年涨跌幅']
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: '{value}%'
+        }
+      },
+      yAxis: {
+        type: 'category',
+        data: industryNames,
+        inverse: true
+      },
+      series: [
+        {
+          name: '月涨跌幅',
+          type: 'bar',
+          data: monthReturn,
+          label: {
+            show: true,
+            formatter: '{c}%',
+            position: 'right'
+          },
+          itemStyle: {
+            color: function (params: any) {
+              return params.data >= 0 ? '#e74c3c' : '#2ecc71'
+            }
+          }
+        },
+        {
+          name: '年涨跌幅',
+          type: 'bar',
+          data: yearReturn,
+          label: {
+            show: true,
+            formatter: '{c}%',
+            position: 'right'
+          },
+          itemStyle: {
+            color: function (params: any) {
+              return params.data >= 0 ? '#e74c3c' : '#2ecc71'
+            }
+          }
+        }
+      ]
+    }
+
+    // 使用 notMerge: true 确保完全替换配置
+    performanceChartInstance.value.setOption(option, { notMerge: true })
+
+    // 响应窗口大小变化
+    const resizeHandler = () => {
+      if (performanceChartInstance.value) {
+        performanceChartInstance.value.resize()
+      }
+    }
+    window.addEventListener('resize', resizeHandler)
+  } catch (error) {
+    console.error('初始化行业表现图表失败:', error)
+    if (performanceChartInstance.value) {
+      performanceChartInstance.value.dispose()
+      performanceChartInstance.value = null
+    }
+  }
 }
 
 // 格式化市值
@@ -269,12 +438,19 @@ const formatVolume = (value) => {
 
         <div class="overview-content">
           <div class="industry-chart-container">
-            <div ref="industryChart" class="industry-chart"></div>
+            <h3>行业分布</h3>
+            <div v-if="industries.length === 0" class="chart-placeholder">
+              <p>暂无行业数据</p>
+            </div>
+            <div v-else ref="industryChart" class="industry-chart"></div>
           </div>
 
           <div class="industry-performance-container">
             <h3>行业表现</h3>
-            <div ref="performanceChart" class="performance-chart"></div>
+            <div v-if="industries.length === 0" class="chart-placeholder">
+              <p>暂无行业数据</p>
+            </div>
+            <div v-else ref="performanceChart" class="performance-chart"></div>
           </div>
         </div>
       </div>
@@ -284,7 +460,12 @@ const formatVolume = (value) => {
         <div class="card-header">
           <h2>行业列表</h2>
           <div class="search-box">
-            <input type="text" placeholder="搜索行业..." class="search-input" />
+            <input 
+              type="text" 
+              v-model="searchKeyword"
+              placeholder="搜索行业..." 
+              class="search-input" 
+            />
           </div>
         </div>
 
@@ -301,17 +482,17 @@ const formatVolume = (value) => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="industry in industries" :key="industry.code"
-                :class="{ 'selected': selectedIndustry === industry }" @click="selectIndustry(industry)">
+              <tr v-for="industry in filteredIndustries" :key="industry.code"
+                :class="{ 'selected': selectedIndustry?.code === industry.code }" @click="selectIndustry(industry)">
                 <td>{{ industry.name }}</td>
-                <td>{{ industry.stocks }}</td>
-                <td>{{ industry.avgPE }}</td>
-                <td>{{ industry.avgPB }}</td>
-                <td :class="industry.monthReturn >= 0 ? 'up' : 'down'">
-                  {{ industry.monthReturn >= 0 ? '+' : '' }}{{ industry.monthReturn }}%
+                <td>{{ industry.stocks || 0 }}</td>
+                <td>{{ industry.avgPE ? industry.avgPE.toFixed(2) : '-' }}</td>
+                <td>{{ industry.avgPB ? industry.avgPB.toFixed(2) : '-' }}</td>
+                <td :class="(industry.monthReturn || 0) >= 0 ? 'up' : 'down'">
+                  {{ (industry.monthReturn || 0) >= 0 ? '+' : '' }}{{ (industry.monthReturn || 0).toFixed(2) }}%
                 </td>
-                <td :class="industry.yearReturn >= 0 ? 'up' : 'down'">
-                  {{ industry.yearReturn >= 0 ? '+' : '' }}{{ industry.yearReturn }}%
+                <td :class="(industry.yearReturn || 0) >= 0 ? 'up' : 'down'">
+                  {{ (industry.yearReturn || 0) >= 0 ? '+' : '' }}{{ (industry.yearReturn || 0).toFixed(2) }}%
                 </td>
               </tr>
             </tbody>
@@ -367,17 +548,27 @@ const formatVolume = (value) => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="stock in getIndustryStocks(selectedIndustry)" :key="stock.code">
+              <tr v-if="loadingStocks">
+                <td colspan="8" style="text-align: center; padding: 20px;">
+                  正在加载股票数据...
+                </td>
+              </tr>
+              <tr v-else-if="industryStocks.length === 0">
+                <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                  暂无股票数据
+                </td>
+              </tr>
+              <tr v-else v-for="stock in industryStocks" :key="stock.code">
                 <td>{{ stock.name }}</td>
                 <td>{{ stock.code }}</td>
-                <td>{{ stock.price }}</td>
-                <td :class="parseFloat(stock.change) >= 0 ? 'up' : 'down'">
-                  {{ parseFloat(stock.change) >= 0 ? '+' : '' }}{{ stock.change }}%
+                <td>{{ stock.price ? stock.price.toFixed(2) : '-' }}</td>
+                <td :class="(stock.change || 0) >= 0 ? 'up' : 'down'">
+                  {{ (stock.change || 0) >= 0 ? '+' : '' }}{{ (stock.change || 0).toFixed(2) }}%
                 </td>
-                <td>{{ stock.pe }}</td>
-                <td>{{ stock.pb }}</td>
-                <td>{{ formatMarketCap(stock.marketCap) }}</td>
-                <td>{{ formatVolume(stock.volume) }}</td>
+                <td>{{ stock.pe ? stock.pe.toFixed(2) : '-' }}</td>
+                <td>{{ stock.pb ? stock.pb.toFixed(2) : '-' }}</td>
+                <td>{{ stock.marketCap ? formatMarketCap(stock.marketCap) : '-' }}</td>
+                <td>{{ stock.volume ? formatVolume(stock.volume) : '-' }}</td>
               </tr>
             </tbody>
           </table>
@@ -505,10 +696,30 @@ const formatVolume = (value) => {
   height: 400px;
 }
 
+.industry-chart-container h3,
+.industry-performance-container h3 {
+  font-size: var(--font-size-md);
+  color: var(--primary-color);
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-weight: 600;
+}
+
 .industry-chart,
 .performance-chart {
   width: 100%;
   height: 100%;
+  min-height: 300px;
+}
+
+.chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
 }
 
 .industry-performance-container h3 {

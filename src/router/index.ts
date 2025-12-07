@@ -634,6 +634,7 @@ const routes = [
   { path: '/realtime-monitor', redirect: '/stock/realtime-monitor' },
   { path: '/market-heatmap', redirect: '/market/heatmap' },
   { path: '/industry-analysis', redirect: '/market/industry' },
+  { path: '/sector-analysis', redirect: '/market/industry' },
   { path: '/market-scanner', redirect: '/market/scanner' },
 
   // ===== 404 ROUTE =====

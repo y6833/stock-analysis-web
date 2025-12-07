@@ -79,10 +79,10 @@ export default defineConfig(({ mode }) => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2,ttf,eot}'],
           // 忽略源代码文件，避免在开发环境中产生大量警告
           globIgnores: [
-            '**/src/**', 
-            '**/node_modules/**', 
-            '**/*.ts', 
-            '**/*.tsx', 
+            '**/src/**',
+            '**/node_modules/**',
+            '**/*.ts',
+            '**/*.tsx',
             '**/*.vue?*',
             '**/*.vue',
             '**/dev-dist/**',
@@ -292,7 +292,32 @@ export default defineConfig(({ mode }) => {
       // 强制预构建依赖
       fs: {
         strict: false
-      }
+      },
+      proxy: {
+        // 注意：/api/predict 应该由后端 Node.js 处理，然后后端再代理到 Python API
+        // 所以这里不需要单独配置 /api/predict
+        '/api': {
+          target: 'http://localhost:7001',
+          changeOrigin: true,
+        },
+        // AllTick API 代理
+        '/alltick-api': {
+          target: 'https://quote.alltick.io',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/alltick-api/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.log('AllTick proxy error', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log('Sending Request to the Target:', req.method, req.url);
+            });
+            proxy.on('proxyRes', (proxyRes, req, _res) => {
+              console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+            });
+          },
+        },
+      },
     },
     build: {
       // 启用源码映射以便于调试，生产环境禁用
@@ -369,33 +394,6 @@ export default defineConfig(({ mode }) => {
         },
         format: {
           comments: false, // 删除注释
-        },
-      },
-    },
-    server: {
-      proxy: {
-        // 注意：/api/predict 应该由后端 Node.js 处理，然后后端再代理到 Python API
-        // 所以这里不需要单独配置 /api/predict
-        '/api': {
-          target: 'http://localhost:7001',
-          changeOrigin: true,
-        },
-        // AllTick API 代理
-        '/alltick-api': {
-          target: 'https://quote.alltick.io',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/alltick-api/, ''),
-          configure: (proxy, _options) => {
-            proxy.on('error', (err, _req, _res) => {
-              console.log('AllTick proxy error', err);
-            });
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
-              console.log('Sending Request to the Target:', req.method, req.url);
-            });
-            proxy.on('proxyRes', (proxyRes, req, _res) => {
-              console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
-            });
-          },
         },
       },
     },
