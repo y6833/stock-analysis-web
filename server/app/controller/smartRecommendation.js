@@ -278,6 +278,34 @@ class SmartRecommendationController extends Controller {
       };
     }
   }
+
+  /**
+   * 回填推荐绩效 actualReturn
+   * POST /api/smart-recommendation/performance/backfill
+   */
+  async backfillPerformance() {
+    const { ctx, service } = this;
+
+    try {
+      const { limit = 200, staleMinutes = 0 } = ctx.request.body || {};
+      const result = await service.recommendationPerformanceTracker.backfillRecommendationPerformance({
+        limit: parseInt(limit) || 200,
+        staleMinutes: parseInt(staleMinutes) || 0,
+        includeExpired: true,
+      });
+
+      ctx.status = 200;
+      ctx.body = result;
+    } catch (error) {
+      ctx.logger.error('手动回填推荐绩效失败:', error);
+      ctx.status = 500;
+      ctx.body = {
+        success: false,
+        message: '回填推荐绩效失败',
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = SmartRecommendationController;

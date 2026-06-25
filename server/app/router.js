@@ -435,6 +435,11 @@ module.exports = (app) => {
     auth,
     controller.smartRecommendation.refreshRecommendations
   )
+  router.post(
+    '/api/smart-recommendation/performance/backfill',
+    auth,
+    controller.smartRecommendation.backfillPerformance
+  )
 
   // AI 功能路由
   router.get('/api/ai/status', controller.ai.status)

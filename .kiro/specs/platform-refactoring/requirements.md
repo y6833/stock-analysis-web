@@ -47,8 +47,8 @@
 - [x] 共享布局：`DojiPageLayout`、`split-layout`、`section-divider`、`feature-intro`
 - [x] 新闻/导出/监控/回测/海龟/用户中心批次（7 页）
 - [x] 全站 UI 统一迁移（`PageLayout` / `AiPageLayout` / `DojiPageLayout`；保留 Home / Auth / 404 专用布局）
-- [ ] 推荐绩效自动跟踪（actualReturn 回填）
-- [ ] AI E2E 测试
+- [x] 推荐绩效自动跟踪（actualReturn 回填 + 定时任务）
+- [x] AI E2E 测试（`tests/e2e/ai-features.spec.ts`）
 
 ## 部署架构
 

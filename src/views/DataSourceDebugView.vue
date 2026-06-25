@@ -232,17 +232,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.data-source-debug {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.debug-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
 .debug-content {
   display: flex;
   flex-direction: column;

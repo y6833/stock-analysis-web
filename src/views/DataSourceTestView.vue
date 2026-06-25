@@ -520,17 +520,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.data-source-test-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
 .test-container {
   display: flex;
   flex-direction: column;

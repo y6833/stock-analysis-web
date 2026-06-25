@@ -387,27 +387,6 @@ const exportResults = () => {
 </script>
 
 <style scoped>
-.data-source-test {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.header h1 {
-  color: #2c3e50;
-  margin-bottom: 10px;
-}
-
-.header p {
-  color: #7f8c8d;
-  font-size: 16px;
-}
-
 .test-controls {
   display: flex;
   flex-direction: column;

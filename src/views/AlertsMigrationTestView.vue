@@ -274,17 +274,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.alerts-migration-test {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
 .test-container {
   display: flex;
   flex-direction: column;

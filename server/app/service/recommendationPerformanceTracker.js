@@ -1103,13 +1103,163 @@ class RecommendationPerformanceTrackerService extends Service {
    * 更新用户整体表现统计
    */
   async updateUserPerformanceStats(userId) {
+    if (!userId) return
+
     try {
-      // 这里可以更新用户的整体表现缓存
-      // 简化实现，仅记录日志
-      this.logger.info(`更新用户 ${userId} 的表现统计`)
+      const preferences = await this.app.model.UserAiPreferences.findOne({ where: { userId } })
+      if (!preferences) return
+
+      const stats = await this.app.model.AiRecommendationHistory.getPerformanceStats({
+        userId,
+        days: 90,
+      })
+
+      if (stats.totalRecommendations > 0) {
+        await preferences.update({
+          totalRecommendations: stats.totalRecommendations,
+          successfulRecommendations: Math.round(
+            (stats.successRate / 100) * stats.totalRecommendations
+          ),
+          averageReturn: stats.averageReturn,
+          lastRecommendationAt: new Date(),
+        })
+      }
     } catch (error) {
       this.logger.error('更新用户表现统计失败:', error)
     }
+  }
+
+  /**
+   * 获取推荐当前价格（多数据源回退）
+   * @param {string} symbol
+   * @returns {Promise<number|null>}
+   */
+  async fetchQuotePrice(symbol) {
+    const internalQuote = this.ctx.service.internalQuote
+    const sources = ['sina', 'eastmoney']
+
+    for (const source of sources) {
+      try {
+        const response = await internalQuote.fetchQuote(source, symbol)
+        const price = internalQuote.extractPrice(response)
+        if (price) return price
+      } catch (error) {
+        this.logger.warn(`行情获取失败 ${source}/${symbol}:`, error.message)
+      }
+    }
+
+    try {
+      const quote = await this.ctx.service.stock.getStockQuote(symbol)
+      const price = parseFloat(quote?.price ?? quote?.close)
+      if (Number.isFinite(price) && price > 0) return price
+    } catch (error) {
+      this.logger.warn(`stock.getStockQuote 失败 ${symbol}:`, error.message)
+    }
+
+    return null
+  }
+
+  /**
+   * 根据当前价评估推荐状态
+   * @param {object} recommendation
+   * @param {number} currentPrice
+   * @returns {string}
+   */
+  evaluateRecommendationStatus(recommendation, currentPrice) {
+    if (recommendation.expiresAt && new Date() > new Date(recommendation.expiresAt)) {
+      return 'expired'
+    }
+
+    const target = parseFloat(recommendation.targetPrice)
+    if (Number.isFinite(target) && Number.isFinite(currentPrice)) {
+      const type = recommendation.recommendationType
+      if (['strong_buy', 'buy'].includes(type) && currentPrice >= target) return 'achieved'
+      if (['strong_sell', 'sell'].includes(type) && currentPrice <= target) return 'achieved'
+    }
+
+    return recommendation.status === 'active' ? 'active' : recommendation.status
+  }
+
+  /**
+   * 回填活跃推荐的 actualReturn 与状态
+   * @param {object} options
+   * @returns {Promise<object>}
+   */
+  async backfillRecommendationPerformance(options = {}) {
+    const { limit = 200, staleMinutes = 30, includeExpired = true } = options
+    const { Op } = this.app.Sequelize
+
+    const staleBefore = new Date(Date.now() - staleMinutes * 60 * 1000)
+    const statuses = includeExpired ? ['active', 'expired'] : ['active']
+
+    const where = {
+      status: { [Op.in]: statuses },
+      currentPrice: { [Op.ne]: null },
+      [Op.or]: [
+        { performanceUpdatedAt: null },
+        { performanceUpdatedAt: { [Op.lt]: staleBefore } },
+      ],
+    }
+
+    const recommendations = await this.app.model.AiRecommendationHistory.findAll({
+      where,
+      limit,
+      order: [
+        ['performanceUpdatedAt', 'ASC'],
+        ['createdAt', 'DESC'],
+      ],
+    })
+
+    const summary = {
+      processed: recommendations.length,
+      updated: 0,
+      skipped: 0,
+      failed: 0,
+      expired: 0,
+      achieved: 0,
+    }
+
+    const touchedUsers = new Set()
+
+    for (const rec of recommendations) {
+      try {
+        const entryPrice = parseFloat(rec.currentPrice)
+        if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
+          summary.skipped++
+          continue
+        }
+
+        const currentPrice = await this.fetchQuotePrice(rec.stockSymbol)
+        if (!currentPrice) {
+          summary.failed++
+          continue
+        }
+
+        const actualReturn = (currentPrice - entryPrice) / entryPrice
+        const status = this.evaluateRecommendationStatus(rec, currentPrice)
+
+        await rec.update({
+          actualPrice: currentPrice,
+          actualReturn,
+          performanceUpdatedAt: new Date(),
+          status,
+        })
+
+        if (status === 'expired') summary.expired++
+        if (status === 'achieved') summary.achieved++
+        if (rec.userId) touchedUsers.add(rec.userId)
+        summary.updated++
+      } catch (error) {
+        summary.failed++
+        this.logger.error(`回填推荐绩效失败 ${rec.requestId}:`, error)
+      }
+    }
+
+    for (const userId of touchedUsers) {
+      await this.updateUserPerformanceStats(userId)
+    }
+
+    return { success: true, data: summary }
   }
 
   /**
