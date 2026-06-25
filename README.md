@@ -210,7 +210,22 @@ stock-analysis-web/
 
 ## 📦 部署指南
 
-### Docker 部署
+### 生产环境（推荐：Oracle 免费 VM + Cloudflare Pages）
+
+前端部署到 **Cloudflare Pages**，后端部署到 **Oracle Cloud Always Free VM**（Docker + Cloudflare Tunnel）。
+
+完整步骤见 **[docs/oracle-cloud-deployment.md](docs/oracle-cloud-deployment.md)**。
+
+```bash
+# VM 上（首次）
+chmod +x scripts/oracle/setup-vm.sh && sudo ./scripts/oracle/setup-vm.sh
+cp .env.oracle.example .env.oracle   # 编辑密码、JWT、ALLOWED_ORIGINS
+docker compose -f docker-compose.oracle.yml --env-file .env.oracle up -d --build
+```
+
+前端 Cloudflare Pages 环境变量：`VITE_API_BASE_URL=https://api.你的域名.com`
+
+### Docker 部署（本地 / 全栈）
 
 ```bash
 # 构建镜像

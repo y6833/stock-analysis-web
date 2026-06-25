@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import type { PreferencesUpdateRequest, PasswordUpdateRequest } from '@/types/user'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 const userStore = useUserStore()
 
@@ -169,13 +170,8 @@ const updatePassword = async () => {
 </script>
 
 <template>
-  <div class="settings-view">
-    <div class="page-header">
-      <h1>账户设置</h1>
-      <p class="page-description">管理您的账户设置和偏好</p>
-    </div>
-
-    <div class="settings-container">
+  <PageLayout title="账户设置" subtitle="管理您的账户设置和偏好" narrow>
+    <div class="settings-container glass-card">
       <div v-if="isLoading" class="loading-state">
         <div class="spinner"></div>
         <p>加载中...</p>
@@ -513,30 +509,10 @@ const updatePassword = async () => {
         </div>
       </template>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.settings-view {
-  padding: var(--spacing-lg);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin: 0 0 var(--spacing-xs) 0;
-  font-weight: 600;
-}
-
-.page-description {
-  color: var(--text-secondary);
-  margin: 0;
-}
-
 .settings-container {
   background-color: var(--bg-primary);
   border-radius: var(--border-radius-lg);

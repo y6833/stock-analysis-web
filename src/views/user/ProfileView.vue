@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import type { ProfileUpdateRequest } from '@/types/user'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 const userStore = useUserStore()
 
@@ -93,13 +94,8 @@ const handleAvatarUpload = (event: Event) => {
 </script>
 
 <template>
-  <div class="profile-view">
-    <div class="page-header">
-      <h1>个人资料</h1>
-      <p class="page-description">管理您的个人信息和偏好设置</p>
-    </div>
-    
-    <div class="profile-container">
+  <PageLayout title="个人资料" subtitle="管理您的个人信息和偏好设置" narrow>
+    <div class="profile-container glass-card">
       <div v-if="isLoading" class="loading-state">
         <div class="spinner"></div>
         <p>加载中...</p>
@@ -225,30 +221,10 @@ const handleAvatarUpload = (event: Event) => {
         </div>
       </form>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.profile-view {
-  padding: var(--spacing-lg);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin: 0 0 var(--spacing-xs) 0;
-  font-weight: 600;
-}
-
-.page-description {
-  color: var(--text-secondary);
-  margin: 0;
-}
-
 .profile-container {
   background-color: var(--bg-primary);
   border-radius: var(--border-radius-lg);

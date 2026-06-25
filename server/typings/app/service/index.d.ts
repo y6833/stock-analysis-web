@@ -8,6 +8,9 @@ type AnyFunc<T = any> = (...args: any[]) => T;
 type CanExportFunc = AnyFunc<Promise<any>> | AnyFunc<IterableIterator<any>>;
 type AutoInstanceType<T, U = T extends CanExportFunc ? T : T extends AnyFunc ? ReturnType<T> : T> = U extends AnyClass ? InstanceType<U> : U;
 import ExportAdmin = require('../../../app/service/admin');
+import ExportAiProviderProfile = require('../../../app/service/aiProviderProfile');
+import ExportAiProviderRuntime = require('../../../app/service/aiProviderRuntime');
+import ExportAiRecommendationHistory = require('../../../app/service/aiRecommendationHistory');
 import ExportAkshare = require('../../../app/service/akshare');
 import ExportAlert = require('../../../app/service/alert');
 import ExportAlltick = require('../../../app/service/alltick');
@@ -20,6 +23,7 @@ import ExportDashboard = require('../../../app/service/dashboard');
 import ExportData = require('../../../app/service/data');
 import ExportDatabase = require('../../../app/service/database');
 import ExportDataQualityService = require('../../../app/service/dataQualityService');
+import ExportDeepseekApiService = require('../../../app/service/deepseekApiService');
 import ExportDojiPatternService = require('../../../app/service/dojiPatternService');
 import ExportEastmoney = require('../../../app/service/eastmoney');
 import ExportEnhancedSmartRecommendation = require('../../../app/service/enhancedSmartRecommendation');
@@ -56,6 +60,9 @@ import ExportZhitu = require('../../../app/service/zhitu');
 declare module 'egg' {
   interface IService {
     admin: AutoInstanceType<typeof ExportAdmin>;
+    aiProviderProfile: AutoInstanceType<typeof ExportAiProviderProfile>;
+    aiProviderRuntime: AutoInstanceType<typeof ExportAiProviderRuntime>;
+    aiRecommendationHistory: AutoInstanceType<typeof ExportAiRecommendationHistory>;
     akshare: AutoInstanceType<typeof ExportAkshare>;
     alert: AutoInstanceType<typeof ExportAlert>;
     alltick: AutoInstanceType<typeof ExportAlltick>;
@@ -68,6 +75,7 @@ declare module 'egg' {
     data: AutoInstanceType<typeof ExportData>;
     database: AutoInstanceType<typeof ExportDatabase>;
     dataQualityService: AutoInstanceType<typeof ExportDataQualityService>;
+    deepseekApiService: AutoInstanceType<typeof ExportDeepseekApiService>;
     dojiPatternService: AutoInstanceType<typeof ExportDojiPatternService>;
     eastmoney: AutoInstanceType<typeof ExportEastmoney>;
     enhancedSmartRecommendation: AutoInstanceType<typeof ExportEnhancedSmartRecommendation>;

@@ -1,41 +1,24 @@
 <template>
   <div class="risk-monitoring-container" :class="{ 'dark-theme': isDarkMode }">
-    <!-- Enhanced Header with Gradient Background -->
-    <div class="modern-header">
-      <div class="header-background"></div>
-      <div class="header-content">
-        <div class="header-main">
-          <div class="title-section">
-            <div class="title-icon">
-              <el-icon size="32">
-                <Warning />
-              </el-icon>
-            </div>
-            <div class="title-text">
-              <h1 class="main-title">风险监控中心</h1>
-              <p class="subtitle">智能风险评估与实时预警系统</p>
-              <div class="status-indicator">
-                <span class="status-dot" :class="connectionStatus"></span>
-                <span class="status-text">{{ getStatusText() }}</span>
-                <span class="last-update">最后更新: {{ formatLastUpdate() }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="header-actions">
-            <el-tooltip content="刷新数据" placement="bottom">
-              <el-button :icon="Refresh" @click="handleRefresh" :loading="state.isRefreshing" type="primary"
-                size="large" circle />
-            </el-tooltip>
-            <el-tooltip content="预警设置" placement="bottom">
-              <el-button :icon="Bell" @click="showAlertSettings = true" size="large" circle />
-            </el-tooltip>
-            <el-tooltip content="导出报告" placement="bottom">
-              <el-button :icon="Download" @click="exportRiskReport" size="large" circle />
-            </el-tooltip>
-          </div>
+    <PageLayout title="风险监控中心" subtitle="智能风险评估与实时预警系统">
+      <template #extra>
+        <div class="status-indicator">
+          <span class="status-dot" :class="connectionStatus"></span>
+          <span class="status-text">{{ getStatusText() }}</span>
+          <span class="last-update">最后更新: {{ formatLastUpdate() }}</span>
         </div>
-      </div>
-    </div>
+      </template>
+      <template #actions>
+        <el-tooltip content="刷新数据" placement="bottom">
+          <el-button :icon="Refresh" @click="handleRefresh" :loading="state.isRefreshing" type="primary" circle />
+        </el-tooltip>
+        <el-tooltip content="预警设置" placement="bottom">
+          <el-button :icon="Bell" @click="showAlertSettings = true" circle />
+        </el-tooltip>
+        <el-tooltip content="导出报告" placement="bottom">
+          <el-button :icon="Download" @click="exportRiskReport" circle />
+        </el-tooltip>
+      </template>
 
     <!-- 全局加载状态 -->
     <div v-if="state.isInitialLoading" class="global-loading">
@@ -303,11 +286,13 @@
         </div>
       </div>
     </div>
+    </PageLayout>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { ElMessage, ElNotification, ElMessageBox } from 'element-plus'
 import {
   Warning,
@@ -1102,82 +1087,13 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
 }
 
-/* Enhanced Modern Header */
-.modern-header {
-  position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  overflow: hidden;
-}
-
-.header-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.3;
-}
-
-.header-content {
-  position: relative;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-  z-index: 1;
-}
-
-.header-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 2rem;
-}
-
-.title-section {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.title-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.title-text {
-  flex: 1;
-}
-
-.main-title {
-  margin: 0 0 0.5rem 0;
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.subtitle {
-  margin: 0 0 1rem 0;
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 400;
-}
-
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
 
 .status-dot {
@@ -1188,18 +1104,23 @@ onUnmounted(() => {
 }
 
 .status-dot.connected {
-  background: #10b981;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  background: var(--success-color);
 }
 
 .status-dot.connecting {
-  background: #f59e0b;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  background: var(--warning-color);
 }
 
 .status-dot.disconnected {
-  background: #ef4444;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  background: var(--error-color);
+}
+
+.status-text {
+  color: var(--text-primary);
+}
+
+.last-update {
+  color: var(--text-secondary);
 }
 
 @keyframes pulse {
@@ -1212,25 +1133,6 @@ onUnmounted(() => {
   50% {
     opacity: 0.5;
   }
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.header-actions .el-button {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-
-.header-actions .el-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Main Content */
@@ -2095,17 +1997,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .header-main {
-    flex-direction: column;
-    gap: 1.5rem;
-    text-align: center;
-  }
-
-  .title-section {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
   .main-content {
     padding: 1rem;
   }
@@ -2121,10 +2012,6 @@ onUnmounted(() => {
 
   .score-number {
     font-size: 2.5rem;
-  }
-
-  .main-title {
-    font-size: 2rem;
   }
 
   .risk-metrics-grid {
@@ -2154,18 +2041,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 480px) {
-  .header-content {
-    padding: 1.5rem 1rem;
-  }
-
-  .main-title {
-    font-size: 1.75rem;
-  }
-
-  .subtitle {
-    font-size: 1rem;
-  }
-
   .chart-content {
     padding: 1rem;
   }

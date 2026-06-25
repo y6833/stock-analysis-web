@@ -1,10 +1,5 @@
 <template>
-  <div class="test-dashboard">
-    <h1 class="title">功能测试中心</h1>
-    <p class="description">
-      本页面提供对新实现功能的测试入口，方便验证功能是否正常工作。
-    </p>
-
+  <PageLayout title="功能测试中心" subtitle="本页面提供对新实现功能的测试入口">
     <div class="test-grid">
       <div class="test-card" @click="navigateTo('/membership-test')">
         <div class="card-icon">⭐</div>
@@ -91,11 +86,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 const router = useRouter()
 
@@ -105,23 +101,6 @@ const navigateTo = (path: string) => {
 </script>
 
 <style scoped>
-.test-dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.description {
-  text-align: center;
-  margin-bottom: 30px;
-  color: var(--el-text-color-secondary);
-}
-
 .test-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

@@ -633,10 +633,21 @@ class StockService extends Service {
           }
         }
 
-        // 如果没有有效token或API调用失败，生成模拟历史数据
-        ctx.logger.warn(`Tushare API不可用，为股票 ${stockCode} 生成模拟历史数据`)
+        // 生产环境禁止返回模拟历史数据
+        const isProd =
+          this.app.config.env === 'prod' || process.env.NODE_ENV === 'production'
+        if (isProd) {
+          throw new Error(`Tushare API不可用，无法获取 ${stockCode} 历史数据`)
+        }
+
+        ctx.logger.warn(`Tushare API不可用，为股票 ${stockCode} 生成模拟历史数据（仅开发环境）`)
         return this.generateMockHistoryData(stockCode, startDate, endDate)
       } catch (err) {
+        const isProd =
+          this.app.config.env === 'prod' || process.env.NODE_ENV === 'production'
+        if (isProd) {
+          throw new Error(`Tushare API调用失败: ${err.message}`)
+        }
         ctx.logger.warn(`Tushare API调用失败: ${err.message}，为股票 ${stockCode} 生成模拟历史数据`)
         return this.generateMockHistoryData(stockCode, startDate, endDate)
       }
@@ -784,6 +795,30 @@ class StockService extends Service {
         data_source_message: `获取数据失败: ${err.message}`,
       }
     })
+  }
+
+  /**
+   * 获取股票基本信息（供 AI 分析 / 推荐使用）
+   */
+  async getStockInfo(stockCode) {
+    const { ctx } = this
+    try {
+      const [nameResult, quote] = await Promise.all([
+        this.getStockName(stockCode),
+        this.getStockQuote(stockCode).catch(() => null),
+      ])
+      const name = typeof nameResult === 'string' ? nameResult : nameResult?.name || stockCode
+      return {
+        symbol: stockCode,
+        tsCode: stockCode,
+        name,
+        currentPrice: quote?.price || quote?.close || 0,
+        ...quote,
+      }
+    } catch (error) {
+      ctx.logger.warn(`getStockInfo ${stockCode} 失败:`, error.message)
+      return { symbol: stockCode, tsCode: stockCode, name: stockCode, currentPrice: 0 }
+    }
   }
 
   // 获取日期字符串 (offset: 0表示今天, -1表示昨天, 1表示明天)

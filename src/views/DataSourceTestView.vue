@@ -1,7 +1,5 @@
 <template>
-  <div class="data-source-test-view">
-    <h1 class="title">数据源管理测试</h1>
-
+  <PageLayout title="数据源管理测试" subtitle="测试数据源搜索、排序和切换冷却时间">
     <div class="test-container">
       <div class="test-section">
         <h2>数据源切换测试</h2>
@@ -165,11 +163,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { stockService } from '@/services/stockService'
 import { dataRefreshService } from '@/services/dataRefreshService'
 import { useToast } from '@/composables/useToast'

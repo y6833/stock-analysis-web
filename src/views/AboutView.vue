@@ -1,8 +1,6 @@
 <template>
-  <div class="about">
-    <div class="about-content">
-      <h1>关于股票分析系统</h1>
-
+  <PageLayout title="关于股票分析系统" subtitle="项目简介、数据来源与技术栈" narrow>
+    <div class="about-content glass-card">
       <section class="about-section">
         <h2>项目简介</h2>
         <p>
@@ -51,28 +49,16 @@
         <p>&copy; 2025 股票分析系统. 保留所有权利。</p>
       </footer>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
+<script setup lang="ts">
+import PageLayout from '@/components/common/PageLayout.vue'
+</script>
+
 <style scoped>
-.about {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 20px;
-}
-
 .about-content {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  padding: 40px;
-}
-
-.about h1 {
-  font-size: 2.5rem;
-  color: #42b983;
-  margin-bottom: 30px;
-  text-align: center;
+  padding: var(--spacing-8);
 }
 
 .about-section {
@@ -142,11 +128,7 @@ a:hover {
 
 @media (max-width: 768px) {
   .about-content {
-    padding: 20px;
-  }
-
-  .about h1 {
-    font-size: 2rem;
+    padding: var(--spacing-lg);
   }
 
   .about-section h2 {

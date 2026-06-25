@@ -1,30 +1,24 @@
 <template>
-  <div class="realtime-monitor-view">
-    <div class="monitor-header">
-      <div class="header-left">
-        <h1 class="page-title">
-          <span class="title-icon">⚡</span>
-          实时监控中心
-        </h1>
-        <div class="connection-status">
-          <span class="status-dot" :class="{
+  <PageLayout title="实时监控中心" subtitle="WebSocket 实时行情与警报推送">
+    <template #extra>
+      <div class="connection-status">
+        <span
+          class="status-dot"
+          :class="{
             connected: isConnected,
             connecting: isConnecting,
             disconnected: !isConnected && !isConnecting,
-          }"></span>
-          <span class="status-text">
-            {{ getConnectionStatusText() }}
-          </span>
-        </div>
+          }"
+        />
+        <span class="status-text">{{ getConnectionStatusText() }}</span>
       </div>
-      <div class="header-right">
-        <el-button v-if="!isConnected" type="primary" @click="reconnect()"
-          :loading="isConnecting">
-          重新连接
-        </el-button>
-        <el-button @click="clearAlerts()"> 清除警报 </el-button>
-      </div>
-    </div>
+    </template>
+    <template #actions>
+      <el-button v-if="!isConnected" type="primary" @click="reconnect()" :loading="isConnecting">
+        重新连接
+      </el-button>
+      <el-button @click="clearAlerts()">清除警报</el-button>
+    </template>
 
     <div class="monitor-content">
       <!-- 市场概况 -->
@@ -153,11 +147,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { stockService } from '@/services/stockService'
 import type { StockQuote } from '@/types/stock'
 
@@ -595,43 +590,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.realtime-monitor-view {
-  min-height: 100vh;
-  background: var(--bg-secondary);
-  padding: var(--spacing-lg);
-}
-
-.monitor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-xl);
-  background: var(--bg-primary);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-}
-
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin: 0;
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.title-icon {
-  font-size: 1.2em;
-}
-
 .connection-status {
   display: flex;
   align-items: center;
@@ -660,11 +618,6 @@ onMounted(async () => {
 .status-text {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
-}
-
-.header-right {
-  display: flex;
-  gap: var(--spacing-md);
 }
 
 .monitor-content {
@@ -960,11 +913,6 @@ onMounted(async () => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .monitor-header {
-    flex-direction: column;
-    gap: var(--spacing-md);
-  }
-
   .summary-cards {
     grid-template-columns: 1fr;
   }

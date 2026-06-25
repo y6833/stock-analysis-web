@@ -1,7 +1,5 @@
 <template>
-  <div class="tushare-test">
-    <h1>Tushare API 测试</h1>
-
+  <PageLayout title="Tushare API 测试" subtitle="连接测试与数据库操作">
     <el-card class="test-card">
       <div slot="header" style="cursor: pointer" @click="gotoTest">
         <span>连接测试</span>
@@ -63,14 +61,16 @@
         <p>如需更高的访问频率，请考虑升级到付费账户</p>
       </div>
     </el-card>
-  </div>
+  </PageLayout>
 </template>
 
 <script>
 import axios from 'axios'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 export default {
   name: 'TushareTest',
+  components: { PageLayout },
   data() {
     return {
       testLoading: false,

@@ -1,10 +1,8 @@
 <template>
-  <div class="doji-pattern-settings-view">
-    <div class="page-header">
-      <h2>十字星形态设置</h2>
-      <p class="page-description">配置十字星形态识别的参数、显示选项和性能设置</p>
-    </div>
-
+  <DojiPageLayout
+    title="十字星形态设置"
+    subtitle="配置十字星形态识别的参数、显示选项和性能设置"
+  >
     <el-row :gutter="20">
       <el-col :span="18">
         <!-- 主要设置区域 -->
@@ -183,12 +181,13 @@
         </el-collapse>
       </div>
     </el-dialog>
-  </div>
+  </DojiPageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import DojiPageLayout from '@/components/doji/DojiPageLayout.vue'
 import DojiPatternSettings from '@/components/settings/DojiPatternSettings.vue'
 import { useDojiPatternSettings } from '@/composables/useDojiPatternSettings'
 import { dojiPatternSettingsService } from '@/services/dojiPatternSettingsService'
@@ -396,27 +395,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.doji-pattern-settings-view {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-header h2 {
-  margin: 0 0 8px 0;
-  color: #303133;
-}
-
-.page-description {
-  margin: 0;
-  color: #909399;
-  font-size: 14px;
-}
-
 .sidebar {
   display: flex;
   flex-direction: column;

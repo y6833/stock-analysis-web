@@ -1,13 +1,8 @@
 <template>
-  <div class="professional-backtest-view">
-    <div class="page-header">
-      <h1>专业回测系统</h1>
-      <p class="subtitle">基于事件驱动引擎的专业级策略回测平台</p>
-    </div>
-
-    <div class="backtest-container">
+  <PageLayout title="专业回测系统" subtitle="基于事件驱动引擎的专业级策略回测平台">
+    <div class="backtest-container split-layout">
       <!-- 参数配置面板 -->
-      <div class="config-panel">
+      <div class="config-panel content-panel glass-card split-layout__sidebar">
         <div class="panel-section">
           <h3>基础配置</h3>
 
@@ -112,7 +107,7 @@
       </div>
 
       <!-- 结果展示区域 -->
-      <div class="results-panel">
+      <div class="results-panel split-layout__main">
         <div v-if="isRunning" class="loading-state">
           <div class="loading-spinner large"></div>
           <h3>正在运行专业回测...</h3>
@@ -193,12 +188,13 @@
         </table>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import BacktestResultVisualization from '@/components/backtest/BacktestResultVisualization.vue'
 import { backtestService } from '@/services/backtest/BacktestService'
 import { useToast } from '@/composables/useToast'
@@ -395,40 +391,11 @@ const formatParams = (params: any) => {
 </script>
 
 <style scoped>
-.professional-backtest-view {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.page-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.page-header h1 {
-  font-size: 32px;
-  color: #1890ff;
-  margin-bottom: 10px;
-}
-
-.subtitle {
-  font-size: 16px;
-  color: #666;
-}
-
 .backtest-container {
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 30px;
-  margin-bottom: 30px;
+  margin-top: var(--spacing-2);
 }
 
 .config-panel {
-  background: white;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 20px;
   height: fit-content;
 }
 

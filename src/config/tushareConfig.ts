@@ -3,6 +3,8 @@
  * 负责管理 Tushare API 的配置、认证和限制
  */
 
+import { getApiUrl } from '@/utils/apiBase'
+
 // Tushare API 配置接口
 export interface TushareConfig {
   token: string
@@ -19,7 +21,7 @@ export interface TushareConfig {
 const DEFAULT_CONFIG: TushareConfig = {
   token: '',
   baseUrl: 'http://api.tushare.pro',
-  proxyUrl: 'http://localhost:7001/api/tushare', // 使用完整的后端URL
+  proxyUrl: getApiUrl('/api/tushare'),
   rateLimit: 200, // 每分钟请求限制
   dailyLimit: 500, // 每日请求限制
   retryCount: 3,

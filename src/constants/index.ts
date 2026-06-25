@@ -3,9 +3,11 @@
  * 整合所有分散的常量定义，提供统一的常量管理
  */
 
+import { getApiBaseUrl } from '@/utils/apiBase'
+
 // API相关常量
 export const API_CONSTANTS = {
-  BASE_URL: 'http://localhost:7001',
+  BASE_URL: getApiBaseUrl(),
   TIMEOUT: 8000,
   RETRY_COUNT: 3,
 

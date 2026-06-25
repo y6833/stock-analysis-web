@@ -1,10 +1,5 @@
 <template>
-    <div class="deepseek-test-view">
-        <div class="header">
-            <h1>DeepSeek API 测试</h1>
-            <p>测试和验证DeepSeek API集成功能</p>
-        </div>
-
+    <AiPageLayout title="DeepSeek API 测试" subtitle="测试和验证 DeepSeek API 集成功能">
         <div class="test-controls">
             <el-button type="primary" @click="runTests" :loading="testing" :disabled="testing">
                 {{ testing ? '测试中...' : '运行所有测试' }}
@@ -133,11 +128,12 @@
                 </el-descriptions>
             </div>
         </el-dialog>
-    </div>
+    </AiPageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import AiPageLayout from '@/components/ai/AiPageLayout.vue'
 import { ElMessage } from 'element-plus'
 import { runAllTests, getUsageStats, resetStats, type TestResult } from '@/utils/deepseekTest'
 import {

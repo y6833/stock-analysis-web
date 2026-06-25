@@ -1,17 +1,9 @@
 <template>
-  <div class="smart-recommendation-view">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <h1 class="page-title">
-          <span class="title-icon">🤖</span>
-          AI智能推荐
-        </h1>
-        <p class="page-description">基于技术分析、量价关系和趋势识别的智能股票推荐系统</p>
-      </div>
-
-      <!-- 配置面板 -->
-      <div class="config-panel">
+  <AiPageLayout
+    title="🤖 AI 智能推荐"
+    subtitle="基于技术分析、量价关系和趋势识别的智能股票推荐系统"
+  >
+    <div class="config-panel glass-card">
         <!-- 第一行：基础筛选条件 -->
         <div class="config-row">
           <div class="config-item">
@@ -34,7 +26,7 @@
 
           <div class="config-item">
             <label>投资周期</label>
-            <el-select v-model="options.timeHorizons" placeholder="选择投资周期">
+            <el-select v-model="options.timeHorizon" placeholder="选择投资周期">
               <el-option v-for="horizon in config.timeHorizons" :key="horizon.value" :label="horizon.label"
                 :value="horizon.value" />
             </el-select>
@@ -111,10 +103,9 @@
           </el-button>
         </div>
       </div>
-    </div>
 
     <!-- 统计信息 -->
-    <div class="stats-section" v-if="stats">
+    <div class="stats-section" v-if="stats?.hasData">
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-value">{{ stats.totalRecommendations }}</div>
@@ -125,8 +116,8 @@
           <div class="stat-label">成功率</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">{{ stats.averageReturn }}%</div>
-          <div class="stat-label">平均收益</div>
+          <div class="stat-value">{{ (stats as any).averageConfidence ?? stats.averageReturn }}%</div>
+          <div class="stat-label">平均置信度</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">{{ stats.period }}</div>
@@ -171,7 +162,28 @@
     <div class="disclaimer">
       <el-alert :title="config.disclaimer" type="warning" :closable="false" show-icon />
     </div>
-  </div>
+
+    <!-- AI 深度分析弹窗 -->
+    <el-dialog v-model="analyzeVisible" :title="`${analyzeSymbol} AI 深度分析`" width="640px">
+      <div v-loading="analyzeLoading">
+        <template v-if="analyzeResult">
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="综合评分">{{ analyzeResult.totalScore }}</el-descriptions-item>
+            <el-descriptions-item label="推荐">{{ analyzeResult.recommendation }}</el-descriptions-item>
+            <el-descriptions-item v-if="analyzeResult.aiAnalysis?.summary" label="AI 总结">
+              {{ analyzeResult.aiAnalysis.summary }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="analyzeResult.aiAnalysis?.technicalAnalysis" label="技术分析">
+              {{ analyzeResult.aiAnalysis.technicalAnalysis }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="analyzeResult.aiAnalysis?.riskAssessment" label="风险评估">
+              {{ analyzeResult.aiAnalysis.riskAssessment }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </template>
+      </div>
+    </el-dialog>
+  </AiPageLayout>
 </template>
 
 <script setup lang="ts">
@@ -185,10 +197,16 @@ import type {
   RecommendationStats,
 } from '@/services/smartRecommendationService'
 import RecommendationCard from '@/components/analysis/RecommendationCard.vue'
+import { aiService } from '@/services/aiService'
+import AiPageLayout from '@/components/ai/AiPageLayout.vue'
 
 // 响应式数据
 const loading = ref(false)
 const refreshing = ref(false)
+const analyzeVisible = ref(false)
+const analyzeLoading = ref(false)
+const analyzeSymbol = ref('')
+const analyzeResult = ref<any>(null)
 const recommendations = ref<StockRecommendation[]>([])
 const stats = ref<RecommendationStats | null>(null)
 const meta = ref({
@@ -290,14 +308,24 @@ const refreshRecommendations = async () => {
  * 分析单个股票
  */
 const analyzeStock = async (symbol: string) => {
+  analyzeSymbol.value = symbol
+  analyzeVisible.value = true
+  analyzeLoading.value = true
+  analyzeResult.value = null
   try {
-    const result = await smartRecommendationService.analyzeStock(symbol)
-    // 这里可以打开详细分析弹窗或跳转到股票详情页
-    console.log('股票分析结果:', result)
-    ElMessage.success(`${symbol} 分析完成`)
+    const result = await aiService.analyzeStock(symbol, {
+      riskLevel: options.riskLevel,
+      timeHorizon: options.timeHorizon,
+    })
+    if (result.success) {
+      analyzeResult.value = result.data
+    } else {
+      ElMessage.error(result.message || '分析失败')
+    }
   } catch (error: any) {
-    console.error(`分析股票 ${symbol} 失败:`, error)
     ElMessage.error(error.response?.data?.message || '分析失败')
+  } finally {
+    analyzeLoading.value = false
   }
 }
 
@@ -310,161 +338,48 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.smart-recommendation-view {
-  min-height: 100vh;
-  background: var(--bg-secondary);
-}
-
-.page-header {
-  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-  color: white;
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
-}
-
-.header-content {
-  /* max-width: 1200px; */
-  margin: 0 auto;
-  text-align: center;
-  margin-bottom: var(--spacing-lg);
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-md);
-  font-size: var(--font-size-xxl);
-  font-weight: 800;
-  margin: 0 0 var(--spacing-md) 0;
-}
-
-.title-icon {
-  font-size: 1.2em;
-}
-
-.page-description {
-  font-size: var(--font-size-lg);
-  opacity: 0.9;
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-
-.header-stats {
-  display: flex;
-  justify-content: center;
-  gap: var(--spacing-xl);
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.stat-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  min-width: 120px;
-}
-
-.stat-value {
-  font-size: var(--font-size-xxl);
-  font-weight: 800;
-  margin-bottom: var(--spacing-xs);
-}
-
-.stat-label {
-  font-size: var(--font-size-sm);
-  opacity: 0.8;
-}
-
-.page-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .page-header {
-    padding: var(--spacing-lg);
-  }
-
-  .header-stats {
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-md);
-  }
-
-  .stat-card {
-    min-width: 200px;
-  }
-
-  .page-content {
-    padding: 0 var(--spacing-md);
-  }
-}
-
-/* 智能推荐新增样式 */
 .config-panel {
-  max-width: 1200px;
-  margin: 0 auto;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: var(--spacing-6);
 }
 
 .config-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: var(--spacing-5);
+  margin-bottom: var(--spacing-5);
 }
 
 .config-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .config-item label {
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
 }
 
 .option-desc {
-  font-size: 12px;
-  color: #a0aec0;
-  margin-left: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-left: var(--spacing-2);
 }
 
 .action-buttons {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-3);
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .stats-section {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  margin-bottom: var(--spacing-2);
 }
 
 .recommendations-section {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  margin-top: var(--spacing-2);
 }
 
 .section-header {

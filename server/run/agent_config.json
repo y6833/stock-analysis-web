@@ -195,7 +195,7 @@
     "onerror": {
       "errorPageUrl": "",
       "appErrorFilter": null,
-      "templatePath": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-onerror\\lib\\onerror_page.mustache"
+      "templatePath": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-onerror\\lib\\onerror_page.mustache"
     },
     "i18n": {
       "defaultLocale": "en_US",
@@ -208,8 +208,8 @@
     "watcher": {
       "type": "development",
       "eventSources": {
-        "default": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-watcher\\lib\\event-sources\\default",
-        "development": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-watcher\\lib\\event-sources\\development"
+        "default": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-watcher\\lib\\event-sources\\default",
+        "development": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-watcher\\lib\\event-sources\\development"
       }
     },
     "customLogger": {
@@ -234,7 +234,7 @@
       "fileExtensions": [],
       "whitelist": null,
       "allowArrayField": false,
-      "tmpdir": "C:\\Users\\yangyu\\AppData\\Local\\Temp\\egg-multipart-tmp\\stock-analysis-server",
+      "tmpdir": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\egg-multipart-tmp\\stock-analysis-server",
       "cleanSchedule": {
         "cron": "0 30 4 * * *",
         "disable": false
@@ -259,14 +259,14 @@
     },
     "static": {
       "prefix": "/public/",
-      "dir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\app\\public",
+      "dir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\app\\public",
       "dynamic": true,
       "preload": false,
       "buffer": false,
       "maxFiles": 1000
     },
     "view": {
-      "root": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\app\\view",
+      "root": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\app\\view",
       "cache": false,
       "defaultExtension": ".html",
       "defaultViewEngine": "",
@@ -383,9 +383,9 @@
       "author": "",
       "license": "MIT"
     },
-    "baseDir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server",
-    "HOME": "C:\\Users\\yangyu",
-    "rundir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\run",
+    "baseDir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server",
+    "HOME": "C:\\Users\\Lenovo",
+    "rundir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\run",
     "dump": {
       "ignore": "<Set>",
       "timing": {
@@ -421,7 +421,7 @@
       "onerror": "<Function onerror>"
     },
     "logger": {
-      "dir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server/logs",
+      "dir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server/logs",
       "encoding": "utf8",
       "env": "local",
       "level": "DEBUG",
@@ -687,6 +687,11 @@
         }
       }
     },
+    "deepseek": {
+      "apiKey": "",
+      "baseUrl": "https://api.deepseek.com/v1",
+      "model": "deepseek-chat"
+    },
     "auth": {
       "enable": false,
       "defaultUser": {
@@ -709,8 +714,8 @@
         "jsonp"
       ],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-onerror",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-onerror",
       "version": "2.4.0"
     },
     "session": {
@@ -720,8 +725,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-session",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-session",
       "version": "3.3.0"
     },
     "i18n": {
@@ -731,8 +736,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-i18n",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-i18n",
       "version": "2.1.1"
     },
     "watcher": {
@@ -742,8 +747,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-watcher",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-watcher",
       "version": "3.1.1",
       "dependents": [
         "development"
@@ -758,8 +763,8 @@
         "schedule"
       ],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart",
       "version": "3.5.0"
     },
     "security": {
@@ -771,8 +776,8 @@
         "session"
       ],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security",
       "version": "3.7.0"
     },
     "development": {
@@ -786,8 +791,8 @@
       "env": [
         "local"
       ],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-development",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-development",
       "version": "3.0.2"
     },
     "logrotator": {
@@ -799,8 +804,8 @@
       ],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-logrotator",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-logrotator",
       "version": "3.2.0"
     },
     "schedule": {
@@ -810,8 +815,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-schedule",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-schedule",
       "version": "4.0.1",
       "dependents": [
         "logrotator"
@@ -824,8 +829,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-static",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-static",
       "version": "2.3.1"
     },
     "jsonp": {
@@ -837,8 +842,8 @@
         "security"
       ],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-jsonp",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-jsonp",
       "version": "2.0.0"
     },
     "view": {
@@ -848,8 +853,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-view",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-view",
       "version": "2.1.4"
     },
     "sequelize": {
@@ -859,8 +864,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-sequelize",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-sequelize",
       "version": "6.0.0"
     },
     "jwt": {
@@ -872,8 +877,8 @@
         "onerror"
       ],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-jwt",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-jwt",
       "version": "3.1.7"
     },
     "cors": {
@@ -883,8 +888,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-cors",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-cors",
       "version": "2.2.4"
     },
     "validate": {
@@ -894,8 +899,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-validate",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\node_modules\\egg-validate",
       "version": "2.0.2"
     },
     "mysql": {
@@ -905,8 +910,8 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-mysql",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-mysql",
       "version": "3.4.0"
     },
     "redis": {
@@ -916,17 +921,17 @@
       "dependencies": [],
       "optionalDependencies": [],
       "env": [],
-      "from": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\plugin.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-redis",
+      "from": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\plugin.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-redis",
       "version": "2.6.1"
     }
   },
   "appInfo": {
     "name": "stock-analysis-server",
-    "baseDir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server",
+    "baseDir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server",
     "env": "local",
     "scope": "",
-    "HOME": "C:\\Users\\yangyu",
+    "HOME": "C:\\Users\\Lenovo",
     "pkg": {
       "name": "stock-analysis-server",
       "version": "1.0.0",
@@ -996,6 +1001,6 @@
       "author": "",
       "license": "MIT"
     },
-    "root": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server"
+    "root": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server"
   }
 }

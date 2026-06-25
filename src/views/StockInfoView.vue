@@ -1,28 +1,13 @@
 <template>
   <div class="stock-info-view">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">股票信息</h1>
-          <p class="page-description">
-            全面的股票信息展示，包含实时行情、技术指标、财务数据等
-          </p>
-        </div>
-
-        <div class="header-actions">
-          <el-button :icon="Setting" @click="showSettings = true" size="large">
-            设置
-          </el-button>
-          <el-button :icon="FullScreen" @click="toggleFullscreen" size="large">
-            全屏
-          </el-button>
-        </div>
-      </div>
-    </div>
+    <PageLayout title="股票信息" subtitle="全面的股票信息展示，包含实时行情、技术指标、财务数据等">
+      <template #actions>
+        <el-button :icon="Setting" @click="showSettings = true" size="large">设置</el-button>
+        <el-button :icon="FullScreen" @click="toggleFullscreen" size="large">全屏</el-button>
+      </template>
 
     <!-- 主要内容区域 -->
-    <div class="main-content" :class="{ 'fullscreen': isFullscreen }">
+    <div class="main-content" :class="{ fullscreen: isFullscreen }">
       <ComprehensiveStockInfo />
     </div>
 
@@ -121,12 +106,14 @@
       <el-button :icon="Refresh" @click="handleRefresh" circle size="large" class="refresh-button" :loading="refreshing"
         title="刷新数据" />
     </div>
+    </PageLayout>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import PageLayout from '@/components/common/PageLayout.vue'
 import {
   Setting,
   FullScreen,
@@ -285,67 +272,10 @@ onUnmounted(() => {
 
 <style scoped>
 .stock-info-view {
-  min-height: 100vh;
-  background: #f8f9fa;
   position: relative;
 }
 
-.page-header {
-  background: white;
-  border-bottom: 1px solid #e9ecef;
-  padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.title-section {
-  flex: 1;
-}
-
-.page-title {
-  margin: 0 0 8px 0;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #212529;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.page-description {
-  margin: 0;
-  color: #6c757d;
-  font-size: 0.95rem;
-  font-weight: 400;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.header-actions .el-button {
-  border-radius: 4px;
-  padding: 8px 16px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: none;
-  border: 1px solid #dee2e6;
-}
-
-.header-actions .el-button:hover {
-  transform: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 .main-content {
-  max-width: 1400px;
-  margin: 0 auto;
   transition: all 0.3s ease;
 }
 
@@ -480,7 +410,7 @@ onUnmounted(() => {
   background: var(--el-bg-color);
 }
 
-:fullscreen .page-header {
+:fullscreen .stock-info-view :deep(.page-layout__header) {
   display: none;
 }
 

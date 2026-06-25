@@ -1,626 +1,631 @@
 {
-  "name": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-  "keys": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-  "middleware": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+  "name": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+  "keys": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+  "middleware": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
   "security": {
-    "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
     "csrf": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-      "type": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "cookieName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "headerName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "bodyName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "queryName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
+      "type": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "cookieName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "headerName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "bodyName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "queryName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
       "cookieOptions": {
-        "httpOnly": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "sameSite": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "secure": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "signed": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+        "httpOnly": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "sameSite": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "secure": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "signed": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
       },
-      "ignoreJSON": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "useSession": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "sessionName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "rotateWhenInvalid": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "supportedRequests": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "refererWhiteList": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "ignoreJSON": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "useSession": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "sessionName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "rotateWhenInvalid": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "supportedRequests": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "refererWhiteList": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "xss": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
     },
     "rateLimit": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "windowMs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "max": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "message": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "statusCode": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "headers": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "paths": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "windowMs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "max": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "message": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "statusCode": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "headers": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "paths": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
     },
     "bruteForce": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "paths": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "maxAttempts": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "blockDuration": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "paths": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxAttempts": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "blockDuration": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
     },
     "contentSecurityPolicy": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
       "policy": {
-        "default-src": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "script-src": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "style-src": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "img-src": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "font-src": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "connect-src": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "default-src": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "script-src": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "style-src": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "img-src": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "font-src": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "connect-src": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       }
     },
     "headers": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
       "xssProtection": {
-        "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "value": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "value": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "noSniff": {
-        "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "value": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "value": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "frameOptions": {
-        "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "value": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "value": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "hsts": {
-        "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "maxAge": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "includeSubdomains": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "maxAge": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "includeSubdomains": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "referrerPolicy": {
-        "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "value": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "value": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       }
     },
-    "domainWhiteList": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-    "protocolWhiteList": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-    "defaultMiddleware": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+    "domainWhiteList": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
+    "protocolWhiteList": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+    "defaultMiddleware": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
     "xframe": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "value": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "value": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "hsts": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.local.js",
-      "maxAge": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "includeSubdomains": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.local.js",
+      "maxAge": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "includeSubdomains": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "dta": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "methodnoallow": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "noopen": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "nosniff": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "referrerPolicy": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "value": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "value": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "xssProtection": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "value": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "value": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "csp": {
-      "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "policy": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "policy": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     },
     "ssrf": {
-      "ipBlackList": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "ipExceptionList": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "hostnameExceptionList": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
-      "checkAddress": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+      "ipBlackList": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "ipExceptionList": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "hostnameExceptionList": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js",
+      "checkAddress": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
     }
   },
   "cors": {
-    "origin": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-    "allowMethods": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-    "credentials": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js"
+    "origin": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
+    "allowMethods": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
+    "credentials": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js"
   },
   "sequelize": {
-    "dialect": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "host": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "port": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "database": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "username": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "password": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "timezone": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "dialect": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "host": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "port": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "database": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "username": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "password": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "timezone": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
     "define": {
-      "underscored": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "freezeTableName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      "underscored": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "freezeTableName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
     }
   },
   "redis": {
     "client": {
-      "port": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "host": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "password": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "db": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "connectTimeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "lazyConnect": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "retryDelayOnFailover": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "enableReadyCheck": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "maxRetriesPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "retryDelayOnClusterDown": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "enableOfflineQueue": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      "port": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "host": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "password": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "db": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "connectTimeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "lazyConnect": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "retryDelayOnFailover": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "enableReadyCheck": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetriesPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "retryDelayOnClusterDown": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "enableOfflineQueue": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
     },
-    "agent": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    "agent": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
   },
   "jwt": {
-    "secret": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "expiresIn": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-jwt\\config\\config.default.js"
+    "secret": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "expiresIn": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-jwt\\config\\config.default.js"
   },
   "cache": {
-    "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "prefix": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "defaultTTL": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+    "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "prefix": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "defaultTTL": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
     "layers": {
       "client": {
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
         "maxAge": {
-          "static": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "api": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "user": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "static": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "api": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "user": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         }
       },
       "server": {
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
         "ttl": {
-          "stock": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "user": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "market": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "search": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "static": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "stock": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "user": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "market": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "search": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "static": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         }
       },
       "database": {
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
         "refreshInterval": {
-          "stock": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "index": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "industry": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "stock": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "index": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "industry": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         }
       }
     }
   },
   "tushare": {
-    "token": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "baseUrl": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+    "token": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "baseUrl": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
   },
   "dataSource": {
     "sources": {
       "tushare": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "akshare": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "sina": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "eastmoney": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "netease": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "tencent": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "yahoo_finance": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "alltick": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "juhe": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       },
       "zhitu": {
-        "priority": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "reliability": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "performance": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "costPerRequest": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "priority": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "reliability": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "performance": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "costPerRequest": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       }
     },
     "failover": {
-      "enabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "maxRetries": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "retryDelay": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "healthCheckInterval": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "recoveryThreshold": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "failureThreshold": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "timeoutThreshold": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+      "enabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "maxRetries": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "retryDelay": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "healthCheckInterval": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "recoveryThreshold": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "failureThreshold": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "timeoutThreshold": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
     },
     "requestOptimizer": {
-      "batchingEnabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "throttlingEnabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "parallelEnabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "adaptiveEnabled": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
+      "batchingEnabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "throttlingEnabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "parallelEnabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "adaptiveEnabled": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
       "rateLimits": {
         "default": {
-          "maxRequests": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "windowMs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "minBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "maxRequests": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "windowMs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "minBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         },
         "tushare": {
-          "maxRequests": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "windowMs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "minBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "maxRequests": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "windowMs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "minBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         },
         "akshare": {
-          "maxRequests": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "windowMs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "minBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "maxRequests": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "windowMs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "minBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         },
         "sina": {
-          "maxRequests": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "windowMs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "minBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "maxRequests": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "windowMs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "minBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         },
         "eastmoney": {
-          "maxRequests": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "windowMs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "minBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "maxRequests": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "windowMs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "minBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         },
         "alltick": {
-          "maxRequests": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "windowMs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "minBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-          "maxBatchWait": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+          "maxRequests": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "windowMs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "minBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+          "maxBatchWait": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
         }
       },
       "parallel": {
-        "maxConcurrent": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "priorityLevels": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "retryCount": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "retryDelay": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-        "adaptiveTimeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js"
+        "maxConcurrent": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "priorityLevels": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "timeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "retryCount": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "retryDelay": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+        "adaptiveTimeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
       }
     }
   },
   "cluster": {
     "listen": {
-      "port": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-      "path": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "hostname": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "port": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+      "path": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "hostname": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     }
   },
   "logger": {
-    "dir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.default.js",
-    "level": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-    "consoleLevel": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-    "encoding": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "env": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "disableConsoleAfterReady": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "outputJSON": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "buffer": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "appLogName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "coreLogName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "agentLogName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "errorLogName": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "dir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "level": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
+    "consoleLevel": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
+    "encoding": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "env": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "disableConsoleAfterReady": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "outputJSON": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "buffer": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "appLogName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "coreLogName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "agentLogName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "errorLogName": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
     "coreLogger": {
-      "consoleLevel": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.local.js"
+      "consoleLevel": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.local.js"
     },
-    "allowDebugAtProd": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "enablePerformanceTimer": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "enableFastContextLogger": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "allowDebugAtProd": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "enablePerformanceTimer": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "enableFastContextLogger": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+  },
+  "deepseek": {
+    "apiKey": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "baseUrl": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js",
+    "model": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.default.js"
   },
   "auth": {
-    "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
+    "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
     "defaultUser": {
-      "id": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-      "username": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js",
-      "role": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\config\\config.local.js"
+      "id": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
+      "username": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js",
+      "role": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\config\\config.local.js"
     }
   },
   "session": {
-    "maxAge": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
-    "key": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
-    "httpOnly": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
-    "encrypt": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
-    "logValue": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js"
+    "maxAge": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
+    "key": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
+    "httpOnly": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
+    "encrypt": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js",
+    "logValue": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-session\\config\\config.default.js"
   },
   "helper": {
-    "shtml": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
+    "shtml": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-security\\config\\config.default.js"
   },
   "jsonp": {
-    "limit": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-jsonp\\config\\config.default.js",
-    "callback": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-jsonp\\config\\config.default.js",
-    "csrf": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-jsonp\\config\\config.default.js"
+    "limit": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-jsonp\\config\\config.default.js",
+    "callback": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-jsonp\\config\\config.default.js",
+    "csrf": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-jsonp\\config\\config.default.js"
   },
   "onerror": {
-    "errorPageUrl": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-onerror\\config\\config.default.js",
-    "appErrorFilter": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-onerror\\config\\config.default.js",
-    "templatePath": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-onerror\\config\\config.default.js"
+    "errorPageUrl": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-onerror\\config\\config.default.js",
+    "appErrorFilter": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-onerror\\config\\config.default.js",
+    "templatePath": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-onerror\\config\\config.default.js"
   },
   "i18n": {
-    "defaultLocale": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
-    "dirs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
-    "queryField": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
-    "cookieField": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
-    "cookieDomain": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
-    "cookieMaxAge": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js"
+    "defaultLocale": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
+    "dirs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
+    "queryField": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
+    "cookieField": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
+    "cookieDomain": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js",
+    "cookieMaxAge": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-i18n\\config\\config.default.js"
   },
   "watcher": {
-    "type": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-watcher\\config\\config.local.js",
+    "type": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-watcher\\config\\config.local.js",
     "eventSources": {
-      "default": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-watcher\\config\\config.default.js",
-      "development": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-watcher\\config\\config.default.js"
+      "default": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-watcher\\config\\config.default.js",
+      "development": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-watcher\\config\\config.default.js"
     }
   },
   "customLogger": {
     "scheduleLogger": {
-      "consoleLevel": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-schedule\\config\\config.default.js",
-      "file": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-schedule\\config\\config.default.js"
+      "consoleLevel": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-schedule\\config\\config.default.js",
+      "file": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-schedule\\config\\config.default.js"
     }
   },
   "schedule": {
-    "directory": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-schedule\\config\\config.default.js"
+    "directory": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-schedule\\config\\config.default.js"
   },
   "multipart": {
-    "mode": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "autoFields": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "defaultCharset": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "defaultParamCharset": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "fieldNameSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "fieldSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "fields": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "fileSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "files": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "fileExtensions": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "whitelist": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "allowArrayField": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-    "tmpdir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "mode": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "autoFields": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "defaultCharset": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "defaultParamCharset": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "fieldNameSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "fieldSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "fields": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "fileSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "files": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "fileExtensions": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "whitelist": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "allowArrayField": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+    "tmpdir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
     "cleanSchedule": {
-      "cron": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
-      "disable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js"
+      "cron": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js",
+      "disable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-multipart\\config\\config.default.js"
     }
   },
   "development": {
-    "watchDirs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
-    "ignoreDirs": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
-    "fastReady": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
-    "reloadOnDebug": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
-    "overrideDefault": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
-    "overrideIgnore": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js"
+    "watchDirs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
+    "ignoreDirs": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
+    "fastReady": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
+    "reloadOnDebug": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
+    "overrideDefault": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js",
+    "overrideIgnore": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-development\\config\\config.default.js"
   },
   "logrotator": {
-    "filesRotateByHour": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
-    "hourDelimiter": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
-    "filesRotateBySize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
-    "maxFileSize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
-    "maxFiles": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
-    "rotateDuration": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
-    "maxDays": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js"
+    "filesRotateByHour": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
+    "hourDelimiter": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
+    "filesRotateBySize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
+    "maxFileSize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
+    "maxFiles": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
+    "rotateDuration": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js",
+    "maxDays": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-logrotator\\config\\config.default.js"
   },
   "static": {
-    "prefix": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
-    "dir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
-    "dynamic": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
-    "preload": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
-    "buffer": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
-    "maxFiles": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js"
+    "prefix": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
+    "dir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
+    "dynamic": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
+    "preload": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
+    "buffer": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js",
+    "maxFiles": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-static\\config\\config.default.js"
   },
   "view": {
-    "root": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.default.js",
-    "cache": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.local.js",
-    "defaultExtension": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.default.js",
-    "defaultViewEngine": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.default.js",
-    "mapping": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.default.js"
+    "root": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.default.js",
+    "cache": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.local.js",
+    "defaultExtension": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.default.js",
+    "defaultViewEngine": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.default.js",
+    "mapping": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-view\\config\\config.default.js"
   },
-  "validate": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\node_modules\\egg-validate\\config\\config.default.js",
+  "validate": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\node_modules\\egg-validate\\config\\config.default.js",
   "mysql": {
     "default": {
-      "database": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\config.default.js",
-      "connectionLimit": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\config.default.js"
+      "database": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\config.default.js",
+      "connectionLimit": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\config.default.js"
     },
-    "app": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\config.default.js",
-    "agent": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\config.default.js"
+    "app": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\config.default.js",
+    "agent": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg-mysql\\config\\config.default.js"
   },
-  "env": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "cookies": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "proxy": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "maxIpsCount": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "maxProxyCount": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "protocolHeaders": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "ipHeaders": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "hostHeaders": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "env": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "cookies": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "proxy": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "maxIpsCount": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "maxProxyCount": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "protocolHeaders": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "ipHeaders": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "hostHeaders": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
   "pkg": {
-    "name": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "version": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "description": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "private": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "name": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "version": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "description": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "private": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
     "egg": {
-      "declarations": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "declarations": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
     "dependencies": {
-      "apollo-server-express": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-cors": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-jwt": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-mysql": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-redis": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-scripts": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-security": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-sequelize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "express-rate-limit": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "graphql": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "graphql-tools": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "helmet": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "iconv-lite": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "mysql2": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "rate-limit-redis": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "redis": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "sequelize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "xss": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "apollo-server-express": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-cors": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-jwt": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-mysql": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-redis": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-scripts": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-security": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-sequelize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "express-rate-limit": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "graphql": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "graphql-tools": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "helmet": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "iconv-lite": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "mysql2": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "rate-limit-redis": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "redis": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "sequelize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "xss": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
     "devDependencies": {
-      "egg-bin": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-ci": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "egg-mock": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "eslint": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "eslint-config-egg": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "sequelize-cli": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "egg-bin": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-ci": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "egg-mock": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "eslint": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "eslint-config-egg": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "sequelize-cli": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
     "engines": {
-      "node": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "node": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
     "scripts": {
-      "start": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "stop": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "dev": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "dev:win": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "dev-no-migrate": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "debug": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "test": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "test-local": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "cov": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "lint": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "ci": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "migrate": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "migrate:undo": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "migrate:status": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "test:db-optimization": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "db:optimize": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "start": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "stop": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "dev": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "dev:win": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "dev-no-migrate": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "debug": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "test": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "test-local": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "cov": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "lint": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "ci": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "migrate": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "migrate:undo": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "migrate:status": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "test:db-optimization": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "db:optimize": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
     "ci": {
-      "version": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "type": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "version": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "type": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
     "repository": {
-      "type": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "url": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "type": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "url": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
-    "author": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "license": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "author": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "license": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
   },
-  "baseDir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "HOME": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "rundir": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "baseDir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "HOME": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "rundir": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
   "dump": {
-    "ignore": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "ignore": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
     "timing": {
-      "slowBootActionMinDuration": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "slowBootActionMinDuration": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     }
   },
   "confusedConfigurations": {
-    "bodyparser": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "notFound": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "sitefile": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "middlewares": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "httpClient": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "bodyparser": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "notFound": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "sitefile": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "middlewares": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "httpClient": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
   },
   "notfound": {
-    "pageUrl": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "pageUrl": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
   },
   "siteFile": {
-    "/favicon.ico": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "cacheControl": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "/favicon.ico": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "cacheControl": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
   },
   "bodyParser": {
-    "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "encoding": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "formLimit": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "jsonLimit": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "textLimit": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "strict": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "encoding": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "formLimit": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "jsonLimit": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "textLimit": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "strict": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
     "queryString": {
-      "arrayLimit": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "depth": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "parameterLimit": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "arrayLimit": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "depth": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "parameterLimit": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
-    "onerror": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "onerror": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
   },
   "httpclient": {
-    "enableDNSCache": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "dnsCacheLookupInterval": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "dnsCacheMaxLength": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "enableDNSCache": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "dnsCacheLookupInterval": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "dnsCacheMaxLength": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
     "request": {
-      "timeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "timeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
     "httpAgent": {
-      "keepAlive": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "freeSocketTimeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "maxSockets": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "maxFreeSockets": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "keepAlive": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "freeSocketTimeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "maxSockets": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "maxFreeSockets": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
     "httpsAgent": {
-      "keepAlive": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "freeSocketTimeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "maxSockets": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-      "maxFreeSockets": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+      "keepAlive": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "freeSocketTimeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "maxSockets": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+      "maxFreeSockets": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
     },
-    "useHttpClientNext": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "useHttpClientNext": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
   },
   "meta": {
-    "enable": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "logging": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "enable": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "logging": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
   },
-  "coreMiddleware": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "workerStartTimeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-  "serverTimeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "coreMiddleware": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "workerStartTimeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+  "serverTimeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
   "clusterClient": {
-    "maxWaitTime": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
-    "responseTimeout": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+    "maxWaitTime": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js",
+    "responseTimeout": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
   },
-  "onClientError": "E:\\桌面\\HappyStockMarket\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
+  "onClientError": "C:\\Users\\Lenovo\\Desktop\\stock-analysis-web\\server\\node_modules\\egg\\config\\config.default.js"
 }

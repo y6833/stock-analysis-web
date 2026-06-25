@@ -4,27 +4,9 @@ if (typeof window !== 'undefined') {
   window.__WB_DISABLE_DEV_LOGS = true
 }
 
-// 核心样式 - 关键渲染路径
+// 核心样式 — 统一由 main.css 入口加载
 import './assets/main.css'
-import './assets/styles/variables.css'
-
-// 延迟加载非关键样式
-import { loadStyle } from './utils/resourceOptimization'
-if (typeof window !== 'undefined') {
-    // 使用requestIdleCallback在浏览器空闲时加载非关键样式
-    if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(() => {
-            loadStyle('/src/assets/theme.css')
-            loadStyle('/src/assets/payment.css')
-        }, { timeout: 2000 })
-    } else {
-        // 降级为setTimeout
-        setTimeout(() => {
-            loadStyle('/src/assets/theme.css')
-            loadStyle('/src/assets/payment.css')
-        }, 1000)
-    }
-}
+import './assets/payment.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

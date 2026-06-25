@@ -1,10 +1,5 @@
 <template>
-  <div class="data-source-debug">
-    <div class="debug-header">
-      <h1>数据源状态调试</h1>
-      <p>用于调试数据源切换状态同步问题</p>
-    </div>
-
+  <PageLayout title="数据源状态调试" subtitle="用于调试数据源切换状态同步问题">
     <div class="debug-content">
       <!-- 状态显示 -->
       <el-card title="当前状态" class="debug-card">
@@ -85,11 +80,12 @@
         </div>
       </el-card>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { ElMessage } from 'element-plus'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'

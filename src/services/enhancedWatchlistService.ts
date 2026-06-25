@@ -3,9 +3,10 @@ import { getAuthHeaders } from '@/utils/auth'
 import { useAuthStore } from '@/stores/auth/authStore'
 import { useStockDataStore } from '@/stores/stock/stockDataStore'
 import type { Watchlist, WatchlistItem, WatchlistAlert } from '@/types/dashboard'
+import { getApiRoot } from '@/utils/apiBase'
 
 // API基础URL
-const API_URL = 'http://localhost:7001/api'
+const API_URL = getApiRoot()
 
 // 本地存储键
 const LOCAL_STORAGE_KEY = 'watchlists_data'

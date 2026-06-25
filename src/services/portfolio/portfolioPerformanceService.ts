@@ -1,9 +1,10 @@
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
 import { usePortfolioStore } from '@/stores/portfolio/portfolioStore'
+import { getApiRoot } from '@/utils/apiBase'
 
 // API基础URL
-const API_URL = 'http://localhost:7001/api'
+const API_URL = getApiRoot()
 
 // 投资组合性能数据类型
 export interface PortfolioPerformance {

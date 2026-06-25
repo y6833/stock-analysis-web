@@ -1,15 +1,12 @@
 <template>
-  <div class="enhanced-portfolio-management">
-    <div class="page-header">
-      <h1>增强投资组合管理</h1>
-      <div class="header-actions">
-        <el-select v-model="selectedPortfolio" placeholder="选择投资组合" @change="loadPortfolio">
-          <el-option v-for="portfolio in portfolios" :key="portfolio.id" :label="portfolio.name"
-            :value="portfolio.id" />
-        </el-select>
-        <el-button type="primary" @click="createNewPortfolio">创建新投资组合</el-button>
-      </div>
-    </div>
+  <PageLayout title="增强投资组合管理">
+    <template #actions>
+      <el-select v-model="selectedPortfolio" placeholder="选择投资组合" @change="loadPortfolio">
+        <el-option v-for="portfolio in portfolios" :key="portfolio.id" :label="portfolio.name"
+          :value="portfolio.id" />
+      </el-select>
+      <el-button type="primary" @click="createNewPortfolio">创建新投资组合</el-button>
+    </template>
 
     <div v-if="loading" class="loading-container">
       <el-icon class="is-loading" :size="40"><Loading /></el-icon>
@@ -320,13 +317,14 @@
         </span>
       </template>
     </el-dialog>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElIcon, ElSelect, ElOption, ElButton, ElTabs, ElTabPane, ElTable, ElTableColumn, ElDialog, ElInput, ElInputNumber, ElDatePicker, ElForm, ElFormItem, ElAutocomplete } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { usePortfolioStore } from '@/stores/portfolio/portfolioStore'
 import PortfolioPerformanceChart from '@/components/portfolio/PortfolioPerformanceChart.vue'
 import PortfolioRiskAnalysis from '@/components/portfolio/PortfolioRiskAnalysis.vue'
@@ -815,30 +813,6 @@ function getChangeClass(value: number): string {
 </script>
 
 <style scoped>
-.enhanced-portfolio-management {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 500;
-}
-
-.header-actions {
-  display: flex;
-  gap: 16px;
-}
-
 .loading-container {
   display: flex;
   flex-direction: column;

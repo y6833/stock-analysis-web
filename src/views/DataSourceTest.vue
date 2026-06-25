@@ -1,10 +1,5 @@
 <template>
-  <div class="data-source-test">
-    <div class="header">
-      <h1>新数据源测试页面</h1>
-      <p>测试 Alpha Vantage 和 AllTick 数据源的功能</p>
-    </div>
-
+  <PageLayout title="新数据源测试页面" subtitle="测试 Alpha Vantage 和 AllTick 数据源的功能">
     <div class="test-controls">
       <div class="control-group">
         <h3>基础测试</h3>
@@ -97,11 +92,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import AlphaVantageDataSource from '@/services/dataSource/AlphaVantageDataSource'
 import AlltickDataSource from '@/services/dataSource/AlltickDataSource'
 import { ComprehensiveTestRunner, ConnectionTester, DataFetchTester } from '@/tests/dataSource/detailedConnectionTest'

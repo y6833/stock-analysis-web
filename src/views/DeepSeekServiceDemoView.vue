@@ -1,10 +1,5 @@
 <template>
-    <div class="deepseek-service-demo">
-        <div class="header">
-            <h1>DeepSeek AI 服务演示</h1>
-            <p>测试股票分析、推荐生成和综合分析功能</p>
-        </div>
-
+    <AiPageLayout title="DeepSeek AI 服务演示" subtitle="测试股票分析、推荐生成和综合分析功能">
         <el-tabs v-model="activeTab" type="card">
             <!-- 股票分析标签页 -->
             <el-tab-pane label="股票分析" name="analysis">
@@ -303,11 +298,12 @@
                 </div>
             </el-tab-pane>
         </el-tabs>
-    </div>
+    </AiPageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import AiPageLayout from '@/components/ai/AiPageLayout.vue'
 import { ElMessage } from 'element-plus'
 import { deepSeekService, type StockAnalysisResponse, type RecommendationResponse } from '@/services/deepseekService'
 import { analysisEngine, type ComprehensiveAnalysisResult } from '@/services/analysisEngine'

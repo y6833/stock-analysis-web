@@ -1,11 +1,7 @@
 <template>
-  <div class="data-source-settings">
-    <h1 class="title">数据源设置</h1>
-
+  <PageLayout title="数据源设置" subtitle="选择并管理您的数据源，确保数据一致性和准确性">
     <!-- 使用新的数据源选择器组件 -->
     <DataSourceSelector
-      title="数据源设置"
-      description="选择并管理您的数据源，确保数据一致性和准确性"
       @source-changed="handleSourceChanged"
       @cache-cleared="handleCacheCleared"
     />
@@ -329,11 +325,12 @@
         </div>
       </div>
     </el-dialog>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { stockService } from '@/services/stockService'
 import type { DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import { DataSourceFactory } from '@/services/dataSource/DataSourceFactory'
@@ -840,17 +837,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.data-source-settings {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
 .current-source {
   background-color: #f5f7fa;
   padding: 20px;

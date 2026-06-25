@@ -242,36 +242,40 @@ class EnhancedSmartRecommendationService extends Service {
   }
 
   /**
-   * 调用DeepSeek AI分析（模拟实现）
+   * 调用 DeepSeek AI 分析（服务端代理）
    */
   async callDeepSeekAnalysis(request) {
     const { ctx } = this
 
-    // 这里应该调用实际的DeepSeek服务
-    // 目前返回模拟数据
+    if (ctx.service.deepseekApiService.isAvailable()) {
+      const result = await ctx.service.deepseekApiService.analyzeStock(request, request.userPreferences || {})
+      return {
+        symbol: request.symbol,
+        analysis: result.analysis,
+        metadata: result.metadata,
+      }
+    }
+
+    // 降级：无 API Key 时使用规则引擎结果
     return {
       symbol: request.symbol,
       analysis: {
-        summary: `基于AI分析，${request.name}显示出积极的投资信号`,
-        technicalAnalysis: '技术指标显示上涨趋势',
-        fundamentalAnalysis: '基本面数据良好',
+        summary: `基于规则引擎，${request.name} 符合当前筛选条件`,
+        technicalAnalysis: '技术指标综合评分良好',
+        fundamentalAnalysis: '基本面数据待 AI 配置后增强',
         riskAssessment: '中等风险水平',
         recommendation: this.generateAIRecommendation(request),
-        confidenceScore: Math.floor(Math.random() * 30) + 60, // 60-90分
-        targetPrice: request.currentPrice * (1 + Math.random() * 0.2), // 上涨0-20%
-        stopLoss: request.currentPrice * (1 - Math.random() * 0.1), // 下跌0-10%
-        reasoning: [
-          '技术指标显示积极信号',
-          '基本面数据支持投资',
-          '市场情绪相对乐观',
-          '风险收益比合理',
-        ],
+        confidenceScore: 55,
+        targetPrice: request.currentPrice * 1.08,
+        stopLoss: request.currentPrice * 0.95,
+        reasoning: ['规则引擎评分通过', '配置 DEEPSEEK_API_KEY 可启用 AI 深度分析'],
       },
       metadata: {
         analysisType: request.analysisType,
         timestamp: Date.now(),
-        tokensUsed: Math.floor(Math.random() * 1000) + 500,
-        processingTime: Math.floor(Math.random() * 2000) + 1000,
+        tokensUsed: 0,
+        processingTime: 0,
+        fallback: true,
       },
     }
   }
@@ -582,46 +586,64 @@ class EnhancedSmartRecommendationService extends Service {
   }
 
   isAIServiceAvailable() {
-    // 检查AI服务是否可用
-    // 这里可以添加实际的服务检查逻辑
-    return true
+    return this.ctx.service.deepseekApiService.isAvailable()
   }
 
   sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
-  // 模拟数据获取方法（实际应该从真实数据源获取）
+  async fetchHistoricalData(symbol) {
+    const { ctx } = this
+    const end = new Date()
+    const start = new Date()
+    start.setDate(start.getDate() - 60)
+    const fmt = (d) => d.toISOString().slice(0, 10)
+
+    try {
+      const result = await ctx.service.stock.getStockHistory(symbol, fmt(start), fmt(end))
+      if (result?.data && Array.isArray(result.data)) return result.data
+      if (Array.isArray(result)) return result
+      return []
+    } catch (error) {
+      ctx.logger.warn(`获取 ${symbol} 历史数据失败:`, error.message)
+      return []
+    }
+  }
+
   async getStockPriceData(symbol) {
-    // 返回模拟价格数据
-    const basePrice = 10 + Math.random() * 20
-    return Array.from({ length: 20 }, (_, i) => basePrice + (Math.random() - 0.5) * 2)
+    const data = await this.fetchHistoricalData(symbol)
+    return data.map((d) => parseFloat(d.close) || 0).filter(Boolean)
   }
 
   async getStockVolumeData(symbol) {
-    // 返回模拟成交量数据
-    return Array.from({ length: 20 }, () => Math.floor(Math.random() * 2000000) + 500000)
+    const data = await this.fetchHistoricalData(symbol)
+    return data.map((d) => parseInt(d.volume || d.vol, 10) || 0)
   }
 
   async getTechnicalIndicators(symbol) {
-    // 返回模拟技术指标
-    return {
-      rsi: Array.from({ length: 5 }, () => 30 + Math.random() * 40),
-      macd: {
-        macd: Array.from({ length: 5 }, () => (Math.random() - 0.5) * 2),
-        signal: Array.from({ length: 5 }, () => (Math.random() - 0.5) * 2),
-        histogram: Array.from({ length: 5 }, () => (Math.random() - 0.5) * 1),
-      },
+    const { ctx } = this
+    const data = await this.fetchHistoricalData(symbol)
+    if (data.length < 10) return {}
+    try {
+      return await ctx.service.technicalIndicators.calculateIndicators(data, {
+        rsi: { enabled: true, period: 14 },
+        macd: { enabled: true },
+        sma: { enabled: true, periods: [5, 10, 20] },
+      })
+    } catch (error) {
+      ctx.logger.warn(`技术指标计算失败 ${symbol}:`, error.message)
+      return {}
     }
   }
 
   async getFundamentalData(symbol) {
-    // 返回模拟基本面数据
-    return {
-      pe: 8 + Math.random() * 20,
-      pb: 0.5 + Math.random() * 3,
-      roe: 5 + Math.random() * 20,
-      roa: 1 + Math.random() * 10,
+    const { ctx } = this
+    try {
+      const info = await ctx.service.stock.getStockInfo(symbol)
+      return info?.data || info || { symbol }
+    } catch {
+      return { symbol }
     }
   }
 }

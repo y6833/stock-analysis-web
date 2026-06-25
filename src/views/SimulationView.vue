@@ -7,6 +7,7 @@ import {
   type SimulationTransaction,
 } from '@/services/simulationService'
 import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useToast } from '@/composables/useToast'
 
 // 使用 Toast 提示
@@ -256,15 +257,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="simulation-view">
-    <div class="page-header">
-      <h1>模拟交易</h1>
-      <p class="subtitle">使用虚拟资金测试交易策略，无需承担实际风险</p>
-    </div>
-
-    <div class="simulation-container">
-      <div class="simulation-sidebar">
-        <div class="panel">
+  <PageLayout title="模拟交易" subtitle="使用虚拟资金测试交易策略，无需承担实际风险">
+    <div class="simulation-container split-layout">
+      <div class="simulation-sidebar split-layout__sidebar">
+        <div class="panel content-panel glass-card">
           <h2>交易操作</h2>
 
           <!-- 账户选择 -->
@@ -357,7 +353,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="simulation-content">
+      <div class="simulation-content split-layout__main">
         <div v-if="isLoading" class="loading-state">
           <div class="loading-spinner"></div>
           <p>正在加载，请稍候...</p>
@@ -473,45 +469,12 @@ onMounted(() => {
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.simulation-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-lg);
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-}
-
 .simulation-container {
-  display: flex;
-  gap: var(--spacing-lg);
-}
-
-.simulation-sidebar {
-  width: 320px;
-  flex-shrink: 0;
-}
-
-.simulation-content {
-  flex: 1;
-  min-width: 0;
+  margin-top: var(--spacing-2);
 }
 
 .panel {

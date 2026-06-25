@@ -433,24 +433,11 @@ class SmartRecommendationService extends Service {
   async fetchFromSinaAPI(symbol) {
     const { ctx } = this
     try {
-      // 调用新浪财经API
-      const response = await ctx.curl(`http://localhost:7001/api/sina/quote?symbol=${symbol}`, {
-        method: 'GET',
-        timeout: 10000,
-        dataType: 'json',
-      })
-
-      if (
-        response.data &&
-        response.data.success &&
-        response.data.data &&
-        response.data.data.price
-      ) {
-        const price = parseFloat(response.data.data.price)
-        if (price > 0 && price !== 100) {
-          ctx.logger.info(`从新浪财经获取到 ${symbol} 真实价格: ${price}`)
-          return price
-        }
+      const response = await ctx.service.internalQuote.fetchQuote('sina', symbol)
+      const price = ctx.service.internalQuote.extractPrice(response)
+      if (price !== null) {
+        ctx.logger.info(`从新浪财经获取到 ${symbol} 真实价格: ${price}`)
+        return price
       }
       return null
     } catch (error) {
@@ -465,27 +452,11 @@ class SmartRecommendationService extends Service {
   async fetchFromEastMoneyAPI(symbol) {
     const { ctx } = this
     try {
-      // 调用东方财富API
-      const response = await ctx.curl(
-        `http://localhost:7001/api/eastmoney/quote?symbol=${symbol}`,
-        {
-          method: 'GET',
-          timeout: 10000,
-          dataType: 'json',
-        }
-      )
-
-      if (
-        response.data &&
-        response.data.success &&
-        response.data.data &&
-        response.data.data.price
-      ) {
-        const price = parseFloat(response.data.data.price)
-        if (price > 0 && price !== 100) {
-          ctx.logger.info(`从东方财富获取到 ${symbol} 真实价格: ${price}`)
-          return price
-        }
+      const response = await ctx.service.internalQuote.fetchQuote('eastmoney', symbol)
+      const price = ctx.service.internalQuote.extractPrice(response)
+      if (price !== null) {
+        ctx.logger.info(`从东方财富获取到 ${symbol} 真实价格: ${price}`)
+        return price
       }
       return null
     } catch (error) {
@@ -500,27 +471,11 @@ class SmartRecommendationService extends Service {
   async fetchFromAlphaVantageAPI(symbol) {
     const { ctx } = this
     try {
-      // 调用Alpha Vantage API
-      const response = await ctx.curl(
-        `http://localhost:7001/api/alphavantage/quote?symbol=${symbol}`,
-        {
-          method: 'GET',
-          timeout: 15000,
-          dataType: 'json',
-        }
-      )
-
-      if (
-        response.data &&
-        response.data.success &&
-        response.data.data &&
-        response.data.data.price
-      ) {
-        const price = parseFloat(response.data.data.price)
-        if (price > 0 && price !== 100) {
-          ctx.logger.info(`从Alpha Vantage获取到 ${symbol} 真实价格: ${price}`)
-          return price
-        }
+      const response = await ctx.service.internalQuote.fetchQuote('alphavantage', symbol)
+      const price = ctx.service.internalQuote.extractPrice(response)
+      if (price !== null) {
+        ctx.logger.info(`从Alpha Vantage获取到 ${symbol} 真实价格: ${price}`)
+        return price
       }
       return null
     } catch (error) {
@@ -535,24 +490,11 @@ class SmartRecommendationService extends Service {
   async fetchFromAlltickAPI(symbol) {
     const { ctx } = this
     try {
-      // 调用AllTick API
-      const response = await ctx.curl(`http://localhost:7001/api/alltick/quote?symbol=${symbol}`, {
-        method: 'GET',
-        timeout: 15000,
-        dataType: 'json',
-      })
-
-      if (
-        response.data &&
-        response.data.success &&
-        response.data.data &&
-        response.data.data.price
-      ) {
-        const price = parseFloat(response.data.data.price)
-        if (price > 0 && price !== 100) {
-          ctx.logger.info(`从AllTick获取到 ${symbol} 真实价格: ${price}`)
-          return price
-        }
+      const response = await ctx.service.internalQuote.fetchQuote('alltick', symbol)
+      const price = ctx.service.internalQuote.extractPrice(response)
+      if (price !== null) {
+        ctx.logger.info(`从AllTick获取到 ${symbol} 真实价格: ${price}`)
+        return price
       }
       return null
     } catch (error) {
@@ -1350,21 +1292,36 @@ class SmartRecommendationService extends Service {
    * @param {Object} options - 推荐选项
    */
   async saveRecommendationRecord(recommendations, options) {
-    const { ctx } = this
+    const { ctx, app } = this
 
     try {
-      // 这里可以保存到数据库，用于后续的准确率统计
-      // 暂时使用日志记录
-      ctx.logger.info('智能推荐记录:', {
-        count: recommendations.length,
-        options,
-        timestamp: new Date(),
-        recommendations: recommendations.map((r) => ({
-          symbol: r.symbol,
-          score: r.totalScore,
-          recommendation: r.recommendation,
-        })),
-      })
+      if (!recommendations?.length || !app.model.AiRecommendationHistory) return
+
+      const userId = ctx.user?.id || null
+      const records = recommendations.map((stock) => ({
+        userId,
+        requestId: `rec_${Date.now()}_${stock.symbol}_${Math.random().toString(36).slice(2, 8)}`,
+        stockSymbol: stock.symbol,
+        stockName: stock.name,
+        recommendationType: stock.recommendation || 'hold',
+        confidenceScore: stock.totalScore || 50,
+        aiAnalysis: JSON.stringify(stock.aiAnalysis || {}),
+        reasoning: (stock.reasons || stock.aiReasoning || []).slice(0, 5).join('; '),
+        riskLevel: stock.riskLevel || options.riskLevel || 'medium',
+        expectedReturn: stock.expectedReturn || options.expectedReturn,
+        targetPrice: stock.targetPrice?.target || stock.targetPrice,
+        stopLossPrice: stock.tradingAdvice?.stopLoss || stock.stopLoss,
+        currentPrice: stock.currentPrice,
+        timeHorizon: `${options.timeHorizon || 7}天`,
+        analysisType: stock.aiEnhanced ? 'enhanced' : 'traditional',
+        userPreferences: JSON.stringify(options),
+        marketData: JSON.stringify({ totalScore: stock.totalScore }),
+        status: 'active',
+        expiresAt: new Date(Date.now() + (options.timeHorizon || 7) * 24 * 60 * 60 * 1000),
+      }))
+
+      await app.model.AiRecommendationHistory.bulkCreate(records, { ignoreDuplicates: true })
+      ctx.logger.info(`保存 ${records.length} 条推荐历史记录`)
     } catch (error) {
       ctx.logger.error('保存推荐记录失败:', error)
     }
@@ -1376,19 +1333,69 @@ class SmartRecommendationService extends Service {
    * @return {Object} 历史统计信息
    */
   async getRecommendationStats(days = 30) {
-    // 这里应该从数据库查询历史推荐记录并计算准确率
-    // 暂时返回模拟数据
-    return {
-      totalRecommendations: 150,
-      successfulRecommendations: 98,
-      successRate: 65.3,
-      averageReturn: 4.2,
-      period: `最近${days}天`,
-      riskDistribution: {
-        low: 45,
-        medium: 78,
-        high: 27,
-      },
+    const { ctx } = this
+
+    try {
+      const result = await ctx.service.recommendationPerformanceTracker.getPerformanceStats({
+        timeRange: days,
+        userId: ctx.user?.id || undefined,
+      })
+
+      if (!result.success || result.data.totalRecommendations === 0) {
+        return {
+          totalRecommendations: 0,
+          successfulRecommendations: 0,
+          successRate: 0,
+          averageReturn: 0,
+          period: `最近${days}天`,
+          riskDistribution: { low: 0, medium: 0, high: 0 },
+          hasData: false,
+        }
+      }
+
+      const overall = result.data.overallStats || {}
+      const riskAnalysis = result.data.riskAnalysis || {}
+
+      // 无 actualReturn 时按 riskLevel 计数
+      let riskDistribution = {
+        low: riskAnalysis.low?.count || 0,
+        medium: riskAnalysis.medium?.count || 0,
+        high: riskAnalysis.high?.count || 0,
+      }
+      if (riskDistribution.low + riskDistribution.medium + riskDistribution.high === 0) {
+        const recs = await ctx.app.model.AiRecommendationHistory.findAll({
+          where: {
+            createdAt: { [ctx.app.Sequelize.Op.gte]: new Date(Date.now() - days * 86400000) },
+          },
+          attributes: ['riskLevel'],
+        })
+        recs.forEach((r) => {
+          const level = r.riskLevel || 'medium'
+          if (riskDistribution[level] !== undefined) riskDistribution[level]++
+        })
+      }
+
+      return {
+        totalRecommendations: result.data.totalRecommendations,
+        successfulRecommendations: overall.completedRecommendations || result.data.totalRecommendations,
+        successRate: overall.winRate || 0,
+        averageReturn: overall.averageReturn || 0,
+        averageConfidence: overall.averageReturn || 0,
+        period: `最近${days}天`,
+        riskDistribution,
+        hasData: true,
+      }
+    } catch (error) {
+      ctx.logger.error('获取推荐统计失败:', error)
+      return {
+        totalRecommendations: 0,
+        successfulRecommendations: 0,
+        successRate: 0,
+        averageReturn: 0,
+        period: `最近${days}天`,
+        riskDistribution: { low: 0, medium: 0, high: 0 },
+        hasData: false,
+      }
     }
   }
 

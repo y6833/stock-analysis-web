@@ -5,16 +5,12 @@ import { technicalIndicatorService } from '@/services/technicalIndicatorService'
 import type { Stock } from '@/types/stock'
 import AbnormalMovementMonitor from '@/components/scanner/AbnormalMovementMonitor.vue'
 import SectorRotationAnalysis from '@/components/scanner/SectorRotationAnalysis.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useToast } from '@/composables/useToast'
 
 const { showToast } = useToast()
 // 当前活动的标签页
-const activeTab = ref('filter') // 'filter', 'abnormal', 'rotation'
-
-// 切换标签页
-const switchTab = (tab: string) => {
-  activeTab.value = tab
-}
+const activeTab = ref('filter')
 
 // 筛选条件
 const filterConditions = reactive({
@@ -383,27 +379,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="market-scanner">
-    <div class="page-header">
-      <h1>市场扫描器</h1>
-      <p class="subtitle">筛选股票、监控异动、分析板块轮动，发现潜在投资机会</p>
-    </div>
-
-    <div class="tabs">
-      <div class="tab" :class="{ active: activeTab === 'filter' }" @click="switchTab('filter')">
-        股票筛选器
-      </div>
-      <div class="tab" :class="{ active: activeTab === 'abnormal' }" @click="switchTab('abnormal')">
-        异动监控
-      </div>
-      <div class="tab" :class="{ active: activeTab === 'rotation' }" @click="switchTab('rotation')">
-        板块轮动分析
-      </div>
-    </div>
-
-    <!-- 股票筛选器 -->
-    <div v-if="activeTab === 'filter'" class="scanner-container">
-      <div class="filter-panel">
+  <PageLayout title="市场扫描器" subtitle="筛选股票、监控异动、分析板块轮动，发现潜在投资机会">
+    <el-tabs v-model="activeTab" class="scanner-tabs">
+      <el-tab-pane label="股票筛选器" name="filter">
+        <div class="scanner-container">
+          <div class="filter-panel glass-card">
         <div class="filter-header">
           <h2>筛选条件</h2>
           <div class="filter-actions">
@@ -565,7 +545,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="results-panel">
+          <div class="results-panel glass-card">
         <h2>扫描结果</h2>
 
         <div v-if="isScanning" class="scanning-indicator">
@@ -607,94 +587,43 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+        </div>
+      </el-tab-pane>
 
-    <!-- 异动监控 -->
-    <div v-else-if="activeTab === 'abnormal'" class="tab-content">
-      <AbnormalMovementMonitor />
-    </div>
+      <el-tab-pane label="异动监控" name="abnormal">
+        <div class="tab-content glass-card">
+          <AbnormalMovementMonitor />
+        </div>
+      </el-tab-pane>
 
-    <!-- 板块轮动分析 -->
-    <div v-else-if="activeTab === 'rotation'" class="tab-content">
-      <SectorRotationAnalysis />
-    </div>
-  </div>
+      <el-tab-pane label="板块轮动分析" name="rotation">
+        <div class="tab-content glass-card">
+          <SectorRotationAnalysis />
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+  </PageLayout>
 </template>
 
 <style scoped>
-.market-scanner {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-.tabs {
-  display: flex;
-  margin-bottom: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-light);
-}
-
-.tab {
-  padding: var(--spacing-md) var(--spacing-lg);
-  cursor: pointer;
-  font-weight: 500;
-  color: var(--text-secondary);
-  border-bottom: 2px solid transparent;
-  transition: all var(--transition-fast);
-}
-
-.tab:hover {
-  color: var(--primary-color);
-  background-color: var(--bg-secondary);
-}
-
-.tab.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-  background-color: var(--bg-secondary);
+.scanner-tabs {
+  margin-bottom: var(--spacing-2);
 }
 
 .tab-content {
-  padding: var(--spacing-md);
-  background-color: var(--bg-primary);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-light);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-lg);
-  text-align: center;
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-  font-weight: 700;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-  max-width: 700px;
-  margin: 0 auto;
+  padding: var(--spacing-4);
+  margin-top: var(--spacing-4);
 }
 
 .scanner-container {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: var(--spacing-lg);
+  grid-template-columns: minmax(280px, 1fr) 2fr;
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-4);
 }
 
 .filter-panel {
-  background-color: var(--bg-primary);
-  border-radius: var(--border-radius-lg);
   padding: var(--spacing-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-light);
 }
 
 .filter-header {

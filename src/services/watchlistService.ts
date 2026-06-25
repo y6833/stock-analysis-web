@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
+import { getApiRoot } from '@/utils/apiBase'
 
 // API基础URL
-const API_URL = 'http://localhost:7001/api'
+const API_URL = getApiRoot()
 
 // 关注分组类型
 export interface Watchlist {

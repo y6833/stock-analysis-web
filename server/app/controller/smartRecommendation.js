@@ -60,16 +60,23 @@ class SmartRecommendationController extends Controller {
         actualLimit = Math.min(actualLimit, 3); // 未登录用户最多3个推荐
       }
 
-      // 调用推荐服务
-      const result = await service.smartRecommendation.getRecommendations({
+      // 调用推荐服务（默认启用 AI 增强）
+      const enableAI = ctx.query.enableAI !== 'false'
+      const recOptions = {
         riskLevel,
         expectedReturn: parseFloat(expectedReturn),
         timeHorizon: parseInt(timeHorizon),
         limit: actualLimit,
         industry: industry && industry !== 'all' ? industry : null,
         market: market && market !== 'all' ? market : null,
-        marketCap: marketCap && marketCap !== 'all' ? marketCap : null
-      });
+        marketCap: marketCap && marketCap !== 'all' ? marketCap : null,
+        enableAI,
+        userId,
+      }
+
+      const result = enableAI
+        ? await service.enhancedSmartRecommendation.getEnhancedRecommendations(recOptions)
+        : await service.smartRecommendation.getRecommendations(recOptions);
 
       ctx.status = 200;
       ctx.body = result;

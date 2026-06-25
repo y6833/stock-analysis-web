@@ -2,13 +2,15 @@
  * Configuration utility for managing environment-specific settings
  */
 
+import { getApiBaseUrl } from '@/utils/apiBase'
+
 // Environment information
 export const APP_VERSION = __APP_VERSION__;
 export const APP_MODE = __APP_MODE__;
 export const BUILD_TIME = __BUILD_TIME__;
 
 // API configuration
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7001';
+export const API_URL = import.meta.env.VITE_API_URL || getApiBaseUrl() || '';
 export const API_PREFIX = import.meta.env.VITE_API_PREFIX || '/api/v1';
 
 // Feature flags

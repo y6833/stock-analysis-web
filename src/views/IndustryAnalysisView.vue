@@ -3,6 +3,7 @@ import { ref, onMounted, computed, nextTick, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 const isLoading = ref(true)
 const industries = ref<any[]>([])
@@ -418,12 +419,7 @@ const formatVolume = (value) => {
 </script>
 
 <template>
-  <div class="industry-analysis-view">
-    <div class="page-header">
-      <h1>行业分析</h1>
-      <p class="subtitle">深入分析各行业板块表现，发现投资机会</p>
-    </div>
-
+  <PageLayout title="行业分析" subtitle="深入分析各行业板块表现，发现投资机会">
     <div v-if="isLoading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>正在加载行业数据...</p>
@@ -575,36 +571,10 @@ const formatVolume = (value) => {
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.industry-analysis-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-.page-header {
-  margin: var(--spacing-lg) 0;
-  text-align: center;
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-  font-weight: 700;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-  max-width: 700px;
-  margin: 0 auto;
-}
-
 .loading-container {
   display: flex;
   flex-direction: column;

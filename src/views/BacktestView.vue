@@ -3,6 +3,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { stockService } from '@/services/stockService'
 import type { Stock } from '@/types/stock'
 import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useToast } from '@/composables/useToast'
 
 const { showToast } = useToast()
@@ -313,12 +314,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="backtest-view">
-    <div class="page-header">
-      <h1>策略回测</h1>
-      <p class="subtitle">测试交易策略在历史数据上的表现，优化您的投资决策</p>
-    </div>
-
+  <PageLayout title="策略回测" subtitle="测试交易策略在历史数据上的表现，优化您的投资决策">
     <div class="backtest-container">
       <div class="backtest-sidebar">
         <div class="panel">
@@ -493,32 +489,10 @@ onMounted(() => {
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.backtest-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-lg);
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-}
-
 .backtest-container {
   display: flex;
   gap: var(--spacing-lg);

@@ -5,8 +5,9 @@
 
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
+import { getApiRoot } from '@/utils/apiBase'
 
-const API_URL = 'http://localhost:7001/api'
+const API_URL = getApiRoot()
 
 // 提醒类型
 export type AlertType = 'price' | 'indicator' | 'pattern' | 'doji'

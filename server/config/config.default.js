@@ -49,14 +49,14 @@ module.exports = (appInfo) => {
     credentials: true,
   }
 
-  // 数据库配置
+  // 数据库配置（支持 Docker / Oracle 环境变量）
   config.sequelize = {
     dialect: 'mysql',
-    host: '127.0.0.1',
-    port: 3306,
-    database: 'stock_analysis',
-    username: 'root',
-    password: 'root',
+    host: process.env.MYSQL_HOST || process.env.DB_HOST || '127.0.0.1',
+    port: parseInt(process.env.MYSQL_PORT || process.env.DB_PORT || '3306', 10),
+    database: process.env.MYSQL_DATABASE || process.env.DB_NAME || 'stock_analysis',
+    username: process.env.MYSQL_USER || process.env.DB_USER || 'root',
+    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || 'root',
     timezone: '+08:00',
     define: {
       underscored: true,
@@ -67,8 +67,8 @@ module.exports = (appInfo) => {
   // Redis配置 - 可选，如果Redis不可用则禁用
   config.redis = {
     client: {
-      port: 6379,
-      host: '127.0.0.1',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      host: process.env.REDIS_HOST || '127.0.0.1',
       password: process.env.REDIS_PASSWORD || '', // 从环境变量获取密码，如果没有则为空
       db: 0,
       // 添加连接选项以处理认证问题
@@ -294,6 +294,13 @@ module.exports = (appInfo) => {
     dir: `${appInfo.root}/logs`,
     level: 'INFO',
     consoleLevel: 'INFO',
+  }
+
+  // DeepSeek AI（密钥仅服务端，通过环境变量 DEEPSEEK_API_KEY 配置）
+  config.deepseek = {
+    apiKey: process.env.DEEPSEEK_API_KEY || '',
+    baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
+    model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
   }
 
   return config

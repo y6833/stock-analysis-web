@@ -6,6 +6,7 @@
 import axios from 'axios'
 import { jwtDecode } from 'jwt-decode'
 import { tushareService } from './tushareService'
+import { getApiRoot } from '@/utils/apiBase'
 import type {
   User,
   LoginRequest,
@@ -16,7 +17,7 @@ import type {
 } from '@/types/user'
 
 // API基础URL
-const API_URL = 'http://localhost:7001/api'
+const API_URL = getApiRoot()
 
 // 本地存储键
 const TOKEN_KEY = 'auth_token'

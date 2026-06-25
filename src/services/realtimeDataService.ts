@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
+import { getWsBaseUrl } from '@/utils/apiBase'
 import type { StockQuote } from '@/types/stock'
 
 /**
@@ -57,7 +58,7 @@ export class RealtimeDataService extends EventEmitter {
   private heartbeatTimeout: NodeJS.Timeout | null = null
   private wsUrl: string
 
-  constructor(wsUrl = 'ws://localhost:7001/realtime') {
+  constructor(wsUrl = getWsBaseUrl()) {
     super()
     this.wsUrl = wsUrl
   }

@@ -5,9 +5,10 @@
 
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
+import { getApiRoot } from '@/utils/apiBase'
 
 // API基础URL
-const API_URL = '/api/smart-recommendation'
+const API_URL = `${getApiRoot()}/smart-recommendation`
 
 // 推荐选项接口
 export interface RecommendationOptions {
@@ -75,7 +76,9 @@ export interface RecommendationStats {
   successfulRecommendations: number
   successRate: number
   averageReturn: number
+  averageConfidence?: number
   period: string
+  hasData?: boolean
   riskDistribution: {
     low: number
     medium: number

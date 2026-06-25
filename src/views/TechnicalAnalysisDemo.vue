@@ -1,13 +1,8 @@
 <template>
-  <div class="technical-analysis-demo">
-    <div class="page-header">
-      <h1>🎯 通达信技术分析演示</h1>
-      <p class="subtitle">体验专业级股票技术分析功能</p>
-    </div>
-
+  <PageLayout title="🎯 通达信技术分析演示" subtitle="体验专业级股票技术分析功能">
     <!-- 功能介绍 -->
     <div class="feature-intro">
-      <div class="intro-card">
+      <div class="intro-card glass-card">
         <h3>📊 技术指标系统</h3>
         <p>集成通达信经典技术指标公式，提供专业的买卖信号识别</p>
         <ul>
@@ -19,7 +14,7 @@
         </ul>
       </div>
 
-      <div class="intro-card">
+      <div class="intro-card glass-card">
         <h3>🔍 智能市场扫描</h3>
         <p>批量扫描全市场股票，快速发现投资机会</p>
         <ul>
@@ -30,7 +25,7 @@
         </ul>
       </div>
 
-      <div class="intro-card">
+      <div class="intro-card glass-card">
         <h3>📈 可视化分析</h3>
         <p>直观的图表展示和信号标注</p>
         <ul>
@@ -43,7 +38,7 @@
     </div>
 
     <!-- 演示区域 -->
-    <div class="demo-section">
+    <div class="demo-section glass-card">
       <h2>🚀 功能演示</h2>
 
       <!-- 股票选择 -->
@@ -182,11 +177,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import TechnicalSignals from '@/components/TechnicalSignals.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -264,40 +260,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.technical-analysis-demo {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.page-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.page-header h1 {
-  font-size: 32px;
-  color: var(--primary-color);
-  margin-bottom: 10px;
-}
-
-.subtitle {
-  font-size: 18px;
-  color: var(--text-secondary);
-}
-
 .feature-intro {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
+  gap: var(--spacing-5);
+  margin-bottom: var(--spacing-6);
 }
 
 .intro-card {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-6);
   border-left: 4px solid var(--primary-color);
 }
 

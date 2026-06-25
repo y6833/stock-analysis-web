@@ -1,11 +1,8 @@
 <template>
-  <div class="enhanced-watchlist-view">
-    <div class="page-header">
-      <h1>关注列表</h1>
-      <div class="header-actions">
-        <el-button type="primary" @click="showAddStockDialog = true"> 添加股票 </el-button>
-      </div>
-    </div>
+  <PageLayout title="关注列表">
+    <template #actions>
+      <el-button type="primary" @click="showAddStockDialog = true">添加股票</el-button>
+    </template>
 
     <div class="watchlist-container">
       <enhanced-watchlist-component
@@ -70,7 +67,7 @@
         </span>
       </template>
     </el-dialog>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
@@ -79,6 +76,7 @@ import { useRouter } from 'vue-router'
 import { useEnhancedWatchlistStore } from '@/stores/stock/enhancedWatchlistStore'
 import EnhancedWatchlistComponent from '@/components/watchlist/EnhancedWatchlistComponent.vue'
 import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import type { Stock } from '@/types/stock'
 import { ElMessage } from 'element-plus'
 
@@ -162,31 +160,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.enhanced-watchlist-view {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: var(--spacing-lg);
-  gap: var(--spacing-lg);
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: var(--font-size-xl);
-  color: var(--text-primary);
-}
-
-.header-actions {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
 .watchlist-container {
   flex: 1;
   min-height: 0;

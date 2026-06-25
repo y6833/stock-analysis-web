@@ -250,6 +250,54 @@ const routes = [
     },
   },
 
+  // ===== AI ROUTES =====
+  {
+    path: '/ai',
+    name: 'ai',
+    children: [
+      {
+        path: '',
+        name: 'ai-hub',
+        component: () => import('../views/AIHubView.vue'),
+        meta: { title: 'AI 智能中心' },
+      },
+      {
+        path: 'recommendations',
+        name: 'ai-recommendations',
+        component: () => import('../views/SmartRecommendationView.vue'),
+        meta: {
+          requiresAuth: true,
+          requiredMembershipLevel: MembershipLevel.BASIC,
+          title: 'AI 股票推荐',
+        },
+      },
+      {
+        path: 'screening',
+        name: 'ai-screening',
+        component: () => import('../views/AIConditionScreeningView.vue'),
+        meta: { requiresAuth: true, title: 'AI 条件筛选' },
+      },
+      {
+        path: 'golden-stocks',
+        name: 'ai-golden-stocks',
+        component: () => import('../views/AIGoldenStocksView.vue'),
+        meta: { requiresAuth: true, title: 'AI 金股' },
+      },
+      {
+        path: 'preferences',
+        name: 'ai-preferences',
+        component: () => import('../views/AIPreferencesView.vue'),
+        meta: { requiresAuth: true, title: 'AI 投资偏好' },
+      },
+      {
+        path: 'history',
+        name: 'ai-history',
+        component: () => import('../views/AIHistoryView.vue'),
+        meta: { requiresAuth: true, title: 'AI 推荐历史' },
+      },
+    ],
+  },
+
   // ===== TRADING STRATEGIES ROUTES =====
   {
     path: '/strategies',
@@ -263,13 +311,7 @@ const routes = [
       },
       {
         path: 'smart-recommendation',
-        name: 'smart-recommendation',
-        component: () => import('../views/SmartRecommendationView.vue'),
-        meta: {
-          requiresAuth: true,
-          requiredMembershipLevel: MembershipLevel.BASIC,
-          title: '智能推荐',
-        },
+        redirect: { name: 'ai-recommendations' },
       },
     ],
   },

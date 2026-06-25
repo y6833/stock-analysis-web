@@ -1,0 +1,11 @@
+# Cloudflare Pages 配置
+# 部署: npx wrangler pages deploy dist --project-name stock-analysis-web
+# 文档: docs/cloudflare-deployment.md
+
+name = "stock-analysis-web"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+[vars]
+# 构建时在 Cloudflare Dashboard → Settings → Environment variables 设置:
+# VITE_API_BASE_URL = https://api.yourdomain.com

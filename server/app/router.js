@@ -435,6 +435,17 @@ module.exports = (app) => {
     auth,
     controller.smartRecommendation.refreshRecommendations
   )
+
+  // AI 功能路由
+  router.get('/api/ai/status', controller.ai.status)
+  router.post('/api/ai/screen', auth, controller.ai.screen)
+  router.get('/api/ai/golden-stocks', auth, controller.ai.goldenStocks)
+  router.post('/api/ai/analyze/:symbol', auth, controller.ai.analyzeStock)
+  router.get('/api/ai/preferences', auth, controller.aiPreferences.get)
+  router.put('/api/ai/preferences', auth, controller.aiPreferences.update)
+  router.get('/api/ai/preferences/insights', auth, controller.aiPreferences.insights)
+  router.get('/api/ai/history', auth, controller.ai.getHistory)
+
   router.get('/api/refresh-status', auth, controller.data.getRefreshStatus)
 
   // 会员相关路由
@@ -482,6 +493,17 @@ module.exports = (app) => {
   )
 
   // 管理员相关路由（需要管理员权限）
+  // AI Provider 管理（CC Switch 兼容）
+  router.get('/api/admin/ai-providers', auth, controller.aiProvider.list)
+  router.get('/api/admin/ai-providers/presets', auth, controller.aiProvider.presets)
+  router.post('/api/admin/ai-providers', auth, controller.aiProvider.create)
+  router.put('/api/admin/ai-providers/:id', auth, controller.aiProvider.update)
+  router.delete('/api/admin/ai-providers/:id', auth, controller.aiProvider.destroy)
+  router.post('/api/admin/ai-providers/:id/activate', auth, controller.aiProvider.activate)
+  router.post('/api/admin/ai-providers/import', auth, controller.aiProvider.importConfig)
+  router.get('/api/admin/ai-providers/:id/export', auth, controller.aiProvider.exportConfig)
+  router.post('/api/admin/ai-providers/test', auth, controller.aiProvider.test)
+
   router.get('/api/admin/users', auth, controller.admin.getAllUsers)
   router.get('/api/admin/users/:userId', auth, controller.admin.getUserDetail)
   router.put('/api/admin/users/:userId', auth, controller.admin.updateUser)

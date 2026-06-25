@@ -1,65 +1,71 @@
 <template>
   <div class="admin-view">
-    <div class="page-header">
-      <h1>管理员后台</h1>
-      <p class="subtitle">管理用户、会员和系统数据</p>
-    </div>
+    <router-view v-if="isChildRoute" />
+    <template v-else>
+      <PageLayout title="管理员后台" subtitle="管理用户、会员和系统数据">
+        <el-tabs v-model="activeTab" @tab-click="handleTabClick" class="admin-tabs">
+        <el-tab-pane label="仪表盘" name="dashboard"></el-tab-pane>
+        <el-tab-pane label="用户管理" name="users"></el-tab-pane>
+        <el-tab-pane label="会员管理" name="membership"></el-tab-pane>
+        <el-tab-pane label="充值管理" name="recharge"></el-tab-pane>
+        <el-tab-pane label="页面管理" name="pages"></el-tab-pane>
+        <el-tab-pane label="缓存管理" name="cache"></el-tab-pane>
+        <el-tab-pane label="AI 配置" name="ai-providers"></el-tab-pane>
+      </el-tabs>
 
-    <el-tabs v-model="activeTab" @tab-click="handleTabClick" class="admin-tabs">
-      <el-tab-pane label="仪表盘" name="dashboard"></el-tab-pane>
-      <el-tab-pane label="用户管理" name="users"></el-tab-pane>
-      <el-tab-pane label="会员管理" name="membership"></el-tab-pane>
-      <el-tab-pane label="充值管理" name="recharge"></el-tab-pane>
-      <el-tab-pane label="页面管理" name="pages"></el-tab-pane>
-      <el-tab-pane label="缓存管理" name="cache"></el-tab-pane>
-    </el-tabs>
+      <div class="admin-content">
+        <!-- 仪表盘 -->
+        <div v-if="activeTab === 'dashboard'" class="admin-panel">
+          <AdminDashboard />
+        </div>
 
-    <div class="admin-content">
-      <!-- 仪表盘 -->
-      <div v-if="activeTab === 'dashboard'" class="admin-panel">
-        <AdminDashboard />
+        <!-- 用户管理 -->
+        <div v-if="activeTab === 'users'" class="admin-panel">
+          <UserManagement />
+        </div>
+
+        <!-- 会员管理 -->
+        <div v-if="activeTab === 'membership'" class="admin-panel">
+          <MembershipManagement />
+        </div>
+
+        <!-- 充值管理 -->
+        <div v-if="activeTab === 'recharge'" class="admin-panel">
+          <Suspense>
+            <template #default>
+              <RechargeRequestManagement />
+            </template>
+            <template #fallback>
+              <div class="loading-container">
+                <el-skeleton :rows="10" animated />
+              </div>
+            </template>
+          </Suspense>
+        </div>
+
+        <!-- 页面管理 -->
+        <div v-if="activeTab === 'pages'" class="admin-panel">
+          <PageManagement />
+        </div>
+
+        <!-- 缓存管理 -->
+        <div v-if="activeTab === 'cache'" class="admin-panel">
+          <CacheManagement />
+        </div>
+
+        <!-- AI 配置管理 -->
+        <div v-if="activeTab === 'ai-providers'" class="admin-panel">
+          <AIManagement />
+        </div>
       </div>
-
-      <!-- 用户管理 -->
-      <div v-if="activeTab === 'users'" class="admin-panel">
-        <UserManagement />
-      </div>
-
-      <!-- 会员管理 -->
-      <div v-if="activeTab === 'membership'" class="admin-panel">
-        <MembershipManagement />
-      </div>
-
-      <!-- 充值管理 -->
-      <div v-if="activeTab === 'recharge'" class="admin-panel">
-        <Suspense>
-          <template #default>
-            <RechargeRequestManagement />
-          </template>
-          <template #fallback>
-            <div class="loading-container">
-              <el-skeleton :rows="10" animated />
-            </div>
-          </template>
-        </Suspense>
-      </div>
-
-      <!-- 页面管理 -->
-      <div v-if="activeTab === 'pages'" class="admin-panel">
-        <PageManagement />
-      </div>
-
-      <!-- 缓存管理 -->
-      <div v-if="activeTab === 'cache'" class="admin-panel">
-        <CacheManagement />
-      </div>
-    </div>
+      </PageLayout>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, Suspense } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, Suspense, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { useToast } from '@/composables/useToast'
 
@@ -70,10 +76,16 @@ import MembershipManagement from '@/components/admin/MembershipManagement.vue'
 import CacheManagement from '@/components/admin/CacheManagement.vue'
 import RechargeRequestManagement from '@/components/admin/RechargeRequestManagement.vue'
 import PageManagement from '@/components/admin/PageManagement.vue'
+import AIManagement from '@/components/admin/AIManagement.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const { showToast } = useToast()
+
+const childRouteNames = ['data-source-management', 'roles-permissions-management']
+const isChildRoute = computed(() => childRouteNames.includes(route.name as string))
 
 // 状态
 const activeTab = ref('dashboard')
@@ -89,7 +101,7 @@ onMounted(async () => {
 
   // 从URL参数中获取活动标签
   const tab = router.currentRoute.value.query.tab as string
-  if (tab && ['dashboard', 'users', 'membership', 'recharge', 'pages', 'cache'].includes(tab)) {
+  if (tab && ['dashboard', 'users', 'membership', 'recharge', 'pages', 'cache', 'ai-providers'].includes(tab)) {
     activeTab.value = tab
   }
 })
@@ -103,21 +115,8 @@ const handleTabClick = (tab: any) => {
 
 <style scoped>
 .admin-view {
-  max-width: 1200px;
+  max-width: var(--container-xl);
   margin: 0 auto;
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-
-.page-header h1 {
-  margin-bottom: 5px;
-}
-
-.subtitle {
-  color: #666;
 }
 
 .admin-tabs {

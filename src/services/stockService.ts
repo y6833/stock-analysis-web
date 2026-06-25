@@ -10,16 +10,17 @@ import { CONSTANTS } from '@/constants'
 import { Utils } from '@/utils'
 import axios from 'axios'
 import apiRequest from '@/utils/apiRequest'
+import { getApiBaseUrl } from '@/utils/apiBase'
 
 // 创建 API 客户端实例
 const apiClient = apiRequest.createClient({
-  baseUrl: 'http://localhost:7001',
+  baseUrl: getApiBaseUrl(),
   timeout: 30000,
   retryCount: 3
 })
 
 // API基础URL配置
-const API_BASE_URL = 'http://localhost:7001'
+const API_BASE_URL = getApiBaseUrl()
 
 // 使用统一的数据源状态管理器
 let currentDataSourceType = dataSourceStateManager.getCurrentDataSource()

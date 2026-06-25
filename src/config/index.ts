@@ -4,6 +4,7 @@
  */
 
 import { CONSTANTS } from '@/constants'
+import { getApiBaseUrl, getWsBaseUrl } from '@/utils/apiBase'
 import type { DeepSeekConfig } from './deepseekConfig'
 
 /**
@@ -167,10 +168,10 @@ function getNumberEnvVar(key: string, defaultValue: number = 0): number {
  */
 const envConfig: EnvironmentConfig = {
   NODE_ENV: (getEnvVar('NODE_ENV', 'development') as any) || 'development',
-  API_BASE_URL: getEnvVar('VITE_API_BASE_URL', 'http://localhost:7001'),
-  WS_BASE_URL: getEnvVar('VITE_WS_BASE_URL', 'ws://localhost:7001'),
+  API_BASE_URL: getApiBaseUrl(),
+  WS_BASE_URL: getWsBaseUrl(),
   ENABLE_MOCK: getBooleanEnvVar('VITE_ENABLE_MOCK', false),
-  ENABLE_DEBUG: getBooleanEnvVar('VITE_ENABLE_DEBUG', envConfig?.NODE_ENV === 'development'),
+  ENABLE_DEBUG: getBooleanEnvVar('VITE_ENABLE_DEBUG', import.meta.env.DEV),
   LOG_LEVEL: (getEnvVar('VITE_LOG_LEVEL', 'info') as any) || 'info'
 }
 
@@ -271,7 +272,7 @@ const performanceConfig: PerformanceConfig = {
  */
 const aiConfig: AIConfig = {
   deepseek: {
-    apiKey: getEnvVar('VITE_DEEPSEEK_API_KEY', 'sk-2cc72ce7b3ee4c17ba490fab258b9efb'),
+    apiKey: getEnvVar('VITE_DEEPSEEK_API_KEY', ''),
     baseUrl: getEnvVar('VITE_DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1'),
     model: getEnvVar('VITE_DEEPSEEK_MODEL', 'deepseek-chat'),
     maxTokens: getNumberEnvVar('VITE_DEEPSEEK_MAX_TOKENS', 4000),
@@ -311,8 +312,8 @@ export const config: Config = {
 export function validateConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = []
 
-  // 验证必需的环境变量
-  if (!config.env.API_BASE_URL) {
+  // 验证 API 基址（空字符串表示同源 /api 代理，生产环境合法）
+  if (config.env.API_BASE_URL === undefined || config.env.API_BASE_URL === null) {
     errors.push('API_BASE_URL is required')
   }
 

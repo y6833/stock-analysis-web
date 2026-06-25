@@ -1,6 +1,5 @@
 <template>
-  <div class="api-test">
-    <h1>API 和 Redis 缓存测试</h1>
+  <PageLayout title="API 和 Redis 缓存测试" subtitle="股票行情与缓存读写验证">
     <div class="nav-links">
       <router-link to="/tushare-test" class="nav-link">Tushare 数据库测试</router-link>
     </div>
@@ -144,11 +143,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import axios from 'axios'
 
 // 状态

@@ -1,31 +1,14 @@
 <template>
-  <div class="stock-monitor-view">
-    <div class="page-header">
-      <h1 class="page-title">
-        <span class="title-icon">📈</span>
-        爱盯盘风格监控
-      </h1>
-      <p class="page-description">
-        模仿爱盯盘插件的股票监控功能，支持实时价格监控、快速添加股票、浮动窗口等特性
-      </p>
-    </div>
+  <PageLayout title="爱盯盘风格监控" subtitle="实时价格监控、快速添加股票、浮动窗口等特性">
+    <template #actions>
+      <el-button @click="toggleFloating">{{ isFloating ? '取消浮动' : '浮动显示' }}</el-button>
+      <el-button @click="resetDemo">重置演示</el-button>
+    </template>
 
     <div class="demo-section">
-      <div class="demo-header">
-        <h2>功能演示</h2>
-        <div class="demo-controls">
-          <button @click="toggleFloating" class="demo-btn">
-            {{ isFloating ? '取消浮动' : '浮动显示' }}
-          </button>
-          <button @click="resetDemo" class="demo-btn">
-            重置演示
-          </button>
-        </div>
-      </div>
-
-      <div class="demo-content">
+      <div class="demo-content split-layout">
         <!-- 左侧：功能介绍 -->
-        <div class="features-panel">
+        <div class="features-panel content-panel glass-card split-layout__sidebar">
           <h3>核心功能</h3>
           <div class="feature-list">
             <div class="feature-item">
@@ -74,7 +57,7 @@
         </div>
 
         <!-- 右侧：监控组件 -->
-        <div class="monitor-panel" :class="{ floating: isFloating }">
+        <div class="monitor-panel split-layout__main" :class="{ floating: isFloating }">
           <SimpleStockMonitor ref="monitorRef" />
         </div>
       </div>
@@ -141,11 +124,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import SimpleStockMonitor from '@/components/monitor/SimpleStockMonitor.vue'
 
 // 响应式数据
@@ -167,86 +151,8 @@ const resetDemo = () => {
 </script>
 
 <style scoped>
-.stock-monitor-view {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: var(--spacing-lg);
-}
-
-.page-header {
-  text-align: center;
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-md);
-  font-size: var(--font-size-xxl);
-  font-weight: 800;
-  color: var(--primary-color);
-  margin: 0 0 var(--spacing-md) 0;
-}
-
-.title-icon {
-  font-size: 1.2em;
-}
-
-.page-description {
-  font-size: var(--font-size-lg);
-  color: var(--text-secondary);
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-
 .demo-section {
-  background: white;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl);
-}
-
-.demo-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-lg);
-}
-
-.demo-header h2 {
-  margin: 0;
-  color: var(--primary-color);
-}
-
-.demo-controls {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.demo-btn {
-  background: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  cursor: pointer;
-  font-weight: 600;
-  transition: all var(--transition-normal);
-}
-
-.demo-btn:hover {
-  background: var(--accent-dark);
-  transform: translateY(-1px);
-}
-
-.demo-content {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: var(--spacing-xl);
-  align-items: start;
+  margin-bottom: var(--spacing-8);
 }
 
 .features-panel h3 {

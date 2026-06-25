@@ -5,9 +5,10 @@
 
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
+import { getApiRoot } from '@/utils/apiBase'
 
 // API基础URL
-const API_URL = 'http://localhost:7001/api'
+const API_URL = getApiRoot()
 
 // 用户列表查询参数接口
 export interface UserListParams {

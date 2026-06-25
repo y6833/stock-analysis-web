@@ -1,17 +1,14 @@
 <template>
-  <div class="doji-pattern-screener-view">
-    <div class="page-header">
-      <div class="header-content">
-        <h1>十字星形态筛选工具</h1>
-        <p class="page-description">筛选出现十字星形态后上涨的股票，帮助您发现潜在的交易机会</p>
-      </div>
-      <div class="header-actions">
-        <el-button type="primary" @click="showGuide">
-          <el-icon><QuestionFilled /></el-icon>
-          功能指南
-        </el-button>
-      </div>
-    </div>
+  <DojiPageLayout
+    title="十字星形态筛选工具"
+    subtitle="筛选出现十字星形态后上涨的股票，帮助您发现潜在的交易机会"
+  >
+    <template #actions>
+      <el-button type="primary" @click="showGuide">
+        <el-icon><QuestionFilled /></el-icon>
+        功能指南
+      </el-button>
+    </template>
 
     <!-- 功能指南组件 -->
     <doji-pattern-feature-guide v-if="guideVisible" @close="guideVisible = false" />
@@ -129,13 +126,14 @@
         <p>点击"导出结果"按钮，可以将筛选结果导出为CSV、Excel或JSON格式。</p>
       </div>
     </el-dialog>
-  </div>
+  </DojiPageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { QuestionFilled } from '@element-plus/icons-vue'
+import DojiPageLayout from '@/components/doji/DojiPageLayout.vue'
 import DojiPatternScreenerComponent from '@/components/technical-analysis/DojiPatternScreenerView.vue'
 import DojiPatternFeatureGuide from '@/components/common/DojiPatternFeatureGuide.vue'
 
@@ -191,79 +189,12 @@ const goToSystem = () => {
 </script>
 
 <style scoped>
-.doji-pattern-screener-view {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.header-content {
-  flex: 1;
-}
-
-.header-actions {
-  margin-left: 20px;
-}
-
-.page-description {
-  color: var(--text-secondary);
-  font-size: 16px;
-  max-width: 800px;
-}
-
 .feature-intro-card {
-  margin-bottom: 30px;
-}
-
-.feature-intro {
-  display: flex;
-  gap: 20px;
+  margin-bottom: var(--spacing-6);
 }
 
 .intro-icon {
-  font-size: 48px;
   color: var(--primary-color);
-}
-
-.intro-content {
-  flex: 1;
-}
-
-.intro-content h3 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 20px;
-}
-
-.intro-actions {
-  margin-top: 20px;
-}
-
-.section-divider {
-  display: flex;
-  align-items: center;
-  margin: 40px 0 20px;
-}
-
-.section-divider::before,
-.section-divider::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.section-divider span {
-  padding: 0 16px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-secondary);
 }
 
 .related-feature-card {

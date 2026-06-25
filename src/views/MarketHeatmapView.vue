@@ -1,18 +1,11 @@
 <template>
-  <div class="market-heatmap-view">
-    <div class="header-section">
-      <h1>大盘云图</h1>
-      <div class="controls">
-        <button @click="refreshHeatmap" class="refresh-btn">
-          <span class="refresh-icon">↻</span> 刷新云图
-        </button>
-        <button @click="toggleFullscreen" class="fullscreen-btn">
-          <span class="fullscreen-icon">⛶</span> {{ isFullscreen ? '退出全屏' : '全屏模式' }}
-        </button>
-      </div>
-    </div>
+  <PageLayout title="大盘云图" subtitle="直观展示市场整体情况与板块轮动">
+    <template #actions>
+      <el-button @click="refreshHeatmap">↻ 刷新云图</el-button>
+      <el-button @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏模式' }}</el-button>
+    </template>
 
-    <div class="heatmap-container" ref="heatmapContainer" :class="{ 'fullscreen': isFullscreen }">
+    <div class="heatmap-container" ref="heatmapContainer" :class="{ fullscreen: isFullscreen }">
       <div v-if="isLoading" class="loading-overlay">
         <div class="loading-spinner"></div>
         <p>正在加载大盘云图...</p>
@@ -29,7 +22,7 @@
       ></iframe>
     </div>
 
-    <div class="description" v-if="!isFullscreen">
+    <div class="description glass-card" v-if="!isFullscreen">
       <h3>关于大盘云图</h3>
       <p>大盘云图是一种直观展示市场整体情况的可视化工具，通过颜色和大小来表示不同板块和个股的表现。</p>
       <p>红色表示上涨，绿色表示下跌，颜色越深表示涨跌幅越大，方块大小表示市值大小。</p>
@@ -50,11 +43,12 @@
         </ul>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 // 状态
 const isLoading = ref(true)
@@ -143,68 +137,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.market-heatmap-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-.header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: var(--spacing-lg) 0;
-}
-
-h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin: 0;
-  font-weight: 600;
-}
-
-.controls {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-button {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: none;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  transition: all var(--transition-fast);
-}
-
-.refresh-btn {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.refresh-btn:hover {
-  background-color: var(--bg-tertiary);
-  border-color: var(--border-color);
-}
-
-.fullscreen-btn {
-  background-color: var(--accent-color);
-  color: white;
-}
-
-.fullscreen-btn:hover {
-  background-color: var(--accent-dark);
-}
-
-.refresh-icon, .fullscreen-icon {
-  font-size: 1.2rem;
-}
-
 .heatmap-container {
   position: relative;
   width: 100%;

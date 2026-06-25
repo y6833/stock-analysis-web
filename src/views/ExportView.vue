@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import ExportPanel from '@/components/export/ExportPanel.vue'
 import ReportGenerator from '@/components/export/ReportGenerator.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { stockService } from '@/services/stockService'
 import type { Stock, StockData } from '@/types/stock'
 
@@ -160,12 +161,7 @@ const closeReportGenerator = () => {
 </script>
 
 <template>
-  <div class="export-view">
-    <div class="page-header">
-      <h1>{{ pageTitle }}</h1>
-      <p class="page-description">导出数据和生成分析报告</p>
-    </div>
-
+  <PageLayout :title="pageTitle" subtitle="导出数据和生成分析报告">
     <div v-if="isLoading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>加载数据中...</p>
@@ -173,7 +169,7 @@ const closeReportGenerator = () => {
 
     <div v-else class="export-content">
       <div class="export-options">
-        <div class="export-card">
+        <div class="export-card glass-card">
           <div class="card-header">
             <h2>股票数据导出</h2>
           </div>
@@ -199,7 +195,7 @@ const closeReportGenerator = () => {
           </div>
         </div>
 
-        <div class="export-card">
+        <div class="export-card glass-card">
           <div class="card-header">
             <h2>投资组合导出</h2>
           </div>
@@ -230,7 +226,7 @@ const closeReportGenerator = () => {
           </div>
         </div>
 
-        <div class="export-card">
+        <div class="export-card glass-card">
           <div class="card-header">
             <h2>分析报告生成</h2>
           </div>
@@ -272,30 +268,10 @@ const closeReportGenerator = () => {
     <!-- 报告生成器 -->
     <ReportGenerator v-if="showReportGenerator && currentStock && stockData" :stock="currentStock"
       :stockData="stockData" :show="showReportGenerator" @close="closeReportGenerator" />
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.export-view {
-  padding: var(--spacing-lg);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin: 0 0 var(--spacing-xs) 0;
-  font-weight: 600;
-}
-
-.page-description {
-  color: var(--text-secondary);
-  margin: 0;
-}
-
 .loading-container {
   display: flex;
   flex-direction: column;

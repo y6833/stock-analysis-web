@@ -1,0 +1,64 @@
+# Oracle Cloud 专用 Compose — 仅后端（前端走 Cloudflare Pages）
+# 用法: docker compose -f docker-compose.oracle.yml --env-file .env.oracle up -d
+
+services:
+  api-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:7001:7001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - stock-network
+    restart: unless-stopped
+    env_file:
+      - .env.oracle
+    environment:
+      NODE_ENV: production
+      EGG_SERVER_ENV: prod
+      MYSQL_HOST: mysql
+      REDIS_HOST: redis
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/data:/app/data
+
+  mysql:
+    image: mysql:8.0
+    networks:
+      - stock-network
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-stock_analysis}
+      MYSQL_USER: ${DB_USER:-stock_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./server/init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - stock-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+
+networks:
+  stock-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:

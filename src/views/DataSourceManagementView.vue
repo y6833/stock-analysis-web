@@ -1,9 +1,5 @@
 <template>
-  <div class="data-source-management">
-    <h1 class="page-title">数据源管理</h1>
-
-    <p class="page-description">管理和监控数据源，配置数据源参数，查看数据源日志和状态。</p>
-
+  <PageLayout title="数据源管理" subtitle="管理和监控数据源，配置数据源参数，查看数据源日志和状态">
     <el-tabs v-model="activeTab" class="management-tabs">
       <el-tab-pane label="概览" name="overview">
         <div class="tab-content">
@@ -199,13 +195,14 @@
     >
       <CacheDetails />
     </el-dialog>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Connection } from '@element-plus/icons-vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useDataSourceStore } from '@/stores/dataSourceStore'
 import { DataSourceFactory, type DataSourceType } from '@/services/dataSource/DataSourceFactory'
 import { useLogger } from '@/composables/useLogger'
@@ -436,24 +433,6 @@ function handleDialogClose() {
 </script>
 
 <style scoped>
-.data-source-management {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.page-title {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  color: var(--el-text-color-primary);
-}
-
-.page-description {
-  color: var(--el-text-color-secondary);
-  margin-bottom: 2rem;
-  font-size: 1.1rem;
-}
-
 .management-tabs {
   margin-bottom: 2rem;
 }

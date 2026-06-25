@@ -1,18 +1,5 @@
 <template>
-  <div class="position-management-view">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <el-icon class="header-icon"><DataAnalysis /></el-icon>
-          <div>
-            <h1 class="page-title">仓位管理系统</h1>
-            <p class="page-subtitle">智能仓位计算与风险控制，科学管理投资组合</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
+  <PageLayout title="仓位管理系统" subtitle="智能仓位计算与风险控制，科学管理投资组合">
     <!-- 统计概览卡片 -->
     <div class="stats-overview">
       <el-card class="stat-card" shadow="hover">
@@ -239,11 +226,12 @@
         </el-card>
       </div>
     </el-card>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { ElMessage, ElCard, ElTabs, ElTabPane, ElIcon, ElButton, ElTag, ElEmpty } from 'element-plus'
 import {
   DataAnalysis,
@@ -282,52 +270,6 @@ const showComingSoon = () => {
 </script>
 
 <style scoped>
-.position-management-view {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 24px;
-  background: #f5f7fa;
-  min-height: calc(100vh - 60px);
-}
-
-/* 页面头部 */
-.page-header {
-  margin-bottom: 24px;
-}
-
-.header-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 32px;
-  color: white;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-}
-
-.title-section {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.header-icon {
-  font-size: 48px;
-  opacity: 0.9;
-}
-
-.page-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: white;
-}
-
-.page-subtitle {
-  font-size: 16px;
-  margin: 0;
-  opacity: 0.9;
-  color: rgba(255, 255, 255, 0.95);
-}
-
 /* 统计概览 */
 .stats-overview {
   display: grid;
@@ -602,28 +544,11 @@ const showComingSoon = () => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .position-management-view {
-    padding: 16px;
-  }
-
-  .header-content {
-    padding: 24px 20px;
-  }
-
-  .title-section {
-    flex-direction: column;
-    text-align: center;
-    gap: 16px;
-  }
-
-  .page-title {
-    font-size: 24px;
-  }
-
   .stats-overview {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
+}
 
   .stat-card {
     padding: 12px;

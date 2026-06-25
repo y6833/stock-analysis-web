@@ -1,7 +1,5 @@
 <template>
-  <div class="tushare-test">
-    <h1>Tushare API 测试</h1>
-
+  <PageLayout title="Tushare API 测试" subtitle="连接、股票列表与 Redis 缓存测试">
     <div class="test-controls">
       <button @click="testConnection" :disabled="isLoading">测试 API 连接</button>
       <button @click="getStockList" :disabled="isLoading">获取股票列表</button>
@@ -191,11 +189,12 @@
         <p><strong>错误信息:</strong> {{ redisResponse.error }}</p>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import axios from 'axios'
 import type { Stock, StockData } from '@/types/stock'
 import { tushareService } from '@/services/tushareService'

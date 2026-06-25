@@ -187,13 +187,46 @@
         </span>
       </button>
       <div class="dropdown-menu" v-show="dropdownOpen.smart" role="menu" aria-label="智能工具菜单">
-        <div class="dropdown-section" v-if="canAccessBasicFeatures">
-          <div class="dropdown-section-title">智能选股工具</div>
-          <RouterLink to="/strategies/smart-recommendation" class="dropdown-item" role="menuitem">
+        <div class="dropdown-section">
+          <div class="dropdown-section-title">AI 智能中心</div>
+          <RouterLink to="/ai" class="dropdown-item" role="menuitem">
+            <span class="nav-icon">🧠</span>
+            <div class="item-content">
+              <span class="nav-text">AI 中心</span>
+              <span class="item-description">智能投资一站式入口</span>
+            </div>
+            <span class="feature-badge ai">AI</span>
+          </RouterLink>
+          <RouterLink to="/ai/recommendations" class="dropdown-item" role="menuitem">
             <span class="nav-icon">🤖</span>
             <div class="item-content">
-              <span class="nav-text">AI智能推荐</span>
-              <span class="item-description">基于算法的智能选股</span>
+              <span class="nav-text">AI 股票推荐</span>
+              <span class="item-description">DeepSeek 深度分析推荐</span>
+            </div>
+          </RouterLink>
+          <RouterLink to="/ai/screening" class="dropdown-item" role="menuitem">
+            <span class="nav-icon">🔍</span>
+            <div class="item-content">
+              <span class="nav-text">AI 条件筛选</span>
+              <span class="item-description">自然语言智能选股</span>
+            </div>
+          </RouterLink>
+          <RouterLink to="/ai/golden-stocks" class="dropdown-item" role="menuitem">
+            <span class="nav-icon">⭐</span>
+            <div class="item-content">
+              <span class="nav-text">AI 金股</span>
+              <span class="item-description">每日精选金股标的</span>
+            </div>
+          </RouterLink>
+        </div>
+
+        <div class="dropdown-section" v-if="canAccessBasicFeatures">
+          <div class="dropdown-section-title">经典工具</div>
+          <RouterLink to="/ai/recommendations" class="dropdown-item" role="menuitem">
+            <span class="nav-icon">📊</span>
+            <div class="item-content">
+              <span class="nav-text">智能推荐</span>
+              <span class="item-description">规则引擎选股</span>
             </div>
             <span class="feature-badge basic">基础</span>
           </RouterLink>
@@ -298,6 +331,13 @@
             <div class="item-content">
               <span class="nav-text">数据源管理</span>
               <span class="item-description">数据接口配置</span>
+            </div>
+          </RouterLink>
+          <RouterLink to="/admin?tab=ai-providers" class="dropdown-item" role="menuitem">
+            <span class="nav-icon">🧠</span>
+            <div class="item-content">
+              <span class="nav-text">AI 配置</span>
+              <span class="item-description">CC Switch 多 Provider</span>
             </div>
           </RouterLink>
           <RouterLink to="/settings/cache" class="dropdown-item" role="menuitem">
@@ -588,6 +628,10 @@ const toggleDropdown = (menu: string) => {
 
 .feature-badge.premium {
   background: var(--gradient-premium);
+}
+
+.feature-badge.ai {
+  background: var(--gradient-ai-hero);
 }
 
 /* ===== 升级提示 ===== */

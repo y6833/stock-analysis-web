@@ -35,6 +35,224 @@ body {
   overflow-x: hidden;
 }
 
+/* ===== 通用页面布局 ===== */
+
+.page-container {
+  max-width: var(--container-xl);
+  margin: 0 auto;
+  padding: var(--spacing-4);
+}
+
+.page-layout--narrow {
+  max-width: 720px;
+}
+
+.page-layout__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.page-layout__heading h1 {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.page-layout__heading p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.page-layout__back {
+  display: inline-block;
+  margin-bottom: var(--spacing-2);
+  color: var(--accent-color);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+
+.page-layout__back:hover {
+  text-decoration: underline;
+}
+
+.page-layout__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.page-layout__extra {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.page-layout__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.glass-card {
+  background: var(--glass-bg, var(--bg-primary));
+  backdrop-filter: var(--glass-blur, none);
+  -webkit-backdrop-filter: var(--glass-blur, none);
+  border: 1px solid var(--glass-border, var(--border-light));
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+/* ===== 通用数据展示 ===== */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.stat-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-4);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-card .stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.stat-card .stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ===== 双栏布局（侧栏 + 主内容）===== */
+
+.split-layout {
+  display: flex;
+  gap: var(--spacing-6);
+  align-items: flex-start;
+}
+
+.split-layout__sidebar {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.split-layout__main {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .split-layout {
+    flex-direction: column;
+  }
+
+  .split-layout__sidebar {
+    width: 100%;
+  }
+}
+
+/* ===== 内容面板 ===== */
+
+.content-panel {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-5);
+  box-shadow: var(--shadow-sm);
+}
+
+.content-panel h2 {
+  margin: 0 0 var(--spacing-4);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ===== 区块分隔线 ===== */
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin: var(--spacing-8) 0 var(--spacing-6);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
+
+/* ===== 功能介绍块 ===== */
+
+.feature-intro {
+  display: flex;
+  gap: var(--spacing-5);
+  align-items: flex-start;
+}
+
+.feature-intro .intro-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.feature-intro .intro-content h3 {
+  margin: 0 0 var(--spacing-2);
+}
+
+.feature-intro .intro-content p {
+  margin: 0 0 var(--spacing-3);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.feature-intro .intro-actions {
+  display: flex;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .feature-intro {
+    flex-direction: column;
+  }
+}
+
 /* ===== 字体排版系统 ===== */
 
 /* 标题样式 */

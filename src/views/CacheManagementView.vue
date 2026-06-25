@@ -1,13 +1,8 @@
 <template>
-  <div class="cache-management-view">
-    <div class="page-header">
-      <h1>缓存管理</h1>
-      <p class="subtitle">管理和监控数据缓存，优化应用性能</p>
-    </div>
-    
+  <PageLayout title="缓存管理" subtitle="管理和监控数据缓存，优化应用性能">
     <div class="dashboard-grid">
       <!-- 缓存健康状态 -->
-      <div class="dashboard-card">
+      <div class="dashboard-card glass-card">
         <div class="card-header">
           <h2>缓存健康状态</h2>
           <div class="header-actions">
@@ -20,7 +15,7 @@
       </div>
       
       <!-- 缓存操作 -->
-      <div class="dashboard-card">
+      <div class="dashboard-card glass-card">
         <div class="card-header">
           <h2>缓存操作</h2>
         </div>
@@ -63,7 +58,7 @@
       </div>
       
       <!-- 缓存统计 -->
-      <div class="dashboard-card full-width">
+      <div class="dashboard-card full-width glass-card">
         <div class="card-header">
           <h2>缓存统计详情</h2>
           <div class="header-actions">
@@ -147,11 +142,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { cacheService } from '@/services/cacheService'
 import { cacheStatsService } from '@/services/cacheStatsService'
 import type { CacheStats } from '@/services/cacheStatsService'
@@ -244,32 +240,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.cache-management-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-lg);
-  text-align: center;
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-  font-weight: 700;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-  max-width: 700px;
-  margin: 0 auto;
-}
-
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

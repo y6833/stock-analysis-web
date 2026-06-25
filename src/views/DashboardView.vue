@@ -1,96 +1,89 @@
 <template>
   <div class="modern-dashboard">
-    <!-- Dashboard Header -->
-    <div class="dashboard-header">
-      <div class="header-left">
-        <div class="title-section">
-          <h1 class="dashboard-title">
-            <el-icon class="title-icon">
-              <Grid />
+    <PageLayout title="市场仪表盘" subtitle="实时市场数据与智能分析">
+      <template #extra>
+        <div class="header-extra">
+          <el-tag v-if="state.isRefreshing" type="info" size="small" effect="plain" class="refreshing-tag">
+            <el-icon class="is-loading">
+              <Loading />
             </el-icon>
-            <span class="title-text">市场仪表盘</span>
-            <el-tag v-if="state.isRefreshing" type="info" size="small" effect="plain" class="refreshing-tag">
-              <el-icon class="is-loading">
-                <Loading />
-              </el-icon>
-              刷新中...
-            </el-tag>
-          </h1>
-          <p class="dashboard-subtitle">实时市场数据与智能分析</p>
+            刷新中...
+          </el-tag>
+          <DataSourceInfo
+            v-if="dataSourceInfo.dataSource !== '未知'"
+            :dataSource="dataSourceInfo.dataSource"
+            :dataSourceMessage="dataSourceInfo.dataSourceMessage"
+            :isRealTime="dataSourceInfo.isRealTime"
+            :isCache="dataSourceInfo.isCache"
+            class="header-data-source"
+          />
+          <div class="last-update" v-if="state.lastUpdateTime">
+            <el-icon class="update-icon">
+              <Clock />
+            </el-icon>
+            <span class="update-label">最后更新:</span>
+            <span class="update-time">{{ dashboardStats.lastUpdate }}</span>
+          </div>
         </div>
+      </template>
+      <template #actions>
+        <el-button
+          type="primary"
+          :icon="Refresh"
+          :loading="state.isRefreshing"
+          @click="handleRefresh"
+          class="action-btn refresh-btn"
+        >
+          <span v-if="!state.isRefreshing">刷新数据</span>
+          <span v-else>刷新中...</span>
+        </el-button>
+        <el-button-group class="layout-toggle">
+          <el-tooltip content="网格布局" placement="bottom">
+            <el-button
+              :type="state.layoutMode === 'grid' ? 'primary' : 'default'"
+              :icon="Grid"
+              @click="state.layoutMode = 'grid'"
+            />
+          </el-tooltip>
+          <el-tooltip content="列表布局" placement="bottom">
+            <el-button
+              :type="state.layoutMode === 'list' ? 'primary' : 'default'"
+              :icon="List"
+              @click="state.layoutMode = 'list'"
+            />
+          </el-tooltip>
+        </el-button-group>
+        <el-tooltip :content="state.isFullscreen ? '退出全屏' : '全屏显示'" placement="bottom">
+          <el-button :icon="FullScreen" @click="toggleFullscreen" class="action-btn" />
+        </el-tooltip>
+        <el-tooltip content="仪表盘设置" placement="bottom">
+          <el-button :icon="Setting" @click="state.showSettings = true" class="action-btn" />
+        </el-tooltip>
+      </template>
 
-        <!-- 数据源信息 -->
-        <DataSourceInfo v-if="dataSourceInfo.dataSource !== '未知'" :dataSource="dataSourceInfo.dataSource"
-          :dataSourceMessage="dataSourceInfo.dataSourceMessage" :isRealTime="dataSourceInfo.isRealTime"
-          :isCache="dataSourceInfo.isCache" class="header-data-source" />
-
-        <div class="dashboard-stats">
-          <div class="stat-card">
-            <div class="stat-icon">📋</div>
-            <div class="stat-content">
-              <div class="stat-value">{{ dashboardStats.totalWatchlists }}</div>
-              <div class="stat-label">关注列表</div>
-            </div>
+      <div class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-icon">📋</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ dashboardStats.totalWatchlists }}</div>
+            <div class="stat-label">关注列表</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon">📊</div>
-            <div class="stat-content">
-              <div class="stat-value">{{ dashboardStats.totalStocks }}</div>
-              <div class="stat-label">关注股票</div>
-            </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ dashboardStats.totalStocks }}</div>
+            <div class="stat-label">关注股票</div>
           </div>
-          <div class="stat-card" :class="marketStatusClass">
-            <div class="stat-icon">{{ dashboardStats.marketStatus === '开市' ? '🟢' : '🔴' }}</div>
-            <div class="stat-content">
-              <div class="stat-value" :class="marketStatusClass">{{ dashboardStats.marketStatus }}</div>
-              <div class="stat-label">市场状态</div>
-            </div>
+        </div>
+        <div class="stat-card" :class="marketStatusClass">
+          <div class="stat-icon">{{ dashboardStats.marketStatus === '开市' ? '🟢' : '🔴' }}</div>
+          <div class="stat-content">
+            <div class="stat-value" :class="marketStatusClass">{{ dashboardStats.marketStatus }}</div>
+            <div class="stat-label">市场状态</div>
           </div>
         </div>
       </div>
-
-      <div class="header-right">
-        <div class="header-actions">
-          <!-- 刷新按钮 -->
-          <el-button type="primary" :icon="Refresh" :loading="state.isRefreshing" @click="handleRefresh"
-            class="action-btn refresh-btn">
-            <span v-if="!state.isRefreshing">刷新数据</span>
-            <span v-else>刷新中...</span>
-          </el-button>
-
-          <!-- 布局切换 -->
-          <el-button-group class="layout-toggle">
-            <el-tooltip content="网格布局" placement="bottom">
-              <el-button :type="state.layoutMode === 'grid' ? 'primary' : 'default'" :icon="Grid"
-                @click="state.layoutMode = 'grid'" />
-            </el-tooltip>
-            <el-tooltip content="列表布局" placement="bottom">
-              <el-button :type="state.layoutMode === 'list' ? 'primary' : 'default'" :icon="List"
-                @click="state.layoutMode = 'list'" />
-            </el-tooltip>
-          </el-button-group>
-
-          <!-- 全屏按钮 -->
-          <el-tooltip :content="state.isFullscreen ? '退出全屏' : '全屏显示'" placement="bottom">
-            <el-button :icon="FullScreen" @click="toggleFullscreen" class="action-btn" />
-          </el-tooltip>
-
-          <!-- 设置按钮 -->
-          <el-tooltip content="仪表盘设置" placement="bottom">
-            <el-button :icon="Setting" @click="state.showSettings = true" class="action-btn" />
-          </el-tooltip>
-        </div>
-
-        <!-- 最后更新时间 -->
-        <div class="last-update" v-if="state.lastUpdateTime">
-          <el-icon class="update-icon">
-            <Clock />
-          </el-icon>
-          <span class="update-label">最后更新:</span>
-          <span class="update-time">{{ dashboardStats.lastUpdate }}</span>
-        </div>
-      </div>
-    </div>
 
     <!-- Loading State -->
     <div v-if="state.isLoading" class="dashboard-loading">
@@ -173,12 +166,15 @@
         </el-form>
       </div>
     </el-drawer>
+    </PageLayout>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useRouter } from 'vue-router'
+import { getApiUrl } from '@/utils/apiBase'
 import { ElMessage, ElNotification } from 'element-plus'
 import { Refresh, Setting, FullScreen, Grid, List, Loading, Clock } from '@element-plus/icons-vue'
 
@@ -480,7 +476,7 @@ const loadTradingSignals = async () => {
     console.log('[Dashboard] 开始加载交易信号...')
 
     // 调用技术分析API获取交易信号
-    const response = await fetch('http://localhost:7001/api/technical-indicators/scan', {
+    const response = await fetch(getApiUrl('/api/technical-indicators/scan'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -717,7 +713,6 @@ onUnmounted(() => {
 .modern-dashboard {
   min-height: 100vh;
   background: var(--el-bg-color-page);
-  padding: var(--spacing-lg);
   position: relative;
 }
 
@@ -741,104 +736,15 @@ onUnmounted(() => {
   z-index: 1;
 }
 
-/* Dashboard Header */
-.dashboard-header {
+.header-extra {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-xl);
-  background: linear-gradient(135deg, var(--el-bg-color) 0%, rgba(var(--el-color-primary-rgb), 0.05) 100%);
-  border-radius: var(--border-radius-xl);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--el-border-color-lighter);
-  position: relative;
-  overflow: hidden;
-}
-
-.dashboard-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-success), var(--el-color-warning));
-  background-size: 200% 100%;
-  animation: gradientShift 3s ease infinite;
-}
-
-@keyframes gradientShift {
-
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  flex: 1;
-}
-
-.title-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.dashboard-title {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-md);
-  margin: 0;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  font-weight: var(--font-weight-bold);
-  color: var(--el-text-color-primary);
-}
-
-.title-icon {
-  color: var(--el-color-primary);
-  font-size: 1.5em;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-}
-
-.title-text {
-  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-success));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  gap: var(--spacing-sm);
 }
 
 .refreshing-tag {
-  margin-left: var(--spacing-xs);
-}
-
-.dashboard-subtitle {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--el-text-color-regular);
-  font-weight: var(--font-weight-normal);
+  margin-left: 0;
 }
 
 .header-data-source {
@@ -909,21 +815,6 @@ onUnmounted(() => {
   font-size: var(--font-size-xs);
   color: var(--el-text-color-regular);
   font-weight: var(--font-weight-normal);
-}
-
-.header-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--spacing-md);
-  min-width: fit-content;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
 }
 
 .action-btn {
@@ -1159,23 +1050,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .modern-dashboard {
-    padding: var(--spacing-md);
-  }
-
-  .dashboard-header {
-    flex-direction: column;
-    gap: var(--spacing-md);
-    align-items: stretch;
-    padding: var(--spacing-lg);
-  }
-
-  .header-left,
-  .header-right {
-    align-items: stretch;
-    width: 100%;
-  }
-
   .dashboard-stats {
     justify-content: flex-start;
     flex-wrap: wrap;
@@ -1207,14 +1081,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 480px) {
-  .modern-dashboard {
-    padding: var(--spacing-sm);
-  }
-
-  .dashboard-header {
-    padding: var(--spacing-md);
-  }
-
   .stat-card {
     min-width: 100%;
   }

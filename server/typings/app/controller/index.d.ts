@@ -4,6 +4,8 @@
 
 import 'egg';
 import ExportAdmin = require('../../../app/controller/admin');
+import ExportAi = require('../../../app/controller/ai');
+import ExportAiProvider = require('../../../app/controller/aiProvider');
 import ExportAkshare = require('../../../app/controller/akshare');
 import ExportAlert = require('../../../app/controller/alert');
 import ExportAlertHistory = require('../../../app/controller/alert_history');
@@ -68,6 +70,8 @@ import ExportZhitu = require('../../../app/controller/zhitu');
 declare module 'egg' {
   interface IController {
     admin: ExportAdmin;
+    ai: ExportAi;
+    aiProvider: ExportAiProvider;
     akshare: ExportAkshare;
     alert: ExportAlert;
     alertHistory: ExportAlertHistory;

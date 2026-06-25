@@ -6,6 +6,7 @@ import type { Position } from '@/types/portfolio'
 import { stockService } from '@/services/stockService'
 import { portfolioService } from '@/services/portfolioService'
 import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 // 仓位数据
 const positions = ref<Position[]>([])
@@ -708,10 +709,15 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="portfolio-view">
-    <h1>仓位管理</h1>
+  <PageLayout title="仓位管理" subtitle="管理持仓、收益与交易记录">
+    <template #actions>
+      <el-button type="primary" @click="showAddForm = true">添加持仓</el-button>
+      <el-button @click="updatePrices" :loading="isLoading">
+        {{ isLoading ? '更新中...' : '更新价格' }}
+      </el-button>
+    </template>
 
-    <div class="portfolio-header">
+    <div class="portfolio-header glass-card">
       <div class="portfolio-summary">
         <div class="summary-item">
           <span class="label">总投资:</span>
@@ -727,13 +733,6 @@ onMounted(async () => {
             {{ totalProfit.toFixed(2) }} 元 ({{ profitPercentage.toFixed(2) }}%)
           </span>
         </div>
-      </div>
-
-      <div class="action-buttons">
-        <button class="btn primary" @click="showAddForm = true">添加持仓</button>
-        <button class="btn secondary" @click="updatePrices" :disabled="isLoading">
-          {{ isLoading ? '更新中...' : '更新价格' }}
-        </button>
       </div>
     </div>
 
@@ -1053,25 +1052,13 @@ onMounted(async () => {
         <button class="btn primary" @click="showAddForm = true">添加持仓</button>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.portfolio-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
 .portfolio-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 20px 0;
-  padding: 20px;
-  background-color: #f8f8f8;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-lg);
 }
 
 .portfolio-summary {

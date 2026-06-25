@@ -5,6 +5,7 @@
 
 import axios from 'axios'
 import { getAuthHeaders } from '@/utils/auth'
+import { getApiRoot } from '@/utils/apiBase'
 import type {
     PortfolioPerformance,
     PortfolioRiskMetrics,
@@ -15,7 +16,7 @@ import type {
 import type { Position, PositionSummary, PortfolioMetrics, OptimizationResult, PortfolioAllocation } from '@/types/portfolio'
 
 // API基础URL
-const API_URL = 'http://localhost:7001/api'
+const API_URL = getApiRoot()
 
 /**
  * 增强的投资组合性能指标

@@ -1,14 +1,8 @@
 <template>
-  <div class="predict-container">
-    <!-- 头部标题区域 -->
-    <div class="header-section">
-      <div class="title-wrapper">
-        <el-icon class="title-icon"><TrendCharts /></el-icon>
-        <h1 class="page-title">Kronos AI 股票预测</h1>
-      </div>
-      <p class="page-subtitle">基于深度学习的时间序列预测模型，预测未来股价走势</p>
-    </div>
-
+  <PageLayout
+    title="Kronos AI 股票预测"
+    subtitle="基于深度学习的时间序列预测模型，预测未来股价走势"
+  >
     <!-- 预测输入区域 -->
     <el-card class="input-card" shadow="hover">
       <template #header>
@@ -184,13 +178,14 @@
       description="暂无预测结果，请输入股票代码开始预测"
       :image-size="200"
     />
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { 
   TrendCharts, 
   Search, 
@@ -528,8 +523,7 @@ async function onPredict() {
     return
   }
   // 使用相对路径，Vite 会代理到后端
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'
-  fetch(`${apiUrl}/api/predict?symbol=${symbol.value}`, {
+  fetch(getApiUrl(`/api/predict?symbol=${symbol.value}`), {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -641,47 +635,6 @@ async function onPredict() {
 </script>
 
 <style scoped>
-.predict-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-/* 头部区域 */
-.header-section {
-  text-align: center;
-  margin-bottom: 30px;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  color: white;
-}
-
-.title-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 10px;
-}
-
-.title-icon {
-  font-size: 48px;
-}
-
-.page-title {
-  font-size: 36px;
-  font-weight: 700;
-  margin: 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.page-subtitle {
-  font-size: 16px;
-  opacity: 0.9;
-  margin: 0;
-}
-
 /* 卡片样式 */
 .input-card,
 .chart-card,
@@ -795,14 +748,6 @@ async function onPredict() {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .predict-container {
-    padding: 10px;
-  }
-  
-  .page-title {
-    font-size: 28px;
-  }
-  
   .stats-cards {
     grid-template-columns: 1fr;
   }

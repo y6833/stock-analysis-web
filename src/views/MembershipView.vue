@@ -1,7 +1,5 @@
 <template>
-  <div class="membership-view">
-    <h1 class="title">会员中心</h1>
-
+  <PageLayout title="会员中心" subtitle="查看会员等级、权益与升级选项" narrow>
     <!-- 会员升级提示 -->
     <MembershipUpgradePrompt
       v-if="showUpgradePrompt"
@@ -151,11 +149,12 @@
         </div>
       </div>
     </template>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useUserStore } from '@/stores/userStore'
 import { membershipService, type MembershipLevel } from '@/services/membershipService'
 import { ElMessageBox } from 'element-plus'
@@ -367,17 +366,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.membership-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
 .loading-container {
   padding: 20px;
 }

@@ -4,6 +4,7 @@
  */
 
 import { ref, reactive, onUnmounted } from 'vue'
+import { getWsBaseUrl } from '@/utils/apiBase'
 
 // WebSocket 连接状态
 export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
@@ -37,7 +38,7 @@ const isReconnecting = ref(false)
 
 // 默认配置
 const defaultConfig: Required<WebSocketConfig> = {
-  url: 'ws://localhost:7001/ws',
+  url: getWsBaseUrl(),
   protocols: [],
   reconnectInterval: 3000,
   maxReconnectAttempts: 5,
@@ -63,10 +64,8 @@ export function useWebSocket(userConfig?: WebSocketConfig) {
       return
     }
 
-    // 检查后端是否支持WebSocket（暂时禁用，避免连接错误）
-    // TODO: 当后端实现WebSocket支持后，移除此检查
-    if (import.meta.env.DEV) {
-      console.warn('[WebSocket] WebSocket功能暂时禁用，后端尚未实现WebSocket支持')
+    // WebSocket 默认关闭，设置 VITE_ENABLE_WS=true 后启用
+    if (import.meta.env.VITE_ENABLE_WS !== 'true') {
       status.value = 'disconnected'
       return
     }

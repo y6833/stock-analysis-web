@@ -1,8 +1,6 @@
 <template>
-  <div class="stock-search-demo">
+  <PageLayout title="股票搜索组件演示" subtitle="BaseSearchInput 基础用法与事件示例" narrow>
     <div class="demo-container">
-      <h1 class="demo-title">股票搜索组件演示</h1>
-
       <!-- 基础用法 -->
       <section class="demo-section">
         <h2 class="section-title">基础用法</h2>
@@ -109,11 +107,12 @@
         </div>
       </section>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import BaseSearchInput from '@/components/base/BaseSearchInput.vue'
 import type { Stock } from '@/types/stock'
 

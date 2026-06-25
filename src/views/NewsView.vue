@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 const isLoading = ref(true)
 const newsItems = ref([])
@@ -13,11 +14,6 @@ onMounted(() => {
   newsItems.value = []
   isLoading.value = false
 })
-
-// 选择分类
-const selectCategory = (category) => {
-  selectedCategory.value = category
-}
 
 // 过滤新闻
 const filteredNews = computed(() => {
@@ -74,12 +70,7 @@ const getRelativeTime = (dateStr, timeStr) => {
 </script>
 
 <template>
-  <div class="news-view">
-    <div class="page-header">
-      <h1>市场资讯</h1>
-      <p class="subtitle">及时了解市场动态，把握投资机会</p>
-    </div>
-
+  <PageLayout title="市场资讯" subtitle="及时了解市场动态，把握投资机会">
     <div v-if="isLoading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>正在加载新闻资讯...</p>
@@ -87,18 +78,21 @@ const getRelativeTime = (dateStr, timeStr) => {
 
     <div v-else class="news-content">
       <!-- 搜索和筛选 -->
-      <div class="news-filters card">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input v-model="searchQuery" type="text" placeholder="搜索新闻..." class="search-input" />
-        </div>
+      <div class="news-filters glass-card">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索新闻..."
+          clearable
+          class="search-input"
+        >
+          <template #prefix>🔍</template>
+        </el-input>
 
-        <div class="category-tabs">
-          <button v-for="category in categories" :key="category" class="category-tab"
-            :class="{ 'active': selectedCategory === category }" @click="selectCategory(category)">
+        <el-radio-group v-model="selectedCategory" class="category-tabs">
+          <el-radio-button v-for="category in categories" :key="category" :label="category">
             {{ category }}
-          </button>
-        </div>
+          </el-radio-button>
+        </el-radio-group>
       </div>
 
       <!-- 新闻列表 -->
@@ -149,36 +143,10 @@ const getRelativeTime = (dateStr, timeStr) => {
         <button class="btn btn-outline btn-sm">下一页</button>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.news-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-.page-header {
-  margin: var(--spacing-lg) 0;
-  text-align: center;
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-  font-weight: 700;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-  max-width: 700px;
-  margin: 0 auto;
-}
-
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -228,60 +196,11 @@ const getRelativeTime = (dateStr, timeStr) => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-}
-
-.search-box {
-  position: relative;
-}
-
-.search-icon {
-  position: absolute;
-  left: var(--spacing-md);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-}
-
-.search-input {
-  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) calc(var(--spacing-md) * 2 + 1em);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  width: 100%;
-  font-size: var(--font-size-md);
-  transition: all var(--transition-fast);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.2);
+  margin-bottom: var(--spacing-md);
 }
 
 .category-tabs {
-  display: flex;
-  gap: var(--spacing-sm);
   flex-wrap: wrap;
-}
-
-.category-tab {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-size: var(--font-size-sm);
-}
-
-.category-tab:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.category-tab.active {
-  background-color: var(--accent-color);
-  color: white;
-  border-color: var(--accent-color);
 }
 
 /* 新闻列表 */

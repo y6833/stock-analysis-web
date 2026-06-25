@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import { getApiBaseUrl } from '@/utils/apiBase'
 import {
   saveOfflineData,
   getOfflineData,
@@ -18,7 +19,7 @@ import loadingService from './loadingService';
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:7001',
+  baseURL: getApiBaseUrl(),
   timeout: 8000,
   headers: {
     'Content-Type': 'application/json'

@@ -1,12 +1,8 @@
 <template>
-  <div class="doji-pattern-system-view">
-    <div class="page-header">
-      <div class="header-content">
-        <h1>十字星形态系统管理</h1>
-        <p class="page-description">管理十字星形态识别系统的性能、缓存和配置</p>
-      </div>
-    </div>
-
+  <PageLayout
+    title="十字星形态系统管理"
+    subtitle="管理十字星形态识别系统的性能、缓存和配置"
+  >
     <el-row :gutter="20">
       <el-col :span="24">
         <el-card class="feature-intro-card">
@@ -131,11 +127,12 @@
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import PageLayout from '@/components/common/PageLayout.vue'
 import DojiPatternSystemStatus from '@/components/common/DojiPatternSystemStatus.vue'
 
 const router = useRouter()
@@ -157,64 +154,12 @@ const goToAlerts = () => {
 </script>
 
 <style scoped>
-.doji-pattern-system-view {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-description {
-  color: var(--text-secondary);
-  font-size: 16px;
-  max-width: 800px;
-}
-
 .feature-intro-card {
-  margin-bottom: 30px;
-}
-
-.feature-intro {
-  display: flex;
-  gap: 20px;
+  margin-bottom: var(--spacing-6);
 }
 
 .intro-icon {
-  font-size: 48px;
   color: var(--primary-color);
-}
-
-.intro-content {
-  flex: 1;
-}
-
-.intro-content h3 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 20px;
-}
-
-.section-divider {
-  display: flex;
-  align-items: center;
-  margin: 40px 0 20px;
-}
-
-.section-divider::before,
-.section-divider::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.section-divider span {
-  padding: 0 16px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-secondary);
 }
 
 .feature-card {
@@ -251,14 +196,6 @@ const goToAlerts = () => {
 }
 
 .optimization-list {
-  padding: 10px;
-}
-
-@media (max-width: 768px) {
-  .feature-intro {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
+  padding: var(--spacing-3);
 }
 </style>

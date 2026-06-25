@@ -1,11 +1,11 @@
 <template>
   <div class="stock-analysis">
-    <!-- 顶部搜索栏 -->
-    <div class="top-search-bar">
-      <div class="search-container">
-        <UnifiedStockSearch placeholder="搜索股票代码或名称..." @select="onStockSelect" @clear="onStockClear" />
-      </div>
-    </div>
+    <PageLayout :title="pageTitle" :subtitle="pageSubtitle">
+      <template #actions>
+        <div class="search-container">
+          <UnifiedStockSearch placeholder="搜索股票代码或名称..." @select="onStockSelect" @clear="onStockClear" />
+        </div>
+      </template>
 
     <!-- 加载状态 -->
     <div v-if="isLoading" class="loading-overlay">
@@ -216,7 +216,7 @@
           <path d="M21 21l-4.35-4.35" />
         </svg>
         <h3>开始股票分析</h3>
-        <p>请在上方搜索框中输入股票代码或名称来开始分析</p>
+        <p>请使用右上角搜索框输入股票代码或名称来开始分析</p>
         <div class="empty-actions">
           <button class="empty-button" @click="selectStock('000002.SZ')">
             查看示例：万科A
@@ -224,11 +224,13 @@
         </div>
       </div>
     </div>
+    </PageLayout>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { stockService } from '@/services/stockService'
 import { dashboardService } from '@/services/dashboardService'
 import { toast } from '@/utils/toast'
@@ -243,6 +245,13 @@ const currentStock = ref<StockQuote | null>(null)
 const isLoading = ref(false)
 const isRefreshing = ref(false)
 const activeTab = ref('overview')
+
+const pageTitle = computed(() => currentStock.value?.name || '股票分析')
+const pageSubtitle = computed(() =>
+  currentStock.value?.symbol
+    ? `${currentStock.value.symbol} · 多维度分析与技术指标`
+    : '搜索股票代码或名称开始分析',
+)
 
 // 标签页配置
 const tabs = [
@@ -561,26 +570,11 @@ onMounted(async () => {
 .stock-analysis {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 0;
   position: relative;
 }
 
-/* 顶部搜索栏 */
-.top-search-bar {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 20px 0;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
 .search-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 24px;
+  min-width: 280px;
 }
 
 /* 加载状态 */

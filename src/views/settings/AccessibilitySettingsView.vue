@@ -1,12 +1,9 @@
 <template>
-  <div class="accessibility-settings-view">
-    <div class="page-header">
-      <h1 class="page-title">辅助功能设置</h1>
-      <p class="page-description">
-        调整这些设置以提高应用程序的可访问性和易用性。这些设置将保存在您的浏览器中。
-      </p>
-    </div>
-    
+  <PageLayout
+    title="辅助功能设置"
+    subtitle="调整这些设置以提高应用程序的可访问性和易用性。这些设置将保存在您的浏览器中。"
+    narrow
+  >
     <div class="settings-container">
       <AccessibilitySettings />
       
@@ -95,11 +92,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import PageLayout from '@/components/common/PageLayout.vue';
 import AccessibilitySettings from '@/components/settings/AccessibilitySettings.vue';
 
 // 页面加载时设置文档标题
@@ -109,29 +107,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.accessibility-settings-view {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: var(--spacing-md);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-title {
-  font-size: var(--font-size-xl);
-  color: var(--text-primary);
-  margin-top: 0;
-  margin-bottom: var(--spacing-sm);
-}
-
-.page-description {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-  max-width: 800px;
-}
-
 .settings-container {
   display: flex;
   flex-direction: column;
@@ -232,18 +207,6 @@ kbd {
 
 /* 响应式调整 */
 @media (max-width: 767px) {
-  .accessibility-settings-view {
-    padding: var(--spacing-sm);
-  }
-  
-  .page-title {
-    font-size: var(--font-size-lg);
-  }
-  
-  .page-description {
-    font-size: var(--font-size-sm);
-  }
-  
   .additional-resources,
   .keyboard-shortcuts {
     padding: var(--spacing-md);

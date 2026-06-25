@@ -7,6 +7,7 @@ import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import type { Stock } from '@/types/stock'
 import UnifiedStockSearch from '@/components/common/UnifiedStockSearch.vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 
 const { showToast } = useToast()
 
@@ -268,12 +269,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="alerts-view">
-    <div class="page-header">
-      <h1>条件提醒</h1>
-      <p class="subtitle">设置价格、成交量等条件的提醒，及时把握市场机会</p>
-    </div>
-
+  <PageLayout title="条件提醒" subtitle="设置价格、成交量等条件的提醒，及时把握市场机会">
     <div class="alerts-container">
       <div class="alerts-sidebar">
         <div class="panel">
@@ -402,32 +398,10 @@ onMounted(() => {
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.alerts-view {
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-.page-header {
-  margin-bottom: var(--spacing-lg);
-}
-
-.page-header h1 {
-  font-size: var(--font-size-xl);
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-}
-
 .alerts-container {
   display: flex;
   gap: var(--spacing-lg);

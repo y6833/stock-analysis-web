@@ -1,7 +1,5 @@
 <template>
-  <div class="membership-test-view">
-    <h1 class="title">会员系统测试</h1>
-
+  <PageLayout title="会员系统测试" subtitle="测试会员等级、权限控制和功能访问限制">
     <div class="test-container">
       <div class="test-section">
         <h2>当前会员信息</h2>
@@ -83,11 +81,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useUserStore } from '@/stores/userStore'
 import { membershipService, type MembershipLevel, type UserMembership } from '@/services/membershipService'
 import { useToast } from '@/composables/useToast'

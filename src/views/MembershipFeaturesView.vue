@@ -1,7 +1,5 @@
 <template>
-  <div class="membership-features-view">
-    <h1 class="title">会员功能测试</h1>
-
+  <PageLayout title="会员功能测试" subtitle="验证各会员等级功能访问与逗币余额">
     <div class="features-container">
       <!-- 会员信息 -->
       <div class="section">
@@ -361,10 +359,11 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
+import PageLayout from '@/components/common/PageLayout.vue'
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { membershipService, type MembershipLevel } from '@/services/membershipService'
@@ -1131,17 +1130,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.membership-features-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
 .features-container {
   display: flex;
   flex-direction: column;

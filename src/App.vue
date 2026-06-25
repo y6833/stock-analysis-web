@@ -255,7 +255,9 @@ onUnmounted(() => {
 
 /* 头部样式 */
 .app-header {
-  background-color: var(--bg-primary);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -287,8 +289,11 @@ onUnmounted(() => {
 
 .app-title {
   font-size: var(--font-size-lg);
-  color: var(--primary-color);
-  font-weight: 600;
+  background: var(--gradient-ai-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
   margin: 0;
 }
 

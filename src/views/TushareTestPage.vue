@@ -1,10 +1,5 @@
 <template>
-  <div class="tushare-test-page">
-    <div class="header">
-      <h1>Tushare API 集成测试</h1>
-      <p>验证 Tushare API 集成的正确性和数据流</p>
-    </div>
-
+  <PageLayout title="Tushare API 集成测试" subtitle="验证 Tushare API 集成的正确性和数据流">
     <div class="test-controls">
       <button @click="runQuickTest" :disabled="isRunning" class="btn btn-primary">
         {{ isRunning ? '测试中...' : '快速测试' }}
@@ -118,11 +113,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import {
   type TestResult,
   type TestSuiteResult,

@@ -1,7 +1,5 @@
 <template>
-  <div class="offline-settings-view">
-    <h2>离线模式设置</h2>
-    
+  <PageLayout title="离线模式设置" subtitle="配置离线功能、数据预加载与缓存管理" narrow>
     <el-card class="settings-card">
       <template #header>
         <div class="card-header">
@@ -118,11 +116,12 @@
         </div>
       </div>
     </el-card>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import PageLayout from '@/components/common/PageLayout.vue';
 import { ElMessageBox, ElMessage } from 'element-plus';
 import OfflineSettings from '@/components/settings/OfflineSettings.vue';
 import { useOfflineMode } from '@/composables/useOfflineMode';
@@ -286,12 +285,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.offline-settings-view {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
 .settings-card {
   margin-bottom: 24px;
 }

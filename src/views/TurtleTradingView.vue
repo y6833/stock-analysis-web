@@ -1,14 +1,8 @@
 <template>
-  <div class="turtle-trading-view">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <h1>🐢 海龟交易法则演示</h1>
-      <p class="subtitle">基于唐奇安通道的趋势跟踪交易系统</p>
-    </div>
-
+  <PageLayout title="🐢 海龟交易法则演示" subtitle="基于唐奇安通道的趋势跟踪交易系统">
     <!-- 策略介绍 -->
     <div class="strategy-intro">
-      <div class="intro-card">
+      <div class="intro-card glass-card">
         <h2>📚 策略原理</h2>
         <div class="principle-grid">
           <div class="principle-item">
@@ -37,7 +31,7 @@
 
     <!-- 参数配置 -->
     <div class="config-section">
-      <div class="config-card">
+      <div class="config-card glass-card">
         <h2>🔧 参数配置</h2>
         <div class="config-form">
           <div class="form-group">
@@ -70,7 +64,7 @@
 
     <!-- 图表展示 -->
     <div class="chart-section">
-      <div class="chart-card">
+      <div class="chart-card glass-card">
         <h2>📊 唐奇安通道图表</h2>
         <div class="chart-container" ref="chartContainer"></div>
       </div>
@@ -78,7 +72,7 @@
 
     <!-- 交易信号 -->
     <div class="signals-section">
-      <div class="signals-card">
+      <div class="signals-card glass-card">
         <h2>🎯 交易信号</h2>
         <div class="signals-stats">
           <div class="stat-item buy">
@@ -117,7 +111,7 @@
 
     <!-- 策略统计 -->
     <div class="stats-section">
-      <div class="stats-card">
+      <div class="stats-card glass-card">
         <h2>📈 策略统计</h2>
         <div class="stats-grid">
           <div class="stat-box">
@@ -142,7 +136,7 @@
 
     <!-- 使用说明 -->
     <div class="instructions-section">
-      <div class="instructions-card">
+      <div class="instructions-card glass-card">
         <h2>📖 使用说明</h2>
         <div class="instructions-content">
           <div class="instruction-item">
@@ -164,11 +158,12 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useToast } from '@/composables/useToast'
 import * as echarts from 'echarts'
 
@@ -381,35 +376,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.turtle-trading-view {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.page-header h1 {
-  font-size: 2.5rem;
-  color: #2c3e50;
-  margin-bottom: 10px;
-}
-
-.subtitle {
-  font-size: 1.1rem;
-  color: #7f8c8d;
-}
-
 .strategy-intro,
 .config-section,
 .chart-section,
 .signals-section,
 .stats-section,
 .instructions-section {
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-6);
 }
 
 .intro-card,
@@ -418,10 +391,7 @@ onMounted(async () => {
 .signals-card,
 .stats-card,
 .instructions-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-6);
 }
 
 .principle-grid {

@@ -1,25 +1,13 @@
 <template>
   <div class="advanced-dashboard" :class="{ 'dark-theme': isDarkMode }">
-    <!-- 页面头部 -->
-    <div class="dashboard-header">
-      <div class="header-content">
-        <div class="header-left">
-          <div class="title-section">
-          <h1 class="page-title">
-              <el-icon class="title-icon">
-              <TrendCharts />
-            </el-icon>
-              <span class="title-text">高级仪表盘</span>
-              <el-tag v-if="state.isRefreshing" type="info" size="small" effect="plain" class="refreshing-tag">
-                <el-icon class="is-loading"><Loading /></el-icon>
-                刷新中...
-              </el-tag>
-          </h1>
-          <p class="page-subtitle">实时市场分析与投资组合管理</p>
-          </div>
-          
-          <!-- 数据源信息 -->
-          <DataSourceInfo 
+    <PageLayout title="高级仪表盘" subtitle="实时市场分析与投资组合管理">
+      <template #extra>
+        <div class="header-extra">
+          <el-tag v-if="state.isRefreshing" type="info" size="small" effect="plain" class="refreshing-tag">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            刷新中...
+          </el-tag>
+          <DataSourceInfo
             v-if="dataSourceInfo.dataSource !== '未知'"
             :dataSource="dataSourceInfo.dataSource"
             :dataSourceMessage="dataSourceInfo.dataSourceMessage"
@@ -27,34 +15,29 @@
             :isCache="dataSourceInfo.isCache"
             class="header-data-source"
           />
-
-          <!-- 最后更新时间 -->
           <div class="last-update" v-if="state.lastUpdateTime">
             <el-icon class="update-icon"><Clock /></el-icon>
             <span class="update-label">最后更新:</span>
             <span class="update-time">{{ formatUpdateTime(state.lastUpdateTime) }}</span>
           </div>
         </div>
-        <div class="header-actions">
-          <el-button-group>
-            <el-tooltip content="刷新数据" placement="bottom">
+      </template>
+      <template #actions>
+        <el-button-group>
+          <el-tooltip content="刷新数据" placement="bottom">
             <el-button :icon="Refresh" @click="handleRefresh" :loading="state.isRefreshing" type="primary">
-                <span v-if="!state.isRefreshing">刷新数据</span>
-                <span v-else>刷新中...</span>
+              <span v-if="!state.isRefreshing">刷新数据</span>
+              <span v-else>刷新中...</span>
             </el-button>
-            </el-tooltip>
-            <el-tooltip content="仪表盘设置" placement="bottom">
-            <el-button :icon="Setting" @click="showSettings = true">
-              设置
-            </el-button>
-            </el-tooltip>
-            <el-tooltip :content="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'" placement="bottom">
+          </el-tooltip>
+          <el-tooltip content="仪表盘设置" placement="bottom">
+            <el-button :icon="Setting" @click="showSettings = true">设置</el-button>
+          </el-tooltip>
+          <el-tooltip :content="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'" placement="bottom">
             <el-button :icon="isDarkMode ? Sunny : Moon" @click="toggleTheme" circle />
-            </el-tooltip>
-          </el-button-group>
-        </div>
-      </div>
-    </div>
+          </el-tooltip>
+        </el-button-group>
+      </template>
 
     <!-- 全局加载状态 -->
     <div v-if="state.isInitialLoading" class="global-loading">
@@ -117,15 +100,16 @@
 
     <!-- 错误提示 -->
     <ErrorBoundary v-if="error" :error="error" @retry="handleRetry" @dismiss="clearError" />
+    </PageLayout>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
-  TrendCharts,
   Refresh,
   Setting,
   Moon,
@@ -720,101 +704,15 @@ watch(
   transition: all 0.3s ease;
 }
 
-.dashboard-header {
-  background: linear-gradient(135deg, var(--el-bg-color) 0%, rgba(var(--el-color-primary-rgb), 0.05) 100%);
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  padding: var(--spacing-xl);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  position: relative;
-  overflow: hidden;
-}
-
-.dashboard-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-success), var(--el-color-warning));
-  background-size: 200% 100%;
-  animation: gradientShift 3s ease infinite;
-}
-
-@keyframes gradientShift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.header-content {
+.header-extra {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  max-width: 1400px;
-  margin: 0 auto;
-  gap: var(--spacing-lg);
-}
-
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  flex: 1;
-}
-
-.title-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.page-title {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-md);
-  margin: 0;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  font-weight: var(--font-weight-bold);
-  color: var(--el-text-color-primary);
-}
-
-.title-icon {
-  color: var(--el-color-primary);
-  font-size: 1.5em;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-}
-
-.title-text {
-  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-success));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  gap: var(--spacing-sm);
 }
 
 .refreshing-tag {
-  margin-left: var(--spacing-xs);
-}
-
-.page-subtitle {
-  margin: 0;
-  color: var(--el-text-color-regular);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-normal);
+  margin-left: 0;
 }
 
 .header-data-source {
@@ -1006,16 +904,6 @@ watch(
     gap: var(--spacing-lg);
   }
 
-  .header-content {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-md);
@@ -1035,27 +923,9 @@ watch(
 }
 
 @media (max-width: 768px) {
-  .dashboard-header {
-    padding: var(--spacing-lg);
-  }
-
   .dashboard-content {
     padding: var(--spacing-md);
     gap: var(--spacing-md);
-  }
-
-  .header-content {
-    flex-direction: column;
-    gap: var(--spacing-md);
-  }
-
-  .header-left {
-    width: 100%;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: center;
   }
 
   .metrics-grid {
@@ -1075,10 +945,6 @@ watch(
 }
 
 @media (max-width: 480px) {
-  .dashboard-header {
-    padding: var(--spacing-md);
-  }
-
   .dashboard-content {
     padding: var(--spacing-sm);
     gap: var(--spacing-sm);

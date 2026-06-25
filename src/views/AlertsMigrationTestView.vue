@@ -1,7 +1,5 @@
 <template>
-  <div class="alerts-migration-test">
-    <h1 class="title">提醒数据迁移测试</h1>
-
+  <PageLayout title="提醒数据迁移测试" subtitle="测试从 localStorage 迁移提醒数据到数据库">
     <div class="test-container">
       <div class="test-section">
         <h2>本地存储提醒数据</h2>
@@ -91,11 +89,12 @@
         <div v-else class="empty-state">尚未执行迁移</div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import PageLayout from '@/components/common/PageLayout.vue'
 import { alertService, type Alert } from '@/services/alertService'
 import { alertMigrationService } from '@/services/alertMigrationService'
 import { useToast } from '@/composables/useToast'

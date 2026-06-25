@@ -1,13 +1,10 @@
 <template>
-  <div class="doji-pattern-alert-create-view">
-    <div class="page-header">
-      <h2>创建十字星形态提醒</h2>
-      <div class="page-actions">
-        <el-button @click="navigateBack">返回提醒管理</el-button>
-      </div>
-    </div>
-
-    <el-card class="create-alert-card">
+  <DojiPageLayout
+    title="创建十字星形态提醒"
+    back-to="/doji-pattern/alerts"
+    back-label="返回提醒管理"
+  >
+    <el-card class="create-alert-card glass-card">
       <el-form ref="alertFormRef" :model="alertForm" :rules="alertFormRules" label-width="120px" label-position="top">
         <el-form-item label="股票代码" prop="stockCode">
           <el-input v-model="alertForm.stockCode" placeholder="输入股票代码，如：600000" clearable>
@@ -84,7 +81,7 @@
         <el-button @click="closeStockSelector">取消</el-button>
       </template>
     </el-dialog>
-  </div>
+  </DojiPageLayout>
 </template>
 
 <script lang="ts">
@@ -92,6 +89,7 @@ import { defineComponent, ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import DojiPageLayout from '@/components/doji/DojiPageLayout.vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 interface AlertForm {
@@ -112,7 +110,8 @@ interface StockInfo {
 export default defineComponent({
   name: 'DojiPatternAlertCreateView',
   components: {
-    Search
+    Search,
+    DojiPageLayout,
   },
   setup() {
     const router = useRouter()
